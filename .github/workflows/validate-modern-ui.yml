@@ -13,6 +13,12 @@ jobs:
       - name: Baixar repositorio
         uses: actions/checkout@v4
 
+      - name: Preparar fonte Ladder compatível
+        shell: powershell
+        working-directory: PC12_v2.1_Windows7_v3_portatil
+        run: |
+          (Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'
+
       - name: Compilar central PC12 Modern
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
@@ -23,7 +29,7 @@ jobs:
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.cs"
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
 
       - name: Compilar TP02 Bridge Lab
         shell: cmd
@@ -31,11 +37,18 @@ jobs:
         run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Bridge_Lab.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02BridgeLab.cs"
 
+      - name: Compilar PC12 Studio unificado
+        shell: cmd
+        working-directory: PC12_v2.1_Windows7_v3_portatil
+        run: |
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgram /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs"
+
       - name: Publicar executaveis de teste
         uses: actions/upload-artifact@v4
         with:
-          name: PC12-Moderno
+          name: PC12-Studio-TP02
           path: |
+            PC12_v2.1_Windows7_v3_portatil/PC12_Studio.exe
             PC12_v2.1_Windows7_v3_portatil/PC12_Moderno.exe
             PC12_v2.1_Windows7_v3_portatil/PC12_Ladder.exe
             PC12_v2.1_Windows7_v3_portatil/TP02_Bridge_Lab.exe
