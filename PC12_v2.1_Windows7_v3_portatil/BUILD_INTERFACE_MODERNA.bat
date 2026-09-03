@@ -27,8 +27,12 @@ echo [1/2] Compilando central PC12 Modern...
 if errorlevel 1 goto :erro
 
 echo [2/2] Compilando PC12 Ladder Studio...
-"%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.cs"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'"
 if errorlevel 1 goto :erro
+"%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
+set "BUILDERR=%ERRORLEVEL%"
+del /q "LadderEditor.build.cs" >nul 2>&1
+if not "%BUILDERR%"=="0" goto :erro
 
 echo.
 echo Interfaces criadas com sucesso:
@@ -38,6 +42,7 @@ echo.
 exit /b 0
 
 :erro
+del /q "LadderEditor.build.cs" >nul 2>&1
 echo.
 echo ERRO: nao foi possivel compilar uma das interfaces modernas.
 pause
