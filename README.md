@@ -2,9 +2,21 @@
 
 Modernização da experiência de uso do **PC12 Design Center 2.1** para o PLC **WEG TP02**, preservando o executável legado e desenvolvendo gradualmente um editor Ladder e uma camada de comunicação próprios.
 
+## PC12 Studio TP02 — interface principal
+
+O projeto agora possui uma **interface unificada** chamada `PC12_Studio.exe`. Ela reúne no mesmo ambiente:
+
+- visão geral do projeto;
+- Editor Ladder moderno;
+- TP02 Bridge Lab;
+- acesso ao PC12 original;
+- informações de compatibilidade e estágio da modernização.
+
+O arquivo `INICIAR_PC12.bat` passa a recompilar as interfaces e abrir prioritariamente o **PC12 Studio**. Se a compilação não estiver disponível, o inicializador mantém os fallbacks para a central moderna anterior e, por fim, para o `pc12.exe` original.
+
 ## PC12 Modern
 
-A camada **PC12 Modern** adiciona uma central visual atual para Windows 7, com:
+A camada **PC12 Modern** anterior continua disponível e adiciona uma central visual para Windows 7, com:
 
 - painel de status do pacote;
 - abertura do PC12 normal ou como administrador;
@@ -88,44 +100,50 @@ Esses parâmetros podem ser alterados para coincidir com `WS041/WS042` do PLC. O
 
 ## Como iniciar
 
-### Central PC12 Modern
+### PC12 Studio — recomendado
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat`
 
-### PC12 Ladder Studio
+Esse inicializador recompila a versão atual e abre `PC12_Studio.exe`.
+
+### PC12 Ladder Studio separado
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_EDITOR_LADDER.bat`
 
-### TP02 Bridge Lab
+### TP02 Bridge Lab separado
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_BRIDGE_TP02.bat`
 
-Os inicializadores usam `BUILD_INTERFACE_MODERNA.bat` para compilar as interfaces com o .NET Framework disponível no Windows.
+### PC12 clássico
+
+`PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12_CLASSICO.bat`
 
 ## Arquivos principais
 
-- `ModernPC12.cs` — central moderna;
+- `PC12Studio.cs` — shell unificado e interface principal;
+- `ModernPC12.cs` — central moderna anterior;
 - `LadderEditor.cs` — editor Ladder;
 - `TP02BridgeLab.cs` — análise de projetos PC12 e comunicação TP02 somente leitura;
-- `BUILD_INTERFACE_MODERNA.bat` — compilação local dos três aplicativos;
-- `INICIAR_PC12.bat` — central moderna;
-- `INICIAR_EDITOR_LADDER.bat` — Ladder Studio;
-- `INICIAR_BRIDGE_TP02.bat` — Bridge Lab;
+- `BUILD_INTERFACE_MODERNA.bat` — compilação local dos quatro aplicativos;
+- `INICIAR_PC12.bat` — inicializador principal do PC12 Studio;
+- `INICIAR_EDITOR_LADDER.bat` — Ladder Studio separado;
+- `INICIAR_BRIDGE_TP02.bat` — Bridge Lab separado;
 - `INICIAR_PC12_CLASSICO.bat` — PC12 legado.
 
 ## Compatibilidade
 
-As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas, com foco em Windows 7.
+As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas, mantendo **Windows 7 SP1 como base mínima** e visando também Windows 8.1, 10 e 11.
 
 ## Arquitetura de transição
 
 1. central moderna e diagnóstico — concluído;
 2. editor Ladder moderno — iniciado;
 3. instruções e endereçamento reais do TP02 — iniciado;
-4. engenharia reversa do formato nativo do PC12 — em andamento;
-5. comunicação serial em modo somente leitura — iniciada;
-6. leitura do programa Boolean (`RBP`) e decodificação da linguagem de máquina;
-7. importação `.PLC` -> `.pladder`;
-8. geração controlada do formato nativo;
-9. transferência de programa após validação com hardware;
-10. substituição progressiva do PC12 legado.
+4. interface unificada PC12 Studio — iniciada;
+5. engenharia reversa do formato nativo do PC12 — em andamento;
+6. comunicação serial em modo somente leitura — iniciada;
+7. leitura do programa Boolean (`RBP`) e decodificação da linguagem de máquina;
+8. importação `.PLC` -> `.pladder`;
+9. geração controlada do formato nativo;
+10. transferência de programa após validação com hardware;
+11. substituição progressiva do PC12 legado.
