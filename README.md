@@ -4,27 +4,16 @@ Modernização da experiência de uso do **PC12 Design Center 2.1** para o PLC *
 
 ## PC12 Studio TP02 — interface principal
 
-O projeto agora possui uma **interface unificada** chamada `PC12_Studio.exe`. Ela reúne no mesmo ambiente:
+O projeto possui uma **interface unificada** chamada `PC12_Studio.exe`. Ela reúne no mesmo ambiente:
 
 - visão geral do projeto;
 - Editor Ladder moderno;
 - TP02 Bridge Lab;
+- leitor da memória de programa por `RBP`;
 - acesso ao PC12 original;
 - informações de compatibilidade e estágio da modernização.
 
-O arquivo `INICIAR_PC12.bat` passa a recompilar as interfaces e abrir prioritariamente o **PC12 Studio**. Se a compilação não estiver disponível, o inicializador mantém os fallbacks para a central moderna anterior e, por fim, para o `pc12.exe` original.
-
-## PC12 Modern
-
-A camada **PC12 Modern** anterior continua disponível e adiciona uma central visual para Windows 7, com:
-
-- painel de status do pacote;
-- abertura do PC12 normal ou como administrador;
-- detecção de portas COM;
-- acesso ao Gerenciador de Dispositivos;
-- checklist de comunicação com o TP02;
-- limpeza segura de `lastfile.cpu` e `lastfile.dir`;
-- acesso à pasta, ajuda e modo clássico.
+O arquivo `INICIAR_PC12.bat` recompila as interfaces e abre prioritariamente o **PC12 Studio**. Se a compilação não estiver disponível, o inicializador mantém os fallbacks para a central moderna anterior e, por fim, para o `pc12.exe` original.
 
 ## PC12 Ladder Studio — Etapa 2
 
@@ -49,7 +38,7 @@ A validação do Ladder Studio ainda não substitui a compilação oficial do PC
 
 A terceira etapa inicia a compatibilidade real com o PC12 e a comunicação direta com o TP02.
 
-### 1. Laboratório de arquivos do PC12
+### Laboratório de arquivos do PC12
 
 Foi confirmado que `lastfile.cpu` e `lastfile.dir` são apenas arquivos auxiliares/históricos. Um projeto salvo pelo PC12 é formado por um conjunto de arquivos com o mesmo nome-base:
 
@@ -65,46 +54,42 @@ Foi confirmado que `lastfile.cpu` e `lastfile.dir` são apenas arquivos auxiliar
 - `.cmt` — comentários;
 - `.typ` — tipo do módulo básico.
 
-O **TP02 Bridge Lab** permite selecionar um `.PLC` e:
+O Bridge permite localizar arquivos auxiliares, gerar SHA-256/hexdump, extrair strings, comparar arquivos byte a byte e salvar relatórios de engenharia reversa.
 
-- localizar automaticamente os arquivos auxiliares do mesmo projeto;
-- mostrar tamanho, SHA-256 e perfil textual/binário;
-- extrair strings legíveis;
-- gerar hexdump dos primeiros bytes;
-- comparar dois arquivos byte a byte;
-- apontar offsets e faixas alteradas;
-- salvar relatório de engenharia reversa.
+### Comunicação serial somente leitura
 
-A comparação foi criada para um procedimento controlado: salvar dois projetos PC12 quase idênticos e alterar somente um item por vez, permitindo descobrir progressivamente a codificação do `.PLC`.
+O Bridge implementa a moldura ASCII do protocolo TP02 com checksum por complemento de dois e oferece:
 
-### 2. Comunicação serial somente leitura
-
-O Bridge implementa a moldura ASCII do protocolo TP02 com checksum por complemento de dois e oferece, nesta etapa, somente comandos que não alteram o PLC:
-
-- `PSR` — ler estado do PLC (`STOP`, `RUN` ou `ERROR`);
-- `MCR` — ler estado de entradas, saídas, relés auxiliares e especiais;
+- `PSR` — ler estado do PLC;
+- `MCR` — ler entradas, saídas, relés auxiliares e especiais;
 - `MRV` — ler registradores `V`, `D`, `WS`, `WC` e `F`.
 
-A configuração inicial da tela é:
+A configuração inicial é 19200 bps, 7 bits, paridade EVEN, 2 stop bits, estação 01 e tempo de resposta 50 ms, podendo ser ajustada para coincidir com o PLC.
 
-- 19200 bps;
-- 7 bits;
-- paridade EVEN;
-- 2 stop bits;
-- estação 01;
-- tempo de resposta 50 ms.
+## Leitor RBP — Etapa 4
 
-Esses parâmetros podem ser alterados para coincidir com `WS041/WS042` do PLC. O aplicativo também permite testar o prefixo de compatibilidade `::` além do formato padrão iniciado por `:`.
+O `TP02ProgramReader.cs` implementa o comando oficial `RBP` em modo somente leitura.
 
-**Nenhum comando de escrita, RUN, STOP, limpeza de memória ou gravação de programa é exposto nesta etapa.**
+Recursos atuais:
+
+- endereço inicial `0000–4000`, adequado ao TP02-40/60;
+- leitura de 1 a 100 passos por comando;
+- opção rápida para ler `0000–0099`;
+- checksum de comando e validação da resposta;
+- agrupamento de cada passo em **3 bytes / 6 caracteres hexadecimais**;
+- tabela com `passo`, `word`, byte alto, byte baixo e byte externo;
+- salvamento de dumps `.rbpdump`;
+- integração direta no menu **Ler programa (RBP)** do PC12 Studio.
+
+O manual do TP02 define que o conteúdo retornado por `RBP` é **linguagem de máquina**, e não a lista Boolean/IL já traduzida. Portanto, a próxima etapa é mapear as palavras de 3 bytes para instruções como `STR`, `AND`, `OR`, `OUT`, temporizadores, contadores e funções especiais.
+
+**Nenhum comando `WBP`, RUN, STOP, escrita de registradores ou limpeza de memória é exposto nas ferramentas modernas.**
 
 ## Como iniciar
 
 ### PC12 Studio — recomendado
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat`
-
-Esse inicializador recompila a versão atual e abre `PC12_Studio.exe`.
 
 ### PC12 Ladder Studio separado
 
@@ -113,6 +98,10 @@ Esse inicializador recompila a versão atual e abre `PC12_Studio.exe`.
 ### TP02 Bridge Lab separado
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_BRIDGE_TP02.bat`
+
+### Leitor RBP separado
+
+`PC12_v2.1_Windows7_v3_portatil/INICIAR_LEITOR_RBP.bat`
 
 ### PC12 clássico
 
@@ -123,11 +112,13 @@ Esse inicializador recompila a versão atual e abre `PC12_Studio.exe`.
 - `PC12Studio.cs` — shell unificado e interface principal;
 - `ModernPC12.cs` — central moderna anterior;
 - `LadderEditor.cs` — editor Ladder;
-- `TP02BridgeLab.cs` — análise de projetos PC12 e comunicação TP02 somente leitura;
-- `BUILD_INTERFACE_MODERNA.bat` — compilação local dos quatro aplicativos;
-- `INICIAR_PC12.bat` — inicializador principal do PC12 Studio;
-- `INICIAR_EDITOR_LADDER.bat` — Ladder Studio separado;
-- `INICIAR_BRIDGE_TP02.bat` — Bridge Lab separado;
+- `TP02BridgeLab.cs` — análise de projetos PC12 e comunicação somente leitura;
+- `TP02ProgramReader.cs` — leitor `RBP` da memória de programa;
+- `BUILD_INTERFACE_MODERNA.bat` — compilação local das interfaces;
+- `INICIAR_PC12.bat` — inicializador principal;
+- `INICIAR_EDITOR_LADDER.bat` — Ladder separado;
+- `INICIAR_BRIDGE_TP02.bat` — Bridge separado;
+- `INICIAR_LEITOR_RBP.bat` — leitor RBP separado;
 - `INICIAR_PC12_CLASSICO.bat` — PC12 legado.
 
 ## Compatibilidade
@@ -142,8 +133,9 @@ As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas,
 4. interface unificada PC12 Studio — iniciada;
 5. engenharia reversa do formato nativo do PC12 — em andamento;
 6. comunicação serial em modo somente leitura — iniciada;
-7. leitura do programa Boolean (`RBP`) e decodificação da linguagem de máquina;
-8. importação `.PLC` -> `.pladder`;
-9. geração controlada do formato nativo;
-10. transferência de programa após validação com hardware;
-11. substituição progressiva do PC12 legado.
+7. leitura do programa Boolean por `RBP` — implementada em nível de linguagem de máquina;
+8. decodificação das palavras RBP para Boolean/IL — próxima etapa;
+9. importação `.PLC` / RBP -> `.pladder`;
+10. geração controlada do formato nativo;
+11. transferência de programa após validação com hardware;
+12. substituição progressiva do PC12 legado.
