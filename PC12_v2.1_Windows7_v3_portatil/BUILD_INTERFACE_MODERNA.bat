@@ -47,7 +47,7 @@ echo [5/6] Compilando decodificador RBP para IL...
 if errorlevel 1 goto :erro
 
 echo [6/6] Compilando PC12 Studio unificado...
-"%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgram /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs"
+"%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgram /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs"
 if errorlevel 1 goto :erro
 
 del /q "LadderEditor.build.cs" >nul 2>&1
