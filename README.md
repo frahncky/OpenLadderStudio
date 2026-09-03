@@ -10,6 +10,7 @@ O projeto possui uma **interface unificada** chamada `PC12_Studio.exe`. Ela reú
 - Editor Ladder moderno;
 - TP02 Bridge Lab;
 - leitor da memória de programa por `RBP`;
+- decodificador/calibrador `RBP -> Boolean/IL`;
 - acesso ao PC12 original;
 - informações de compatibilidade e estágio da modernização.
 
@@ -81,7 +82,28 @@ Recursos atuais:
 - salvamento de dumps `.rbpdump`;
 - integração direta no menu **Ler programa (RBP)** do PC12 Studio.
 
-O manual do TP02 define que o conteúdo retornado por `RBP` é **linguagem de máquina**, e não a lista Boolean/IL já traduzida. Portanto, a próxima etapa é mapear as palavras de 3 bytes para instruções como `STR`, `AND`, `OR`, `OUT`, temporizadores, contadores e funções especiais.
+## Decodificador RBP -> Boolean/IL — Etapa 5
+
+O `TP02MachineDecoder.cs` adiciona uma camada de engenharia reversa controlada entre a leitura RBP e a futura reconstrução Ladder.
+
+Recursos:
+
+- abertura de dumps `.rbpdump`;
+- tabela por passo com `WORD`, `HIGH`, `LOW` e `EXT`;
+- comparação de dois dumps no mesmo intervalo;
+- cálculo do XOR dos 24 bits de cada passo alterado;
+- indicação de quais bytes `HIGH/LOW/EXT` mudaram;
+- cadastro local de um WORD como `STR`, `STR NOT`, `AND`, `AND NOT`, `OR`, `OR NOT`, `AND STR`, `OR STR`, `OUT`, `TMR`, `CNT`, `FUN` ou `END`;
+- operando associado ao mapeamento;
+- nível de evidência: `Manual`, `Teste controlado`, `Inferido por comparação` ou `Não confirmado`;
+- mapa local em `tp02_opcode_map.tsv`;
+- exportação do dump para uma lista `.il.txt`, mantendo `UNKNOWN` onde ainda não houver prova suficiente;
+- amostra RBP documentada no manual com os words `5E1509`, `204006` e `20C10F`, mantidos como `UNKNOWN` até existir associação semântica comprovada;
+- integração ao menu **Decodificar RBP** do PC12 Studio.
+
+A metodologia de pesquisa está documentada em `docs/TP02_OPCODE_RESEARCH.md`. A estratégia é comparar programas quase idênticos, alterando apenas uma instrução ou um endereço por experimento para separar os bits de **opcode** dos bits de **operando**.
+
+O manual do TP02 informa que o RBP retorna **linguagem de máquina**, não a lista Boolean/IL traduzida. Por isso o software não atribui automaticamente significados às palavras sem evidência.
 
 **Nenhum comando `WBP`, RUN, STOP, escrita de registradores ou limpeza de memória é exposto nas ferramentas modernas.**
 
@@ -103,6 +125,10 @@ O manual do TP02 define que o conteúdo retornado por `RBP` é **linguagem de m�
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_LEITOR_RBP.bat`
 
+### Decodificador RBP separado
+
+`PC12_v2.1_Windows7_v3_portatil/INICIAR_DECODIFICADOR_RBP.bat`
+
 ### PC12 clássico
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12_CLASSICO.bat`
@@ -114,11 +140,14 @@ O manual do TP02 define que o conteúdo retornado por `RBP` é **linguagem de m�
 - `LadderEditor.cs` — editor Ladder;
 - `TP02BridgeLab.cs` — análise de projetos PC12 e comunicação somente leitura;
 - `TP02ProgramReader.cs` — leitor `RBP` da memória de programa;
+- `TP02MachineDecoder.cs` — comparação/calibração de WORDs RBP e exportação para IL;
+- `docs/TP02_OPCODE_RESEARCH.md` — metodologia e registro de evidências dos opcodes;
 - `BUILD_INTERFACE_MODERNA.bat` — compilação local das interfaces;
 - `INICIAR_PC12.bat` — inicializador principal;
 - `INICIAR_EDITOR_LADDER.bat` — Ladder separado;
 - `INICIAR_BRIDGE_TP02.bat` — Bridge separado;
 - `INICIAR_LEITOR_RBP.bat` — leitor RBP separado;
+- `INICIAR_DECODIFICADOR_RBP.bat` — decodificador separado;
 - `INICIAR_PC12_CLASSICO.bat` — PC12 legado.
 
 ## Compatibilidade
@@ -133,9 +162,11 @@ As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas,
 4. interface unificada PC12 Studio — iniciada;
 5. engenharia reversa do formato nativo do PC12 — em andamento;
 6. comunicação serial em modo somente leitura — iniciada;
-7. leitura do programa Boolean por `RBP` — implementada em nível de linguagem de máquina;
-8. decodificação das palavras RBP para Boolean/IL — próxima etapa;
-9. importação `.PLC` / RBP -> `.pladder`;
-10. geração controlada do formato nativo;
-11. transferência de programa após validação com hardware;
-12. substituição progressiva do PC12 legado.
+7. leitura do programa por `RBP` — implementada em nível de linguagem de máquina;
+8. laboratório de decodificação RBP para Boolean/IL — implementado;
+9. calibração sistemática dos opcodes e campos de endereço — próxima etapa com dumps controlados;
+10. reconstrução automática Boolean/IL -> Ladder;
+11. importação `.PLC` / RBP -> `.pladder`;
+12. geração controlada do formato nativo;
+13. transferência de programa após validação com hardware;
+14. substituição progressiva do PC12 legado.
