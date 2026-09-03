@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ================================================
-echo  PC12 Modern - compilacao das interfaces
+echo  PC12 Studio TP02 - compilacao das interfaces
 echo ================================================
 echo.
 
@@ -22,27 +22,34 @@ if not defined CSC (
     exit /b 1
 )
 
-echo [1/3] Compilando central PC12 Modern...
+echo Preparando fonte compatível do Ladder...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'"
+if errorlevel 1 goto :erro
+
+echo [1/4] Compilando central PC12 Modern...
 "%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Moderno.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "ModernPC12.cs"
 if errorlevel 1 goto :erro
 
-echo [2/3] Compilando PC12 Ladder Studio...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'"
-if errorlevel 1 goto :erro
+echo [2/4] Compilando PC12 Ladder Studio...
 "%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
-set "BUILDERR=%ERRORLEVEL%"
-del /q "LadderEditor.build.cs" >nul 2>&1
-if not "%BUILDERR%"=="0" goto :erro
+if errorlevel 1 goto :erro
 
-echo [3/3] Compilando TP02 Bridge Lab...
+echo [3/4] Compilando TP02 Bridge Lab...
 "%CSC%" /nologo /target:winexe /optimize+ /out:"TP02_Bridge_Lab.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02BridgeLab.cs"
 if errorlevel 1 goto :erro
 
+echo [4/4] Compilando PC12 Studio unificado...
+"%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgram /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs"
+if errorlevel 1 goto :erro
+
+del /q "LadderEditor.build.cs" >nul 2>&1
+
 echo.
 echo Interfaces criadas com sucesso:
-echo   PC12_Moderno.exe
-echo   PC12_Ladder.exe
-echo   TP02_Bridge_Lab.exe
+echo   PC12_Studio.exe       ^(interface principal^)
+echo   PC12_Moderno.exe      ^(central anterior^)
+echo   PC12_Ladder.exe       ^(editor separado^)
+echo   TP02_Bridge_Lab.exe   ^(bridge separado^)
 echo.
 exit /b 0
 
