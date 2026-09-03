@@ -22,11 +22,11 @@ if not defined CSC (
     exit /b 1
 )
 
-echo [1/2] Compilando central PC12 Modern...
+echo [1/3] Compilando central PC12 Modern...
 "%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Moderno.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "ModernPC12.cs"
 if errorlevel 1 goto :erro
 
-echo [2/2] Compilando PC12 Ladder Studio...
+echo [2/3] Compilando PC12 Ladder Studio...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'"
 if errorlevel 1 goto :erro
 "%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
@@ -34,10 +34,15 @@ set "BUILDERR=%ERRORLEVEL%"
 del /q "LadderEditor.build.cs" >nul 2>&1
 if not "%BUILDERR%"=="0" goto :erro
 
+echo [3/3] Compilando TP02 Bridge Lab...
+"%CSC%" /nologo /target:winexe /optimize+ /out:"TP02_Bridge_Lab.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02BridgeLab.cs"
+if errorlevel 1 goto :erro
+
 echo.
 echo Interfaces criadas com sucesso:
 echo   PC12_Moderno.exe
 echo   PC12_Ladder.exe
+echo   TP02_Bridge_Lab.exe
 echo.
 exit /b 0
 
