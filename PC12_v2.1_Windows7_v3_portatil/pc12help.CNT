@@ -1,0 +1,34 @@
+:Base  pc12help.HLP
+:Title PC12 User Menu
+1 Screen Shot=Topic1
+1 System Requirements=Topic2
+1 Filenames Definition=Topic3
+1 PC12 Main Menu
+1 File Menu=Topic5
+1 Edit Menu=Topic6
+1 PLC Menu=Topic7
+1 Monitor Menu=Topic8
+1 Help Menu=Topic9
+1 PC12 Edit Tools
+1 BTools Menu=Topic10
+1 LTools Menu=Topic11
+1 CTools Menu=Topic12
+1 View Menu=Topic13
+1 Double Click Modification=Topic14
+1 PC12 Boolean Self-Diagnostic Error
+1 Stack Over=Topic16
+1 Stack Under=Topic17
+1 F08 ENDS Error=Topic18
+1 FUN. Double Used=Topic19
+1 MCR Error=Topic20
+1 No Enough JCS=Topic21
+1 No Enough JCR=Topic22
+1 T/C Double Used=Topic23
+1 FOR/NEXT Error=Topic24
+1 LABEL Not Exist=Topic25
+1 Double OUT=Topic26
+1 PC12 Ladder Self-Diagnostic Error
+1 Short Circuit =Topic27
+1 Open Circuit=Topic28
+1 OUT Error=Topic29
+1 Grammar Error=Topic30

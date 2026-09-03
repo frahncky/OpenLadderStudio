@@ -1,0 +1,25 @@
+PC12 Design Center 2.1 - Windows 7 - versão portátil v3
+===============================================================
+
+CORREÇÃO PRINCIPAL
+O executável original contém caminhos absolutos gravados internamente:
+C:\Program Files\Pc12 Design Center\
+
+Foram encontradas e corrigidas 236 referências para caminhos relativos
+à pasta atual do programa. Assim o PC12 pode funcionar fora da pasta
+Program Files sem tentar abrir arquivos no caminho antigo.
+
+COMO USAR
+1. Extraia TODO o conteúdo do ZIP para uma pasta, por exemplo C:\PC12.
+2. Não execute o programa diretamente dentro do ZIP.
+3. Execute INICIAR_PC12.bat.
+4. Mantenha todos os DLLs e arquivos de suporte na mesma pasta do pc12.exe.
+
+Se algum projeto antigo ficar gravado como último arquivo e causar erro,
+execute RESETAR_ULTIMO_ARQUIVO.bat e depois abra novamente o PC12.
+
+Alterações:
+- SETUP.EXE de 16 bits não é necessário.
+- pc12.exe descompactado de UPX para permitir a correção.
+- caminhos internos de "Pc12 Design Center" convertidos em caminhos relativos.
+- lastfile.cpu e lastfile.dir restaurados ao estado inicial original.
