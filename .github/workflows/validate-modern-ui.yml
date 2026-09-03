@@ -19,17 +19,11 @@ jobs:
         run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Moderno.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "ModernPC12.cs"
 
-      - name: Preparar fonte do Ladder Studio
-        shell: powershell
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
-          (Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'
-
       - name: Compilar PC12 Ladder Studio
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.cs"
 
       - name: Publicar executaveis de teste
         uses: actions/upload-artifact@v4
