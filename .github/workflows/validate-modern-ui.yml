@@ -43,6 +43,12 @@ jobs:
         run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_RBP_Reader.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02ProgramReader.cs"
 
+      - name: Compilar decodificador RBP para IL
+        shell: cmd
+        working-directory: PC12_v2.1_Windows7_v3_portatil
+        run: |
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Machine_Decoder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02MachineDecoder.cs"
+
       - name: Compilar PC12 Studio unificado
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
@@ -59,3 +65,4 @@ jobs:
             PC12_v2.1_Windows7_v3_portatil/PC12_Ladder.exe
             PC12_v2.1_Windows7_v3_portatil/TP02_Bridge_Lab.exe
             PC12_v2.1_Windows7_v3_portatil/TP02_RBP_Reader.exe
+            PC12_v2.1_Windows7_v3_portatil/TP02_Machine_Decoder.exe
