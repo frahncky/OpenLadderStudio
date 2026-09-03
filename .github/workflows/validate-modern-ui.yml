@@ -1,0 +1,26 @@
+name: Validar PC12 Modern
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+
+      - name: Compilar interface Windows Forms
+        shell: cmd
+        working-directory: PC12_v2.1_Windows7_v3_portatil
+        run: |
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Moderno.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "ModernPC12.cs"
+
+      - name: Publicar executavel de teste
+        uses: actions/upload-artifact@v4
+        with:
+          name: PC12-Moderno
+          path: PC12_v2.1_Windows7_v3_portatil/PC12_Moderno.exe
