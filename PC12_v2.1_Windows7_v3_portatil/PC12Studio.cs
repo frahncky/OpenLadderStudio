@@ -37,11 +37,13 @@ namespace ModernPC12
         private StudioNavButton navLadder;
         private StudioNavButton navBridge;
         private StudioNavButton navReader;
+        private StudioNavButton navDecoder;
         private StudioNavButton navLegacy;
         private StudioNavButton navAbout;
         private LadderEditorForm ladderForm;
         private TP02BridgeForm bridgeForm;
         private TP02ProgramReaderForm readerForm;
+        private TP02MachineDecoderForm decoderForm;
 
         public UnifiedStudioForm()
         {
@@ -78,7 +80,7 @@ namespace ModernPC12
             top.Controls.Add(brand);
 
             Label version = new Label();
-            version.Text = "TP02 • v0.4 • Windows 7+";
+            version.Text = "TP02 • v0.5 • Windows 7+";
             version.AutoSize = true;
             version.Font = new Font("Segoe UI", 8.6f);
             version.ForeColor = TextSecondary;
@@ -147,7 +149,7 @@ namespace ModernPC12
             side.Controls.Add(product);
 
             Label productSub = new Label();
-            productSub.Text = "Ladder + Bridge + leitor de programa";
+            productSub.Text = "Ladder + Bridge + RBP + decoder";
             productSub.AutoSize = true;
             productSub.Font = new Font("Segoe UI", 8.2f);
             productSub.ForeColor = Color.FromArgb(175, 195, 215);
@@ -158,8 +160,9 @@ namespace ModernPC12
             navLadder = AddNav(side, "Editor Ladder", 164, delegate { ShowLadder(); });
             navBridge = AddNav(side, "Comunicação TP02", 210, delegate { ShowBridge(); });
             navReader = AddNav(side, "Ler programa (RBP)", 256, delegate { ShowReader(); });
-            navLegacy = AddNav(side, "PC12 original", 302, delegate { ShowLegacyPage(); });
-            navAbout = AddNav(side, "Sobre", 348, delegate { ShowAbout(); });
+            navDecoder = AddNav(side, "Decodificar RBP", 302, delegate { ShowDecoder(); });
+            navLegacy = AddNav(side, "PC12 original", 348, delegate { ShowLegacyPage(); });
+            navAbout = AddNav(side, "Sobre", 394, delegate { ShowAbout(); });
 
             Panel sideBottom = new Panel();
             sideBottom.Dock = DockStyle.Bottom;
@@ -232,7 +235,7 @@ namespace ModernPC12
 
         private void SetActive(StudioNavButton active)
         {
-            StudioNavButton[] all = new StudioNavButton[] { navHome, navLadder, navBridge, navReader, navLegacy, navAbout };
+            StudioNavButton[] all = new StudioNavButton[] { navHome, navLadder, navBridge, navReader, navDecoder, navLegacy, navAbout };
             int i;
             for (i = 0; i < all.Length; i++)
             {
@@ -258,6 +261,7 @@ namespace ModernPC12
             if (ladderForm != null && !ladderForm.IsDisposed) ladderForm.Hide();
             if (bridgeForm != null && !bridgeForm.IsDisposed) bridgeForm.Hide();
             if (readerForm != null && !readerForm.IsDisposed) readerForm.Hide();
+            if (decoderForm != null && !decoderForm.IsDisposed) decoderForm.Hide();
         }
 
         private void ShowHome()
@@ -285,18 +289,25 @@ namespace ModernPC12
             openLegacy.Click += delegate { LaunchLegacy(); };
             card3.Controls.Add(openLegacy);
 
-            Panel rbp = NewCard(18, 232, 504, 194);
+            Panel rbp = NewCard(18, 232, 330, 194);
             host.Controls.Add(rbp);
-            AddCardText(rbp, "Leitor de programa RBP", "Leia até 100 passos da memória de programa do TP02 e visualize cada instrução de máquina como uma palavra de 3 bytes.");
+            AddCardText(rbp, "Leitor de programa RBP", "Leia até 100 passos da memória de programa do TP02 e grave um dump das palavras de máquina de 3 bytes.");
             Button openReader = PrimaryButton("LER PROGRAMA", 20, 132, 150);
             openReader.Click += delegate { ShowReader(); };
             rbp.Controls.Add(openReader);
 
-            Panel status = NewCard(540, 232, 504, 194);
+            Panel decoder = NewCard(366, 232, 330, 194);
+            host.Controls.Add(decoder);
+            AddCardText(decoder, "Decodificador RBP", "Compare dumps controlados, descubra bits de opcode e operando e construa um mapa comprovado de máquina para Boolean/IL.");
+            Button openDecoder = PrimaryButton("DECODIFICAR", 20, 132, 150);
+            openDecoder.Click += delegate { ShowDecoder(); };
+            decoder.Controls.Add(openDecoder);
+
+            Panel status = NewCard(714, 232, 330, 194);
             host.Controls.Add(status);
-            Label stTitle = NewLabel("Situação da modernização", 13.5f, FontStyle.Bold, TextPrimary, 20, 18);
+            Label stTitle = NewLabel("Situação", 13.5f, FontStyle.Bold, TextPrimary, 20, 18);
             status.Controls.Add(stTitle);
-            Label st = NewLabel("✓ Interface unificada\r\n✓ Editor Ladder moderno\r\n✓ Bridge serial somente leitura\r\n✓ Leitura RBP da memória de programa\r\n○ Decodificação automática RBP → Ladder em desenvolvimento", 9.2f, FontStyle.Regular, TextSecondary, 22, 50);
+            Label st = NewLabel("✓ Interface unificada\r\n✓ Editor Ladder\r\n✓ Bridge somente leitura\r\n✓ Leitura RBP\r\n✓ Calibração RBP → IL\r\n○ Reconstrução automática Ladder", 9.0f, FontStyle.Regular, TextSecondary, 22, 50);
             status.Controls.Add(st);
 
             footerStatus.Text = "Visão geral carregada.";
@@ -324,6 +335,14 @@ namespace ModernPC12
             if (readerForm == null || readerForm.IsDisposed) readerForm = new TP02ProgramReaderForm();
             EmbedForm(readerForm);
             footerStatus.Text = "Leitor RBP ativo — nenhum comando de escrita habilitado.";
+        }
+
+        private void ShowDecoder()
+        {
+            PreparePage("Decodificação RBP", "Laboratório offline para mapear palavras de máquina para instruções Boolean/IL com evidência controlada.", navDecoder);
+            if (decoderForm == null || decoderForm.IsDisposed) decoderForm = new TP02MachineDecoderForm();
+            EmbedForm(decoderForm);
+            footerStatus.Text = "Decodificador offline ativo — nenhum acesso ao PLC.";
         }
 
         private void EmbedForm(Form child)
@@ -366,14 +385,14 @@ namespace ModernPC12
         {
             PreparePage("Sobre", "Arquitetura de transição do PC12 para uma ferramenta moderna do TP02.", navAbout);
 
-            Panel card = NewCard(18, 18, 820, 320);
+            Panel card = NewCard(18, 18, 820, 340);
             host.Controls.Add(card);
             Label title = NewLabel("PC12 Studio TP02", 18.0f, FontStyle.Bold, Navy, 22, 20);
             card.Controls.Add(title);
-            Label text = NewLabel("Versão de desenvolvimento 0.4\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nO Studio já possui leitura RBP do programa em linguagem de máquina. A próxima etapa é mapear as palavras de 3 bytes para instruções Boolean/IL e reconstruir automaticamente o Ladder.\r\n\r\nComandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados nas ferramentas modernas.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
+            Label text = NewLabel("Versão de desenvolvimento 0.5\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nO Studio possui leitura RBP e um laboratório de calibração que compara dumps, calcula diferenças bit a bit e mantém um mapa local de WORDs confirmados para Boolean/IL. WORDs sem evidência permanecem UNKNOWN.\r\n\r\nComandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados nas ferramentas modernas.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
             text.MaximumSize = new Size(760, 0);
             card.Controls.Add(text);
-            footerStatus.Text = "PC12 Studio TP02 v0.4.";
+            footerStatus.Text = "PC12 Studio TP02 v0.5.";
         }
 
         private void LaunchLegacy()
@@ -465,6 +484,7 @@ namespace ModernPC12
             if (ladderForm != null && !ladderForm.IsDisposed) ladderForm.Dispose();
             if (bridgeForm != null && !bridgeForm.IsDisposed) bridgeForm.Dispose();
             if (readerForm != null && !readerForm.IsDisposed) readerForm.Dispose();
+            if (decoderForm != null && !decoderForm.IsDisposed) decoderForm.Dispose();
             base.OnFormClosing(e);
         }
     }
