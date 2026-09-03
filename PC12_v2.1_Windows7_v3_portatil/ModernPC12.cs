@@ -64,6 +64,7 @@ namespace ModernPC12
             BackColor = Canvas;
             FormBorderStyle = FormBorderStyle.None;
             Font = new Font("Segoe UI", 9.0f, FontStyle.Regular, GraphicsUnit.Point);
+            AutoScaleMode = AutoScaleMode.Dpi;
             DoubleBuffered = true;
 
             BuildShell();
@@ -120,7 +121,6 @@ namespace ModernPC12
             shell.Dock = DockStyle.Fill;
             shell.BackColor = Canvas;
             Controls.Add(shell);
-            shell.BringToFront();
 
             Panel sidebar = new Panel();
             sidebar.Dock = DockStyle.Left;
@@ -195,7 +195,6 @@ namespace ModernPC12
             contentShell.Dock = DockStyle.Fill;
             contentShell.BackColor = Canvas;
             shell.Controls.Add(contentShell);
-            contentShell.BringToFront();
 
             Panel contentHeader = new Panel();
             contentHeader.Dock = DockStyle.Top;
@@ -217,7 +216,10 @@ namespace ModernPC12
             workspace.BackColor = Canvas;
             workspace.Padding = new Padding(32, 8, 32, 28);
             contentShell.Controls.Add(workspace);
-            workspace.BringToFront();
+
+            contentHeader.BringToFront();
+            sidebar.BringToFront();
+            topBar.BringToFront();
         }
 
         private ModernButton CreateNavButton(string text, int top)
@@ -242,11 +244,9 @@ namespace ModernPC12
             for (i = 0; i < all.Length; i++)
             {
                 all[i].NormalColor = Navy;
-                all[i].BackColor = Navy;
                 all[i].ForeColor = Color.FromArgb(225, 235, 245);
             }
             active.NormalColor = NavyLight;
-            active.BackColor = NavyLight;
             active.ForeColor = Color.White;
         }
 
@@ -268,7 +268,6 @@ namespace ModernPC12
             Label intro = NewLabel("A interface moderna centraliza inicialização, diagnóstico, portas COM e ferramentas sem alterar o executável original do PC12.", 9.5f, FontStyle.Regular, TextSecondary);
             intro.Location = new Point(36, 50);
             intro.MaximumSize = new Size(720, 0);
-            intro.AutoSize = true;
             workspace.Controls.Add(intro);
 
             CardPanel launchCard = CreateCard(34, 98, 356, 190);
@@ -596,6 +595,7 @@ namespace ModernPC12
             if (portCombo.Items.Count > 0) portCombo.SelectedIndex = 0;
             else portCombo.Items.Add("Nenhuma porta COM detectada");
             if (portCombo.SelectedIndex < 0) portCombo.SelectedIndex = 0;
+            UpdateGlobalStatus();
         }
 
         private string GetPortsSummary()
@@ -608,6 +608,8 @@ namespace ModernPC12
 
         private void UpdateGlobalStatus()
         {
+            if (statusDot == null || statusLabel == null) return;
+
             if (File.Exists(pc12Path))
             {
                 statusDot.ForeColor = Success;
@@ -635,20 +637,36 @@ namespace ModernPC12
 
     internal sealed class ModernButton : Button
     {
-        public Color NormalColor { get; set; }
-        public Color HoverColor { get; set; }
+        private Color normalColor;
+        private Color hoverColor;
+
+        public Color NormalColor
+        {
+            get { return normalColor; }
+            set
+            {
+                normalColor = value;
+                BackColor = value;
+            }
+        }
+
+        public Color HoverColor
+        {
+            get { return hoverColor; }
+            set { hoverColor = value; }
+        }
 
         public ModernButton()
         {
             FlatStyle = FlatStyle.Flat;
             FlatAppearance.BorderSize = 0;
             Cursor = Cursors.Hand;
-            NormalColor = Color.White;
-            HoverColor = Color.Gainsboro;
-            BackColor = NormalColor;
+            normalColor = Color.White;
+            hoverColor = Color.Gainsboro;
+            BackColor = normalColor;
             UseVisualStyleBackColor = false;
-            MouseEnter += delegate { BackColor = HoverColor; };
-            MouseLeave += delegate { BackColor = NormalColor; };
+            MouseEnter += delegate { BackColor = hoverColor; };
+            MouseLeave += delegate { BackColor = normalColor; };
         }
     }
 
