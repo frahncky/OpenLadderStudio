@@ -36,10 +36,12 @@ namespace ModernPC12
         private StudioNavButton navHome;
         private StudioNavButton navLadder;
         private StudioNavButton navBridge;
+        private StudioNavButton navReader;
         private StudioNavButton navLegacy;
         private StudioNavButton navAbout;
         private LadderEditorForm ladderForm;
         private TP02BridgeForm bridgeForm;
+        private TP02ProgramReaderForm readerForm;
 
         public UnifiedStudioForm()
         {
@@ -76,7 +78,7 @@ namespace ModernPC12
             top.Controls.Add(brand);
 
             Label version = new Label();
-            version.Text = "TP02 • v0.3 • Windows 7+";
+            version.Text = "TP02 • v0.4 • Windows 7+";
             version.AutoSize = true;
             version.Font = new Font("Segoe UI", 8.6f);
             version.ForeColor = TextSecondary;
@@ -84,10 +86,10 @@ namespace ModernPC12
             top.Controls.Add(version);
 
             Label safe = new Label();
-            safe.Text = "Bridge em modo seguro: somente leitura";
+            safe.Text = "Comunicação moderna em modo seguro: somente leitura";
             safe.AutoSize = false;
             safe.Dock = DockStyle.Right;
-            safe.Width = 330;
+            safe.Width = 390;
             safe.TextAlign = ContentAlignment.MiddleRight;
             safe.Padding = new Padding(0, 0, 22, 0);
             safe.Font = new Font("Segoe UI Semibold", 8.8f, FontStyle.Bold);
@@ -145,7 +147,7 @@ namespace ModernPC12
             side.Controls.Add(product);
 
             Label productSub = new Label();
-            productSub.Text = "Ladder + Bridge + PC12 legado";
+            productSub.Text = "Ladder + Bridge + leitor de programa";
             productSub.AutoSize = true;
             productSub.Font = new Font("Segoe UI", 8.2f);
             productSub.ForeColor = Color.FromArgb(175, 195, 215);
@@ -155,8 +157,9 @@ namespace ModernPC12
             navHome = AddNav(side, "Visão geral", 118, delegate { ShowHome(); });
             navLadder = AddNav(side, "Editor Ladder", 164, delegate { ShowLadder(); });
             navBridge = AddNav(side, "Comunicação TP02", 210, delegate { ShowBridge(); });
-            navLegacy = AddNav(side, "PC12 original", 256, delegate { ShowLegacyPage(); });
-            navAbout = AddNav(side, "Sobre", 302, delegate { ShowAbout(); });
+            navReader = AddNav(side, "Ler programa (RBP)", 256, delegate { ShowReader(); });
+            navLegacy = AddNav(side, "PC12 original", 302, delegate { ShowLegacyPage(); });
+            navAbout = AddNav(side, "Sobre", 348, delegate { ShowAbout(); });
 
             Panel sideBottom = new Panel();
             sideBottom.Dock = DockStyle.Bottom;
@@ -229,7 +232,7 @@ namespace ModernPC12
 
         private void SetActive(StudioNavButton active)
         {
-            StudioNavButton[] all = new StudioNavButton[] { navHome, navLadder, navBridge, navLegacy, navAbout };
+            StudioNavButton[] all = new StudioNavButton[] { navHome, navLadder, navBridge, navReader, navLegacy, navAbout };
             int i;
             for (i = 0; i < all.Length; i++)
             {
@@ -244,6 +247,7 @@ namespace ModernPC12
         {
             HideEmbeddedForms();
             host.Controls.Clear();
+            host.Padding = new Padding(18);
             pageTitle.Text = title;
             pageSubTitle.Text = subtitle;
             SetActive(active);
@@ -253,6 +257,7 @@ namespace ModernPC12
         {
             if (ladderForm != null && !ladderForm.IsDisposed) ladderForm.Hide();
             if (bridgeForm != null && !bridgeForm.IsDisposed) bridgeForm.Hide();
+            if (readerForm != null && !readerForm.IsDisposed) readerForm.Hide();
         }
 
         private void ShowHome()
@@ -280,11 +285,18 @@ namespace ModernPC12
             openLegacy.Click += delegate { LaunchLegacy(); };
             card3.Controls.Add(openLegacy);
 
-            Panel status = NewCard(18, 232, 1026, 154);
+            Panel rbp = NewCard(18, 232, 504, 194);
+            host.Controls.Add(rbp);
+            AddCardText(rbp, "Leitor de programa RBP", "Leia até 100 passos da memória de programa do TP02 e visualize cada instrução de máquina como uma palavra de 3 bytes.");
+            Button openReader = PrimaryButton("LER PROGRAMA", 20, 132, 150);
+            openReader.Click += delegate { ShowReader(); };
+            rbp.Controls.Add(openReader);
+
+            Panel status = NewCard(540, 232, 504, 194);
             host.Controls.Add(status);
             Label stTitle = NewLabel("Situação da modernização", 13.5f, FontStyle.Bold, TextPrimary, 20, 18);
             status.Controls.Add(stTitle);
-            Label st = NewLabel("✓ Interface unificada\r\n✓ Editor Ladder moderno\r\n✓ Bridge serial somente leitura\r\n✓ Analisador de arquivos PC12\r\n○ Importação nativa e gravação no PLC ainda em validação", 9.4f, FontStyle.Regular, TextSecondary, 22, 50);
+            Label st = NewLabel("✓ Interface unificada\r\n✓ Editor Ladder moderno\r\n✓ Bridge serial somente leitura\r\n✓ Leitura RBP da memória de programa\r\n○ Decodificação automática RBP → Ladder em desenvolvimento", 9.2f, FontStyle.Regular, TextSecondary, 22, 50);
             status.Controls.Add(st);
 
             footerStatus.Text = "Visão geral carregada.";
@@ -306,6 +318,14 @@ namespace ModernPC12
             footerStatus.Text = "Bridge TP02 em modo somente leitura.";
         }
 
+        private void ShowReader()
+        {
+            PreparePage("Leitura do programa", "Comando RBP: leitura da memória de programa do TP02 em palavras de máquina de 3 bytes.", navReader);
+            if (readerForm == null || readerForm.IsDisposed) readerForm = new TP02ProgramReaderForm();
+            EmbedForm(readerForm);
+            footerStatus.Text = "Leitor RBP ativo — nenhum comando de escrita habilitado.";
+        }
+
         private void EmbedForm(Form child)
         {
             child.TopLevel = false;
@@ -321,7 +341,6 @@ namespace ModernPC12
         private void ShowLegacyPage()
         {
             PreparePage("PC12 original", "Acesso direto ao software legado preservado para compatibilidade e contingência.", navLegacy);
-            host.Padding = new Padding(18);
 
             Panel card = NewCard(18, 18, 720, 238);
             host.Controls.Add(card);
@@ -346,16 +365,15 @@ namespace ModernPC12
         private void ShowAbout()
         {
             PreparePage("Sobre", "Arquitetura de transição do PC12 para uma ferramenta moderna do TP02.", navAbout);
-            host.Padding = new Padding(18);
 
-            Panel card = NewCard(18, 18, 820, 300);
+            Panel card = NewCard(18, 18, 820, 320);
             host.Controls.Add(card);
             Label title = NewLabel("PC12 Studio TP02", 18.0f, FontStyle.Bold, Navy, 22, 20);
             card.Controls.Add(title);
-            Label text = NewLabel("Versão de desenvolvimento 0.3\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nNesta fase, comandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados no Bridge.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
+            Label text = NewLabel("Versão de desenvolvimento 0.4\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nO Studio já possui leitura RBP do programa em linguagem de máquina. A próxima etapa é mapear as palavras de 3 bytes para instruções Boolean/IL e reconstruir automaticamente o Ladder.\r\n\r\nComandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados nas ferramentas modernas.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
             text.MaximumSize = new Size(760, 0);
             card.Controls.Add(text);
-            footerStatus.Text = "PC12 Studio TP02 v0.3.";
+            footerStatus.Text = "PC12 Studio TP02 v0.4.";
         }
 
         private void LaunchLegacy()
@@ -397,7 +415,7 @@ namespace ModernPC12
             Label t = NewLabel(title, 13.5f, FontStyle.Bold, TextPrimary, 20, 18);
             parent.Controls.Add(t);
             Label d = NewLabel(text, 8.9f, FontStyle.Regular, TextSecondary, 22, 54);
-            d.MaximumSize = new Size(parent.Width - 44, 62);
+            d.MaximumSize = new Size(parent.Width - 44, 66);
             parent.Controls.Add(d);
         }
 
@@ -446,6 +464,7 @@ namespace ModernPC12
         {
             if (ladderForm != null && !ladderForm.IsDisposed) ladderForm.Dispose();
             if (bridgeForm != null && !bridgeForm.IsDisposed) bridgeForm.Dispose();
+            if (readerForm != null && !readerForm.IsDisposed) readerForm.Dispose();
             base.OnFormClosing(e);
         }
     }
