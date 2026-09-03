@@ -26,20 +26,24 @@ echo Preparando fonte compatível do Ladder...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'"
 if errorlevel 1 goto :erro
 
-echo [1/4] Compilando central PC12 Modern...
+echo [1/5] Compilando central PC12 Modern...
 "%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Moderno.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "ModernPC12.cs"
 if errorlevel 1 goto :erro
 
-echo [2/4] Compilando PC12 Ladder Studio...
+echo [2/5] Compilando PC12 Ladder Studio...
 "%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
 if errorlevel 1 goto :erro
 
-echo [3/4] Compilando TP02 Bridge Lab...
+echo [3/5] Compilando TP02 Bridge Lab...
 "%CSC%" /nologo /target:winexe /optimize+ /out:"TP02_Bridge_Lab.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02BridgeLab.cs"
 if errorlevel 1 goto :erro
 
-echo [4/4] Compilando PC12 Studio unificado...
-"%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgram /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs"
+echo [4/5] Compilando leitor RBP...
+"%CSC%" /nologo /target:winexe /optimize+ /out:"TP02_RBP_Reader.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02ProgramReader.cs"
+if errorlevel 1 goto :erro
+
+echo [5/5] Compilando PC12 Studio unificado...
+"%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgram /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs"
 if errorlevel 1 goto :erro
 
 del /q "LadderEditor.build.cs" >nul 2>&1
@@ -50,6 +54,7 @@ echo   PC12_Studio.exe       ^(interface principal^)
 echo   PC12_Moderno.exe      ^(central anterior^)
 echo   PC12_Ladder.exe       ^(editor separado^)
 echo   TP02_Bridge_Lab.exe   ^(bridge separado^)
+echo   TP02_RBP_Reader.exe   ^(leitor de programa^)
 echo.
 exit /b 0
 
