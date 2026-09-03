@@ -1,81 +1,87 @@
 # UpgradeInterfacePLC
 
-Modernização da experiência de uso do **PC12 Design Center 2.1** para o PLC **TP02**, preservando o executável legado e iniciando a construção de um editor Ladder moderno próprio.
+Modernização da experiência de uso do **PC12 Design Center 2.1** para o PLC **WEG TP02**, preservando o executável legado e desenvolvendo um editor Ladder moderno próprio.
 
 ## PC12 Modern
 
-A camada **PC12 Modern** adiciona uma central visual mais atual para Windows 7, com:
+A camada **PC12 Modern** adiciona uma central visual atual para Windows 7, com:
 
-- painel inicial com status do pacote;
-- abertura do PC12 em modo normal ou como administrador;
-- detecção das portas COM disponíveis;
-- acesso rápido ao Gerenciador de Dispositivos;
+- painel de status do pacote;
+- abertura do PC12 normal ou como administrador;
+- detecção de portas COM;
+- acesso ao Gerenciador de Dispositivos;
 - checklist de comunicação com o TP02;
-- ferramenta para limpar `lastfile.cpu` e `lastfile.dir` sem apagar projetos;
-- abertura da pasta do software;
-- acesso à ajuda local;
-- modo clássico disponível a qualquer momento.
+- limpeza segura de `lastfile.cpu` e `lastfile.dir`;
+- acesso à pasta, ajuda e modo clássico.
 
-## PC12 Ladder Studio — Etapa 1
+## PC12 Ladder Studio — Etapa 2
 
-O repositório agora também possui a primeira versão do **editor Ladder moderno próprio**.
+O editor Ladder próprio foi ampliado usando a nomenclatura real do TP02.
 
-Recursos já iniciados:
+### Elementos e instruções
 
-- visual Ladder redesenhado;
+- contatos normalmente abertos e fechados;
+- pontos `X0001–X0384`, `Y0001–Y0384`, `C0001–C2048` e `SC001–SC128`;
+- bobina `OUT` para `Y` e `C`;
+- ramificações paralelas com contatos NA/NF;
+- `TMR` com identificadores `V0001–V0256`;
+- temporizador com ou sem entrada de RESET;
+- `CNT` com identificadores `V0001–V0256`;
+- presets diretos ou indiretos por `D0001–D2048`;
+- `SET` — função especial **F-23**;
+- `RESET` — função especial **F-24**;
+- detector de borda de subida — **F-05**;
+- detector de borda de descida — **F-06**;
+- bloco genérico `FUN` para funções especiais do TP02;
+- `END` — **F-00**.
+
+O editor também verifica se um mesmo registrador `Vxxxx` foi usado simultaneamente por TMR/CNT, pois temporizadores e contadores compartilham os identificadores `V0001–V0256` no TP02.
+
+### Edição
+
 - múltiplos rungs;
-- contato normalmente aberto (NA);
-- contato normalmente fechado (NF);
-- bobina de saída;
-- endereçamento `X`, `Y`, `M`, `T` e `C`;
 - seleção e exclusão de elementos;
-- edição de endereço por duplo clique;
-- adicionar e remover rungs;
-- desfazer alterações (`Ctrl+Z`);
-- novo projeto, abrir e salvar;
-- formato de projeto moderno `.pladder`;
-- atalhos de teclado;
-- compatibilidade com Windows Forms/.NET Framework.
+- edição por duplo clique;
+- adicionar/remover rungs;
+- desfazer (`Ctrl+Z`);
+- novo, abrir e salvar projeto;
+- formato `.pladder` versão 2;
+- leitura dos projetos `.pladder` da Etapa 1;
+- validação estrutural básica pelo botão `VALIDAR`.
 
-Nesta etapa o Ladder Studio é um **editor local**. A geração do formato nativo do PC12 e a transferência do programa para o TP02 serão habilitadas somente depois da validação do formato dos projetos e do protocolo de comunicação, para evitar gravações incorretas no PLC.
+A validação do Ladder Studio **não substitui a compilação oficial do PC12**. A transferência para o PLC permanece desabilitada até que o formato nativo e o protocolo de comunicação sejam reproduzidos e testados com segurança.
 
 ## Como iniciar
 
 ### Central PC12 Modern
 
-Abra:
-
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat`
 
-### Editor Ladder moderno
-
-Abra:
+### PC12 Ladder Studio
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_EDITOR_LADDER.bat`
 
-Se `PC12_Ladder.exe` ainda não existir, o script executa a compilação automaticamente.
+Se os executáveis modernos ainda não existirem, os scripts usam `BUILD_INTERFACE_MODERNA.bat` para compilá-los com o .NET Framework disponível no Windows.
 
-## Arquivos da modernização
+## Arquivos principais
 
-- `ModernPC12.cs` — código-fonte da central moderna;
-- `LadderEditor.cs` — primeira implementação do editor Ladder moderno;
-- `BUILD_INTERFACE_MODERNA.bat` — compila a central e o Ladder Studio;
-- `INICIAR_PC12.bat` — inicializador da central moderna;
-- `INICIAR_EDITOR_LADDER.bat` — inicializador do novo editor Ladder;
-- `INICIAR_PC12_CLASSICO.bat` — inicialização direta do software legado.
+- `ModernPC12.cs` — central moderna;
+- `LadderEditor.cs` — editor Ladder;
+- `BUILD_INTERFACE_MODERNA.bat` — compilação local;
+- `INICIAR_PC12.bat` — central moderna;
+- `INICIAR_EDITOR_LADDER.bat` — Ladder Studio;
+- `INICIAR_PC12_CLASSICO.bat` — PC12 legado.
 
 ## Compatibilidade
 
-As interfaces foram construídas com **Windows Forms + .NET Framework**, sem bibliotecas externas, para manter o pacote simples e compatível com Windows 7.
+As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas, com foco em Windows 7.
 
 ## Arquitetura de transição
 
-O `pc12.exe` original permanece no pacote porque ainda é a referência para comunicação com o TP02 e compatibilidade com projetos antigos. A modernização está sendo feita progressivamente:
-
 1. central moderna e diagnóstico;
 2. editor Ladder moderno;
-3. modelo completo de instruções do TP02;
-4. importação/exportação de projetos;
+3. instruções e endereçamento reais do TP02;
+4. importação/exportação do formato nativo do PC12;
 5. comunicação serial validada;
-6. leitura e transferência de programa para o PLC;
-7. substituição progressiva da dependência do PC12 legado.
+6. leitura, monitoramento e transferência de programa;
+7. substituição progressiva do PC12 legado.
