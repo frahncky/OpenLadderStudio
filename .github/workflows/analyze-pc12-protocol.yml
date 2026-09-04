@@ -1,0 +1,63 @@
+name: Analisar protocolo PC12 legado
+
+on:
+  push:
+    branches:
+      - analysis/pc12-protocol
+
+jobs:
+  inspect:
+    runs-on: windows-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Identificar binário PC12
+        shell: pwsh
+        run: |
+          $p = 'PC12_v2.1_Windows7_v3_portatil/pc12.exe'
+          Get-Item $p | Format-List Name,Length,FullName
+          Get-FileHash $p -Algorithm SHA256
+
+      - name: Extrair strings relevantes
+        shell: python
+        run: |
+          import re, hashlib, pathlib
+          p = pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe')
+          data = p.read_bytes()
+          print('SIZE', len(data))
+          print('SHA256', hashlib.sha256(data).hexdigest())
+          ascii_strings = [m.decode('latin1', 'ignore') for m in re.findall(rb'[\x20-\x7e]{3,}', data)]
+          wide_raw = re.findall(rb'(?:[\x20-\x7e]\x00){3,}', data)
+          wide_strings = [b[::2].decode('latin1', 'ignore') for b in wide_raw]
+          keys = ['COM','LINK','UNLINK','SERIAL','PORT','BAUD','19200','RS422','RS-422','PLC','TP02','RUN','STOP','READ','WRITE','UPLOAD','DOWNLOAD','MONITOR','PASSWORD','TIMEOUT','MCR','MRV','RBP','SCS','WRV','WBP','PSR','STP','RTC','CLR','ROM','PG']
+          def relevant(s):
+              u=s.upper()
+              return any(k in u for k in keys)
+          print('\n=== ASCII RELEVANT STRINGS ===')
+          for s in ascii_strings:
+              if relevant(s): print(repr(s))
+          print('\n=== UTF16 RELEVANT STRINGS ===')
+          for s in wide_strings:
+              if relevant(s): print(repr(s))
+          print('\n=== EXACT 3-LETTER TOKENS AROUND KNOWN COMMANDS ===')
+          for token in [b'MCR',b'MRV',b'RBP',b'SCS',b'WRV',b'WBP',b'PSR',b'STP',b'RUN',b'RTC',b'PAS',b'ROM',b'CLR']:
+              positions=[m.start() for m in re.finditer(re.escape(token), data)]
+              print(token.decode(), positions[:40], 'count=', len(positions))
+              for pos in positions[:8]:
+                  lo=max(0,pos-32); hi=min(len(data),pos+64)
+                  print(' ', pos, data[lo:hi].hex(' '))
+
+      - name: Mostrar imports PE
+        shell: pwsh
+        run: |
+          $p = Resolve-Path 'PC12_v2.1_Windows7_v3_portatil/pc12.exe'
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (Test-Path $vswhere) {
+            $vs = & $vswhere -latest -property installationPath
+            $dump = Get-ChildItem (Join-Path $vs 'VC\Tools\MSVC') -Filter dumpbin.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($dump) {
+              Write-Host "DUMPBIN=$($dump.FullName)"
+              & $dump.FullName /imports $p | Select-String -Pattern 'CreateFile|ReadFile|WriteFile|SetComm|GetComm|EscapeComm|PurgeComm|ClearComm|WaitComm|SetCommMask|GetCommMask|BuildComm|TransmitComm|SetupComm|CloseHandle|Sleep|GetOverlapped|CreateEvent|DeviceIoControl' -Context 2,2
+            } else { Write-Host 'dumpbin não localizado' }
+          } else { Write-Host 'vswhere não localizado' }
