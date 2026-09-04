@@ -44,6 +44,9 @@ A barra de ferramentas também recebe acesso direto ao monitor Modbus.
 | WEG TP02-60MR | Sim | Sim | Sim, via RBP | Não | Implementado em leitura segura |
 | Modbus RTU genérico | Sim | FC 01/02/03/04 | Não | Não | Experimental funcional |
 | Modbus TCP genérico | Sim | FC 01/02/03/04 | Não | Não | Experimental funcional |
+| WEG TPW-03 | Sim, com o cartão opcional RS-485/RS-232 | FC 01/02/03/04 | Não | Não | Perfil sobre o driver Modbus RTU genérico, sem validação em hardware |
+| TECO SG2-20VR-D / 20VT-D e variantes 12D | Sim, RS-485 Modbus-RTU integrado | FC 01/02/03/04 | Não | Não | Perfil sobre o driver Modbus RTU genérico, sem validação em hardware |
+| TECO SG2-10HR-A | Não | Não | Não | Não | Hardware sem porta Modbus; só a porta de programação proprietária |
 | Schneider Modicon M221 | Não como driver específico | Pode usar Modbus quando o mapa do equipamento permitir | Não | Não | Perfil planejado |
 | Delta DVP | Não como driver específico | Pode usar Modbus quando o modelo permitir | Não | Não | Perfil planejado |
 | Siemens S7-1200 | Não | Não | Não | Não | Perfil planejado |
@@ -65,6 +68,30 @@ No RTU são configuráveis porta COM, baud rate, data bits, paridade, stop bits,
 No TCP são configuráveis endereço IP/host, porta, Unit ID e timeout. O cliente valida Transaction ID, Protocol ID e comprimento do quadro MBAP.
 
 Escrita de coils/registradores e transferência de programa continuam desabilitadas até validação específica.
+
+## WEG TPW-03 e TECO SG2
+
+Os dois entram pela camada Modbus genérica, não por driver próprio: quando o equipamento
+responde Modbus-RTU como escravo, o driver existente já cobre a leitura e não há
+comportamento específico de fabricante a isolar.
+
+O que muda entre eles é o hardware:
+
+- **WEG TPW-03** — o Modbus-RTU depende do cartão opcional de comunicação RS-485 ou RS-232.
+  Sem esse cartão não há porta de rede para o Studio conversar.
+- **TECO SG2-20VR-D, SG2-20VT-D e variantes 12D** — trazem RS-485 Modbus-RTU integrado.
+- **TECO SG2-10HR-A** — não possui porta Modbus. A folha de dados do modelo marca a
+  comunicação como N/A; o RS-485 integrado aparece apenas na linha SG2-20V. A única porta
+  do equipamento é a de programação usada pelo SG2 Client, com protocolo proprietário.
+
+Por isso o SG2-10HR-A está cadastrado como **Planejado**: ele aparece no catálogo com a
+explicação, mas não pode ser selecionado como driver operacional. Habilitá-lo exigiria
+o mesmo tipo de trabalho já feito no TP02: levantar o protocolo da porta de programação
+e validá-lo em hardware real.
+
+Nenhum dos perfis novos foi validado em equipamento físico. Baud rate, paridade e mapa de
+endereços precisam ser conferidos no manual de cada equipamento e ajustados no mapa de
+memória por PLC — o catálogo não traz mapa de endereços presumido para esses modelos.
 
 ## Regra de segurança técnica
 

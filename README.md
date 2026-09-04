@@ -37,6 +37,9 @@ A versão oficial do produto é definida em `PC12_v2.1_Windows7_v3_portatil/vers
 | WEG TP02-60MR | Sim | Sim | Sim, via RBP | Não |
 | Modbus RTU genérico | Sim | Sim | Não | Não |
 | Modbus TCP genérico | Sim | Sim | Não | Não |
+| WEG TPW-03 (com cartão RS-485) | Sim, via Modbus RTU | Sim | Não | Não |
+| TECO SG2-20V (RS-485 integrado) | Sim, via Modbus RTU | Sim | Não | Não |
+| TECO SG2-10HR-A | Não, o modelo não expõe Modbus | Não | Não | Não |
 | Perfis Modbus personalizados | Sim | Sim | Não | Não |
 | Outros fabricantes cadastrados | Planejado | Planejado | Planejado | Planejado |
 
