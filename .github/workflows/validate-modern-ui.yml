@@ -20,6 +20,13 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
+      - name: Analisar sequência PG do PC12
+        if: github.head_ref == 'analysis/pg-sequence-v34'
+        shell: powershell
+        run: |
+          python -m pip install --disable-pip-version-check pefile capstone
+          python .\scripts\AnalyzePc12PgSequence.py
+
       - name: Validar metadados e estrutura
         shell: powershell
         run: .\scripts\ValidateProject.ps1
@@ -108,9 +115,6 @@ jobs:
             }
           }
 
-          # As notas vao por arquivo: passadas como argumento, aspas duplas dentro do
-          # texto fazem o PowerShell quebrar a string e o gh interpreta os pedacos
-          # como nomes de arquivo.
           $notesFile = Join-Path $env:RUNNER_TEMP 'release-notes.md'
           [System.IO.File]::WriteAllText($notesFile, $notes, (New-Object System.Text.UTF8Encoding($false)))
 
