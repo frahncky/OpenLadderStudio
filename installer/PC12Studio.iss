@@ -40,6 +40,7 @@ Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderUpdater.exe"; DestDir: "{ap
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderDeviceManager.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderModbus.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderMemoryMap.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderTP02PgLink.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderStudio.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\version.txt"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -54,6 +55,7 @@ Name: "{group}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; Worki
 Name: "{group}\Gerenciar controladores"; Filename: "{app}\OpenLadderDeviceManager.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
 Name: "{group}\Monitor Modbus"; Filename: "{app}\OpenLadderModbus.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
 Name: "{group}\Mapa de memória"; Filename: "{app}\OpenLadderMemoryMap.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
+Name: "{group}\Link PG TP02 - diagnóstico"; Filename: "{app}\OpenLadderTP02PgLink.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
 Name: "{group}\Verificar atualizações"; Filename: "{app}\OpenLadderUpdater.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
 Name: "{autodesktop}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"; Tasks: desktopicon
 
