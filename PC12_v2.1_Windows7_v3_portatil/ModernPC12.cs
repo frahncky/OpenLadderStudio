@@ -572,7 +572,9 @@ namespace ModernPC12
         {
             try
             {
-                Process.Start("explorer.exe", "\"" + baseDir + "\"");
+                ProcessStartInfo psi = new ProcessStartInfo("explorer.exe", baseDir);
+                psi.UseShellExecute = true;
+                Process.Start(psi);
             }
             catch (Exception ex)
             {
@@ -680,7 +682,15 @@ namespace ModernPC12
             if (!string.IsNullOrEmpty(dirValue) && !string.IsNullOrEmpty(cpuValue))
             {
                 string cpuName = Path.GetFileName(cpuValue);
-                recentProject = string.IsNullOrEmpty(cpuName) ? dirValue : Path.Combine(dirValue, cpuName);
+                string dirName = Path.GetFileName(dirValue);
+                if (!string.IsNullOrEmpty(dirName) && string.Equals(dirName, cpuName, StringComparison.OrdinalIgnoreCase))
+                {
+                    recentProject = dirValue;
+                }
+                else
+                {
+                    recentProject = string.IsNullOrEmpty(cpuName) ? dirValue : Path.Combine(dirValue, cpuName);
+                }
             }
             else if (string.IsNullOrEmpty(recentProject))
             {
@@ -703,7 +713,9 @@ namespace ModernPC12
 
             try
             {
-                Process.Start("explorer.exe", "\"" + folder + "\"");
+                ProcessStartInfo psi = new ProcessStartInfo("explorer.exe", folder);
+                psi.UseShellExecute = true;
+                Process.Start(psi);
             }
             catch (Exception ex)
             {
