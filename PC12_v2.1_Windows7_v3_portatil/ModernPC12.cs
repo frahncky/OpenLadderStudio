@@ -369,16 +369,32 @@ namespace ModernPC12
         {
             ClearWorkspace("Conexão com o PLC", navConnection);
 
-            Label intro = NewLabel("Diagnóstico de comunicação serial", 18.0f, FontStyle.Bold, TextPrimary);
-            intro.Location = new Point(34, 14);
-            workspace.Controls.Add(intro);
+            HeroPanel hero = CreateHeroPanel(34, 14, 732, 170);
+            hero.StartColor = Color.FromArgb(23, 66, 72);
+            hero.EndColor = Color.FromArgb(27, 132, 86);
+            workspace.Controls.Add(hero);
 
-            Label detail = NewLabel("Use esta tela antes de abrir o PC12 para confirmar se o conversor USB/serial foi reconhecido pelo Windows.", 9.5f, FontStyle.Regular, TextSecondary);
-            detail.Location = new Point(36, 50);
-            detail.MaximumSize = new Size(730, 0);
-            workspace.Controls.Add(detail);
+            Label intro = NewLabel("Diagnóstico de comunicação serial", 20.0f, FontStyle.Bold, Color.White);
+            intro.Location = new Point(28, 22);
+            hero.Controls.Add(intro);
 
-            CardPanel portCard = CreateCard(34, 96, 732, 204);
+            Label detail = NewLabel("Confirme rapidamente a porta COM reconhecida pelo Windows antes de abrir o PC12 e programar o TP02.", 9.5f, FontStyle.Regular, Color.FromArgb(220, 239, 230));
+            detail.Location = new Point(30, 56);
+            detail.MaximumSize = new Size(460, 0);
+            hero.Controls.Add(detail);
+
+            AddSummaryBadge(hero, 30, 100, "⇄ Porta COM detectada em tempo real", Color.FromArgb(220, 242, 235), Success);
+            AddSummaryBadge(hero, 292, 100, "≡ Copie a porta selecionada", Color.FromArgb(233, 240, 249), Accent);
+
+            ModernButton openPc12Hero = PrimaryButton(WithGlyph("▶", "ABRIR PC12"), 540, 96, 156);
+            openPc12Hero.Click += delegate { LaunchPc12(false); };
+            hero.Controls.Add(openPc12Hero);
+
+            Label connectionTitle = NewLabel("Ferramentas de conexão", 10.0f, FontStyle.Bold, TextSecondary);
+            connectionTitle.Location = new Point(36, 202);
+            workspace.Controls.Add(connectionTitle);
+
+            CardPanel portCard = CreateCard(34, 230, 732, 204);
             portCard.AccentColor = Accent;
             workspace.Controls.Add(portCard);
             AddCardTitle(portCard, "Porta serial", "As portas abaixo são as detectadas pelo Windows neste momento.");
@@ -419,7 +435,11 @@ namespace ModernPC12
             deviceManager.Size = new Size(288, 28);
             portCard.Controls.Add(deviceManager);
 
-            CardPanel checklist = CreateCard(34, 320, 732, 230);
+            Label checklistTitle = NewLabel("Preparação do TP02", 10.0f, FontStyle.Bold, TextSecondary);
+            checklistTitle.Location = new Point(36, 452);
+            workspace.Controls.Add(checklistTitle);
+
+            CardPanel checklist = CreateCard(34, 480, 732, 230);
             checklist.AccentColor = Success;
             checklist.FillColor = Color.FromArgb(248, 251, 253);
             workspace.Controls.Add(checklist);
@@ -434,15 +454,29 @@ namespace ModernPC12
         {
             ClearWorkspace("Ferramentas", navTools);
 
-            Label intro = NewLabel("Manutenção e compatibilidade", 18.0f, FontStyle.Bold, TextPrimary);
-            intro.Location = new Point(34, 14);
-            workspace.Controls.Add(intro);
+            HeroPanel hero = CreateHeroPanel(34, 14, 732, 170);
+            hero.StartColor = Color.FromArgb(58, 44, 95);
+            hero.EndColor = Color.FromArgb(92, 66, 158);
+            workspace.Controls.Add(hero);
 
-            Label detail = NewLabel("Ações úteis para resolver problemas comuns sem alterar os arquivos principais do PC12.", 9.5f, FontStyle.Regular, TextSecondary);
-            detail.Location = new Point(36, 50);
-            workspace.Controls.Add(detail);
+            Label intro = NewLabel("Manutenção e compatibilidade", 20.0f, FontStyle.Bold, Color.White);
+            intro.Location = new Point(28, 22);
+            hero.Controls.Add(intro);
 
-            CardPanel card = CreateCard(34, 96, 732, 442);
+            Label detail = NewLabel("Acesse ações rápidas para suporte, limpeza e retomada de trabalho sem alterar os arquivos centrais do PC12.", 9.5f, FontStyle.Regular, Color.FromArgb(228, 223, 245));
+            detail.Location = new Point(30, 56);
+            detail.MaximumSize = new Size(470, 0);
+            hero.Controls.Add(detail);
+
+            AddSummaryBadge(hero, 30, 100, "⚙ Suporte e manutenção", Color.FromArgb(238, 235, 250), Color.FromArgb(74, 54, 130));
+            AddSummaryBadge(hero, 220, 100, "↗ Acesso rápido a pastas", Color.FromArgb(233, 240, 249), Accent);
+            AddSummaryBadge(hero, 422, 100, "▲ Execução administrativa", Color.FromArgb(250, 235, 215), Warning);
+
+            Label toolsTitle = NewLabel("Ações disponíveis", 10.0f, FontStyle.Bold, TextSecondary);
+            toolsTitle.Location = new Point(36, 202);
+            workspace.Controls.Add(toolsTitle);
+
+            CardPanel card = CreateCard(34, 230, 732, 442);
             card.AccentColor = Accent;
             workspace.Controls.Add(card);
 
@@ -458,15 +492,32 @@ namespace ModernPC12
         {
             ClearWorkspace("Ajuda e informações", navHelp);
 
-            Label intro = NewLabel("PC12 Modern", 20.0f, FontStyle.Bold, TextPrimary);
-            intro.Location = new Point(34, 14);
-            workspace.Controls.Add(intro);
+            HeroPanel hero = CreateHeroPanel(34, 14, 732, 170);
+            hero.StartColor = Color.FromArgb(71, 56, 28);
+            hero.EndColor = Color.FromArgb(190, 112, 20);
+            workspace.Controls.Add(hero);
 
-            Label detail = NewLabel("Camada de interface para facilitar o uso do PC12 Design Center 2.1 em Windows 7.", 9.5f, FontStyle.Regular, TextSecondary);
-            detail.Location = new Point(36, 50);
-            workspace.Controls.Add(detail);
+            Label intro = NewLabel("Ajuda e informações", 20.0f, FontStyle.Bold, Color.White);
+            intro.Location = new Point(28, 22);
+            hero.Controls.Add(intro);
 
-            CardPanel info = CreateCard(34, 96, 732, 220);
+            Label detail = NewLabel("Consulte a ajuda local, revise as limitações da modernização e acesse rapidamente os arquivos do pacote.", 9.5f, FontStyle.Regular, Color.FromArgb(247, 236, 214));
+            detail.Location = new Point(30, 56);
+            detail.MaximumSize = new Size(470, 0);
+            hero.Controls.Add(detail);
+
+            AddSummaryBadge(hero, 30, 100, "? Ajuda local integrada", Color.FromArgb(255, 245, 224), Warning);
+            AddSummaryBadge(hero, 224, 100, "ℹ Camada compatível com PC12", Color.FromArgb(233, 240, 249), Accent);
+
+            ModernButton helpHero = PrimaryButton(WithGlyph("?", "ABRIR AJUDA"), 542, 96, 154);
+            helpHero.Click += delegate { OpenHelpFile(); };
+            hero.Controls.Add(helpHero);
+
+            Label helpTitle = NewLabel("Contexto da versão", 10.0f, FontStyle.Bold, TextSecondary);
+            helpTitle.Location = new Point(36, 202);
+            workspace.Controls.Add(helpTitle);
+
+            CardPanel info = CreateCard(34, 230, 732, 220);
             info.AccentColor = Accent;
             info.FillColor = Color.FromArgb(248, 251, 253);
             workspace.Controls.Add(info);
@@ -477,11 +528,15 @@ namespace ModernPC12
             body.MaximumSize = new Size(680, 0);
             info.Controls.Add(body);
 
-            ModernButton localHelp = PrimaryButton(WithGlyph("?", "ABRIR AJUDA DO PC12"), 34, 342, 210);
+            Label helpActionsTitle = NewLabel("Ações rápidas", 10.0f, FontStyle.Bold, TextSecondary);
+            helpActionsTitle.Location = new Point(36, 468);
+            workspace.Controls.Add(helpActionsTitle);
+
+            ModernButton localHelp = PrimaryButton(WithGlyph("?", "ABRIR AJUDA DO PC12"), 34, 496, 210);
             localHelp.Click += delegate { OpenHelpFile(); };
             workspace.Controls.Add(localHelp);
 
-            ModernButton folder = SecondaryButton(WithGlyph("↗", "ABRIR PASTA"), 260, 342, 150);
+            ModernButton folder = SecondaryButton(WithGlyph("↗", "ABRIR PASTA"), 260, 496, 150);
             folder.Click += delegate { OpenFolder(); };
             workspace.Controls.Add(folder);
         }
