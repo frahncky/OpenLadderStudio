@@ -10,14 +10,30 @@ using System.Windows.Forms;
 namespace ModernPC12
 {
     /// <summary>
-    /// Validacao PG v0.35 baseada no quadro real observado no WEG TP02.
-    /// Perfil confirmado em bancada: 19200 bps, 8O1, DTR/RTS ligados.
-    /// A ferramenta envia somente CON-ICB<CR> e, apos confirmar C0 01 09 35,
-    /// permanece apenas escutando a linha para registrar bytes posteriores.
-    /// RUN, STOP, escrita, download e apagamento nao fazem parte desta etapa.
+    /// Link PG v0.35 do WEG TP02.
+    /// Mantem a descoberta da v0.34 (varredura de perfis 8 bits) e, quando
+    /// um quadro PG valido e encontrado, preserva a mesma porta aberta para
+    /// uma captura passiva posterior. Nenhum comando de escrita, RUN, STOP,
+    /// download ou apagamento e enviado por esta ferramenta.
     /// </summary>
     internal sealed class TP02PgLinkV35Form : Form
     {
+        private sealed class PgSerialProfile
+        {
+            public string Name;
+            public Parity Parity;
+            public bool Dtr;
+            public bool Rts;
+
+            public PgSerialProfile(string name, Parity parity, bool dtr, bool rts)
+            {
+                Name = name;
+                Parity = parity;
+                Dtr = dtr;
+                Rts = rts;
+            }
+        }
+
         private readonly Color Navy = Color.FromArgb(18, 39, 63);
         private readonly Color Accent = Color.FromArgb(0, 122, 204);
         private readonly Color Danger = Color.FromArgb(183, 54, 54);
@@ -35,7 +51,7 @@ namespace ModernPC12
         private volatile bool running;
         private volatile bool cancelRequested;
 
-        private const int HelloTimeoutMs = 1500;
+        private const int HelloTimeoutMs = 1600;
         private const int PostLinkCaptureMs = 5000;
 
         private static readonly byte[] Pc12Hello = new byte[]
@@ -43,7 +59,7 @@ namespace ModernPC12
             0x43, 0x4F, 0x4E, 0x2D, 0x49, 0x43, 0x42, 0x0D
         };
 
-        private static readonly byte[] ExpectedHelloResponse = new byte[]
+        private static readonly byte[] KnownResponse = new byte[]
         {
             0xC0, 0x01, 0x09, 0x35
         };
@@ -73,12 +89,12 @@ namespace ModernPC12
             Controls.Add(header);
 
             header.Controls.Add(LabelAt("LINK PG - WEG TP02", 15.5f, FontStyle.Bold, Navy, 22, 11));
-            header.Controls.Add(LabelAt("v0.35 - perfil real confirmado e captura pos-handshake", 9.0f, FontStyle.Regular, TextSecondary, 24, 44));
+            header.Controls.Add(LabelAt("v0.35 - auto-deteccao segura + captura pos-handshake", 9.0f, FontStyle.Regular, TextSecondary, 24, 44));
 
             stateLabel = new Label();
             stateLabel.Text = "●  NAO TESTADO";
             stateLabel.Dock = DockStyle.Right;
-            stateLabel.Width = 320;
+            stateLabel.Width = 330;
             stateLabel.TextAlign = ContentAlignment.MiddleCenter;
             stateLabel.Font = new Font("Segoe UI Semibold", 9.0f, FontStyle.Bold);
             stateLabel.ForeColor = TextSecondary;
@@ -86,11 +102,11 @@ namespace ModernPC12
 
             Panel config = new Panel();
             config.Dock = DockStyle.Top;
-            config.Height = 204;
+            config.Height = 210;
             config.BackColor = Color.White;
             Controls.Add(config);
 
-            config.Controls.Add(LabelAt("Comunicacao PG validada", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
+            config.Controls.Add(LabelAt("Comunicacao PG", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
             AddFieldLabel(config, "Porta COM", 18, 45);
 
             portCombo = new ComboBox();
@@ -104,14 +120,14 @@ namespace ModernPC12
             config.Controls.Add(refresh);
 
             profileLabel = new Label();
-            profileLabel.Text = "FIXO: 19200 8O1 · DTR/RTS on";
+            profileLabel.Text = "AUTO: 19200 / 8 bits / N-O-E / DTR-RTS";
             profileLabel.AutoSize = true;
             profileLabel.Location = new Point(274, 68);
-            profileLabel.ForeColor = Success;
+            profileLabel.ForeColor = TextSecondary;
             profileLabel.Font = new Font("Segoe UI Semibold", 8.8f, FontStyle.Bold);
             config.Controls.Add(profileLabel);
 
-            testButton = ButtonAt("VALIDAR E CAPTURAR", 790, 56, 250, true);
+            testButton = ButtonAt("DETECTAR LINK E CAPTURAR", 760, 56, 280, true);
             testButton.Click += delegate { StartTest(); };
             config.Controls.Add(testButton);
 
@@ -122,19 +138,19 @@ namespace ModernPC12
             config.Controls.Add(LabelAt("HELLO PC12: 43 4F 4E 2D 49 43 42 0D = CON-ICB<CR>", 8.5f, FontStyle.Bold, Navy, 18, 108));
 
             Label observed = new Label();
-            observed.Text = "Resposta esperada: C0 01 09 35. Checksum: (C0 + 01 + 09 + 35) mod 256 = FF.";
+            observed.Text = "Quadro conhecido: C0 01 09 35 (soma FF). A v0.35 tambem aceita outro quadro PG valido apos remover o eco exato do HELLO.";
             observed.AutoSize = false;
             observed.Location = new Point(18, 132);
-            observed.Size = new Size(1090, 24);
+            observed.Size = new Size(1110, 28);
             observed.ForeColor = Success;
             observed.Font = new Font("Segoe UI Semibold", 8.5f, FontStyle.Bold);
             config.Controls.Add(observed);
 
             Label safety = new Label();
-            safety.Text = "MODO SEGURO: a v0.35 envia somente CON-ICB<CR>. Depois do handshake, apenas escuta por 5 s. RUN, STOP, escrita, download e apagamento permanecem bloqueados.";
+            safety.Text = "MODO SEGURO: somente CON-ICB<CR> e enviado. A varredura altera apenas paridade e sinais DTR/RTS da porta serial. RUN, STOP, escrita, download e apagamento continuam bloqueados.";
             safety.AutoSize = false;
-            safety.Location = new Point(18, 160);
-            safety.Size = new Size(1110, 36);
+            safety.Location = new Point(18, 164);
+            safety.Size = new Size(1110, 38);
             safety.ForeColor = Danger;
             safety.Font = new Font("Segoe UI Semibold", 8.3f, FontStyle.Bold);
             config.Controls.Add(safety);
@@ -145,12 +161,12 @@ namespace ModernPC12
             info.BackColor = Canvas;
             Controls.Add(info);
 
-            info.Controls.Add(LabelAt("Validacao v0.35", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
+            info.Controls.Add(LabelAt("Diagnostico v0.35", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
             Label explanation = new Label();
-            explanation.Text = "1. Abre 19200/8O1 com DTR/RTS ligados.  2. Envia somente CON-ICB<CR>.  3. Confirma o quadro exato C0 01 09 35.  4. Mantem a mesma porta aberta e registra RX bruto por 5 s.  5. Nao transmite nenhum comando adicional.";
+            explanation.Text = "1. Testa primeiro 8O1 com DTR/RTS on.  2. Se falhar, repete os perfis seguros da v0.34 e inclui 8E1.  3. Registra RX bruto e remove somente o eco exato.  4. Ao detectar quadro PG valido, salva o perfil.  5. Mantem a porta aberta e escuta por 5 s sem transmitir mais nada.";
             explanation.AutoSize = false;
             explanation.Location = new Point(18, 40);
-            explanation.Size = new Size(1110, 54);
+            explanation.Size = new Size(1110, 56);
             explanation.ForeColor = TextSecondary;
             info.Controls.Add(explanation);
 
@@ -180,7 +196,7 @@ namespace ModernPC12
             catch { }
         }
 
-        private void SavePort(string portName)
+        private void SaveDetected(string portName, PgSerialProfile detected)
         {
             try
             {
@@ -189,7 +205,7 @@ namespace ModernPC12
                 settings.PortName = portName;
                 settings.BaudRate = 19200;
                 settings.DataBits = 8;
-                settings.Parity = "Odd";
+                settings.Parity = detected.Parity == Parity.Odd ? "Odd" : detected.Parity == Parity.Even ? "Even" : "None";
                 settings.StopBits = 1;
                 settings.TimeoutMs = HelloTimeoutMs;
                 PlcConnectionSettingsStore.Save(profile, settings);
@@ -207,16 +223,16 @@ namespace ModernPC12
             }
 
             string portName = portCombo.SelectedItem.ToString();
-            SavePort(portName);
             cancelRequested = false;
             running = true;
             testButton.Enabled = false;
             logBox.Clear();
-            SetState("●  VALIDANDO LINK PG...", Warning);
+            profileLabel.Text = "AUTO-DETECTANDO...";
+            profileLabel.ForeColor = Warning;
+            SetState("●  PROCURANDO LINK PG...", Warning);
 
-            Log("INFO", "Perfil fixado pelo teste real: 19200 8O1 · DTR/RTS on.");
-            Log("INFO", "A v0.35 envia somente CON-ICB<CR> e nao envia F0 00 0F.");
-            Log("INFO", "Depois do handshake, a porta fica somente em escuta por " + PostLinkCaptureMs.ToString(CultureInfo.InvariantCulture) + " ms.");
+            Log("INFO", "A v0.35 voltou a varrer os perfis da v0.34; nao depende mais de 8O1 fixo.");
+            Log("INFO", "Somente CON-ICB<CR> sera transmitido em cada tentativa.");
 
             Thread worker = new Thread(new ThreadStart(delegate { TestWorker(portName); }));
             worker.IsBackground = true;
@@ -225,101 +241,108 @@ namespace ModernPC12
 
         private void TestWorker(string portName)
         {
-            SerialPort port = null;
+            PgSerialProfile[] profiles = new PgSerialProfile[]
+            {
+                new PgSerialProfile("19200 8O1 · DTR/RTS on", Parity.Odd, true, true),
+                new PgSerialProfile("19200 8N1 · DTR/RTS off", Parity.None, false, false),
+                new PgSerialProfile("19200 8N1 · DTR/RTS on", Parity.None, true, true),
+                new PgSerialProfile("19200 8O1 · DTR/RTS off", Parity.Odd, false, false),
+                new PgSerialProfile("19200 8E1 · DTR/RTS on", Parity.Even, true, true),
+                new PgSerialProfile("19200 8E1 · DTR/RTS off", Parity.Even, false, false)
+            };
+
             bool sawAnyByte = false;
             string lastError = string.Empty;
-            int postBursts = 0;
 
-            try
+            for (int i = 0; i < profiles.Length && !cancelRequested; i++)
             {
-                port = new SerialPort(portName, 19200, Parity.Odd, 8, StopBits.One);
-                port.Handshake = Handshake.None;
-                port.DtrEnable = true;
-                port.RtsEnable = true;
-                port.ReadTimeout = 70;
-                port.WriteTimeout = 1000;
-                port.Open();
-                port.DiscardInBuffer();
-                port.DiscardOutBuffer();
-
-                LogSafe("PORTA", portName + "  19200 8O1  DTR=on  RTS=on");
-                Thread.Sleep(120);
-
-                for (int attempt = 1; attempt <= 4 && !cancelRequested; attempt++)
+                PgSerialProfile p = profiles[i];
+                SerialPort port = null;
+                try
                 {
+                    LogSafe("PERFIL", p.Name);
+                    port = new SerialPort(portName, 19200, p.Parity, 8, StopBits.One);
+                    port.Handshake = Handshake.None;
+                    port.DtrEnable = p.Dtr;
+                    port.RtsEnable = p.Rts;
+                    port.ReadTimeout = 70;
+                    port.WriteTimeout = 1000;
+                    port.Open();
                     port.DiscardInBuffer();
-                    LogSafe("PG HELLO TX", "tentativa " + attempt.ToString(CultureInfo.InvariantCulture) + "  " + ToHex(Pc12Hello));
-                    port.Write(Pc12Hello, 0, Pc12Hello.Length);
+                    port.DiscardOutBuffer();
+                    Thread.Sleep(120);
 
-                    byte[] raw = ReadBurst(port, HelloTimeoutMs, 180);
-                    if (raw.Length == 0)
+                    for (int attempt = 1; attempt <= 3 && !cancelRequested; attempt++)
                     {
-                        LogSafe("PG HELLO RX", "[]");
-                        Thread.Sleep(100);
-                        continue;
-                    }
+                        port.DiscardInBuffer();
+                        LogSafe("PG HELLO TX", "tentativa " + attempt.ToString(CultureInfo.InvariantCulture) + "  " + ToHex(Pc12Hello));
+                        port.Write(Pc12Hello, 0, Pc12Hello.Length);
 
-                    sawAnyByte = true;
-                    TP02PgFrameParserV33.ParseResult parsed = TP02PgFrameParserV33.Parse(raw, Pc12Hello);
-                    LogSafe("PG HELLO RX RAW", ToHex(parsed.Raw) + "  soma=0x" + parsed.RawSum.ToString("X2", CultureInfo.InvariantCulture));
-                    LogSafe("PG ECO", "quantidade=" + parsed.EchoCount.ToString(CultureInfo.InvariantCulture));
-                    LogSafe("PG RX SEM ECO", ToHex(parsed.WithoutEcho) + "  soma=0x" + parsed.WithoutEchoSum.ToString("X2", CultureInfo.InvariantCulture));
-                    LogSafe("PG PARSER", parsed.Detail);
-
-                    int responseIndex = IndexOfSequence(parsed.WithoutEcho, ExpectedHelloResponse);
-                    if (responseIndex >= 0)
-                    {
-                        LogSafe("PG FRAME", ToHex(ExpectedHelloResponse));
-                        LogSafe("PG CHECKSUM", "soma modulo 256 = 0x" + TP02PgFrameParserV33.Sum8(ExpectedHelloResponse).ToString("X2", CultureInfo.InvariantCulture));
-                        LogSafe("PG DECODE", "byte0=0xC0  byte1=0x01  byte2=0x09  byte3=0x35(checksum)");
-                        LogSafe("PG LINK", "ESTABLISHED - resposta exata observada no PLC confirmada.");
-                        SetState("●  LINK PG CONFIRMADO · CAPTURANDO...", Success);
-
-                        int inlineOffset = responseIndex + ExpectedHelloResponse.Length;
-                        if (inlineOffset < parsed.WithoutEcho.Length)
+                        byte[] raw = ReadBurst(port, HelloTimeoutMs, 220);
+                        if (raw.Length == 0)
                         {
-                            byte[] inline = Slice(parsed.WithoutEcho, inlineOffset, parsed.WithoutEcho.Length - inlineOffset);
-                            if (inline.Length > 0)
-                            {
-                                postBursts++;
-                                LogSafe("PG POST INLINE", ToHex(inline) + "  soma=0x" + TP02PgFrameParserV33.Sum8(inline).ToString("X2", CultureInfo.InvariantCulture));
-                            }
+                            LogSafe("PG HELLO RX", "[]");
+                            Thread.Sleep(120);
+                            continue;
                         }
 
-                        postBursts += CapturePostLink(port);
-                        FinishSafe(true, sawAnyByte, postBursts, string.Empty);
-                        return;
-                    }
+                        sawAnyByte = true;
+                        TP02PgFrameParserV33.ParseResult parsed = TP02PgFrameParserV33.Parse(raw, Pc12Hello);
+                        LogSafe("PG HELLO RX RAW", ToHex(parsed.Raw) + "  soma=0x" + parsed.RawSum.ToString("X2", CultureInfo.InvariantCulture));
+                        LogSafe("PG ECO", "quantidade=" + parsed.EchoCount.ToString(CultureInfo.InvariantCulture));
+                        LogSafe("PG RX SEM ECO", ToHex(parsed.WithoutEcho) + "  soma=0x" + parsed.WithoutEchoSum.ToString("X2", CultureInfo.InvariantCulture));
+                        LogSafe("PG PARSER", parsed.Detail);
 
-                    if (parsed.IsValid)
-                    {
-                        LogSafe("PG CANDIDATO", "checksum FF valido, mas quadro diferente de C0 01 09 35: " + ToHex(parsed.Frame));
+                        int knownIndex = IndexOfSequence(parsed.WithoutEcho, KnownResponse);
+                        bool exactKnown = knownIndex >= 0;
+                        bool validFrame = parsed.IsValid;
+
+                        if (exactKnown || validFrame)
+                        {
+                            byte[] frame = exactKnown ? KnownResponse : parsed.Frame;
+                            LogSafe("PG FRAME", ToHex(frame));
+                            LogSafe("PG CHECKSUM", "soma modulo 256 = 0x" + TP02PgFrameParserV33.Sum8(frame).ToString("X2", CultureInfo.InvariantCulture));
+                            LogSafe("PG LINK", exactKnown ? "ESTABLISHED - C0 01 09 35 confirmado." : "ESTABLISHED - quadro PG checksum FF confirmado.");
+                            SaveDetected(portName, p);
+                            SetDetectingProfileSafe("CONFIRMADO: " + p.Name, Success);
+                            SetState("●  LINK PG CONFIRMADO · CAPTURANDO...", Success);
+
+                            if (exactKnown)
+                            {
+                                int inlineOffset = knownIndex + KnownResponse.Length;
+                                if (inlineOffset < parsed.WithoutEcho.Length)
+                                {
+                                    byte[] inline = Slice(parsed.WithoutEcho, inlineOffset, parsed.WithoutEcho.Length - inlineOffset);
+                                    if (inline.Length > 0) LogSafe("PG POST INLINE", ToHex(inline));
+                                }
+                            }
+
+                            int postBursts = CapturePostLink(port);
+                            FinishSafe(true, sawAnyByte, postBursts, p.Name, string.Empty);
+                            return;
+                        }
+
+                        LogSafe("PG DIAG", "bytes recebidos, mas sem quadro PG valido neste perfil/tentativa.");
+                        Thread.Sleep(120);
                     }
-                    else
-                    {
-                        LogSafe("PG CHECKSUM", "Resposta recebida, mas o handshake conhecido ainda nao foi encontrado.");
-                    }
-                    Thread.Sleep(100);
                 }
-            }
-            catch (Exception ex)
-            {
-                lastError = ex.Message;
-                LogSafe("ERRO", ex.Message);
-            }
-            finally
-            {
-                if (port != null)
+                catch (Exception ex)
                 {
-                    try { if (port.IsOpen) port.Close(); } catch { }
-                    port.Dispose();
+                    lastError = ex.Message;
+                    LogSafe("ERRO", p.Name + ": " + ex.Message);
+                }
+                finally
+                {
+                    if (port != null)
+                    {
+                        try { if (port.IsOpen) port.Close(); } catch { }
+                        port.Dispose();
+                    }
                 }
             }
 
-            if (cancelRequested)
-                FinishCancelled();
-            else
-                FinishSafe(false, sawAnyByte, postBursts, lastError);
+            if (cancelRequested) FinishCancelled();
+            else FinishSafe(false, sawAnyByte, 0, string.Empty, lastError);
         }
 
         private int CapturePostLink(SerialPort port)
@@ -327,35 +350,28 @@ namespace ModernPC12
             int bursts = 0;
             DateTime start = DateTime.UtcNow;
             DateTime deadline = start.AddMilliseconds(PostLinkCaptureMs);
-            LogSafe("PG CAPTURE", "inicio da escuta passiva; nenhum byte sera transmitido.");
+            LogSafe("PG CAPTURE", "escuta passiva iniciada; nenhum byte adicional sera transmitido.");
 
             while (DateTime.UtcNow < deadline && !cancelRequested)
             {
                 int remaining = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
                 if (remaining <= 0) break;
-                int window = remaining > 450 ? 450 : remaining;
-                if (window < 70) window = 70;
+                int window = remaining > 500 ? 500 : remaining;
+                if (window < 80) window = 80;
 
-                byte[] burst = ReadBurst(port, window, 120);
+                byte[] burst = ReadBurst(port, window, 150);
                 if (burst.Length == 0) continue;
 
                 bursts++;
                 int elapsed = (int)(DateTime.UtcNow - start).TotalMilliseconds;
                 int sum = TP02PgFrameParserV33.Sum8(burst);
                 LogSafe("PG POST RX", "+" + elapsed.ToString(CultureInfo.InvariantCulture) + " ms  " + ToHex(burst) + "  soma=0x" + sum.ToString("X2", CultureInfo.InvariantCulture));
-                if (burst.Length >= 4 && sum == 0xFF)
-                    LogSafe("PG POST FRAME?", "burst fecha checksum FF; manter bruto para correlacao com a sequencia do PC12.");
             }
 
             if (bursts == 0)
-            {
-                LogSafe("PG CAPTURE", "nenhum byte adicional em " + PostLinkCaptureMs.ToString(CultureInfo.InvariantCulture) + " ms.");
-                LogSafe("PG HIPOTESE", "o TP02 provavelmente aguarda o proximo comando do PC12; esta versao nao inventa nem transmite esse comando.");
-            }
+                LogSafe("PG CAPTURE", "nenhum byte adicional em " + PostLinkCaptureMs.ToString(CultureInfo.InvariantCulture) + " ms; o PLC provavelmente aguarda o proximo TX do PC12.");
             else
-            {
                 LogSafe("PG CAPTURE", bursts.ToString(CultureInfo.InvariantCulture) + " burst(s) posterior(es) registrado(s).");
-            }
             return bursts;
         }
 
@@ -385,11 +401,11 @@ namespace ModernPC12
             return bytes.ToArray();
         }
 
-        private void FinishSafe(bool success, bool sawAnyByte, int postBursts, string error)
+        private void FinishSafe(bool success, bool sawAnyByte, int postBursts, string profile, string error)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new MethodInvoker(delegate { FinishSafe(success, sawAnyByte, postBursts, error); }));
+                BeginInvoke(new MethodInvoker(delegate { FinishSafe(success, sawAnyByte, postBursts, profile, error); }));
                 return;
             }
 
@@ -398,26 +414,29 @@ namespace ModernPC12
 
             if (success)
             {
-                profileLabel.Text = "CONFIRMADO: 19200 8O1 · DTR/RTS on";
-                profileLabel.ForeColor = Success;
                 SetState("●  LINK PG CONFIRMADO", Success);
-                Log("RESULTADO", "Handshake exato confirmado: C0 01 09 35; checksum FF.");
+                Log("RESULTADO", "Link PG confirmado com " + profile + ".");
                 if (postBursts > 0)
-                    Log("RESULTADO", "Ha dados posteriores ao handshake no log. A proxima etapa e correlacionar esses bytes com a sequencia do PC12.");
+                    Log("RESULTADO", "Ha dados posteriores ao handshake no log.");
                 else
-                    Log("RESULTADO", "Nao houve RX espontaneo depois do handshake. O proximo TX do PC12 continua desconhecido e precisa ser capturado no PC12 original/sniffer.");
-                Log("RESULTADO", "Nenhum comando posterior ao HELLO foi transmitido. RUN/STOP/escrita continuam bloqueados.");
+                    Log("RESULTADO", "Nao houve RX espontaneo apos o handshake; o proximo TX do PC12 ainda precisa ser capturado.");
+                Log("RESULTADO", "Nenhum comando posterior ao HELLO foi transmitido.");
             }
             else if (sawAnyByte)
             {
-                SetState("●  PG RESPONDEU · HANDSHAKE DIVERGENTE", Warning);
-                Log("RESULTADO", "Foram recebidos bytes, mas C0 01 09 35 nao foi localizado nesta execucao.");
+                SetState("●  PG RESPONDEU · AINDA NAO VALIDADO", Warning);
+                profileLabel.Text = "Bytes recebidos; revisar log";
+                profileLabel.ForeColor = Warning;
+                Log("RESULTADO", "O TP02 devolveu bytes, mas nenhum quadro PG checksum FF foi isolado. Envie uma foto do log desta tela.");
                 if (!string.IsNullOrEmpty(error)) Log("DETALHE", error);
             }
             else
             {
                 SetState("●  SEM RESPOSTA PG", Danger);
-                Log("RESULTADO", "Nenhum byte retornou ao CON-ICB no perfil confirmado 19200 8O1 com DTR/RTS ligados.");
+                profileLabel.Text = "Nenhum perfil respondeu";
+                profileLabel.ForeColor = Danger;
+                Log("RESULTADO", "Nenhum byte retornou ao CON-ICB em nenhum perfil 19200/8 bits testado.");
+                Log("RESULTADO", "Confirme a COM e feche o PC12 original antes de testar, pois duas aplicacoes nao podem usar a mesma porta simultaneamente.");
                 if (!string.IsNullOrEmpty(error)) Log("DETALHE", error);
             }
         }
@@ -431,8 +450,7 @@ namespace ModernPC12
             }
             running = false;
             testButton.Enabled = true;
-            SetState("●  CANCELADO", Warning);
-            Log("RESULTADO", "Captura encerrada.");
+            SetState("●  CANCELADO", TextSecondary);
         }
 
         private void RefreshPorts()
@@ -443,39 +461,11 @@ namespace ModernPC12
             Array.Sort(ports);
             portCombo.Items.Clear();
             portCombo.Items.AddRange(ports);
-            if (portCombo.Items.Count > 0)
+            if (ports.Length > 0)
             {
                 int index = previous.Length > 0 ? portCombo.Items.IndexOf(previous) : -1;
                 portCombo.SelectedIndex = index >= 0 ? index : 0;
             }
-        }
-
-        private static int IndexOfSequence(byte[] source, byte[] pattern)
-        {
-            if (source == null || pattern == null || pattern.Length == 0 || source.Length < pattern.Length) return -1;
-            for (int i = 0; i <= source.Length - pattern.Length; i++)
-            {
-                bool equal = true;
-                for (int j = 0; j < pattern.Length; j++)
-                {
-                    if (source[i + j] != pattern[j])
-                    {
-                        equal = false;
-                        break;
-                    }
-                }
-                if (equal) return i;
-            }
-            return -1;
-        }
-
-        private static byte[] Slice(byte[] source, int offset, int count)
-        {
-            if (source == null || count <= 0 || offset < 0 || offset >= source.Length) return new byte[0];
-            if (offset + count > source.Length) count = source.Length - offset;
-            byte[] output = new byte[count];
-            Buffer.BlockCopy(source, offset, output, 0, count);
-            return output;
         }
 
         private void Log(string kind, string text)
@@ -504,6 +494,42 @@ namespace ModernPC12
             }
             stateLabel.Text = text;
             stateLabel.ForeColor = color;
+        }
+
+        private void SetDetectingProfileSafe(string text, Color color)
+        {
+            if (profileLabel == null || profileLabel.IsDisposed) return;
+            if (profileLabel.InvokeRequired)
+            {
+                profileLabel.BeginInvoke(new MethodInvoker(delegate { SetDetectingProfileSafe(text, color); }));
+                return;
+            }
+            profileLabel.Text = text;
+            profileLabel.ForeColor = color;
+        }
+
+        private static int IndexOfSequence(byte[] source, byte[] pattern)
+        {
+            if (source == null || pattern == null || pattern.Length == 0 || source.Length < pattern.Length) return -1;
+            for (int i = 0; i <= source.Length - pattern.Length; i++)
+            {
+                bool ok = true;
+                for (int j = 0; j < pattern.Length; j++)
+                {
+                    if (source[i + j] != pattern[j]) { ok = false; break; }
+                }
+                if (ok) return i;
+            }
+            return -1;
+        }
+
+        private static byte[] Slice(byte[] source, int offset, int count)
+        {
+            if (source == null || count <= 0 || offset < 0 || offset >= source.Length) return new byte[0];
+            if (offset + count > source.Length) count = source.Length - offset;
+            byte[] output = new byte[count];
+            Buffer.BlockCopy(source, offset, output, 0, count);
+            return output;
         }
 
         private static string ToHex(byte[] bytes)
