@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.7",
-  "title": "TP02 PG - validacao controlada do preambulo READ 38 00 C7",
+  "packageVersion": "2026.09.04.8",
+  "title": "TP02 PG - validacao controlada do status/preflight F0 00 0F",
   "sweeps": 2,
   "passiveCaptureMs": 5000,
   "stopOnUnknown": true,
@@ -84,12 +84,36 @@
       ]
     },
     {
-      "id": "read-program-preflight-38",
-      "name": "Read PLC Program - preambulo/metadados 38 00 C7 - validacao unica",
+      "id": "status-preflight-f0",
+      "name": "Status/preflight do PC12 F0 00 0F - validacao unica",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
       "safetyClass": "READ_ONLY_VERIFIED",
+      "txHex": "F0 00 0F",
+      "timeoutMs": 4000,
+      "passiveAfterMs": 1500,
+      "expected": []
+    },
+    {
+      "id": "capture-after-f0",
+      "name": "Escuta passiva apos status/preflight F0",
+      "type": "passive",
+      "enabled": true,
+      "sweepProfiles": false,
+      "safetyClass": "PASSIVE",
+      "txHex": "",
+      "timeoutMs": 0,
+      "passiveAfterMs": 3000,
+      "expected": []
+    },
+    {
+      "id": "read-program-preflight-38",
+      "name": "Read PLC Program - preambulo/metadados 38 00 C7 - depende do F0",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
       "txHex": "38 00 C7",
       "timeoutMs": 4000,
       "passiveAfterMs": 5000,
@@ -97,7 +121,7 @@
     },
     {
       "id": "read-program-static",
-      "name": "Read PLC Program 34 03 00 00 A0 28 - depende do preambulo e permanece bloqueado",
+      "name": "Read PLC Program 34 03 00 00 A0 28 - depende da sequencia anterior",
       "type": "txrx",
       "enabled": false,
       "sweepProfiles": false,
@@ -121,7 +145,7 @@
     },
     {
       "id": "read-system-part-1",
-      "name": "Read PLC System parte 1 - aguardando validacao da sequencia",
+      "name": "Read PLC System parte 1 - aguardando validacao da sessao",
       "type": "txrx",
       "enabled": false,
       "sweepProfiles": false,
@@ -133,25 +157,13 @@
     },
     {
       "id": "read-system-part-2",
-      "name": "Read PLC System parte 2 - aguardando validacao da sequencia",
+      "name": "Read PLC System parte 2 - aguardando validacao da sessao",
       "type": "txrx",
       "enabled": false,
       "sweepProfiles": false,
       "safetyClass": "CANDIDATE",
       "txHex": "0A 03 60 AC AC 3A",
       "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
-      "expected": []
-    },
-    {
-      "id": "f0-unclassified",
-      "name": "Quadro F0 00 0F",
-      "type": "txrx",
-      "enabled": false,
-      "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
-      "txHex": "F0 00 0F",
-      "timeoutMs": 3000,
       "passiveAfterMs": 5000,
       "expected": []
     },
@@ -170,28 +182,27 @@
   ],
   "safety": {
     "readOnlyAllowlist": [
-      "38 00 C7"
-    ],
-    "blockedTx": [
-      "0F 00 F0",
       "F0 00 0F"
     ],
+    "blockedTx": [
+      "0F 00 F0"
+    ],
     "notes": [
-      "Esta validacao transmite somente um novo quadro: 38 00 C7, uma unica vez depois de HELLO valido.",
-      "38 00 C7 aparece estaticamente apenas nos fluxos Read PLC Program e Compare PLC Program do pc12.exe analisado.",
-      "O PC12 configura a resposta ao 38 com modo 2 e comprimento de dados 2; a rotina serial espera 5 bytes no total.",
-      "A resposta normal ao 38 deve fechar soma modulo 256 em FF e ter o bit 0x80 do primeiro byte limpo.",
-      "No fluxo normal, os bytes 2 e 3 da resposta sao combinados em big-endian antes de a leitura do programa prosseguir.",
-      "Se o bit 0x80 do primeiro byte vier ativo, o PC12 trata o byte 2 como codigo de erro.",
-      "34 03 00 00 A0 28 permanece CANDIDATE e desabilitado; nao sera enviado neste ensaio.",
-      "O quadro 34 isolado ja foi testado em STOP e RUN e retornou zero bytes em ambos os casos.",
+      "Esta validacao transmite somente um novo quadro apos HELLO valido: F0 00 0F, uma unica vez.",
+      "A analise estatica confirmou F0 00 0F dentro da rotina de preflight/status da conexao do PC12, antes do fluxo normal de operacao.",
+      "O PC12 configura F0 com modo de recepcao 2 e comprimento de dados 2; a rotina serial espera 5 bytes no total.",
+      "Depois do F0, o codigo de conexao consulta o bit 0x40 do primeiro byte recebido para distinguir o estado operacional do PLC.",
+      "O parser comum do PC12 usa o bit 0x80 do primeiro byte como indicacao de resposta de erro e exige checksum de soma modulo 256 igual a FF.",
+      "Uma resposta fisica F0 de 5 bytes ja havia sido observada anteriormente; esta etapa serve para reproduzir e caracterizar o quadro de forma controlada.",
+      "38 00 C7 foi testado isoladamente depois do HELLO em STOP e retornou zero bytes; permanece CANDIDATE ate a validacao do F0 na mesma sessao.",
+      "34 03 00 00 A0 28 foi testado isoladamente em STOP e RUN e retornou zero bytes em ambos os casos; permanece CANDIDATE.",
       "14 00 EB permanece CANDIDATE por pertencer ao ramo condicional de senha.",
       "Read PLC System permanece CANDIDATE e desabilitado.",
       "C0 01 09 35 continua correlacionado experimentalmente com PLC em RUN: HELLO-RUN.",
       "80 01 09 75 continua correlacionado experimentalmente com PLC em STOP: HELLO-STOP.",
       "0D 01 09 E8 permanece fisicamente observado, mas nao classificado.",
       "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
-      "F0 00 0F e 0F 00 F0 continuam bloqueados.",
+      "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado ao Clear All Memory.",
       "RUN/STOP remoto, escrita, download e apagamento permanecem fora deste teste."
     ]
   }
