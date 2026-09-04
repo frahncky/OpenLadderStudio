@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.31] - 2026-09-04
+
+### Comunicação WEG TP02
+- corrigida a premissa da v0.30 que tratava a porta MMI como Computer Link sem verificar o modo elétrico PG/COM;
+- a tela de Comunicação passa a identificar explicitamente que o protocolo operacional usa **MMI Computer Link**, distinto do modo PG usado pelo PC12 para programação;
+- os quadros de Computer Link passam a usar o prefixo `::` de forma fixa;
+- configuração inicial alterada para 19200 bps, 7 bits, sem paridade, 1 stop bit, estação 01 e resposta 4, mantendo perfis alternativos na autodetecção;
+- nova **AUTO-DETECÇÃO TP02** varre as estações 01 a 99 e testa perfis seriais comuns, além de uma segunda tentativa com DTR/RTS ativos para conversores que dependam dessas linhas;
+- a autodetecção diferencia três situações: resposta TP02 válida, bytes recebidos sem quadro válido e **zero bytes**;
+- quando todas as estações e perfis retornam zero bytes, o diagnóstico orienta verificar o cabo/conversor e o modo da porta MMI: Computer Link requer PG/COM baixo, com o pino 4 ligado ao pino 5;
+- parâmetros encontrados são aplicados e armazenados automaticamente.
+
+### Segurança operacional
+- `RUN`, `STP`, `SCS` e `WRV` permanecem desabilitados até o recebimento de um `PSR` válido com checksum correto;
+- comandos de escrita e RUN/STOP deixam de ser enviados quando não existe comunicação confirmada;
+- `CLR`, `WBP`, `ROM`, apagamento de memória e download de programa continuam bloqueados.
+
 ## [0.30] - 2026-09-04
 
 ### Comunicação e controle WEG TP02
