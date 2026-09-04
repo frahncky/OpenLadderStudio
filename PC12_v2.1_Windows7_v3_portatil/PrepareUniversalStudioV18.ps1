@@ -4,7 +4,7 @@ $outputPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
 $text = [System.IO.File]::ReadAllText($sourcePath)
 
 # String.Replace devolve o texto intacto quando a agulha nao existe, entao uma
-# mudanca no shell faria recursos da v0.18 sumirem do build em silencio.
+# mudanca no shell faria recursos da v0.19 sumirem do build em silencio.
 # Toda substituicao passa por aqui e falha alto se a agulha nao for encontrada.
 function Invoke-Replace([string]$haystack, [string]$needle, [string]$replacement, [string]$label) {
     if (-not $haystack.Contains($needle)) {
@@ -13,7 +13,7 @@ function Invoke-Replace([string]$haystack, [string]$needle, [string]$replacement
     return $haystack.Replace($needle, $replacement)
 }
 
-$text = Invoke-Replace $text 'v0.12' 'v0.18' 'versao'
+$text = Invoke-Replace $text 'v0.12' 'v0.19' 'versao'
 
 $menuNeedle = '            plc.DropDownItems.Add(DropItem("Selecionar controlador...", delegate { ShowDeviceManager(); }));'
 $menuInsert = @'
