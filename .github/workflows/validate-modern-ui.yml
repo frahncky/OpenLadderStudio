@@ -26,6 +26,7 @@ jobs:
         run: |
           call BUILD_INTERFACE_MODERNA.bat
           if errorlevel 1 exit /b 1
+          if not exist OpenLadderStudio.ico exit /b 1
           if not exist OpenLadderStudio.exe exit /b 1
           if not exist OpenLadderEditor.exe exit /b 1
           if not exist OpenLadderDeviceManager.exe exit /b 1
@@ -57,6 +58,7 @@ jobs:
         with:
           name: OpenLadder-Studio
           path: |
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.ico
             PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderEditor.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderDeviceManager.exe
@@ -85,7 +87,7 @@ jobs:
           $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
           $sha = 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
           $title = "OpenLadder Studio v$version"
-          $notes = "Versão oficial com arquitetura multi-PLC, perfis personalizados Modbus RTU/TCP, monitoramento online periódico, histórico de sinais, gráficos de tendências em tempo real e exportação CSV."
+          $notes = "Versão oficial com arquitetura multi-PLC, perfis personalizados Modbus RTU/TCP, monitoramento online, histórico e tendências, exportação CSV e identidade visual com ícone oficial do OpenLadder Studio no aplicativo, instalador e atalhos."
 
           function Update-ExistingRelease {
             gh release upload $tag $setup $sha --clobber --repo $env:GITHUB_REPOSITORY
