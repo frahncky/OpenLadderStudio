@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.5",
-  "title": "TP02 PG - validacao controlada do primeiro comando READ-ONLY do PC12",
+  "packageVersion": "2026.09.04.6",
+  "title": "TP02 PG - retorno a analise de sequencia do Read PLC Program",
   "sweeps": 2,
   "passiveCaptureMs": 5000,
   "stopOnUnknown": true,
@@ -78,35 +78,14 @@
       "timeoutMs": 1800,
       "passiveAfterMs": 0,
       "expected": [
-        {
-          "name": "HELLO-RUN",
-          "hex": "C0 01 09 35"
-        },
-        {
-          "name": "HELLO-STOP",
-          "hex": "80 01 09 75"
-        },
-        {
-          "name": "HELLO-0D-NAO-CLASSIFICADO",
-          "hex": "0D 01 09 E8"
-        }
+        { "name": "HELLO-RUN", "hex": "C0 01 09 35" },
+        { "name": "HELLO-STOP", "hex": "80 01 09 75" },
+        { "name": "HELLO-0D-NAO-CLASSIFICADO", "hex": "0D 01 09 E8" }
       ]
     },
     {
-      "id": "read-program-static-verified",
-      "name": "Read PLC Program - PC12 original - validacao unica",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_VERIFIED",
-      "txHex": "34 03 00 00 A0 28",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
-      "expected": []
-    },
-    {
-      "id": "capture-after-read",
-      "name": "Escuta passiva final apos Read PLC Program",
+      "id": "capture-after-hello",
+      "name": "Escuta passiva apos HELLO",
       "type": "passive",
       "enabled": true,
       "sweepProfiles": false,
@@ -117,8 +96,44 @@
       "expected": []
     },
     {
+      "id": "read-program-prelude-38",
+      "name": "Preludio 38 00 C7 observado antes do Read PLC Program",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "38 00 C7",
+      "timeoutMs": 4000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "password-prelude-14",
+      "name": "Quadro 14 00 EB do ramo condicional de senha",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "14 00 EB",
+      "timeoutMs": 4000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "read-program-static",
+      "name": "Read PLC Program 34 03 00 00 A0 28 - nao funciona isoladamente",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "34 03 00 00 A0 28",
+      "timeoutMs": 4000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
       "id": "read-system-part-1",
-      "name": "Read PLC System parte 1 - confirmado estaticamente - aguardando bancada",
+      "name": "Read PLC System parte 1 - aguardando sequencia completa",
       "type": "txrx",
       "enabled": false,
       "sweepProfiles": false,
@@ -130,7 +145,7 @@
     },
     {
       "id": "read-system-part-2",
-      "name": "Read PLC System parte 2 - confirmado estaticamente - aguardando bancada",
+      "name": "Read PLC System parte 2 - aguardando sequencia completa",
       "type": "txrx",
       "enabled": false,
       "sweepProfiles": false,
@@ -166,29 +181,21 @@
     }
   ],
   "safety": {
-    "readOnlyAllowlist": [
-      "34 03 00 00 A0 28"
-    ],
-    "blockedTx": [
-      "0F 00 F0",
-      "F0 00 0F"
-    ],
+    "readOnlyAllowlist": [],
+    "blockedTx": ["0F 00 F0", "F0 00 0F"],
     "notes": [
-      "Este pacote desativa temporariamente a campanha de 12 ciclos para validar um unico comando de leitura apos o HELLO.",
-      "C0 01 09 35 foi correlacionado experimentalmente com PLC em RUN: HELLO-RUN.",
-      "80 01 09 75 foi correlacionado experimentalmente com PLC em STOP: HELLO-STOP.",
+      "34 03 00 00 A0 28 foi testado isoladamente uma vez em STOP e uma vez em RUN; em ambos os casos o TP02 retornou zero bytes em aproximadamente 4 s.",
+      "Por isso 34 03 00 00 A0 28 foi removido da readOnlyAllowlist e voltou a CANDIDATE.",
+      "A analise estatica aprofundada mostrou que o PC12 envia 38 00 C7 antes de montar 34 03 00 00 A0 28 no fluxo Read PLC Program.",
+      "Depois da resposta ao 38 00 C7, o PC12 consulta bytes do buffer RX em 0x530232/0x530233 antes de prosseguir para o quadro 34 03 00 00 A0 28.",
+      "38 00 C7 tambem aparece no fluxo Compare PLC Program; permanece CANDIDATE e nao sera transmitido ate fechar sua semantica e resposta esperada.",
+      "14 00 EB aparece somente no ramo condicional relacionado a senha e permanece CANDIDATE; nao e requisito universal quando o ramo de senha e ignorado.",
+      "C0 01 09 35 continua correlacionado experimentalmente com PLC em RUN: HELLO-RUN.",
+      "80 01 09 75 continua correlacionado experimentalmente com PLC em STOP: HELLO-STOP.",
       "0D 01 09 E8 permanece fisicamente observado, mas nao classificado.",
-      "34 03 00 00 A0 28 foi rastreado no pc12.exe original ao handler Read PLC Program: o PC12 monta os 6 bytes no buffer TX e chama a rotina serial de transmissao.",
-      "34 03 00 00 A0 28 fecha soma modulo 256 em FF e e o unico quadro novo desta etapa incluido na readOnlyAllowlist.",
-      "A transmissao de Read PLC Program exige marcacao manual da caixa READ-ONLY VERIFICADAS no Laboratorio PG.",
-      "A validacao envia 34 03 00 00 A0 28 uma unica vez depois de um HELLO valido; depois somente registra RX e faz captura passiva.",
-      "0A 03 60 00 AC E6 e 0A 03 60 AC AC 3A foram rastreados ao handler Read PLC System, mas continuam CANDIDATE e desabilitados ate a validacao do primeiro read.",
-      "Leituras Vxxxx, Dxxxx, WCxxx e FILE usam campos de endereco dinamicos e permanecem fora da allowlist nesta etapa.",
       "Etapas CANDIDATE nunca sao transmitidas.",
-      "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
-      "F0 00 0F permanece nao classificado e bloqueado.",
-      "0F 00 F0 permanece bloqueado por estar associado ao Clear All Memory na analise estatica do PC12.",
-      "RUN, STOP remoto, escrita, download e apagamento permanecem fora desta validacao."
+      "A readOnlyAllowlist voltou a ficar vazia.",
+      "RUN/STOP remoto, escrita, download e apagamento permanecem fora desta investigacao."
     ]
   }
 }
