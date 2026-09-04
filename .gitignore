@@ -6,8 +6,10 @@ PC12_v2.1_Windows7_v3_portatil/TP02_RBP_Reader.exe
 PC12_v2.1_Windows7_v3_portatil/TP02_Machine_Decoder.exe
 PC12_v2.1_Windows7_v3_portatil/TP02_Opcode_Calibration.exe
 PC12_v2.1_Windows7_v3_portatil/TP02_Calibration_Campaign.exe
+PC12_v2.1_Windows7_v3_portatil/TP02_Auto_Decoder.exe
 PC12_v2.1_Windows7_v3_portatil/tp02_opcode_map.tsv
 PC12_v2.1_Windows7_v3_portatil/*.tpcampaign.tsv
 PC12_v2.1_Windows7_v3_portatil/*.rules.tsv
 PC12_v2.1_Windows7_v3_portatil/*.cal.txt
+PC12_v2.1_Windows7_v3_portatil/*.verified.il.txt
 PC12_v2.1_Windows7_v3_portatil/LadderEditor.build.cs
