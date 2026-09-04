@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: openladder-studio-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -83,11 +87,27 @@ jobs:
           $title = "OpenLadder Studio v$version"
           $notes = "Versão oficial com arquitetura multi-PLC, perfis personalizados Modbus RTU/TCP, monitoramento online periódico, histórico de sinais, gráficos de tendências em tempo real e exportação CSV."
 
+          function Update-ExistingRelease {
+            gh release upload $tag $setup $sha --clobber --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) { throw 'Falha ao enviar arquivos da release existente.' }
+            gh release edit $tag --title $title --notes $notes --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) { throw 'Falha ao atualizar metadados da release existente.' }
+          }
+
           cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
           if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag $setup $sha --clobber --repo $env:GITHUB_REPOSITORY
-            gh release edit $tag --title $title --notes $notes --repo $env:GITHUB_REPOSITORY
+            Update-ExistingRelease
           }
           else {
             gh release create $tag $setup $sha --target $env:GITHUB_SHA --title $title --notes $notes --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) {
+              Start-Sleep -Seconds 2
+              cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
+              if ($LASTEXITCODE -eq 0) {
+                Update-ExistingRelease
+              }
+              else {
+                throw 'Não foi possível criar nem localizar a release.'
+              }
+            }
           }
