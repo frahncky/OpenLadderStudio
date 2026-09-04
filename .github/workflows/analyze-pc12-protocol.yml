@@ -16,7 +16,7 @@ jobs:
         shell: pwsh
         run: python -m pip install --disable-pip-version-check pefile capstone
 
-      - name: Mapear wrappers seriais e rotina de Link
+      - name: Isolar camada PG do Link
         shell: python
         run: |
           import pathlib, pefile, struct
@@ -28,104 +28,78 @@ jobs:
           raw=text.get_data(); base=ib+text.VirtualAddress
           md=Cs(CS_ARCH_X86,CS_MODE_32); md.skipdata=True
 
-          # Known import thunks recovered in the prior pass.
-          thunks={
-            0x4cbe18:'ClearCommError',0x4cbe1e:'CloseHandle',0x4cbe24:'CreateFileA',
-            0x4cbe36:'GetCommState',0x4cbe5a:'PurgeComm',0x4cbe60:'ReadFile',
-            0x4cbe6c:'SetCommMask',0x4cbe72:'SetCommState',0x4cbe78:'SetupComm',
-            0x4cbe96:'WaitCommEvent',0x4cbea2:'WriteFile'}
-
-          def rel32_calls_to(target):
+          def off(va): return va-base
+          def rel_dest(i):
+              return (base+i+5+struct.unpack_from('<i',raw,i+1)[0]) & 0xffffffff
+          def calls_in(a,b):
               out=[]
-              for i in range(len(raw)-5):
-                  if raw[i]!=0xE8: continue
-                  rel=struct.unpack_from('<i',raw,i+1)[0]; va=base+i
-                  if ((va+5+rel)&0xffffffff)==target: out.append(va)
+              for i in range(max(0,off(a)),min(len(raw)-5,off(b))):
+                  if raw[i]==0xE8: out.append((base+i,rel_dest(i)))
               return out
+          def callers(target,a=0x401000,b=0x4cd000):
+              return [va for va,d in calls_in(a,b) if d==target]
+          def dis(a,b):
+              for x in md.disasm(raw[off(a):off(b)],a):
+                  print(hex(x.address),x.mnemonic,x.op_str)
+          def bytes_at(va,n): return raw[off(va):off(va)+n]
 
-          serial_sites=[]
-          for target,name in thunks.items():
-              for va in rel32_calls_to(target): serial_sites.append((va,name,target))
-          serial_sites.sort()
-          print('SERIAL_SITES')
-          for va,name,target in serial_sites: print(name,hex(va),'->',hex(target))
+          print('=== CALLS FROM PC12 LINK STATE MACHINE TO SERIAL LAYER ===')
+          link_start,link_end=0x4ad18d,0x4ae346
+          for va,d in calls_in(link_start,link_end):
+              if 0x46e000 <= d < 0x470000:
+                  print(hex(va),'->',hex(d),'CALLERS_OF_DEST', [hex(x) for x in callers(d)[:30]])
 
-          # Find likely Borland function starts before each important Read/Write call.
-          patterns=[b'\x55\x8b\xec',b'\x53\x56\x57',b'\x56\x57\x55\x8b\xec']
-          def candidates_before(va,window=0x500):
-              off=va-base; lo=max(0,off-window); found=[]
-              for pat in patterns:
-                  pos=lo
-                  while True:
-                      pos=raw.find(pat,pos,off)
-                      if pos<0: break
-                      found.append(base+pos);pos+=1
-              return sorted(set(found))[-12:]
+          targets=[0x46efc0,0x46f018,0x46f300,0x46f570,0x46f5e6,0x46f76e,0x46f7f7,0x46f84c,0x46fa9e]
+          print('\n=== SERIAL FUNCTIONS ===')
+          for t in targets:
+              print('\n--- FUNCTION',hex(t),'CALLERS', [hex(x) for x in callers(t)[:80]],'---')
+              # Disassemble a bounded window; stop display after first RET past 20 bytes when possible.
+              ins=list(md.disasm(raw[off(t):off(t)+0x500],t))
+              for x in ins:
+                  print(hex(x.address),x.mnemonic,x.op_str)
+                  if x.mnemonic.startswith('ret') and x.address>t+0x20: break
 
-          focus=[0x4ace96,0x4acf7b,0x4ad04d,0x4ae237]
-          for va in focus:
-              print('\nFOCUS_CALL',hex(va),'PROLOGUE_CANDIDATES',[hex(x) for x in candidates_before(va)])
-              off=va-base; lo=max(0,off-220);hi=min(len(raw),off+100)
-              for x in md.disasm(raw[lo:hi],base+lo):
-                  if va-120 <= x.address <= va+45:
-                      print(('>>' if x.address==va else '  '),hex(x.address),x.mnemonic,x.op_str)
+          # Exact contexts for every link-state call into 46ef00-46fb20.
+          print('\n=== LINK CALL CONTEXTS ===')
+          for va,d in calls_in(link_start,link_end):
+              if 0x46ef00 <= d < 0x46fb20:
+                  print('\nCALL',hex(va),'TO',hex(d))
+                  a=max(link_start,va-70); b=min(link_end,va+50)
+                  dis(a,b)
 
-          # Exact pointer xrefs to UI strings that identify the PG link state machine.
-          markers=[b'TP02 Link Success !',b'Link Protocol fail',b'PLC Mode: Running',b'PLC Mode: Program',b'Not PG Protocol Function',b'COM1:Linking']
-          print('\nLINK_STRING_XREFS')
-          string_refs=[]
-          for marker in markers:
-              search=0
+          # Globals that look like PG frame/buffer state are referenced heavily near 4be4xx.
+          globals_to_watch=[0x4fa7a8,0x4fa7a9,0x4fa7aa,0x4fa7ab,0x4fa7ac,0x4fa8ac,0x4fa8b7,0x4fa8b8,0x4fa8b9,0x530230,0x530233,0x560360,0x560364]
+          print('\n=== WRITES TO PG GLOBALS INSIDE LINK ===')
+          for g in globals_to_watch:
+              needle=struct.pack('<I',g); pos=off(link_start); refs=[]
               while True:
-                  fo=data.find(marker,search)
-                  if fo<0: break
-                  va=ib+pe.get_rva_from_offset(fo); needle=struct.pack('<I',va)
-                  refs=[];pos=0
-                  while True:
-                      q=raw.find(needle,pos)
-                      if q<0:break
-                      refs.append(base+q);pos=q+1
-                  print(marker.decode(errors='ignore'),'STRVA',hex(va),'REFS',[hex(r) for r in refs])
-                  for r in refs: string_refs.append((r,marker.decode(errors='ignore')))
-                  search=fo+1
+                  q=raw.find(needle,pos,off(link_end))
+                  if q<0: break
+                  refs.append(base+q);pos=q+1
+              if refs: print(hex(g),[hex(r) for r in refs])
 
-          # For every string xref, locate nearby function starts and caller edges into them.
-          print('\nLINK_FUNCTION_CANDIDATES')
+          # Search for calls to the generic TX routine (46f5e6) and its immediate wrappers.
+          print('\n=== CALL GRAPH TOWARD WRITEFILE TX ===')
+          tx=0x46f5e6
+          level1=callers(tx)
+          print('TX',hex(tx),'L1', [hex(x) for x in level1])
           funcs=set()
-          for ref,label in string_refs:
-              cands=candidates_before(ref,0x1200)
-              print(label,'REF',hex(ref),'CANDS',[hex(x) for x in cands])
-              if cands: funcs.add(cands[-1])
-              off=ref-base;lo=max(0,off-100);hi=min(len(raw),off+120)
-              for x in md.disasm(raw[lo:hi],base+lo):
-                  if ref-60 <= x.address <= ref+70: print(' ',hex(x.address),x.mnemonic,x.op_str)
-
-          print('\nCALLERS_TO_LINK_CANDIDATES')
+          # For each callsite to TX, find nearest common prologue up to 0x300 back.
+          for site in level1:
+              p0=off(site); lo=max(0,p0-0x300); cand=[]
+              q=lo
+              while True:
+                  q=raw.find(b'\x55\x8b\xec',q,p0)
+                  if q<0: break
+                  cand.append(base+q);q+=1
+              if cand: funcs.add(cand[-1])
           for f in sorted(funcs):
-              calls=rel32_calls_to(f)
-              print('FUNC',hex(f),'CALLERS',[hex(c) for c in calls])
+              print('TX_WRAPPER',hex(f),'CALLED_AT',[hex(x) for x in callers(f)[:80]])
 
-          # Candidate generic wrapper starts: use closest 55 8B EC before each serial API call,
-          # then find every application call into that wrapper.
-          print('\nSERIAL_WRAPPER_CALLERS')
-          wrapper_starts=set()
-          for va,name,_ in serial_sites:
-              c=[x for x in candidates_before(va,0x500) if raw[x-base:x-base+3]==b'\x55\x8b\xec']
-              if c:
-                  f=c[-1];wrapper_starts.add(f)
-                  print(name,'API_AT',hex(va),'WRAPPER',hex(f),'CALLERS',[hex(x) for x in rel32_calls_to(f)])
-
-          # If a link candidate directly calls any serial wrapper, print a compact neighborhood.
-          print('\nLINK_TO_SERIAL_EDGES')
-          for f in sorted(funcs):
-              # define rough function extent up to next common prologue or max +0x2000
-              start=f-base;end=min(len(raw),start+0x2000)
-              nextp=raw.find(b'\x55\x8b\xec',start+3,end)
-              if nextp>0:end=nextp
-              for i in range(start,max(start,end-5)):
-                  if raw[i]!=0xE8:continue
-                  rel=struct.unpack_from('<i',raw,i+1)[0];va=base+i;dest=(va+5+rel)&0xffffffff
-                  if dest in wrapper_starts:
-                      print('LINKFUNC',hex(f),'CALL',hex(va),'-> WRAPPER',hex(dest))
-                      lo=max(start,i-80);hi=min(end,i+80)
-                      for x in md.disasm(raw[lo:hi],base+lo): print(' ',hex(x.address),x.mnemonic,x.op_str)
+          # Dump data bytes at the known PG state buffer globals, if mapped into the image.
+          print('\n=== INITIAL IMAGE DATA AROUND 4FA7A0 / 4FA8A0 ===')
+          for va in [0x4fa780,0x4fa7a0,0x4fa8a0,0x530220,0x530230]:
+              try:
+                  fo=pe.get_offset_from_rva(va-ib)
+                  print(hex(va),data[fo:fo+96].hex(' '))
+              except Exception as e: print(hex(va),'ERR',e)
