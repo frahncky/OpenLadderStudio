@@ -38,6 +38,8 @@ namespace ModernPC12
         private NumericUpDown addressBox;
         private NumericUpDown stepsBox;
         private CheckBox doubleColonCheck;
+        private CheckBox dtrCheck;
+        private CheckBox rtsCheck;
         private TextBox outputBox;
         private string lastDump = string.Empty;
 
@@ -131,6 +133,22 @@ namespace ModernPC12
             doubleColonCheck.ForeColor = TextSecondary;
             config.Controls.Add(doubleColonCheck);
 
+            dtrCheck = new CheckBox();
+            dtrCheck.Text = "DTR";
+            dtrCheck.AutoSize = true;
+            dtrCheck.Checked = true;
+            dtrCheck.Location = new Point(792, 96);
+            dtrCheck.ForeColor = TextSecondary;
+            config.Controls.Add(dtrCheck);
+
+            rtsCheck = new CheckBox();
+            rtsCheck.Text = "RTS";
+            rtsCheck.AutoSize = true;
+            rtsCheck.Checked = true;
+            rtsCheck.Location = new Point(862, 96);
+            rtsCheck.ForeColor = TextSecondary;
+            config.Controls.Add(rtsCheck);
+
             Label configNote = LabelAt("Padrão inicial: 19200 / 7 / EVEN / 2 / estação 01. O RBP pode ler até 100 passos por comando.", 8.4f, FontStyle.Regular, TextSecondary, 18, 112);
             config.Controls.Add(configNote);
 
@@ -219,17 +237,36 @@ namespace ModernPC12
                 port.ReadTimeout = 3500;
                 port.WriteTimeout = 1500;
                 port.NewLine = "\r";
+                port.DtrEnable = dtrCheck.Checked;
+                port.RtsEnable = rtsCheck.Checked;
+                port.Handshake = Handshake.None;
                 port.Open();
                 port.DiscardInBuffer();
                 port.DiscardOutBuffer();
+                Append("PORTA", port.PortName + "  DTR=" + (port.DtrEnable ? "on" : "off")
+                    + "  RTS=" + (port.RtsEnable ? "on" : "off"));
                 port.Write(frame);
-                string response = port.ReadTo("\r") + "\r";
-                Append("RX", Escape(response));
-                DecodeRbpResponse(response, start, count);
-            }
-            catch (TimeoutException)
-            {
-                Append("ERRO", "Timeout. Confirme porta COM, estação, configuração serial e cabo/conversor.");
+
+                bool complete;
+                string response = ReadUntilCarriageReturn(port, 3500, out complete);
+
+                if (complete)
+                {
+                    Append("RX", Escape(response));
+                    DecodeRbpResponse(response, start, count);
+                }
+                else if (response.Length > 0)
+                {
+                    Append("RX", Escape(response));
+                    Append("ERRO", "Resposta incompleta: " + response.Length.ToString(CultureInfo.InvariantCulture)
+                        + " byte(s) sem <CR>. Chegou sinal, então cabo e porta estão vivos; verifique baud rate, "
+                        + "paridade e bits contra WS041/WS042 do PLC.");
+                }
+                else
+                {
+                    Append("ERRO", "Timeout: nenhum byte recebido. Confirme porta COM, estação, configuração serial e cabo. "
+                        + "Cabo opto-isolado costuma depender de DTR/RTS ativos.");
+                }
             }
             catch (Exception ex)
             {
@@ -376,6 +413,34 @@ namespace ModernPC12
         private void Append(string kind, string text)
         {
             outputBox.AppendText("[" + DateTime.Now.ToString("HH:mm:ss") + "] " + kind + "  " + text + Environment.NewLine);
+        }
+
+        private static string ReadUntilCarriageReturn(SerialPort port, int timeoutMs, out bool complete)
+        {
+            StringBuilder received = new StringBuilder();
+            complete = false;
+            port.ReadTimeout = 150;
+            DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                int value;
+                try
+                {
+                    value = port.ReadByte();
+                }
+                catch (TimeoutException)
+                {
+                    continue;
+                }
+                if (value < 0) continue;
+                received.Append((char)value);
+                if (value == 13)
+                {
+                    complete = true;
+                    break;
+                }
+            }
+            return received.ToString();
         }
 
         private static string Escape(string value)

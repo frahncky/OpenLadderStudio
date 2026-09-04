@@ -38,6 +38,8 @@ namespace ModernPC12
         private NumericUpDown stationBox;
         private NumericUpDown responseTimeBox;
         private CheckBox doubleColonCheck;
+        private CheckBox dtrCheck;
+        private CheckBox rtsCheck;
         private TextBox mcrAddressBox;
         private TextBox mrvAddressBox;
         private NumericUpDown mrvCountBox;
@@ -208,6 +210,22 @@ namespace ModernPC12
             doubleColonCheck.Location = new Point(830, 78);
             doubleColonCheck.ForeColor = TextSecondary;
             settings.Controls.Add(doubleColonCheck);
+
+            dtrCheck = new CheckBox();
+            dtrCheck.Text = "Ativar DTR";
+            dtrCheck.AutoSize = true;
+            dtrCheck.Checked = true;
+            dtrCheck.Location = new Point(830, 100);
+            dtrCheck.ForeColor = TextSecondary;
+            settings.Controls.Add(dtrCheck);
+
+            rtsCheck = new CheckBox();
+            rtsCheck.Text = "Ativar RTS";
+            rtsCheck.AutoSize = true;
+            rtsCheck.Checked = true;
+            rtsCheck.Location = new Point(940, 100);
+            rtsCheck.ForeColor = TextSecondary;
+            settings.Controls.Add(rtsCheck);
 
             Label note = NewLabel("Padrão inicial: 19200 bps, 7 bits, paridade EVEN, 2 stop bits, estação 01. Ajuste conforme WS041/WS042 do seu TP02.", 8.6f, FontStyle.Regular, TextSecondary, 18, 130);
             settings.Controls.Add(note);
@@ -503,17 +521,38 @@ namespace ModernPC12
                 port.ReadTimeout = 2500;
                 port.WriteTimeout = 1500;
                 port.NewLine = "\r";
+                port.DtrEnable = dtrCheck.Checked;
+                port.RtsEnable = rtsCheck.Checked;
+                port.Handshake = Handshake.None;
                 port.Open();
                 port.DiscardInBuffer();
                 port.DiscardOutBuffer();
+
+                Log("PORTA", DescribePort(port));
+                Log("TX", EscapeFrame(frame) + "   " + ToHex(frame));
+
                 port.Write(frame);
-                string response = port.ReadTo("\r") + "\r";
-                Log("RX", EscapeFrame(response));
-                Log("OK", DecodeResponse(command, response));
-            }
-            catch (TimeoutException)
-            {
-                Log("ERRO", "Timeout: o TP02 não respondeu. Confirme COM, estação, cabo/conversor, WS041/WS042 e tente o prefixo :: se necessário.");
+
+                bool complete;
+                string response = ReadUntilCarriageReturn(port, 2500, out complete);
+
+                if (complete)
+                {
+                    Log("RX", EscapeFrame(response) + "   " + ToHex(response));
+                    Log("OK", DecodeResponse(command, response));
+                }
+                else if (response.Length > 0)
+                {
+                    Log("RX", EscapeFrame(response) + "   " + ToHex(response));
+                    Log("ERRO", "Resposta incompleta: " + response.Length.ToString(CultureInfo.InvariantCulture)
+                        + " byte(s) sem <CR>. Chegou sinal, então cabo e porta estão vivos; isso aponta para baud rate, "
+                        + "paridade ou bits divergentes do que está configurado no PLC (WS041/WS042).");
+                }
+                else
+                {
+                    Log("ERRO", "Timeout: nenhum byte recebido em 2500 ms. Confirme COM, estação, cabo/conversor e WS041/WS042. "
+                        + "Cabo de programação opto-isolado costuma depender de DTR/RTS ativos. Tente também o prefixo ::.");
+                }
             }
             catch (Exception ex)
             {
@@ -633,6 +672,62 @@ namespace ModernPC12
         private void Log(string kind, string message)
         {
             logBox.AppendText("[" + DateTime.Now.ToString("HH:mm:ss") + "] " + kind + "  " + message + Environment.NewLine);
+        }
+
+        private static string DescribePort(SerialPort port)
+        {
+            string parity = port.Parity == Parity.Even ? "E" : port.Parity == Parity.Odd ? "O" : "N";
+            return port.PortName
+                + "  " + port.BaudRate.ToString(CultureInfo.InvariantCulture)
+                + " " + port.DataBits.ToString(CultureInfo.InvariantCulture) + parity
+                + (port.StopBits == StopBits.Two ? "2" : "1")
+                + "  DTR=" + (port.DtrEnable ? "on" : "off")
+                + "  RTS=" + (port.RtsEnable ? "on" : "off");
+        }
+
+        private static string ToHex(string text)
+        {
+            StringBuilder hex = new StringBuilder();
+            byte[] bytes = Encoding.ASCII.GetBytes(text);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                if (i > 0) hex.Append(' ');
+                hex.Append(bytes[i].ToString("X2", CultureInfo.InvariantCulture));
+            }
+            return "[" + hex.ToString() + "]";
+        }
+
+        /// <summary>
+        /// Le ate o CR final ou ate esgotar o prazo, devolvendo tambem o que chegou
+        /// incompleto. Um quadro parcial distingue "nada respondeu" de "respondeu com
+        /// parametros seriais errados", que exigem correcoes diferentes.
+        /// </summary>
+        private static string ReadUntilCarriageReturn(SerialPort port, int timeoutMs, out bool complete)
+        {
+            StringBuilder received = new StringBuilder();
+            complete = false;
+            port.ReadTimeout = 150;
+            DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                int value;
+                try
+                {
+                    value = port.ReadByte();
+                }
+                catch (TimeoutException)
+                {
+                    continue;
+                }
+                if (value < 0) continue;
+                received.Append((char)value);
+                if (value == 13)
+                {
+                    complete = true;
+                    break;
+                }
+            }
+            return received.ToString();
         }
 
         private static string EscapeFrame(string frame)

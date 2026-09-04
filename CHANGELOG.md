@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.28] - 2026-09-04
+
+### Comunicação WEG TP02
+- as linhas DTR e RTS passam a ser controláveis e vêm ativas por padrão. Antes ficavam
+  em `false`, o padrão do .NET, e cabo de programação opto-isolado costuma se alimentar
+  delas: sem isso o quadro sai pela porta e nada retorna;
+- a leitura passa a preservar respostas incompletas em vez de descartá-las. Receber
+  alguns bytes sem `<CR>` distingue "nada respondeu" de "respondeu com baud, paridade
+  ou bits divergentes" — causas com correções diferentes;
+- o registro passa a mostrar os parâmetros seriais em uso, o estado de DTR e RTS, e o
+  conteúdo em hexadecimal além do texto, para diagnosticar sem depender de suposição;
+- as três melhorias valem tanto para a tela de Comunicação quanto para a leitura de
+  programa por RBP.
+
 ## [0.27] - 2026-09-04
 
 ### Correção
