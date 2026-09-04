@@ -26,6 +26,18 @@ foreach ($item in $copies) {
     Add-BrandingInstall $target
 }
 
+# O instalador controla explicitamente se deve reabrir o OpenLadder Studio.
+# Impede que o Restart Manager e a etapa [Run] tentem iniciar duas instâncias.
+$updaterBuild = Join-Path $root 'PC12Updater.build.cs'
+$updaterText = [System.IO.File]::ReadAllText($updaterBuild)
+$oldArgs = '/SILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS'
+$newArgs = '/SILENT /CLOSEAPPLICATIONS /NORESTARTAPPLICATIONS'
+if (-not $updaterText.Contains($oldArgs)) {
+    throw 'Argumentos de instalação não encontrados em PC12Updater.build.cs.'
+}
+$updaterText = $updaterText.Replace($oldArgs, $newArgs)
+[System.IO.File]::WriteAllText($updaterBuild, $updaterText, [System.Text.Encoding]::UTF8)
+
 $generated = @(
     'LadderEditor.build.cs',
     'PLCMemoryMapManagerV15.build.cs',
