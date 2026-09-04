@@ -73,11 +73,38 @@ jobs:
         run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_IL_to_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02IlToLadder.cs"
 
+      - name: Compilar atualizador
+        shell: cmd
+        working-directory: PC12_v2.1_Windows7_v3_portatil
+        run: |
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Updater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Updater.cs"
+
       - name: Compilar PC12 Studio unificado v0.7
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgramV07 /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "PC12StudioV07.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs"
+
+      - name: Instalar Inno Setup 6 se necessário
+        shell: powershell
+        run: |
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+          }
+          if (-not (Test-Path $iscc)) { throw 'ISCC.exe não encontrado.' }
+
+      - name: Gerar Setup instalável
+        shell: cmd
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\PC12Studio.iss"
+
+      - name: Gerar SHA-256 do Setup
+        shell: powershell
+        run: |
+          $setup = 'installer\output\PC12-Studio-TP02-Setup.exe'
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  PC12-Studio-TP02-Setup.exe" | Set-Content -Encoding ASCII 'installer\output\PC12-Studio-TP02-Setup.exe.sha256'
 
       - name: Publicar executaveis de teste
         uses: actions/upload-artifact@v4
@@ -94,3 +121,12 @@ jobs:
             PC12_v2.1_Windows7_v3_portatil/TP02_Calibration_Campaign.exe
             PC12_v2.1_Windows7_v3_portatil/TP02_Auto_Decoder.exe
             PC12_v2.1_Windows7_v3_portatil/TP02_IL_to_Ladder.exe
+            PC12_v2.1_Windows7_v3_portatil/PC12_Updater.exe
+
+      - name: Publicar instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: PC12-Studio-TP02-Setup
+          path: |
+            installer/output/PC12-Studio-TP02-Setup.exe
+            installer/output/PC12-Studio-TP02-Setup.exe.sha256
