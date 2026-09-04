@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.26] - 2026-09-04
+
+### Correção
+- o escalonamento por DPI passa a funcionar de fato. Os formulários declaravam
+  `AutoScaleMode.Dpi` mas nunca definiam `AutoScaleDimensions`, e sem essa dimensão
+  de referência o fator de escala do WinForms é 1: a declaração não tinha efeito algum;
+- em telas com escala, as fontes cresciam por serem definidas em pontos, enquanto os
+  controles permaneciam no tamanho de 96 DPI, causando texto transbordando das caixas
+  em toda a interface;
+- os 17 formulários do software passam a declarar `AutoScaleDimensions` de 96 DPI.
+
+### Engenharia de software
+- `ValidateProject.ps1` passa a recusar `AutoScaleMode` sem `AutoScaleDimensions`.
+
 ## [0.25] - 2026-09-04
 
 ### Correção

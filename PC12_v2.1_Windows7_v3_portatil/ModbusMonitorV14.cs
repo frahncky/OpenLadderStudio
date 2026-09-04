@@ -60,6 +60,7 @@ namespace ModernPC12
             activeProfile = PlcProfileStore.Load();
             Text = "OpenLadder Studio - Monitor Modbus";
             StartPosition = FormStartPosition.CenterScreen;
+            AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Size = new Size(1230, 820);
             MinimumSize = new Size(1040, 700);

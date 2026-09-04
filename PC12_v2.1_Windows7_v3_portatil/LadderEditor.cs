@@ -125,6 +125,7 @@ namespace ModernPC12
             Size = new Size(1260, 800);
             BackColor = CanvasColor;
             Font = new Font("Segoe UI", 9.0f, FontStyle.Regular, GraphicsUnit.Point);
+            AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             KeyPreview = true;
             KeyDown += FormKeyDown;

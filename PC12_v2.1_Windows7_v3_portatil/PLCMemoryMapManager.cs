@@ -37,6 +37,7 @@ namespace ModernPC12
             profile = PlcProfileStore.Load();
             Text = "OpenLadder Studio - Mapa de memória";
             StartPosition = FormStartPosition.CenterParent;
+            AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Size = new Size(980, 620);
             MinimumSize = new Size(880, 520);

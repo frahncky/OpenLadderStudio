@@ -51,6 +51,7 @@ namespace ModernPC12
             Size = new Size(1180, 760);
             BackColor = Canvas;
             Font = new Font("Segoe UI", 9.0f);
+            AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BuildUi();
             RefreshPorts();

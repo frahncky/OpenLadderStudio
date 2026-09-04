@@ -84,6 +84,9 @@ foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
     if ($code -notmatch 'AutoScaleMode') {
         throw "$($file.Name) declara formulário sem AutoScaleMode. Com o manifesto de DPI ativo, a janela deixa de ser escalada e aparece menor do que deveria."
     }
+    if ($code -notmatch 'AutoScaleDimensions') {
+        throw "$($file.Name) define AutoScaleMode sem AutoScaleDimensions. Sem a dimensão de referência o fator de escala do WinForms é 1 e o AutoScaleMode não tem efeito algum."
+    }
 }
 
 foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
