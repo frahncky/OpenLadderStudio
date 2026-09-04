@@ -245,7 +245,7 @@ namespace ModernPC12
                 if (File.Exists(path)) return File.ReadAllText(path).Trim().TrimStart('v', 'V');
             }
             catch { }
-            return "0.9";
+            return "0.10";
         }
 
         private static WebClient NewClient()
