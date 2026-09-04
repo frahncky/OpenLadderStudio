@@ -108,10 +108,16 @@ jobs:
             }
           }
 
+          # As notas vao por arquivo: passadas como argumento, aspas duplas dentro do
+          # texto fazem o PowerShell quebrar a string e o gh interpreta os pedacos
+          # como nomes de arquivo.
+          $notesFile = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          [System.IO.File]::WriteAllText($notesFile, $notes, (New-Object System.Text.UTF8Encoding($false)))
+
           function Update-ExistingRelease {
             gh release upload $tag $setup $sha --clobber --repo $env:GITHUB_REPOSITORY
             if ($LASTEXITCODE -ne 0) { throw 'Falha ao enviar arquivos da release existente.' }
-            gh release edit $tag --title $title --notes $notes --repo $env:GITHUB_REPOSITORY
+            gh release edit $tag --title $title --notes-file $notesFile --repo $env:GITHUB_REPOSITORY
             if ($LASTEXITCODE -ne 0) { throw 'Falha ao atualizar metadados da release existente.' }
           }
 
@@ -120,7 +126,7 @@ jobs:
             Update-ExistingRelease
           }
           else {
-            gh release create $tag $setup $sha --target $env:GITHUB_SHA --title $title --notes $notes --repo $env:GITHUB_REPOSITORY
+            gh release create $tag $setup $sha --target $env:GITHUB_SHA --title $title --notes-file $notesFile --repo $env:GITHUB_REPOSITORY
             if ($LASTEXITCODE -ne 0) {
               Start-Sleep -Seconds 2
               cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
