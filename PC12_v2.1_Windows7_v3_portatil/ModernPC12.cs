@@ -626,23 +626,30 @@ namespace ModernPC12
         {
             if (!File.Exists(path)) return null;
 
-            string[] lines = File.ReadAllLines(path);
-            int i;
-            for (i = 0; i < lines.Length; i++)
+            try
             {
-                string candidate = lines[i].Trim().Trim('"');
-                if (candidate.Length > 0 && candidate != "@") return candidate;
+                string[] lines = File.ReadAllLines(path);
+                int i;
+                for (i = 0; i < lines.Length; i++)
+                {
+                    string candidate = lines[i].Trim().Trim('"');
+                    if (candidate.Length > 0 && candidate != "@") return candidate;
+                }
+            }
+            catch
+            {
+                return null;
             }
             return null;
         }
 
         private string GetRecentProjectPath()
         {
-            string cpuValue = ReadFirstUsefulLine(lastFileCpuPath);
-            if (!string.IsNullOrEmpty(cpuValue)) return cpuValue;
-
             string dirValue = ReadFirstUsefulLine(lastFileDirPath);
             if (!string.IsNullOrEmpty(dirValue)) return dirValue;
+
+            string cpuValue = ReadFirstUsefulLine(lastFileCpuPath);
+            if (!string.IsNullOrEmpty(cpuValue)) return cpuValue;
 
             return null;
         }
@@ -665,8 +672,20 @@ namespace ModernPC12
 
         private string GetRecentProjectSummary()
         {
-            string recentProject = GetRecentProjectPath();
-            if (string.IsNullOrEmpty(recentProject)) return "Nenhum projeto recente salvo nos arquivos lastfile.*";
+            string dirValue = ReadFirstUsefulLine(lastFileDirPath);
+            string cpuValue = ReadFirstUsefulLine(lastFileCpuPath);
+            if (string.IsNullOrEmpty(dirValue) && string.IsNullOrEmpty(cpuValue)) return "Nenhum projeto recente salvo nos arquivos lastfile.*";
+
+            string recentProject = dirValue;
+            if (!string.IsNullOrEmpty(dirValue) && !string.IsNullOrEmpty(cpuValue))
+            {
+                string cpuName = Path.GetFileName(cpuValue);
+                recentProject = string.IsNullOrEmpty(cpuName) ? dirValue : Path.Combine(dirValue, cpuName);
+            }
+            else if (string.IsNullOrEmpty(recentProject))
+            {
+                recentProject = cpuValue;
+            }
 
             string folder = GetRecentProjectFolder();
             if (folder == null) return recentProject + " (caminho salvo, mas não encontrado neste computador)";
