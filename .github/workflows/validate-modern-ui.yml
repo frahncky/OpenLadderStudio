@@ -87,7 +87,7 @@ jobs:
           $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
           $sha = 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
           $title = "OpenLadder Studio v$version"
-          $notes = "Versão oficial com arquitetura multi-PLC, perfis personalizados Modbus RTU/TCP, monitoramento online, histórico e tendências, exportação CSV e identidade visual com ícone oficial do OpenLadder Studio no aplicativo, instalador e atalhos."
+          $notes = "Versão oficial com área Ladder ampliada, interface compacta sem informações repetidas, painéis auxiliares recolhidos por padrão, modo foco F11, arquitetura multi-PLC, monitoramento Modbus, histórico e tendências e ícone oficial padronizado."
 
           function Update-ExistingRelease {
             gh release upload $tag $setup $sha --clobber --repo $env:GITHUB_REPOSITORY
