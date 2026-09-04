@@ -12,6 +12,10 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
+      - name: Preparar análise PE
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pefile capstone
+
       - name: Extrair handshake PG e configuração serial
         shell: python
         run: |
@@ -64,7 +68,6 @@ jobs:
           dump_func(0x46f300,0x120)
 
           print('\n=== SERIAL OPEN / DCB AREA AROUND LINK ===')
-          # Show callsites to CreateFileA/GetCommState/SetCommState/SetupComm in 4ac000-4ae400.
           thunks={0x4cbe24:'CreateFileA',0x4cbe36:'GetCommState',0x4cbe72:'SetCommState',0x4cbe78:'SetupComm'}
           for i in range(max(0,text_off(0x4ac000)), min(len(raw)-5,text_off(0x4ae400))):
               if raw[i]!=0xE8: continue
