@@ -38,12 +38,14 @@ namespace ModernPC12
         private StudioNavButton navBridge;
         private StudioNavButton navReader;
         private StudioNavButton navDecoder;
+        private StudioNavButton navCalibration;
         private StudioNavButton navLegacy;
         private StudioNavButton navAbout;
         private LadderEditorForm ladderForm;
         private TP02BridgeForm bridgeForm;
         private TP02ProgramReaderForm readerForm;
         private TP02MachineDecoderForm decoderForm;
+        private TP02OpcodeCalibrationForm calibrationForm;
 
         public UnifiedStudioForm()
         {
@@ -80,7 +82,7 @@ namespace ModernPC12
             top.Controls.Add(brand);
 
             Label version = new Label();
-            version.Text = "TP02 • v0.5 • Windows 7+";
+            version.Text = "TP02 • v0.6 • Windows 7+";
             version.AutoSize = true;
             version.Font = new Font("Segoe UI", 8.6f);
             version.ForeColor = TextSecondary;
@@ -149,7 +151,7 @@ namespace ModernPC12
             side.Controls.Add(product);
 
             Label productSub = new Label();
-            productSub.Text = "Ladder + Bridge + RBP + decoder";
+            productSub.Text = "Ladder + Bridge + RBP + calibração";
             productSub.AutoSize = true;
             productSub.Font = new Font("Segoe UI", 8.2f);
             productSub.ForeColor = Color.FromArgb(175, 195, 215);
@@ -161,8 +163,9 @@ namespace ModernPC12
             navBridge = AddNav(side, "Comunicação TP02", 210, delegate { ShowBridge(); });
             navReader = AddNav(side, "Ler programa (RBP)", 256, delegate { ShowReader(); });
             navDecoder = AddNav(side, "Decodificar RBP", 302, delegate { ShowDecoder(); });
-            navLegacy = AddNav(side, "PC12 original", 348, delegate { ShowLegacyPage(); });
-            navAbout = AddNav(side, "Sobre", 394, delegate { ShowAbout(); });
+            navCalibration = AddNav(side, "Calibrar opcodes", 348, delegate { ShowCalibration(); });
+            navLegacy = AddNav(side, "PC12 original", 394, delegate { ShowLegacyPage(); });
+            navAbout = AddNav(side, "Sobre", 440, delegate { ShowAbout(); });
 
             Panel sideBottom = new Panel();
             sideBottom.Dock = DockStyle.Bottom;
@@ -235,7 +238,7 @@ namespace ModernPC12
 
         private void SetActive(StudioNavButton active)
         {
-            StudioNavButton[] all = new StudioNavButton[] { navHome, navLadder, navBridge, navReader, navDecoder, navLegacy, navAbout };
+            StudioNavButton[] all = new StudioNavButton[] { navHome, navLadder, navBridge, navReader, navDecoder, navCalibration, navLegacy, navAbout };
             int i;
             for (i = 0; i < all.Length; i++)
             {
@@ -262,6 +265,7 @@ namespace ModernPC12
             if (bridgeForm != null && !bridgeForm.IsDisposed) bridgeForm.Hide();
             if (readerForm != null && !readerForm.IsDisposed) readerForm.Hide();
             if (decoderForm != null && !decoderForm.IsDisposed) decoderForm.Hide();
+            if (calibrationForm != null && !calibrationForm.IsDisposed) calibrationForm.Hide();
         }
 
         private void ShowHome()
@@ -298,16 +302,24 @@ namespace ModernPC12
 
             Panel decoder = NewCard(366, 232, 330, 194);
             host.Controls.Add(decoder);
-            AddCardText(decoder, "Decodificador RBP", "Compare dumps controlados, descubra bits de opcode e operando e construa um mapa comprovado de máquina para Boolean/IL.");
+            AddCardText(decoder, "Decodificador RBP", "Abra dumps, associe words comprovados a Boolean/IL e exporte uma lista de instruções com evidência.");
             Button openDecoder = PrimaryButton("DECODIFICAR", 20, 132, 150);
             openDecoder.Click += delegate { ShowDecoder(); };
             decoder.Controls.Add(openDecoder);
 
-            Panel status = NewCard(714, 232, 330, 194);
+            Panel calibration = NewCard(714, 232, 330, 194);
+            host.Controls.Add(calibration);
+            AddCardText(calibration, "Calibração automática", "Compare séries de dumps controlados e infira máscaras de opcode e operando bit a bit.");
+            Button openCalibration = PrimaryButton("CALIBRAR OPCODES", 20, 132, 170);
+            openCalibration.Click += delegate { ShowCalibration(); };
+            calibration.Controls.Add(openCalibration);
+
+            Panel status = NewCard(18, 446, 1026, 128);
             host.Controls.Add(status);
             Label stTitle = NewLabel("Situação", 13.5f, FontStyle.Bold, TextPrimary, 20, 18);
             status.Controls.Add(stTitle);
-            Label st = NewLabel("✓ Interface unificada\r\n✓ Editor Ladder\r\n✓ Bridge somente leitura\r\n✓ Leitura RBP\r\n✓ Calibração RBP → IL\r\n○ Reconstrução automática Ladder", 9.0f, FontStyle.Regular, TextSecondary, 22, 50);
+            Label st = NewLabel("✓ Interface unificada     ✓ Editor Ladder     ✓ Bridge somente leitura     ✓ Leitura RBP     ✓ Decodificador IL     ✓ Inferência automática de máscaras     ○ Reconstrução Ladder", 9.0f, FontStyle.Regular, TextSecondary, 22, 54);
+            st.MaximumSize = new Size(970, 0);
             status.Controls.Add(st);
 
             footerStatus.Text = "Visão geral carregada.";
@@ -343,6 +355,14 @@ namespace ModernPC12
             if (decoderForm == null || decoderForm.IsDisposed) decoderForm = new TP02MachineDecoderForm();
             EmbedForm(decoderForm);
             footerStatus.Text = "Decodificador offline ativo — nenhum acesso ao PLC.";
+        }
+
+        private void ShowCalibration()
+        {
+            PreparePage("Calibração de opcodes", "Inferência automática de campos de opcode e operando a partir de dumps RBP controlados.", navCalibration);
+            if (calibrationForm == null || calibrationForm.IsDisposed) calibrationForm = new TP02OpcodeCalibrationForm();
+            EmbedForm(calibrationForm);
+            footerStatus.Text = "Calibração offline ativa — use apenas dumps RBP já coletados.";
         }
 
         private void EmbedForm(Form child)
@@ -385,14 +405,14 @@ namespace ModernPC12
         {
             PreparePage("Sobre", "Arquitetura de transição do PC12 para uma ferramenta moderna do TP02.", navAbout);
 
-            Panel card = NewCard(18, 18, 820, 340);
+            Panel card = NewCard(18, 18, 820, 360);
             host.Controls.Add(card);
             Label title = NewLabel("PC12 Studio TP02", 18.0f, FontStyle.Bold, Navy, 22, 20);
             card.Controls.Add(title);
-            Label text = NewLabel("Versão de desenvolvimento 0.5\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nO Studio possui leitura RBP e um laboratório de calibração que compara dumps, calcula diferenças bit a bit e mantém um mapa local de WORDs confirmados para Boolean/IL. WORDs sem evidência permanecem UNKNOWN.\r\n\r\nComandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados nas ferramentas modernas.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
+            Label text = NewLabel("Versão de desenvolvimento 0.6\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nO Studio possui leitura RBP, decodificação offline e calibração automática. A calibração agrupa amostras da mesma instrução com operandos diferentes para inferir a máscara do operando e compara instruções diferentes com o mesmo operando para isolar bits candidatos do opcode.\r\n\r\nNenhum padrão é considerado comprovado só por uma comparação. Comandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados nas ferramentas modernas.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
             text.MaximumSize = new Size(760, 0);
             card.Controls.Add(text);
-            footerStatus.Text = "PC12 Studio TP02 v0.5.";
+            footerStatus.Text = "PC12 Studio TP02 v0.6.";
         }
 
         private void LaunchLegacy()
@@ -485,6 +505,7 @@ namespace ModernPC12
             if (bridgeForm != null && !bridgeForm.IsDisposed) bridgeForm.Dispose();
             if (readerForm != null && !readerForm.IsDisposed) readerForm.Dispose();
             if (decoderForm != null && !decoderForm.IsDisposed) decoderForm.Dispose();
+            if (calibrationForm != null && !calibrationForm.IsDisposed) calibrationForm.Dispose();
             base.OnFormClosing(e);
         }
     }
