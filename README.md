@@ -4,9 +4,9 @@ O **OpenLadder Studio** é um ambiente moderno de programação Ladder e ferrame
 
 O projeto começou pela compatibilidade com o **WEG TP02** e com o **PC12 Design Center 2.1**, mas o núcleo do OpenLadder Studio não é mais acoplado a um único fabricante. O TP02 permanece como o primeiro driver específico em desenvolvimento, enquanto a plataforma usa perfis de dispositivo, drivers, configurações por controlador, mapas de memória e um modelo Ladder universal.
 
-## Versão atual — 0.14
+## Versão atual — 0.15
 
-A versão 0.14 integra diretamente o **mapa de memória ao monitor Modbus**.
+A versão 0.15 amplia a integração entre **mapa de memória e monitor Modbus** e adiciona **leitura automática de áreas extensas em múltiplos blocos**.
 
 Principais recursos:
 
@@ -27,8 +27,12 @@ Principais recursos:
 - validação de MBAP e Transaction ID para Modbus TCP;
 - configurações de conexão salvas separadamente para cada perfil de PLC;
 - mapa de memória configurável por controlador;
-- **seleção de área do mapa diretamente no monitor Modbus**;
-- **preenchimento automático da função, endereço inicial e quantidade**;
+- seleção de área do mapa diretamente no monitor Modbus;
+- preenchimento automático da função, endereço inicial e quantidade;
+- **leitura automática de áreas maiores que o limite de uma requisição Modbus**;
+- **divisão automática em blocos de até 2000 bits para FC01/FC02 e 125 registradores para FC03/FC04**;
+- consolidação dos blocos em uma única tabela de resultados;
+- resposta bruta organizada por bloco, endereço e quantidade;
 - exibição de endereços com o prefixo definido no mapa;
 - acesso direto ao editor do mapa pelo monitor;
 - verificação de portabilidade do projeto Ladder para o controlador selecionado;
@@ -86,7 +90,7 @@ São persistidos, conforme aplicável:
 - timeout;
 - função Modbus preferida;
 - endereço inicial;
-- quantidade de pontos.
+- quantidade de pontos por requisição.
 
 O monitor Modbus carrega automaticamente os valores do controlador ativo e salva a configuração ao executar uma leitura ou ao clicar em **SALVAR PERFIL**.
 
@@ -105,22 +109,26 @@ Cada área contém:
 - prefixo;
 - observação.
 
-Os perfis Modbus genéricos recebem áreas iniciais padrão que podem ser alteradas pelo usuário.
+A v0.15 amplia o tamanho permitido das áreas até o limite do espaço Modbus disponível a partir do endereço inicial. O editor impede que uma área ultrapasse o endereço `65535`.
 
-### Integração com o monitor — v0.14
+### Integração com o monitor
 
-O monitor Modbus possui agora um seletor de **Área do mapa de memória**. Ao selecionar uma área:
+Ao selecionar uma área:
 
 - `Coil` seleciona automaticamente **FC01 - Read Coils**;
 - `DiscreteInput` seleciona **FC02 - Read Discrete Inputs**;
 - `HoldingRegister` seleciona **FC03 - Read Holding Registers**;
 - `InputRegister` seleciona **FC04 - Read Input Registers**;
 - o endereço inicial é preenchido pelo mapa;
-- a quantidade é preenchida pelo tamanho da área, respeitando o limite de uma requisição Modbus;
 - o prefixo da área é usado na coluna de endereço do resultado;
 - áreas específicas do fabricante ficam em modo manual quando não houver função Modbus genérica associada.
 
-O monitor também permite **recarregar** o mapa e abrir diretamente o **Editor de Mapa de Memória** sem sair da tela de comunicação.
+Se a área for maior que uma única requisição, o OpenLadder Studio calcula automaticamente a quantidade de blocos e executa as leituras sequencialmente. Os dados são reunidos em uma única tabela. Em caso de falha intermediária, os dados já recebidos permanecem visíveis e o monitor informa o bloco, endereço e quantidade em que ocorreu o erro.
+
+Limites por requisição usados pelo monitor:
+
+- FC01 / FC02: até **2000 bits** por bloco;
+- FC03 / FC04: até **125 registradores** por bloco.
 
 ## WEG TP02
 
@@ -150,11 +158,12 @@ Recursos atuais:
 - `04 - Read Input Registers`;
 - configuração de endereço inicial e quantidade;
 - seleção rápida por área do mapa de memória;
+- leitura sequencial automática em blocos;
 - Unit ID configurável;
 - serial: COM, baud rate, data bits, paridade e stop bits;
 - TCP: host/IP e porta;
 - timeout configurável;
-- visualização decimal, hexadecimal e resposta bruta;
+- visualização decimal, hexadecimal e resposta bruta por bloco;
 - persistência da configuração por perfil de PLC.
 
 O uso de Modbus genérico não implica capacidade de compilar ou transferir Ladder para o PLC. Essa função depende do compilador e do protocolo de programação específicos de cada fabricante.
@@ -189,10 +198,12 @@ O inicializador compila e abre `OpenLadderStudio.exe`.
 - `PLCPlatform.cs` — contratos, perfis, drivers e modelo universal;
 - `PLCDeviceManager.cs` — catálogo e seleção de controladores;
 - `PLCConnectionSettings.cs` — persistência de parâmetros de comunicação por perfil;
-- `PLCMemoryMap.cs` — estrutura e persistência do mapa de memória;
+- `PLCMemoryMapV15.cs` — mapa de memória com suporte a áreas extensas;
 - `PLCMemoryMapManager.cs` — editor visual do mapa de memória;
 - `ModbusCore.cs` — protocolo Modbus RTU/TCP em leitura;
-- `ModbusMonitorV14.cs` — monitor Modbus integrado ao mapa de memória;
+- `ModbusBulkReader.cs` — divisão, execução e consolidação de leituras em múltiplos blocos;
+- `ModbusMonitorV14.cs` — base visual do monitor integrada ao mapa de memória;
+- `PrepareModbusMonitorV15.ps1` — preparação da lógica de leitura em blocos para a v0.15;
 - `LadderEditor.cs` — editor Ladder;
 - `TP02BridgeLab.cs` — comunicação e análise do TP02/PC12;
 - `TP02ProgramReader.cs` — leitura RBP;
@@ -210,7 +221,7 @@ A aplicação usa **Windows Forms + .NET Framework**, sem bibliotecas externas o
 ## Próximas etapas
 
 1. criar perfis personalizados de fabricante/modelo pelo próprio usuário;
-2. permitir leitura sequencial automática de áreas Modbus maiores que o limite de uma única requisição;
+2. adicionar monitoramento periódico configurável para áreas do mapa;
 3. desacoplar completamente o monitor TP02 das classes de interface antigas;
 4. adicionar drivers específicos para novos fabricantes;
 5. criar compiladores de destino por família de PLC;
@@ -224,4 +235,4 @@ A aplicação usa **Windows Forms + .NET Framework**, sem bibliotecas externas o
 **Primeiro driver específico:** WEG TP02  
 **Protocolos genéricos atuais:** Modbus RTU e Modbus TCP (leitura)  
 **Software legado compatível:** PC12 Design Center 2.1  
-**Versão atual:** 0.14
+**Versão atual:** 0.15
