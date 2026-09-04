@@ -3,14 +3,37 @@ $sourcePath = Join-Path (Get-Location) 'TP02PgLinkV38.build.cs'
 $outputPath = Join-Path (Get-Location) 'TP02PgLinkV39.build.cs'
 $text = [System.IO.File]::ReadAllText($sourcePath)
 
+# Hotfix v0.40: a analise estatica do PC12 original mostrou que F0 00 0F
+# pertence ao comando PLC -> Clear All Memory (ID de menu 0x142). Portanto,
+# esta ferramenta volta a ser estritamente de handshake: somente CON-ICB<CR>
+# pode ser transmitido. Nenhum terceiro/segundo comando PG e emitido.
 $text = $text.Replace('TP02PgLinkV38Form', 'TP02PgLinkV39Form')
 $text = $text.Replace('TP02PgLinkV38Program', 'TP02PgLinkV39Program')
-$text = $text.Replace('v0.38', 'v0.39')
-$text = $text.Replace('segundo estagio PG com handshake adaptativo', 'segundo estagio PG com rearm automatico da interface serial')
-$text = $text.Replace('AUTO: sequencia validada da v0.34', 'AUTO: rearm + sequencia validada da v0.34')
-$text = $text.Replace('1. Reproduz exatamente a sequencia de perfis que funcionou na v0.34.  2. Sao 4 tentativas por perfil, com os mesmos tempos.  3. Somente apos C0 01 09 35 envia F0 00 0F uma vez.  4. Registra RX bruto.  5. Mantem escuta passiva por mais 5 s sem qualquer novo TX.', '1. Executa um ciclo com a sequencia da v0.34.  2. Se nao houver nenhum RX, rearma DTR/RTS sem transmitir dados e repete a sequencia.  3. No perfil 8O1 com DTR/RTS on usa tentativas adicionais.  4. Somente apos C0 01 09 35 envia F0 00 0F uma vez.  5. Depois apenas escuta.')
-$text = $text.Replace('Log("INFO", "A v0.38 reproduz a sequencia de handshake da v0.34 antes de tentar a etapa 2.");', 'Log("INFO", "A v0.39 reproduz a sequencia da v0.34 e, se necessario, rearma somente as linhas seriais antes de repetir.");')
+$text = $text.Replace('v0.38', 'v0.40')
+$text = $text.Replace('segundo estagio PG com handshake adaptativo', 'validacao PG segura - comandos destrutivos bloqueados')
+$text = $text.Replace('AUTO: sequencia validada da v0.34', 'SEGURO: somente CON-ICB<CR> e transmitido')
+$text = $text.Replace('TESTAR ETAPA 2 PG', 'TESTAR LINK PG SEGURO')
+$text = $text.Replace('1. Reproduz exatamente a sequencia de perfis que funcionou na v0.34.  2. Sao 4 tentativas por perfil, com os mesmos tempos.  3. Somente apos C0 01 09 35 envia F0 00 0F uma vez.  4. Registra RX bruto.  5. Mantem escuta passiva por mais 5 s sem qualquer novo TX.', '1. Reproduz a sequencia de perfis validada no PLC fisico.  2. Procura exclusivamente C0 01 09 35.  3. Quando o Link PG e confirmado, encerra sem transmitir outro quadro.  4. F0 00 0F esta bloqueado: no PC12 original corresponde a Clear All Memory.  5. RUN, STOP, escrita, download e apagamento permanecem bloqueados.')
+$text = $text.Replace('2º TX: F0 00 0F · soma modulo 256 = FF · enviado UMA unica vez apos o handshake exato', 'BLOQUEADO: F0 00 0F = Clear All Memory no PC12 original (comando 0x142)')
+$text = $text.Replace('MODO SEGURO: se C0 01 09 35 nao for confirmado, F0 00 0F NAO e enviado. Depois de F0 00 0F, a ferramenta somente escuta e registra bytes. RUN, STOP, escrita, download e apagamento continuam bloqueados.', 'MODO SEGURO v0.40: somente CON-ICB<CR> pode ser transmitido. F0 00 0F, Clear Program, Clear All Memory, RUN, STOP, escrita e download permanecem bloqueados.')
+$text = $text.Replace('Log("INFO", "A v0.38 reproduz a sequencia de handshake da v0.34 antes de tentar a etapa 2.");', 'Log("INFO", "A v0.40 reproduz somente o handshake validado no PLC fisico.");')
+$text = $text.Replace('Log("INFO", "F0 00 0F so sera enviado se C0 01 09 35 for recebido nesta execucao.");', 'Log("SEGURANCA", "F0 00 0F esta bloqueado: a analise do PC12 original o identifica como Clear All Memory.");')
+$text = $text.Replace('Log("INFO", "Depois do segundo quadro nenhum outro TX sera realizado.");', 'Log("SEGURANCA", "Depois do HELLO nenhum outro TX sera realizado.");')
 $text = $text.Replace(' · ', ' - ')
+
+$stage2Needle = @'
+        private static readonly byte[] Pc12Stage2 = new byte[]
+        {
+            0xF0, 0x00, 0x0F
+        };
+'@
+$stage2Safe = @'
+        // BLOQUEADO POR SEGURANCA (v0.40).
+        // No PC12 original, F0 00 0F e o comando PLC -> Clear All Memory (0x142).
+        private static readonly byte[] Pc12Stage2 = new byte[0];
+'@
+if (-not $text.Contains($stage2Needle.Trim())) { throw 'Bloco Pc12Stage2 nao encontrado.' }
+$text = $text.Replace($stage2Needle.Trim(), $stage2Safe.Trim())
 
 $startAnchor = '        private void TestWorker(string portName)'
 $endAnchor = '        private int CaptureAfterStage2(SerialPort port)'
@@ -33,15 +56,12 @@ $replacement = @'
             bool[] dtr = new bool[] { false, true, false, true };
             bool[] rts = new bool[] { false, true, false, true };
 
-            bool handshakeConfirmed = false;
-            bool stage2Sent = false;
-            bool stage2Received = false;
             string lastError = string.Empty;
             int totalRxBytes = 0;
 
             for (int sweep = 1; sweep <= 2 && !cancelRequested; sweep++)
             {
-                LogSafe("CICLO", "handshake " + sweep.ToString(CultureInfo.InvariantCulture) + "/2");
+                LogSafe("CICLO", "handshake seguro " + sweep.ToString(CultureInfo.InvariantCulture) + "/2");
 
                 if (sweep == 2)
                 {
@@ -97,54 +117,18 @@ $replacement = @'
                             int knownIndex = IndexOfSequence(parsed.WithoutEcho, KnownHelloResponse);
                             if (knownIndex < 0)
                             {
-                                LogSafe("PG BLOQUEIO", "C0 01 09 35 nao foi localizado; F0 00 0F permanece bloqueado.");
+                                LogSafe("PG BLOQUEIO", "C0 01 09 35 nao foi localizado; nenhum outro comando sera transmitido.");
                                 Thread.Sleep(150);
                                 continue;
                             }
 
-                            handshakeConfirmed = true;
                             LogSafe("PG FRAME", ToHex(KnownHelloResponse));
                             LogSafe("PG CHECKSUM", "HELLO RX soma modulo 256 = 0x" + Sum8(KnownHelloResponse).ToString("X2", CultureInfo.InvariantCulture));
                             LogSafe("PG LINK", "ESTABLISHED - C0 01 09 35 confirmado com " + profileName + ".");
                             if (parities[profileIndex] == Parity.Odd && dtr[profileIndex] && rts[profileIndex]) SaveProfile(portName);
-                            SetState("●  LINK CONFIRMADO · ENVIANDO ETAPA 2...", Success);
-
-                            int inlineOffset = knownIndex + KnownHelloResponse.Length;
-                            if (inlineOffset < parsed.WithoutEcho.Length)
-                            {
-                                byte[] inline = Slice(parsed.WithoutEcho, inlineOffset, parsed.WithoutEcho.Length - inlineOffset);
-                                if (inline.Length > 0)
-                                    LogSafe("PG HELLO EXTRA", ToHex(inline) + "  soma=0x" + Sum8(inline).ToString("X2", CultureInfo.InvariantCulture));
-                            }
-
-                            Thread.Sleep(140);
-                            LogSafe("PG STAGE2 TX", ToHex(Pc12Stage2) + "  soma=0x" + Sum8(Pc12Stage2).ToString("X2", CultureInfo.InvariantCulture));
-                            port.Write(Pc12Stage2, 0, Pc12Stage2.Length);
-                            stage2Sent = true;
-                            SetState("●  ETAPA 2 ENVIADA · CAPTURANDO RX...", Success);
-
-                            byte[] stage2Raw = ReadBurst(port, Stage2TimeoutMs, 240);
-                            if (stage2Raw.Length == 0)
-                            {
-                                LogSafe("PG STAGE2 RX", "[]");
-                                LogSafe("PG DIAG", "nenhum byte retornou imediatamente apos F0 00 0F.");
-                            }
-                            else
-                            {
-                                stage2Received = true;
-                                int echoCount;
-                                byte[] withoutEcho = RemoveLeadingExactEcho(stage2Raw, Pc12Stage2, out echoCount);
-                                LogSafe("PG STAGE2 RX RAW", ToHex(stage2Raw) + "  soma=0x" + Sum8(stage2Raw).ToString("X2", CultureInfo.InvariantCulture));
-                                LogSafe("PG STAGE2 ECO", "quantidade=" + echoCount.ToString(CultureInfo.InvariantCulture));
-                                LogSafe("PG STAGE2 SEM ECO", ToHex(withoutEcho) + "  soma=0x" + Sum8(withoutEcho).ToString("X2", CultureInfo.InvariantCulture));
-                                if (withoutEcho.Length > 0 && Sum8(withoutEcho) == 0xFF)
-                                    LogSafe("PG STAGE2 FRAME?", "o bloco sem eco fecha soma FF; manter interpretacao em aberto ate comparar com o PC12.");
-                                else if (withoutEcho.Length > 0)
-                                    LogSafe("PG STAGE2 FRAME?", "RX registrado sem assumir enquadramento; pode conter um ou mais quadros/bytes de estado.");
-                            }
-
-                            int postBursts = CaptureAfterStage2(port);
-                            FinishSafe(handshakeConfirmed, stage2Sent, stage2Received, postBursts, string.Empty);
+                            LogSafe("SEGURANCA", "F0 00 0F NAO enviado. No PC12 original este quadro corresponde a Clear All Memory.");
+                            LogSafe("EVIDENCIA", "A resposta 40 02 10 22 8B foi observada anteriormente, mas nao sera provocada novamente automaticamente.");
+                            FinishHandshakeSafe(true, profileName, totalRxBytes, string.Empty);
                             return;
                         }
                     }
@@ -166,12 +150,12 @@ $replacement = @'
             }
 
             if (totalRxBytes == 0)
-                LogSafe("PG DIAG", "zero bytes recebidos em todos os perfis e nos dois ciclos; o PLC/interface pode estar retido em estado de sessao anterior ou o caminho serial precisa ser reinicializado fisicamente.");
+                LogSafe("PG DIAG", "zero bytes recebidos em todos os perfis e nos dois ciclos.");
             else
-                LogSafe("PG DIAG", "houve " + totalRxBytes.ToString(CultureInfo.InvariantCulture) + " byte(s) no total, mas o quadro C0 01 09 35 nao foi confirmado.");
+                LogSafe("PG DIAG", "houve " + totalRxBytes.ToString(CultureInfo.InvariantCulture) + " byte(s), mas C0 01 09 35 nao foi confirmado.");
 
             if (cancelRequested) FinishCancelled();
-            else FinishSafe(handshakeConfirmed, stage2Sent, stage2Received, 0, lastError);
+            else FinishHandshakeSafe(false, string.Empty, totalRxBytes, lastError);
         }
 
         private void PulseSerialLines(string portName)
@@ -207,6 +191,36 @@ $replacement = @'
                     pulse.Dispose();
                 }
             }
+        }
+
+        private void FinishHandshakeSafe(bool success, string profileName, int totalRxBytes, string error)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new MethodInvoker(delegate { FinishHandshakeSafe(success, profileName, totalRxBytes, error); }));
+                return;
+            }
+
+            running = false;
+            testButton.Enabled = true;
+
+            if (success)
+            {
+                profileLabel.Text = "LINK confirmado: " + profileName + " - F0 BLOQUEADO";
+                profileLabel.ForeColor = Success;
+                SetState("●  LINK PG CONFIRMADO - MODO SEGURO", Success);
+                Log("RESULTADO", "O TP02 respondeu ao HELLO com C0 01 09 35 e checksum FF.");
+                Log("RESULTADO", "Nenhum quadro posterior foi transmitido.");
+                Log("SEGURANCA", "F0 00 0F permanece bloqueado porque o PC12 original o associa a Clear All Memory.");
+                Log("RESULTADO", "RUN/STOP/escrita/download/apagamento continuam bloqueados.");
+                return;
+            }
+
+            SetState("●  HANDSHAKE NAO CONFIRMADO", Danger);
+            Log("RESULTADO", "C0 01 09 35 nao foi confirmado nesta execucao.");
+            Log("SEGURANCA", "Nenhum comando alem de CON-ICB<CR> foi transmitido.");
+            if (totalRxBytes > 0) Log("DETALHE", totalRxBytes.ToString(CultureInfo.InvariantCulture) + " byte(s) recebido(s) no total.");
+            if (!string.IsNullOrEmpty(error)) Log("DETALHE", error);
         }
 
 '@
