@@ -645,24 +645,22 @@ namespace ModernPC12
             return null;
         }
 
-        private string GetRecentProjectPath()
-        {
-            string dirValue = ReadFirstUsefulLine(lastFileDirPath);
-            if (!string.IsNullOrEmpty(dirValue)) return dirValue;
-
-            string cpuValue = ReadFirstUsefulLine(lastFileCpuPath);
-            if (!string.IsNullOrEmpty(cpuValue)) return cpuValue;
-
-            return null;
-        }
-
         private string GetRecentProjectFolder()
         {
-            string recentProject = GetRecentProjectPath();
-            if (string.IsNullOrEmpty(recentProject)) return null;
-            if (Directory.Exists(recentProject)) return recentProject;
+            string dirValue = ReadFirstUsefulLine(lastFileDirPath);
+            if (!string.IsNullOrEmpty(dirValue))
+            {
+                if (Directory.Exists(dirValue)) return dirValue;
 
-            string folder = Path.GetDirectoryName(recentProject);
+                string dirParent = Path.GetDirectoryName(dirValue);
+                if (!string.IsNullOrEmpty(dirParent) && File.Exists(dirValue) && Directory.Exists(dirParent)) return dirParent;
+            }
+
+            string cpuValue = ReadFirstUsefulLine(lastFileCpuPath);
+            if (string.IsNullOrEmpty(cpuValue)) return null;
+            if (Directory.Exists(cpuValue)) return cpuValue;
+
+            string folder = Path.GetDirectoryName(cpuValue);
             if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder)) return folder;
             return null;
         }
@@ -678,23 +676,22 @@ namespace ModernPC12
             string cpuValue = ReadFirstUsefulLine(lastFileCpuPath);
             if (string.IsNullOrEmpty(dirValue) && string.IsNullOrEmpty(cpuValue)) return "Nenhum projeto recente salvo nos arquivos lastfile.*";
 
-            string recentProject = dirValue;
-            if (!string.IsNullOrEmpty(dirValue) && !string.IsNullOrEmpty(cpuValue))
+            string recentProject;
+            if (!string.IsNullOrEmpty(cpuValue))
             {
-                string cpuName = Path.GetFileName(cpuValue);
-                string dirName = Path.GetFileName(dirValue);
-                if (!string.IsNullOrEmpty(dirName) && string.Equals(dirName, cpuName, StringComparison.OrdinalIgnoreCase))
+                if (Path.IsPathRooted(cpuValue) || string.IsNullOrEmpty(dirValue))
                 {
-                    recentProject = dirValue;
+                    recentProject = cpuValue;
                 }
                 else
                 {
+                    string cpuName = Path.GetFileName(cpuValue);
                     recentProject = string.IsNullOrEmpty(cpuName) ? dirValue : Path.Combine(dirValue, cpuName);
                 }
             }
-            else if (string.IsNullOrEmpty(recentProject))
+            else
             {
-                recentProject = cpuValue;
+                recentProject = dirValue;
             }
 
             string folder = GetRecentProjectFolder();
