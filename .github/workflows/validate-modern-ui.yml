@@ -19,79 +19,29 @@ jobs:
         run: |
           (Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'
 
-      - name: Compilar central PC12 Modern
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Moderno.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "ModernPC12.cs"
-
-      - name: Compilar PC12 Ladder Studio
+      - name: Compilar componentes
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
-
-      - name: Compilar TP02 Bridge Lab
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Bridge_Lab.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02BridgeLab.cs"
-
-      - name: Compilar leitor RBP
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_RBP_Reader.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02ProgramReader.cs"
-
-      - name: Compilar decodificador RBP para IL
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Machine_Decoder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02MachineDecoder.cs"
-
-      - name: Compilar calibração automática de opcodes
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Opcode_Calibration.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02OpcodeCalibration.cs"
-
-      - name: Compilar campanha guiada de calibração
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Calibration_Campaign.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02CalibrationCampaign.cs"
-
-      - name: Compilar decodificador automático seguro
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.TP02AutoDecoderProgram /out:"TP02_Auto_Decoder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02MachineDecoder.cs" "TP02AutoDecoder.cs"
-
-      - name: Compilar reconstrutor IL para Ladder
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Calibration_Campaign.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02CalibrationCampaign.cs"
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_IL_to_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02IlToLadder.cs"
-
-      - name: Compilar atualizador
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Updater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Updater.cs"
 
-      - name: Compilar PC12 Studio unificado v0.7
+      - name: Compilar PC12 Studio direto v0.8
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgramV07 /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "PC12StudioV07.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs"
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.DirectStudioProgram /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12DirectStudio.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs" "PC12Updater.cs"
 
       - name: Instalar Inno Setup 6 se necessário
         shell: powershell
         run: |
           $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
-          if (-not (Test-Path $iscc)) {
-            choco install innosetup --no-progress -y
-          }
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
           if (-not (Test-Path $iscc)) { throw 'ISCC.exe não encontrado.' }
 
       - name: Gerar Setup instalável
@@ -106,22 +56,14 @@ jobs:
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  PC12-Studio-TP02-Setup.exe" | Set-Content -Encoding ASCII 'installer\output\PC12-Studio-TP02-Setup.exe.sha256'
 
-      - name: Publicar executaveis de teste
+      - name: Publicar aplicativo
         uses: actions/upload-artifact@v4
         with:
           name: PC12-Studio-TP02
           path: |
             PC12_v2.1_Windows7_v3_portatil/PC12_Studio.exe
-            PC12_v2.1_Windows7_v3_portatil/PC12_Moderno.exe
-            PC12_v2.1_Windows7_v3_portatil/PC12_Ladder.exe
-            PC12_v2.1_Windows7_v3_portatil/TP02_Bridge_Lab.exe
-            PC12_v2.1_Windows7_v3_portatil/TP02_RBP_Reader.exe
-            PC12_v2.1_Windows7_v3_portatil/TP02_Machine_Decoder.exe
-            PC12_v2.1_Windows7_v3_portatil/TP02_Opcode_Calibration.exe
-            PC12_v2.1_Windows7_v3_portatil/TP02_Calibration_Campaign.exe
-            PC12_v2.1_Windows7_v3_portatil/TP02_Auto_Decoder.exe
-            PC12_v2.1_Windows7_v3_portatil/TP02_IL_to_Ladder.exe
             PC12_v2.1_Windows7_v3_portatil/PC12_Updater.exe
+            PC12_v2.1_Windows7_v3_portatil/version.txt
 
       - name: Publicar instalador
         uses: actions/upload-artifact@v4
