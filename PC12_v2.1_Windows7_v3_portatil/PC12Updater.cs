@@ -25,8 +25,8 @@ namespace ModernPC12
     internal sealed class PC12UpdaterForm : Form
     {
         private const string RepoApi = "https://api.github.com/repos/frahncky/UpgradeInterfacePLC/releases/latest";
-        private const string SetupAssetName = "PC12-Studio-TP02-Setup.exe";
-        private const string HashAssetName = "PC12-Studio-TP02-Setup.exe.sha256";
+        private const string SetupAssetName = "OpenLadder-Studio-Setup.exe";
+        private const string HashAssetName = "OpenLadder-Studio-Setup.exe.sha256";
 
         private readonly Color Navy = Color.FromArgb(18, 39, 63);
         private readonly Color Accent = Color.FromArgb(0, 122, 204);
@@ -50,12 +50,11 @@ namespace ModernPC12
 
         public PC12UpdaterForm()
         {
-            Text = "PC12 Studio Updater";
+            Text = "OpenLadder Studio - Atualização";
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
-            MinimizeBox = true;
-            ClientSize = new Size(660, 390);
+            ClientSize = new Size(620, 300);
             BackColor = Canvas;
             Font = new Font("Segoe UI", 9.0f);
             AutoScaleMode = AutoScaleMode.Dpi;
@@ -67,50 +66,43 @@ namespace ModernPC12
         {
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
-            header.Height = 78;
+            header.Height = 56;
             header.BackColor = Color.White;
             Controls.Add(header);
-
-            header.Controls.Add(NewLabel("PC12 STUDIO UPDATER", 15.0f, FontStyle.Bold, Navy, 22, 14));
-            header.Controls.Add(NewLabel("Atualizações oficiais publicadas em GitHub Releases", 8.7f, FontStyle.Regular, TextSecondary, 24, 46));
+            header.Controls.Add(NewLabel("OPENLADDER STUDIO", 14.0f, FontStyle.Bold, Navy, 20, 16));
 
             Panel card = new Panel();
             card.BackColor = Color.White;
             card.BorderStyle = BorderStyle.FixedSingle;
-            card.Location = new Point(22, 100);
-            card.Size = new Size(616, 240);
+            card.Location = new Point(20, 76);
+            card.Size = new Size(580, 190);
             Controls.Add(card);
 
-            card.Controls.Add(NewLabel("Versão instalada", 8.3f, FontStyle.Bold, TextSecondary, 22, 20));
-            currentLabel = NewLabel("v" + currentVersion, 17.0f, FontStyle.Bold, TextPrimary, 22, 43);
+            card.Controls.Add(NewLabel("Instalada", 8.2f, FontStyle.Bold, TextSecondary, 20, 18));
+            currentLabel = NewLabel("v" + currentVersion, 16.0f, FontStyle.Bold, TextPrimary, 20, 40);
             card.Controls.Add(currentLabel);
 
-            card.Controls.Add(NewLabel("Versão disponível", 8.3f, FontStyle.Bold, TextSecondary, 210, 20));
-            availableLabel = NewLabel("—", 17.0f, FontStyle.Bold, TextPrimary, 210, 43);
+            card.Controls.Add(NewLabel("Disponível", 8.2f, FontStyle.Bold, TextSecondary, 180, 18));
+            availableLabel = NewLabel("—", 16.0f, FontStyle.Bold, TextPrimary, 180, 40);
             card.Controls.Add(availableLabel);
 
-            checkButton = ButtonAt("VERIFICAR ATUALIZAÇÕES", 22, 92, 190, true);
+            checkButton = ButtonAt("VERIFICAR", 20, 84, 130, true);
             checkButton.Click += delegate { CheckForUpdates(); };
             card.Controls.Add(checkButton);
 
-            updateButton = ButtonAt("ATUALIZAR AGORA", 224, 92, 160, false);
+            updateButton = ButtonAt("ATUALIZAR", 162, 84, 130, false);
             updateButton.Enabled = false;
             updateButton.Click += delegate { DownloadAndInstall(); };
             card.Controls.Add(updateButton);
 
             progress = new ProgressBar();
-            progress.Location = new Point(22, 145);
-            progress.Size = new Size(570, 18);
-            progress.Style = ProgressBarStyle.Continuous;
+            progress.Location = new Point(20, 132);
+            progress.Size = new Size(538, 15);
             card.Controls.Add(progress);
 
-            statusLabel = NewLabel("Clique em Verificar atualizações. Nenhuma alteração é feita sem sua autorização.", 8.7f, FontStyle.Regular, TextSecondary, 22, 178);
-            statusLabel.MaximumSize = new Size(570, 45);
+            statusLabel = NewLabel("", 8.5f, FontStyle.Regular, TextSecondary, 20, 157);
+            statusLabel.MaximumSize = new Size(538, 30);
             card.Controls.Add(statusLabel);
-
-            Label note = NewLabel("Segurança: o instalador só é aceito se a Release também publicar o SHA-256 correspondente.", 8.2f, FontStyle.Bold, Success, 24, 352);
-            note.MaximumSize = new Size(610, 0);
-            Controls.Add(note);
         }
 
         private void CheckForUpdates()
@@ -119,7 +111,7 @@ namespace ModernPC12
             updateButton.Enabled = false;
             progress.Value = 0;
             statusLabel.ForeColor = TextSecondary;
-            statusLabel.Text = "Consultando a versão mais recente...";
+            statusLabel.Text = "Verificando...";
             Application.DoEvents();
 
             try
@@ -133,41 +125,37 @@ namespace ModernPC12
                     hashUrl = ExtractAssetUrl(json, HashAssetName);
                 }
 
-                if (string.IsNullOrEmpty(latestVersion)) throw new InvalidDataException("A Release não informa tag de versão.");
+                if (string.IsNullOrEmpty(latestVersion)) throw new InvalidDataException("Versão inválida.");
                 availableLabel.Text = "v" + latestVersion;
 
-                int cmp = CompareVersions(latestVersion, currentVersion);
-                if (cmp <= 0)
+                if (CompareVersions(latestVersion, currentVersion) <= 0)
                 {
                     statusLabel.ForeColor = Success;
-                    statusLabel.Text = "Você já está usando a versão mais recente.";
+                    statusLabel.Text = "Versão atualizada.";
                     return;
                 }
 
                 if (string.IsNullOrEmpty(setupUrl) || string.IsNullOrEmpty(hashUrl))
                 {
                     statusLabel.ForeColor = Warning;
-                    statusLabel.Text = "Existe uma versão nova, mas a Release não possui o Setup.exe e o SHA-256 exigidos. A atualização automática foi bloqueada por segurança.";
+                    statusLabel.Text = "Pacote de atualização incompleto.";
                     return;
                 }
 
                 updateButton.Enabled = true;
                 statusLabel.ForeColor = Accent;
-                statusLabel.Text = "Nova versão disponível. Clique em Atualizar agora para baixar e instalar.";
+                statusLabel.Text = "Nova versão disponível.";
             }
             catch (WebException ex)
             {
                 statusLabel.ForeColor = Warning;
                 HttpWebResponse resp = ex.Response as HttpWebResponse;
-                if (resp != null && resp.StatusCode == HttpStatusCode.NotFound)
-                    statusLabel.Text = "Ainda não existe uma Release pública do PC12 Studio. A instalação atual continua funcionando normalmente.";
-                else
-                    statusLabel.Text = "Não foi possível consultar as atualizações. Verifique a conexão com a Internet.";
+                statusLabel.Text = resp != null && resp.StatusCode == HttpStatusCode.NotFound ? "Nenhuma release publicada." : "Falha de conexão.";
             }
             catch (Exception ex)
             {
                 statusLabel.ForeColor = Warning;
-                statusLabel.Text = "Falha ao verificar atualizações: " + ex.Message;
+                statusLabel.Text = "Falha: " + ex.Message;
             }
             finally
             {
@@ -182,9 +170,9 @@ namespace ModernPC12
             checkButton.Enabled = false;
             progress.Value = 0;
             statusLabel.ForeColor = TextSecondary;
-            statusLabel.Text = "Baixando o novo instalador...";
+            statusLabel.Text = "Baixando...";
 
-            string tempDir = Path.Combine(Path.GetTempPath(), "PC12StudioUpdate");
+            string tempDir = Path.Combine(Path.GetTempPath(), "OpenLadderStudioUpdate");
             Directory.CreateDirectory(tempDir);
             downloadedSetup = Path.Combine(tempDir, SetupAssetName);
             string hashFile = Path.Combine(tempDir, HashAssetName);
@@ -196,33 +184,29 @@ namespace ModernPC12
                 {
                     wc.DownloadProgressChanged += delegate(object sender, DownloadProgressChangedEventArgs e)
                     {
-                        int value = e.ProgressPercentage;
-                        if (value < 0) value = 0;
-                        if (value > 100) value = 100;
+                        int value = Math.Max(0, Math.Min(100, e.ProgressPercentage));
                         progress.Value = value;
-                        statusLabel.Text = "Baixando atualização... " + value.ToString(CultureInfo.InvariantCulture) + "%";
+                        statusLabel.Text = "Baixando... " + value.ToString(CultureInfo.InvariantCulture) + "%";
                     };
                     wc.DownloadFileCompleted += delegate(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
                     {
                         if (e.Cancelled || e.Error != null)
                         {
                             statusLabel.ForeColor = Warning;
-                            statusLabel.Text = "Falha no download da atualização.";
+                            statusLabel.Text = "Falha no download.";
                             checkButton.Enabled = true;
                             return;
                         }
                         VerifyAndLaunch(hashFile);
                     };
-
                     using (WebClient hashClient = NewClient()) hashClient.DownloadFile(hashUrl, hashFile);
                     wc.DownloadFileAsync(new Uri(setupUrl), downloadedSetup);
-                    return;
                 }
             }
             catch (Exception ex)
             {
                 statusLabel.ForeColor = Warning;
-                statusLabel.Text = "Não foi possível baixar a atualização: " + ex.Message;
+                statusLabel.Text = "Falha: " + ex.Message;
                 checkButton.Enabled = true;
             }
         }
@@ -231,20 +215,13 @@ namespace ModernPC12
         {
             try
             {
-                statusLabel.Text = "Verificando SHA-256...";
-                string expectedText = File.ReadAllText(hashFile).Trim();
-                Match m = Regex.Match(expectedText, "([0-9A-Fa-f]{64})");
-                if (!m.Success) throw new InvalidDataException("Arquivo SHA-256 inválido.");
-                string expected = m.Groups[1].Value.ToUpperInvariant();
-                string actual = Sha256(downloadedSetup);
-                if (!string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException("O SHA-256 do instalador não confere. A instalação foi cancelada.");
+                statusLabel.Text = "Verificando...";
+                Match m = Regex.Match(File.ReadAllText(hashFile).Trim(), "([0-9A-Fa-f]{64})");
+                if (!m.Success) throw new InvalidDataException("SHA-256 inválido.");
+                if (!string.Equals(m.Groups[1].Value, Sha256(downloadedSetup), StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("SHA-256 não confere.");
 
                 progress.Value = 100;
-                statusLabel.ForeColor = Success;
-                statusLabel.Text = "Integridade confirmada. Abrindo o instalador...";
-                Application.DoEvents();
-
                 ProcessStartInfo psi = new ProcessStartInfo();
                 psi.FileName = downloadedSetup;
                 psi.Arguments = "/SILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS";
@@ -268,13 +245,13 @@ namespace ModernPC12
                 if (File.Exists(path)) return File.ReadAllText(path).Trim().TrimStart('v', 'V');
             }
             catch { }
-            return "0.7";
+            return "0.9";
         }
 
         private static WebClient NewClient()
         {
             WebClient wc = new WebClient();
-            wc.Headers[HttpRequestHeader.UserAgent] = "PC12-Studio-Updater";
+            wc.Headers[HttpRequestHeader.UserAgent] = "OpenLadder-Studio-Updater";
             wc.Headers[HttpRequestHeader.Accept] = "application/vnd.github+json";
             return wc;
         }
@@ -296,19 +273,16 @@ namespace ModernPC12
             string pattern = "\\\"name\\\"\\s*:\\s*\\\"" + escaped + "\\\"[\\s\\S]*?\\\"browser_download_url\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"";
             string found = Extract(json, pattern);
             if (!string.IsNullOrEmpty(found)) return found.Replace("\\/", "/");
-
             pattern = "\\\"browser_download_url\\\"\\s*:\\s*\\\"([^\\\"]*/" + escaped + ")\\\"";
-            found = Extract(json, pattern);
-            return found.Replace("\\/", "/");
+            return Extract(json, pattern).Replace("\\/", "/");
         }
 
         private static int CompareVersions(string a, string b)
         {
-            string[] pa = (a ?? string.Empty).Trim().TrimStart('v', 'V').Split('.');
-            string[] pb = (b ?? string.Empty).Trim().TrimStart('v', 'V').Split('.');
+            string[] pa = (a ?? "").Trim().TrimStart('v', 'V').Split('.');
+            string[] pb = (b ?? "").Trim().TrimStart('v', 'V').Split('.');
             int n = Math.Max(pa.Length, pb.Length);
-            int i;
-            for (i = 0; i < n; i++)
+            for (int i = 0; i < n; i++)
             {
                 int va = i < pa.Length ? ParseLeadingInt(pa[i]) : 0;
                 int vb = i < pb.Length ? ParseLeadingInt(pb[i]) : 0;
@@ -319,7 +293,7 @@ namespace ModernPC12
 
         private static int ParseLeadingInt(string s)
         {
-            Match m = Regex.Match(s ?? string.Empty, "^\\d+");
+            Match m = Regex.Match(s ?? "", "^\\d+");
             int value;
             return m.Success && int.TryParse(m.Value, out value) ? value : 0;
         }
@@ -331,8 +305,7 @@ namespace ModernPC12
             {
                 byte[] hash = sha.ComputeHash(fs);
                 StringBuilder sb = new StringBuilder(hash.Length * 2);
-                int i;
-                for (i = 0; i < hash.Length; i++) sb.Append(hash[i].ToString("X2"));
+                for (int i = 0; i < hash.Length; i++) sb.Append(hash[i].ToString("X2"));
                 return sb.ToString();
             }
         }
@@ -342,9 +315,9 @@ namespace ModernPC12
             Button b = new Button();
             b.Text = text;
             b.Location = new Point(left, top);
-            b.Size = new Size(width, 38);
+            b.Size = new Size(width, 36);
             b.FlatStyle = FlatStyle.Flat;
-            b.Font = new Font("Segoe UI Semibold", 8.5f, FontStyle.Bold);
+            b.Font = new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
             if (primary)
             {
