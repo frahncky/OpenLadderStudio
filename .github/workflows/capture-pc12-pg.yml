@@ -1,0 +1,162 @@
+name: Capturar handshake PG do PC12
+
+on:
+  push:
+    branches:
+      - analysis/pc12-protocol
+
+jobs:
+  capture:
+    runs-on: windows-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar ferramentas de instrumentação
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check frida pywinauto
+
+      - name: Executar PC12 e capturar TX do Link
+        shell: python
+        run: |
+          import os, sys, time, subprocess, threading, json
+          import frida
+          from pywinauto import Application, Desktop
+
+          root=os.path.abspath(r'PC12_v2.1_Windows7_v3_portatil')
+          exe=os.path.join(root,'pc12.exe')
+          print('START',exe)
+          p=subprocess.Popen([exe],cwd=root)
+          print('PID',p.pid)
+          time.sleep(2.0)
+
+          session=frida.attach(p.pid)
+          js=r'''
+          const k='kernel32.dll';
+          const fakeHandles={};
+          function exp(name){ return Module.getExportByName(k,name); }
+          const origCreateEventA=new NativeFunction(exp('CreateEventA'),'pointer',['pointer','bool','bool','pointer']);
+          const origCloseHandle=new NativeFunction(exp('CloseHandle'),'bool',['pointer']);
+          const Sleep=new NativeFunction(exp('Sleep'),'void',['uint']);
+          let fake=ptr('0');
+          function isFake(h){ return !fake.isNull() && h.equals(fake); }
+          function ascii(p){ try{return p.readAnsiString();}catch(e){return '';} }
+          function hex(p,n){ try { const a=new Uint8Array(p.readByteArray(n)); return Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join(' '); } catch(e){return 'ERR '+e;} }
+
+          Interceptor.attach(exp('CreateFileA'),{
+            onEnter(args){ this.name=ascii(args[0]); this.fakeCom=/^(\\\\\\.\\)?COM[1-4]$/i.test(this.name); },
+            onLeave(ret){
+              if(this.fakeCom){
+                if(fake.isNull()) fake=origCreateEventA(ptr('0'),false,false,ptr('0'));
+                send({kind:'CREATE_COM',name:this.name,original:ret.toString(),fake:fake.toString()});
+                ret.replace(fake);
+              }
+            }
+          });
+          function replaceBool(name,cb){
+            const a=exp(name); if(!a)return;
+            Interceptor.replace(a,new NativeCallback(cb,'bool',['pointer','pointer']));
+          }
+          // DCB initialization used by GetCommState.
+          Interceptor.replace(exp('GetCommState'),new NativeCallback(function(h,dcb){
+            if(!isFake(h)) return true;
+            dcb.writeU32(28); dcb.add(4).writeU32(19200); dcb.add(8).writeU32(1);
+            dcb.add(12).writeU16(0); dcb.add(14).writeU16(0); dcb.add(16).writeU16(0);
+            dcb.add(18).writeU8(8); dcb.add(19).writeU8(0); dcb.add(20).writeU8(0);
+            for(let i=21;i<28;i++) dcb.add(i).writeU8(0);
+            send({kind:'GETCOMMSTATE'}); return true;
+          },'bool',['pointer','pointer']));
+          Interceptor.replace(exp('SetCommState'),new NativeCallback(function(h,dcb){
+            if(isFake(h)){ send({kind:'SETCOMMSTATE',baud:dcb.add(4).readU32(),bytesize:dcb.add(18).readU8(),parity:dcb.add(19).readU8(),stopbits:dcb.add(20).readU8(),flags:dcb.add(8).readU32()}); return true; }
+            return true;
+          },'bool',['pointer','pointer']));
+          Interceptor.replace(exp('SetupComm'),new NativeCallback(function(h,a,b){ if(isFake(h)){send({kind:'SETUPCOMM',in:a,out:b});return true;} return true;},'bool',['pointer','uint','uint']));
+          Interceptor.replace(exp('SetCommMask'),new NativeCallback(function(h,m){ if(isFake(h)){send({kind:'SETCOMMMASK',mask:m});return true;} return true;},'bool',['pointer','uint']));
+          Interceptor.replace(exp('PurgeComm'),new NativeCallback(function(h,f){ if(isFake(h)){send({kind:'PURGECOMM',flags:f});return true;} return true;},'bool',['pointer','uint']));
+          Interceptor.replace(exp('ClearCommError'),new NativeCallback(function(h,e,s){ if(isFake(h)){ if(!e.isNull())e.writeU32(0); if(!s.isNull())for(let i=0;i<12;i++)s.add(i).writeU8(0); return true;} return true;},'bool',['pointer','pointer','pointer']));
+          Interceptor.replace(exp('WaitCommEvent'),new NativeCallback(function(h,m,o){ if(isFake(h)){ Sleep(20); if(!m.isNull())m.writeU32(0); return false;} return false;},'bool',['pointer','pointer','pointer']));
+          Interceptor.replace(exp('WriteFile'),new NativeCallback(function(h,b,n,w,o){
+            if(isFake(h)){ const hx=hex(b,n); if(!w.isNull())w.writeU32(n); send({kind:'TX',n:n,hex:hx}); return true; }
+            return false;
+          },'bool',['pointer','pointer','uint','pointer','pointer']));
+          Interceptor.replace(exp('ReadFile'),new NativeCallback(function(h,b,n,r,o){
+            if(isFake(h)){ if(!r.isNull())r.writeU32(0); Sleep(20); return false; }
+            return false;
+          },'bool',['pointer','pointer','uint','pointer','pointer']));
+          '''
+          messages=[]
+          def on_message(message,data):
+              print('FRIDA',json.dumps(message,default=str),flush=True)
+              messages.append(message)
+          script=session.create_script(js); script.on('message',on_message); script.load()
+          time.sleep(1)
+
+          app=Application(backend='win32').connect(process=p.pid)
+          def dump_windows(label):
+              print('\nWINDOWS',label)
+              for w in app.windows():
+                  try: print('WIN',repr(w.window_text()),w.class_name(),w.handle)
+                  except Exception as e: print('WINERR',e)
+          dump_windows('initial')
+
+          # Dismiss startup informational/error dialogs, if any, without closing the main frame.
+          for _ in range(4):
+              time.sleep(.5)
+              wins=app.windows()
+              for w in wins:
+                  try:
+                      title=w.window_text().lower()
+                      if any(x in title for x in ['error','erro','message','mensagem']) and w.class_name()=='#32770':
+                          print('DISMISS',w.window_text()); w.type_keys('{ENTER}')
+                  except Exception: pass
+
+          dump_windows('after-dismiss')
+          main=None
+          for w in app.windows():
+              try:
+                  if w.class_name()!='#32770' and w.is_visible(): main=w; break
+              except Exception: pass
+          if main is None: main=app.top_window()
+          print('MAIN',repr(main.window_text()),main.class_name(),main.handle)
+          try:
+              menu=main.menu()
+              print('MENU_TOP')
+              for item in menu.items():
+                  try: print('ITEM',repr(item.text()),'ID',item.id())
+                  except Exception as e: print('ITEMERR',e)
+          except Exception as e: print('MENUERR',repr(e))
+
+          selected=False
+          for path in ['PLC->Com Port','Plc->Com Port','PLC->Com Port...','Plc->Com Port...']:
+              try:
+                  print('TRY_MENU',path); main.menu_select(path); selected=True; print('MENU_OK',path); break
+              except Exception as e: print('MENU_FAIL',path,repr(e))
+          time.sleep(1)
+          dump_windows('after-com-port')
+
+          # Print dialog controls and click LINK.
+          for w in app.windows():
+              if w.handle==main.handle: continue
+              try:
+                  print('\nDIALOG',repr(w.window_text()),w.class_name())
+                  for c in w.descendants():
+                      try: print('CTRL',repr(c.window_text()),c.class_name(),c.control_id())
+                      except Exception: pass
+                  for c in w.descendants(class_name='Button'):
+                      t=c.window_text().strip().lower()
+                      if t=='link' or 'link'==t.replace('&',''):
+                          print('CLICK_LINK',repr(c.window_text()),c.control_id()); c.click(); selected=True; break
+              except Exception as e: print('DIALOGERR',repr(e))
+          time.sleep(5)
+          print('\nCAPTURE_SUMMARY')
+          tx=[]
+          for m in messages:
+              if m.get('type')=='send' and isinstance(m.get('payload'),dict) and m['payload'].get('kind')=='TX': tx.append(m['payload'])
+          print('TX_COUNT',len(tx))
+          for i,t in enumerate(tx): print('TX',i,'N',t.get('n'),'HEX',t.get('hex'))
+          try: session.detach()
+          except Exception: pass
+          try: p.terminate()
+          except Exception: pass
+          if not tx:
+              print('WARNING: nenhum WriteFile capturado; revisar automação da UI.')
