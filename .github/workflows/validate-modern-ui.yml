@@ -84,7 +84,7 @@ jobs:
           $title = "OpenLadder Studio v$version"
           $notes = "Versão oficial do OpenLadder Studio. Atualizações podem ser instaladas pela aba ATUALIZAR do próprio software."
 
-          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag $setup $sha --clobber --repo $env:GITHUB_REPOSITORY
             gh release edit $tag --title $title --notes $notes --repo $env:GITHUB_REPOSITORY
