@@ -24,7 +24,7 @@ namespace ModernPC12
 
     internal sealed class PC12UpdaterForm : Form
     {
-        private const string RepoApi = "https://api.github.com/repos/frahncky/UpgradeInterfacePLC/releases/latest";
+        private const string RepoApi = "https://api.github.com/repos/frahncky/OpenLadderStudio/releases/latest";
         private const string SetupAssetName = "OpenLadder-Studio-Setup.exe";
         private const string HashAssetName = "OpenLadder-Studio-Setup.exe.sha256";
 
