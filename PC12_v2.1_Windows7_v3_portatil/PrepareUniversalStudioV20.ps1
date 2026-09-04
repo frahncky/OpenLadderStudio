@@ -23,7 +23,7 @@ function Invoke-SectionReplace([string]$haystack, [string]$startAnchor, [string]
     return $haystack.Substring(0, $start) + $replacement + $haystack.Substring($after)
 }
 
-$text = Invoke-Replace $text 'v0.12' 'v0.20' 'versao'
+$text = Invoke-Replace $text 'v0.12' 'v0.21' 'versao'
 
 $fieldNeedle = '        private bool inspectorAllowed = true;'
 $fieldInsert = @'
