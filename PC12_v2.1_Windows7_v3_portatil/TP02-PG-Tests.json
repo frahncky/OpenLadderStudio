@@ -1,10 +1,21 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.1",
-  "title": "TP02 PG - pacote seguro de bancada",
+  "packageVersion": "2026.09.04.2",
+  "title": "TP02 PG - campanha segura de caracterizacao do HELLO",
   "sweeps": 2,
   "passiveCaptureMs": 5000,
   "stopOnUnknown": true,
+  "campaign": {
+    "enabled": true,
+    "runs": 12,
+    "rearmBetweenRuns": true,
+    "rearmDelayMs": 900,
+    "attemptsPerRun": 8,
+    "rxWindowMs": 1800,
+    "interAttemptMs": 180,
+    "passiveAfterEachMs": 350,
+    "stopOnUnknown": true
+  },
   "serialProfiles": [
     {
       "name": "Perfil A",
@@ -79,7 +90,7 @@
     },
     {
       "id": "capture-after-hello",
-      "name": "Escuta passiva apos Link PG",
+      "name": "Escuta passiva final apos campanha",
       "type": "passive",
       "enabled": true,
       "sweepProfiles": false,
@@ -133,7 +144,11 @@
       "F0 00 0F"
     ],
     "notes": [
-      "O modo padrao transmite somente CON-ICB<CR>.",
+      "A campanha transmite somente CON-ICB<CR>.",
+      "Sao executados 12 ciclos de caracterizacao apos a primeira resposta valida.",
+      "DTR/RTS sao rearmados entre ciclos sem transmitir dados durante o rearme.",
+      "HELLO-C0 e HELLO-80 sao contados separadamente; mudancas entre variantes sao registradas.",
+      "Qualquer terceiro quadro ou byte espontaneo interrompe a campanha e e preservado no relatorio.",
       "Etapas CANDIDATE nunca sao transmitidas.",
       "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
       "F0 00 0F permanece nao classificado e bloqueado.",
