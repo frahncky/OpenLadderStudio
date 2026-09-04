@@ -1,7 +1,12 @@
 $ErrorActionPreference = 'Stop'
 $sourcePath = Join-Path (Get-Location) 'UniversalStudioShell.cs'
 $outputPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
+$versionPath = Join-Path (Get-Location) 'version.txt'
 $text = [System.IO.File]::ReadAllText($sourcePath)
+
+if (-not (Test-Path $versionPath)) { throw 'version.txt não encontrado.' }
+$version = [System.IO.File]::ReadAllText($versionPath).Trim()
+if ($version -notmatch '^\d+\.\d+(\.\d+)?$') { throw "Versão inválida em version.txt: $version" }
 
 function Invoke-Replace([string]$haystack, [string]$needle, [string]$replacement, [string]$label) {
     if (-not $haystack.Contains($needle)) {
@@ -23,7 +28,7 @@ function Invoke-SectionReplace([string]$haystack, [string]$startAnchor, [string]
     return $haystack.Substring(0, $start) + $replacement + $haystack.Substring($after)
 }
 
-$text = Invoke-Replace $text 'v0.12' 'v0.21' 'versao'
+$text = Invoke-Replace $text 'v0.12' ('v' + $version) 'versao'
 
 $fieldNeedle = '        private bool inspectorAllowed = true;'
 $fieldInsert = @'
