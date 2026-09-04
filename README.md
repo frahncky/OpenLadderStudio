@@ -9,8 +9,11 @@ A nova camada **PC12 Modern** adiciona uma central visual mais atual para Window
 - painel inicial com status do pacote;
 - abertura do PC12 em modo normal ou como administrador;
 - detecção das portas COM disponíveis;
+- resumo visual da ajuda local e do último projeto conhecido;
+- atalho para abrir a pasta do último projeto salvo quando o caminho ainda existe;
 - acesso rápido ao Gerenciador de Dispositivos;
 - checklist de comunicação com o TP02;
+- cópia de diagnóstico do ambiente para facilitar suporte;
 - ferramenta para limpar `lastfile.cpu` e `lastfile.dir` sem apagar projetos;
 - abertura da pasta do software;
 - acesso à ajuda local;
