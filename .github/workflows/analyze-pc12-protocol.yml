@@ -44,20 +44,38 @@ jobs:
           for token in [b'MCR',b'MRV',b'RBP',b'SCS',b'WRV',b'WBP',b'PSR',b'STP',b'RUN',b'RTC',b'PAS',b'ROM',b'CLR']:
               positions=[m.start() for m in re.finditer(re.escape(token), data)]
               print(token.decode(), positions[:40], 'count=', len(positions))
-              for pos in positions[:8]:
-                  lo=max(0,pos-32); hi=min(len(data),pos+64)
-                  print(' ', pos, data[lo:hi].hex(' '))
 
-      - name: Mostrar imports PE
+      - name: Mostrar imports e chamadas seriais
         shell: pwsh
         run: |
           $p = Resolve-Path 'PC12_v2.1_Windows7_v3_portatil/pc12.exe'
           $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-          if (Test-Path $vswhere) {
-            $vs = & $vswhere -latest -property installationPath
-            $dump = Get-ChildItem (Join-Path $vs 'VC\Tools\MSVC') -Filter dumpbin.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($dump) {
-              Write-Host "DUMPBIN=$($dump.FullName)"
-              & $dump.FullName /imports $p | Select-String -Pattern 'CreateFile|ReadFile|WriteFile|SetComm|GetComm|EscapeComm|PurgeComm|ClearComm|WaitComm|SetCommMask|GetCommMask|BuildComm|TransmitComm|SetupComm|CloseHandle|Sleep|GetOverlapped|CreateEvent|DeviceIoControl' -Context 2,2
-            } else { Write-Host 'dumpbin não localizado' }
-          } else { Write-Host 'vswhere não localizado' }
+          $vs = & $vswhere -latest -property installationPath
+          $dump = Get-ChildItem (Join-Path $vs 'VC\Tools\MSVC') -Filter dumpbin.exe -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'Hostx64\\x86\\dumpbin.exe$' } | Select-Object -First 1
+          if (-not $dump) { $dump = Get-ChildItem (Join-Path $vs 'VC\Tools\MSVC') -Filter dumpbin.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 }
+          Write-Host "DUMPBIN=$($dump.FullName)"
+          & $dump.FullName /imports $p | Select-String -Pattern 'CreateFile|ReadFile|WriteFile|SetComm|GetComm|EscapeComm|PurgeComm|ClearComm|WaitComm|SetupComm|CloseHandle' -Context 2,2
+          & $dump.FullName /disasm $p > pc12.disasm.txt
+          Write-Host '=== REFERENCES A SERIAL APIS NO DISASSEMBLY ==='
+          Select-String -Path pc12.disasm.txt -Pattern 'WriteFile|ReadFile|SetCommState|CreateFileA|WaitCommEvent|PurgeComm|ClearCommError' -Context 20,20 | Select-Object -First 80
+
+      - name: Procurar padrões de link PG no binário
+        shell: python
+        run: |
+          import pathlib, re, struct
+          data = pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe').read_bytes()
+          markers = [b'TP02 Link Success !', b'Link Protocol fail', b'Not PG Protocol Function', b'COM1:Linking', b'PLC Mode: Running', b'PLC Mode: Program']
+          for m in markers:
+              pos = data.find(m)
+              print('\nMARKER', m, 'FILE_OFFSET', pos)
+              if pos >= 0:
+                  lo=max(0,pos-128); hi=min(len(data),pos+256)
+                  print(data[lo:hi].hex(' '))
+          print('\n=== CANDIDATOS BINARIOS CURTOS REPETIDOS ===')
+          # procura sequencias curtas perto de regiões de comunicação com muitos bytes de controle
+          for start in range(0, len(data)-64, 16):
+              chunk=data[start:start+32]
+              controls=sum(1 for b in chunk if b < 0x20)
+              printable=sum(1 for b in chunk if 0x20 <= b < 0x7f)
+              if controls >= 12 and 4 <= printable <= 16 and any(x in chunk for x in (b'PG', b'COM', b'TP')):
+                  print(start, chunk.hex(' '))
