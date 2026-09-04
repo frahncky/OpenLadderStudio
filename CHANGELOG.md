@@ -2,6 +2,22 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.30] - 2026-09-04
+
+### Comunicação e controle WEG TP02
+- nova tela **Controle online - WEG TP02**, integrada ao item Comunicação do OpenLadder Studio;
+- leitura do estado do PLC por `PSR`, de bobinas/relés por `MCR` e de registradores por `MRV`;
+- escrita de bobinas/relés `Y`, `C` e `SC` por `SCS`, com leitura de confirmação após a operação;
+- escrita de uma palavra em registradores `V`, `D`, `WS`, `WC` e `F` por `WRV`, com leitura de confirmação após a operação;
+- comandos `RUN` e `STP` (STOP) com confirmação explícita e nova leitura `PSR` para verificar o estado resultante;
+- registro técnico dos quadros TX/RX em texto e hexadecimal, checksum e mensagens de erro do protocolo;
+- parâmetros de porta, baud, bits, paridade, stop bits e estação são preservados nas configurações do controlador.
+
+### Segurança operacional
+- comandos que alteram bobinas, registradores ou o estado RUN/STOP exigem confirmação antes do envio;
+- a interface alerta que os comandos atuam no PLC físico e podem alterar saídas ou movimentar a máquina;
+- `CLR`, `WBP`, `ROM`, apagamento de memória e download de programa continuam deliberadamente fora da tela operacional.
+
 ## [0.29] - 2026-09-04
 
 ### Comunicação WEG TP02
