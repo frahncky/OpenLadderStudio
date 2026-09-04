@@ -81,7 +81,7 @@ jobs:
           $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
           $sha = 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
           $title = "OpenLadder Studio v$version"
-          $notes = "Versão oficial com arquitetura multi-PLC, perfis personalizados de fabricante/modelo usando Modbus RTU/TCP, mapa de memória por controlador e leitura automática em múltiplos blocos."
+          $notes = "Versão oficial com arquitetura multi-PLC, perfis personalizados Modbus RTU/TCP, mapa de memória, leitura automática em múltiplos blocos e monitoramento online periódico configurável entre 250 ms e 5 s."
 
           cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
           if ($LASTEXITCODE -eq 0) {
