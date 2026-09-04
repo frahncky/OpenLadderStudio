@@ -13,6 +13,7 @@ namespace ModernPC12
         [STAThread]
         private static void Main()
         {
+            StudioDiagnostics.Install();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new LadderEditorForm());

@@ -59,6 +59,27 @@ Preferir múltiplos de 4 px. Referências:
 - 12–16 px: margens internas de painéis;
 - 24 px: separação entre blocos funcionais.
 
+## Escalonamento e DPI
+
+Os executáveis embutem um manifesto que declara reconhecimento de DPI do sistema
+(`dpiAware`). Sem essa declaração o Windows amplia a janela como bitmap e a interface
+aparece borrada em telas com escala de 125%, 150% ou 200%.
+
+Consequências para quem escreve interface:
+
+- os formulários devem manter `AutoScaleMode.Dpi`;
+- tamanhos de fonte são definidos em pontos, nunca em pixels;
+- desenho de ícone deve ser proporcional ao retângulo recebido, como faz `StudioGlyph.Draw`,
+  e não em coordenadas absolutas;
+- a declaração é de DPI do sistema, não per-monitor: mover a janela entre telas de escalas
+  diferentes não redimensiona os controles até reabrir o aplicativo.
+
+## Erros visíveis ao usuário
+
+Falha inesperada não pode encerrar o aplicativo em silêncio. `StudioDiagnostics` captura
+exceções não tratadas, registra em `%APPDATA%\OpenLadder Studio\logs` e mostra uma
+mensagem que inclui o caminho do registro, para o usuário conseguir reportar o problema.
+
 ## Tipografia
 
 - interface: Segoe UI;

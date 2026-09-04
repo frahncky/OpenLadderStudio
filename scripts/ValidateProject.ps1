@@ -49,6 +49,25 @@ foreach ($hit in [Regex]::Matches($buildText, '/out:"([A-Za-z0-9_]+\.exe)"')) {
 }
 if ($produced.Count -eq 0) { throw 'Nenhum executável encontrado em BUILD_INTERFACE_MODERNA.bat.' }
 
+$manifest = Join-Path $portable 'OpenLadderStudio.manifest'
+if (-not (Test-Path $manifest)) { throw "Arquivo obrigatório ausente: $manifest" }
+
+$manifestText = [System.IO.File]::ReadAllText($manifest)
+if ($manifestText -notmatch '<dpiAware[^>]*>\s*true\s*</dpiAware>') {
+    throw 'O manifesto deve declarar dpiAware = true, senão a interface fica borrada em telas com escala.'
+}
+
+$compileLines = @([Regex]::Matches($buildText, '(?m)^.*?/out:"[A-Za-z0-9_]+\.exe".*$'))
+if ($compileLines.Count -eq 0) { throw 'Nenhuma invocação do compilador encontrada em BUILD_INTERFACE_MODERNA.bat.' }
+foreach ($line in $compileLines) {
+    if ($line.Value -notmatch '/win32manifest:') {
+        throw 'Toda invocação do compilador deve usar /win32manifest para embutir o reconhecimento de DPI.'
+    }
+    if ($line.Value -notmatch 'StudioDiagnostics\.cs') {
+        throw 'Toda invocação do compilador deve incluir StudioDiagnostics.cs para o tratamento global de erros.'
+    }
+}
+
 foreach ($launcher in Get-ChildItem -Path $portable -Filter 'INICIAR_*.bat') {
     $launcherText = [System.IO.File]::ReadAllText($launcher.FullName).Replace('%~dp0', '')
     foreach ($hit in [Regex]::Matches($launcherText, '([A-Za-z0-9_]+\.exe)')) {

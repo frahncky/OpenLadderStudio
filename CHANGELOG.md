@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.23] - 2026-09-04
+
+### Interface
+- a janela deixa de ser ampliada como bitmap em telas com escala de 125%, 150% ou 200%;
+  o manifesto passa a declarar reconhecimento de DPI do sistema e a interface fica nítida;
+- erros inesperados passam a exibir uma mensagem em vez de encerrar o aplicativo em silêncio.
+
+### Confiabilidade
+- tratamento global de exceções instalado nos seis executáveis;
+- falhas são registradas em `%APPDATA%\OpenLadder Studio\logs`, com data, versão,
+  sistema operacional e pilha de chamadas, para permitir diagnóstico e reporte;
+- a mensagem de erro informa o caminho do registro gerado.
+
+### Engenharia de software
+- `ValidateProject.ps1` passa a exigir que todo executável embuta o manifesto de DPI e
+  o módulo de diagnóstico, para que a correção não se perca em alterações futuras.
+
 ## [0.22] - 2026-09-04
 
 ### Interface
