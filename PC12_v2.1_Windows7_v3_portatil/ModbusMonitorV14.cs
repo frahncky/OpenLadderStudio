@@ -194,6 +194,7 @@ namespace ModernPC12
             center.BackColor = Shell;
             center.Padding = new Padding(12);
             Controls.Add(center);
+            center.BringToFront();
 
             Label resultTitle = NewLabel("Dados lidos", 11.0f, true, Fore);
             resultTitle.Dock = DockStyle.Top;
@@ -251,9 +252,6 @@ namespace ModernPC12
             center.Controls.Add(resultGrid);
 
             resultGrid.BringToFront();
-            resultTitle.BringToFront();
-            header.BringToFront();
-            left.BringToFront();
         }
 
         private void BuildSerialPanel(Control parent)

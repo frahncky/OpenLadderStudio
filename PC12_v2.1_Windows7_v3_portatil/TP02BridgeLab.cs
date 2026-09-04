@@ -95,6 +95,7 @@ namespace ModernPC12
             tabs.Dock = DockStyle.Fill;
             tabs.Font = new Font("Segoe UI Semibold", 9.0f);
             Controls.Add(tabs);
+            tabs.BringToFront();
             DockOrder.Apply(this, tabs, header);
 
             TabPage projectTab = new TabPage("Projeto PC12");

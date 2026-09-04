@@ -128,6 +128,7 @@ namespace ModernPC12
             shell.Dock = DockStyle.Fill;
             shell.BackColor = Canvas;
             Controls.Add(shell);
+            shell.BringToFront();
 
             Panel side = new Panel();
             side.Dock = DockStyle.Left;
@@ -214,10 +215,6 @@ namespace ModernPC12
             host.Padding = new Padding(18);
             main.Controls.Add(host);
 
-            titleBar.BringToFront();
-            side.BringToFront();
-            top.BringToFront();
-            footer.BringToFront();
         }
 
         private StudioNavButton AddNav(Control parent, string text, int top, EventHandler handler)

@@ -132,6 +132,7 @@ namespace ModernPC12
             workspace.Dock = DockStyle.Fill;
             workspace.BackColor = Shell;
             Controls.Add(workspace);
+            workspace.BringToFront();
 
             Control status = BuildStatusBar();
             Controls.Add(status);

@@ -136,6 +136,7 @@ namespace ModernPC12
             split.SplitterDistance = 430;
             split.BackColor = Canvas;
             Controls.Add(split);
+            split.BringToFront();
             DockOrder.Apply(this, split, commands, header);
 
             grid = new DataGridView();

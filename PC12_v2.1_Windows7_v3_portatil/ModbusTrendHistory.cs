@@ -251,8 +251,6 @@ namespace ModernPC12
             Controls.Add(canvas);
 
             canvas.BringToFront();
-            header.BringToFront();
-            footer.BringToFront();
         }
 
         private void RefreshSignalList()

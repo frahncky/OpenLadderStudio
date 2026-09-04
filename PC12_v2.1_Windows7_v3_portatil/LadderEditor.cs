@@ -210,6 +210,7 @@ namespace ModernPC12
             // precisa entrar primeiro, senao ele ocupa toda a area e as barras passam
             // a se sobrepor ao conteudo.
             Controls.Add(body);
+            body.BringToFront();
             Controls.Add(bottom);
             Controls.Add(commandBar);
             Controls.Add(header);

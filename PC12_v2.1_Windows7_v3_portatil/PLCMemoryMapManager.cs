@@ -135,8 +135,6 @@ namespace ModernPC12
             Controls.Add(grid);
 
             grid.BringToFront();
-            header.BringToFront();
-            footer.BringToFront();
         }
 
         private void LoadMap()

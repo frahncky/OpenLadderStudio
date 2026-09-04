@@ -76,26 +76,27 @@ namespace ModernPC12
             header.Controls.Add(sub);
 
             Button create = ButtonStyle("NOVO PERFIL", 790, 18, 116, PanelColor);
-            create.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             create.Click += CreateCustomProfile;
             header.Controls.Add(create);
 
             editButton = ButtonStyle("EDITAR", 914, 18, 72, PanelColor);
-            editButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             editButton.Click += EditCustomProfile;
             header.Controls.Add(editButton);
 
             deleteButton = ButtonStyle("EXCLUIR", 994, 18, 72, PanelColor);
-            deleteButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             deleteButton.Click += DeleteCustomProfile;
             header.Controls.Add(deleteButton);
 
-            header.Resize += delegate
+            EventHandler layoutHeaderButtons = delegate
             {
-                create.Left = header.ClientSize.Width - 290;
-                editButton.Left = header.ClientSize.Width - 166;
-                deleteButton.Left = header.ClientSize.Width - 86;
+                int margin = header.Font.Height;
+                int gap = margin / 2;
+                deleteButton.Left = header.ClientSize.Width - deleteButton.Width - margin;
+                editButton.Left = deleteButton.Left - editButton.Width - gap;
+                create.Left = editButton.Left - create.Width - gap;
             };
+            header.Resize += layoutHeaderButtons;
+            layoutHeaderButtons(header, EventArgs.Empty);
 
             Panel footer = new Panel();
             footer.Dock = DockStyle.Bottom;
@@ -119,11 +120,12 @@ namespace ModernPC12
 
             SplitContainer split = new SplitContainer();
             split.Dock = DockStyle.Fill;
-            split.SplitterDistance = 620;
+            split.FixedPanel = FixedPanel.Panel2;
             split.BackColor = Shell;
             split.Panel1.BackColor = Shell;
             split.Panel2.BackColor = Chrome;
             Controls.Add(split);
+            split.BringToFront();
 
             grid = new DataGridView();
             grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
@@ -190,8 +192,25 @@ namespace ModernPC12
             notesValue.MaximumSize = new Size(390, 92);
             details.Controls.Add(notesValue);
 
-            header.BringToFront();
-            footer.BringToFront();
+            details.Resize += delegate { ApplyDetailWidth(details); };
+            Load += delegate
+            {
+                int wanted = split.ClientSize.Width - Font.Height * 22;
+                if (wanted > 240 && wanted < split.ClientSize.Width - 160) split.SplitterDistance = wanted;
+                ApplyDetailWidth(details);
+            };
+        }
+
+        private void ApplyDetailWidth(Control details)
+        {
+            int w = details.ClientSize.Width - 40;
+            if (w < 140) w = 140;
+            Label[] all = new Label[] { modelValue, originValue, driverValue, protocolValue,
+                transportValue, supportValue, capabilitiesValue, notesValue };
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] != null) all[i].MaximumSize = new Size(w, 0);
+            }
         }
 
         private void LoadProfiles(string preferredId)

@@ -146,6 +146,7 @@ namespace ModernPC12
             horizontal.SplitterDistance = 500;
             horizontal.BackColor = Canvas;
             Controls.Add(horizontal);
+            horizontal.BringToFront();
             DockOrder.Apply(this, horizontal, commands, header);
 
             SplitContainer main = new SplitContainer();

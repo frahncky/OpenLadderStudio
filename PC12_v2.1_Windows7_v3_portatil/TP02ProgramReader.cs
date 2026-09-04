@@ -182,6 +182,7 @@ namespace ModernPC12
             outputBox.BackColor = Color.FromArgb(20, 28, 36);
             outputBox.ForeColor = Color.FromArgb(220, 233, 245);
             Controls.Add(outputBox);
+            outputBox.BringToFront();
             DockOrder.Apply(this, outputBox, read, config, header);
 
         }

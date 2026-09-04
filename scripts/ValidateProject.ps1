@@ -97,6 +97,17 @@ foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
     }
 }
 
+foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
+    $code = [System.IO.File]::ReadAllText($file.FullName)
+    if ($code -notmatch '(?m)class\s+\w+\s*:\s*Form\b') { continue }
+    foreach ($hit in [Regex]::Matches($code, '(\w+)\.Dock\s*=\s*DockStyle\.(Top|Bottom|Left|Right)\s*;')) {
+        $bar = $hit.Groups[1].Value
+        if ($code -match ('(?m)^\s*' + [Regex]::Escape($bar) + '\.BringToFront\(\);')) {
+            throw "$($file.Name) chama BringToFront em '$bar', que e uma barra ancorada. A ancoragem resolve do ultimo filho para o primeiro: so o painel Fill pode ir para a frente, senao as barras passam a ser desenhadas por cima do conteudo."
+        }
+    }
+}
+
 $generated = @(
     (Join-Path $repoRoot 'installer\PC12Studio.build.iss'),
     (Join-Path $portable 'StudioUi.build.cs'),

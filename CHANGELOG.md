@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.27] - 2026-09-04
+
+### Correção
+- as barras de título e de rodapé deixam de ser desenhadas por cima do conteúdo.
+  A ancoragem do WinForms é resolvida do último filho para o primeiro, e chamar
+  `BringToFront()` em uma barra ancorada faz o painel principal ocupar a área inteira
+  antes dela. Na tela de controladores isso escondia a linha de títulos das colunas
+  e cortava a primeira linha da lista;
+- a regra foi aplicada aos 15 formulários do software, não só ao gerenciador;
+- o botão EXCLUIR deixa de ser cortado na borda: os botões do cabeçalho passam a ser
+  posicionados pela própria largura, e não por deslocamentos fixos em pixels;
+- o painel de detalhes deixa de cortar o texto: a divisória passa a ser posicionada
+  depois do layout e proporcional à fonte, e os rótulos acompanham a largura do painel.
+
+### Engenharia de software
+- `ValidateProject.ps1` passa a recusar `BringToFront()` em barra ancorada.
+
 ## [0.26] - 2026-09-04
 
 ### Correção

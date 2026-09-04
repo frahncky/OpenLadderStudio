@@ -122,6 +122,7 @@ namespace ModernPC12
             shell.Dock = DockStyle.Fill;
             shell.BackColor = Canvas;
             Controls.Add(shell);
+            shell.BringToFront();
 
             Panel sidebar = new Panel();
             sidebar.Dock = DockStyle.Left;
@@ -218,9 +219,6 @@ namespace ModernPC12
             workspace.Padding = new Padding(32, 8, 32, 28);
             contentShell.Controls.Add(workspace);
 
-            contentHeader.BringToFront();
-            sidebar.BringToFront();
-            topBar.BringToFront();
         }
 
         private ModernButton CreateNavButton(string text, int top)
