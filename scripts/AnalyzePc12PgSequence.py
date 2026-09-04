@@ -1,6 +1,6 @@
 import os, struct
 import pefile
-from capstone import Cs, CS_ARCH_X86, CS_MODE_32
+from capstone import Cs, CsError, CS_ARCH_X86, CS_MODE_32
 from capstone.x86 import X86_OP_IMM, X86_OP_MEM
 
 EXE = os.path.join('PC12_v2.1_Windows7_v3_portatil', 'pc12.exe')
@@ -52,14 +52,24 @@ def va_to_off(va):
     try:return pe.get_offset_from_rva(va-image_base)
     except Exception:return None
 
+def get_operands(ins):
+    # Capstone emits pseudo-instructions for embedded data when skipdata is on.
+    # Those instructions have no detail/operands and must not abort the scan.
+    if getattr(ins, 'id', 0) == 0 or str(getattr(ins, 'mnemonic', '')).startswith('.byte'):
+        return []
+    try:
+        return ins.operands
+    except CsError:
+        return []
+
 def xrefs_to(values):
     vals=set(v for v in values if v is not None)
     refs=[]
     for idx,ins in enumerate(insns):
-        for op in ins.operands:
-            if op.type==X86_OP_IMM and op.imm in vals:
+        for op in get_operands(ins):
+            if op.type==X86_OP_IMM and (op.imm & 0xffffffff) in vals:
                 refs.append((idx,ins)); break
-            if op.type==X86_OP_MEM and op.mem.disp in vals:
+            if op.type==X86_OP_MEM and (op.mem.disp & 0xffffffff) in vals:
                 refs.append((idx,ins)); break
     return refs
 
@@ -96,13 +106,14 @@ for target in TARGETS:
         vals=pointer_chain_for_va(va)
         refs=xrefs_to(vals)
         print(' xrefs=',len(refs))
-        for idx,ins in refs[:6]:
+        for idx,ins in refs[:8]:
             print(f' -- XREF 0x{ins.address:08X} --')
             dump_window(idx)
 
 print('\n=== RAW CONSTANTS ===')
 patterns={
     'HELLO full':bytes([0x43,0x4F,0x4E,0x2D,0x49,0x43,0x42,0x0D]),
+    'HELLO no CR':bytes([0x43,0x4F,0x4E,0x2D,0x49,0x43,0x42]),
     'HELLO dword1':bytes([0x43,0x4F,0x4E,0x2D]),
     'HELLO dword2':bytes([0x49,0x43,0x42,0x0D]),
     'RX 8O1':bytes([0x4E,0x01,0x09,0x35]),
@@ -115,26 +126,25 @@ for label,pat in patterns.items():
     for off in offs[:5]:
         va=off_to_va(off)
         print(f'  off=0x{off:X} va={"0x%08X"%va if va else "?"}')
-        lo=max(0,off-48); hi=min(len(raw),off+len(pat)+96)
+        lo=max(0,off-64); hi=min(len(raw),off+len(pat)+128)
         print('  raw-near=',raw[lo:hi].hex(' ').upper())
         if va:
             vals=pointer_chain_for_va(va)
             refs=xrefs_to(vals)
             print('  xrefs=',len(refs))
-            for idx,ins in refs[:6]:
+            for idx,ins in refs[:8]:
                 print(f'  -- XREF 0x{ins.address:08X} --')
-                dump_window(idx,18,36)
+                dump_window(idx,20,45)
 
 print('\n=== HELLO DWORD IMMEDIATES ===')
-for imm in [0x2D4E4F43,0x0D424349,0x3509014E,0x350901C0,0x000F00F0,0x000F00F0 & 0xffffffff]:
+for imm in [0x2D4E4F43,0x0D424349,0x3509014E,0x350901C0,0x000F00F0]:
     refs=xrefs_to([imm])
     print(f'IMM 0x{imm:08X}: {len(refs)} refs')
     for idx,ins in refs[:12]:
         print(f'  0x{ins.address:08X}: {ins.mnemonic} {ins.op_str}')
-        dump_window(idx,12,24)
+        dump_window(idx,14,30)
 
-print('\n=== BYTE-COMPARE CANDIDATES AROUND LINK MESSAGES ===')
-# Print compact references to single-byte constants seen in the physical reply.
+print('\n=== BYTE-COMPARE CANDIDATES ===')
 for imm in [0x4E,0x01,0x09,0x35,0xC0,0xF0,0x0F]:
     refs=xrefs_to([imm])
     useful=[]
@@ -142,5 +152,13 @@ for imm in [0x4E,0x01,0x09,0x35,0xC0,0xF0,0x0F]:
         if ins.mnemonic.startswith(('cmp','test','mov','push')):
             useful.append((idx,ins))
     print(f'IMM 0x{imm:02X}: {len(useful)} cmp/test/mov/push refs')
-    for idx,ins in useful[:20]:
+    for idx,ins in useful[:30]:
         print(f'  0x{ins.address:08X}: {ins.mnemonic:<7} {ins.op_str}')
+
+print('\n=== DIRECT RAW CONTEXT OF F0 00 0F ===')
+for off in find_all(raw, bytes([0xF0,0x00,0x0F])):
+    va=off_to_va(off)
+    print(f'F0 at off=0x{off:X}, va={"0x%08X"%va if va else "?"}')
+    for radius in [32,128,512]:
+        lo=max(0,off-radius); hi=min(len(raw),off+3+radius)
+        print(f' radius={radius}: {raw[lo:hi].hex(" ").upper()}')
