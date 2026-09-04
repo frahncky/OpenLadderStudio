@@ -61,7 +61,7 @@ namespace ModernPC12
             header.Controls.Add(brand);
 
             Label version = new Label();
-            version.Text = "v0.9";
+            version.Text = "v0.10";
             version.AutoSize = true;
             version.Font = new Font("Segoe UI", 8.0f);
             version.ForeColor = TextSecondary;
