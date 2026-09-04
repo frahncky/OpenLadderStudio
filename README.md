@@ -10,7 +10,8 @@ O projeto possui uma **interface unificada** chamada `PC12_Studio.exe`. Ela reú
 - Editor Ladder moderno;
 - TP02 Bridge Lab;
 - leitor da memória de programa por `RBP`;
-- decodificador/calibrador `RBP -> Boolean/IL`;
+- decodificador `RBP -> Boolean/IL`;
+- laboratório de **calibração automática de opcodes**;
 - acesso ao PC12 original;
 - informações de compatibilidade e estágio da modernização.
 
@@ -98,12 +99,40 @@ Recursos:
 - nível de evidência: `Manual`, `Teste controlado`, `Inferido por comparação` ou `Não confirmado`;
 - mapa local em `tp02_opcode_map.tsv`;
 - exportação do dump para uma lista `.il.txt`, mantendo `UNKNOWN` onde ainda não houver prova suficiente;
-- amostra RBP documentada no manual com os words `5E1509`, `204006` e `20C10F`, mantidos como `UNKNOWN` até existir associação semântica comprovada;
-- integração ao menu **Decodificar RBP** do PC12 Studio.
+- amostra RBP documentada no manual com os words `5E1509`, `204006` e `20C10F`, mantidos como `UNKNOWN` até existir associação semântica comprovada.
 
-A metodologia de pesquisa está documentada em `docs/TP02_OPCODE_RESEARCH.md`. A estratégia é comparar programas quase idênticos, alterando apenas uma instrução ou um endereço por experimento para separar os bits de **opcode** dos bits de **operando**.
+## Calibração automática de opcodes — Etapa 6
 
-O manual do TP02 informa que o RBP retorna **linguagem de máquina**, não a lista Boolean/IL traduzida. Por isso o software não atribui automaticamente significados às palavras sem evidência.
+O `TP02OpcodeCalibration.cs` automatiza a comparação de vários experimentos controlados.
+
+Fluxo:
+
+1. criar no PC12 original programas mínimos que diferem em apenas um item;
+2. ler sempre a mesma faixa com `RBP`;
+3. salvar cada leitura como `.rbpdump`;
+4. informar ao laboratório qual instrução e operando foram usados;
+5. executar **INFERIR MÁSCARAS**.
+
+O laboratório calcula:
+
+- máscara de bits que variam entre operandos da mesma instrução;
+- máscara candidata de opcode, usando os bits que permanecem constantes;
+- valor candidato do opcode;
+- comparação de instruções diferentes usando o mesmo operando;
+- XOR de 24 bits para localizar diferenças de opcode;
+- representação binária por `HIGH / LOW / EXT`;
+- relatório de calibração `.cal.txt`.
+
+Há também um **ROTEIRO DE TESTES** embutido com sequências como:
+
+- `STR X0001`, `STR X0002`, `STR X0004`, `STR X0016`;
+- `STR X0001`, `STR NOT X0001`, `AND X0001`, `AND NOT X0001`, `OR X0001`, `OR NOT X0001`;
+- `STR X0001`, `STR Y0001`, `STR C0001`, `STR SC001`;
+- testes separados de `OUT`, `TMR` e `CNT`.
+
+Uma máscara inferida **não é automaticamente tratada como comprovada**. Ela deve ser repetida com vários endereços e famílias de operandos antes de virar regra definitiva no decodificador.
+
+A metodologia de pesquisa também está documentada em `docs/TP02_OPCODE_RESEARCH.md`.
 
 **Nenhum comando `WBP`, RUN, STOP, escrita de registradores ou limpeza de memória é exposto nas ferramentas modernas.**
 
@@ -129,6 +158,10 @@ O manual do TP02 informa que o RBP retorna **linguagem de máquina**, não a lis
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_DECODIFICADOR_RBP.bat`
 
+### Calibração automática separada
+
+`PC12_v2.1_Windows7_v3_portatil/INICIAR_CALIBRACAO_OPCODE.bat`
+
 ### PC12 clássico
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12_CLASSICO.bat`
@@ -140,15 +173,11 @@ O manual do TP02 informa que o RBP retorna **linguagem de máquina**, não a lis
 - `LadderEditor.cs` — editor Ladder;
 - `TP02BridgeLab.cs` — análise de projetos PC12 e comunicação somente leitura;
 - `TP02ProgramReader.cs` — leitor `RBP` da memória de programa;
-- `TP02MachineDecoder.cs` — comparação/calibração de WORDs RBP e exportação para IL;
+- `TP02MachineDecoder.cs` — comparação de WORDs RBP e exportação para IL;
+- `TP02OpcodeCalibration.cs` — inferência automática de máscaras de opcode/operando;
 - `docs/TP02_OPCODE_RESEARCH.md` — metodologia e registro de evidências dos opcodes;
 - `BUILD_INTERFACE_MODERNA.bat` — compilação local das interfaces;
-- `INICIAR_PC12.bat` — inicializador principal;
-- `INICIAR_EDITOR_LADDER.bat` — Ladder separado;
-- `INICIAR_BRIDGE_TP02.bat` — Bridge separado;
-- `INICIAR_LEITOR_RBP.bat` — leitor RBP separado;
-- `INICIAR_DECODIFICADOR_RBP.bat` — decodificador separado;
-- `INICIAR_PC12_CLASSICO.bat` — PC12 legado.
+- `INICIAR_PC12.bat` — inicializador principal.
 
 ## Compatibilidade
 
@@ -164,9 +193,10 @@ As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas,
 6. comunicação serial em modo somente leitura — iniciada;
 7. leitura do programa por `RBP` — implementada em nível de linguagem de máquina;
 8. laboratório de decodificação RBP para Boolean/IL — implementado;
-9. calibração sistemática dos opcodes e campos de endereço — próxima etapa com dumps controlados;
-10. reconstrução automática Boolean/IL -> Ladder;
-11. importação `.PLC` / RBP -> `.pladder`;
-12. geração controlada do formato nativo;
-13. transferência de programa após validação com hardware;
-14. substituição progressiva do PC12 legado.
+9. inferência automática de máscaras de opcode/operando — implementada;
+10. validação dos opcodes com dumps controlados reais — depende dos experimentos no hardware/PC12;
+11. reconstrução automática Boolean/IL -> Ladder;
+12. importação `.PLC` / RBP -> `.pladder`;
+13. geração controlada do formato nativo;
+14. transferência de programa após validação com hardware;
+15. substituição progressiva do PC12 legado.
