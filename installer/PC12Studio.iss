@@ -23,7 +23,7 @@ SetupLogging=yes
 UninstallDisplayIcon={app}\OpenLadderStudio.ico
 UninstallDisplayName=OpenLadder Studio
 CloseApplications=yes
-RestartApplications=yes
+RestartApplications=no
 ArchitecturesAllowed=x86 x64
 
 [Languages]
@@ -56,4 +56,25 @@ Name: "{group}\Verificar atualizações"; Filename: "{app}\OpenLadderUpdater.exe
 Name: "{autodesktop}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\OpenLadderStudio.exe"; Description: "Abrir OpenLadder Studio"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\OpenLadderStudio.exe"; Flags: nowait; Check: ShouldAutoReopenOpenLadder
+Filename: "{app}\OpenLadderStudio.exe"; Description: "Abrir OpenLadder Studio"; Flags: nowait postinstall skipifsilent; Check: WasOpenLadderClosedBeforeInstall
+
+[Code]
+var
+  OpenLadderWasRunning: Boolean;
+
+function InitializeSetup(): Boolean;
+begin
+  OpenLadderWasRunning := FindWindowByWindowName('{#MyAppName}') <> 0;
+  Result := True;
+end;
+
+function ShouldAutoReopenOpenLadder(): Boolean;
+begin
+  Result := OpenLadderWasRunning;
+end;
+
+function WasOpenLadderClosedBeforeInstall(): Boolean;
+begin
+  Result := not OpenLadderWasRunning;
+end;
