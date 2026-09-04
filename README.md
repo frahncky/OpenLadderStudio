@@ -1,23 +1,28 @@
-# UpgradeInterfacePLC
+# OpenLadder Studio
 
-Modernização da experiência de uso do **PC12 Design Center 2.1** para o PLC **WEG TP02**, preservando o executável legado e desenvolvendo gradualmente um editor Ladder e uma camada de comunicação próprios.
+O **OpenLadder Studio** é um ambiente moderno de programação Ladder e ferramentas de engenharia para o PLC **WEG TP02**.
 
-## PC12 Studio TP02 — interface principal
+O projeto preserva a compatibilidade com o **PC12 Design Center 2.1** e com seus arquivos legados, mas o nome do novo software é **OpenLadder Studio**. O PC12 passa a ser tratado apenas como software legado, fonte de compatibilidade e referência para a evolução do projeto.
 
-O projeto possui uma **interface unificada** chamada `PC12_Studio.exe`. Ela reúne no mesmo ambiente:
+## OpenLadder Studio — interface principal
 
-- visão geral do projeto;
+A interface principal é compilada como `OpenLadderStudio.exe` e reúne no mesmo ambiente:
+
 - Editor Ladder moderno;
+- comunicação e diagnóstico do TP02;
 - TP02 Bridge Lab;
 - leitor da memória de programa por `RBP`;
 - decodificador `RBP -> Boolean/IL`;
-- laboratório de **calibração automática de opcodes**;
-- acesso ao PC12 original;
-- informações de compatibilidade e estágio da modernização.
+- laboratório de calibração automática de opcodes;
+- conversão IL -> Ladder;
+- verificação de atualizações;
+- acesso às ferramentas de compatibilidade com o PC12 original.
 
-O arquivo `INICIAR_PC12.bat` recompila as interfaces e abre prioritariamente o **PC12 Studio**. Se a compilação não estiver disponível, o inicializador mantém os fallbacks para a central moderna anterior e, por fim, para o `pc12.exe` original.
+O arquivo `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat` recompila as interfaces e abre prioritariamente o **OpenLadder Studio**.
 
-## PC12 Ladder Studio — Etapa 2
+A interface principal usa tema escuro, barra de menus, barra de ferramentas, área central de edição, painéis laterais e barra de status, seguindo uma organização semelhante a softwares industriais atuais.
+
+## Editor Ladder — Etapa 2
 
 O editor Ladder próprio usa a nomenclatura real do TP02 e já possui:
 
@@ -34,7 +39,7 @@ O editor Ladder próprio usa a nomenclatura real do TP02 e já possui:
 - múltiplos rungs, desfazer, edição, salvar/abrir e validação estrutural;
 - formato `.pladder` versão 2 com leitura da versão anterior.
 
-A validação do Ladder Studio ainda não substitui a compilação oficial do PC12.
+A validação do editor ainda não substitui a compilação oficial do PC12.
 
 ## TP02 Bridge Lab — Etapa 3
 
@@ -81,7 +86,7 @@ Recursos atuais:
 - agrupamento de cada passo em **3 bytes / 6 caracteres hexadecimais**;
 - tabela com `passo`, `word`, byte alto, byte baixo e byte externo;
 - salvamento de dumps `.rbpdump`;
-- integração direta no menu **Ler programa (RBP)** do PC12 Studio.
+- integração direta no menu **Ler programa** do OpenLadder Studio.
 
 ## Decodificador RBP -> Boolean/IL — Etapa 5
 
@@ -138,13 +143,15 @@ A metodologia de pesquisa também está documentada em `docs/TP02_OPCODE_RESEARC
 
 ## Como iniciar
 
-### PC12 Studio — recomendado
+### OpenLadder Studio — recomendado
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat`
 
-### PC12 Ladder Studio separado
+### Editor Ladder separado
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_EDITOR_LADDER.bat`
+
+Esse inicializador gera e abre `OpenLadderEditor.exe`.
 
 ### TP02 Bridge Lab separado
 
@@ -162,19 +169,23 @@ A metodologia de pesquisa também está documentada em `docs/TP02_OPCODE_RESEARC
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_CALIBRACAO_OPCODE.bat`
 
-### PC12 clássico
+### PC12 clássico — compatibilidade
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12_CLASSICO.bat`
 
 ## Arquivos principais
 
-- `PC12Studio.cs` — shell unificado e interface principal;
-- `ModernPC12.cs` — central moderna anterior;
+- `PC12DirectStudio.cs` — shell principal do **OpenLadder Studio**;
 - `LadderEditor.cs` — editor Ladder;
 - `TP02BridgeLab.cs` — análise de projetos PC12 e comunicação somente leitura;
 - `TP02ProgramReader.cs` — leitor `RBP` da memória de programa;
 - `TP02MachineDecoder.cs` — comparação de WORDs RBP e exportação para IL;
 - `TP02OpcodeCalibration.cs` — inferência automática de máscaras de opcode/operando;
+- `TP02CalibrationCampaign.cs` — campanha de calibração;
+- `TP02AutoDecoder.cs` — decodificação automática;
+- `TP02IlToLadder.cs` — reconstrução IL -> Ladder;
+- `PC12Updater.cs` — atualizador do OpenLadder Studio;
+- `PC12Studio.cs` e `ModernPC12.cs` — componentes de transição/compatibilidade mantidos no código;
 - `docs/TP02_OPCODE_RESEARCH.md` — metodologia e registro de evidências dos opcodes;
 - `BUILD_INTERFACE_MODERNA.bat` — compilação local das interfaces;
 - `INICIAR_PC12.bat` — inicializador principal.
@@ -188,7 +199,7 @@ As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas,
 1. central moderna e diagnóstico — concluído;
 2. editor Ladder moderno — iniciado;
 3. instruções e endereçamento reais do TP02 — iniciado;
-4. interface unificada PC12 Studio — iniciada;
+4. interface unificada OpenLadder Studio — iniciada;
 5. engenharia reversa do formato nativo do PC12 — em andamento;
 6. comunicação serial em modo somente leitura — iniciada;
 7. leitura do programa por `RBP` — implementada em nível de linguagem de máquina;
@@ -200,3 +211,10 @@ As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas,
 13. geração controlada do formato nativo;
 14. transferência de programa após validação com hardware;
 15. substituição progressiva do PC12 legado.
+
+## Identidade do projeto
+
+**Nome do software:** OpenLadder Studio  
+**PLC-alvo:** WEG TP02  
+**Software legado compatível:** PC12 Design Center 2.1  
+**Versão atual:** 0.11
