@@ -113,9 +113,8 @@ namespace ModernPC12
             previewBox.BackColor = Color.FromArgb(20, 28, 36);
             previewBox.ForeColor = Color.FromArgb(220, 233, 245);
             Controls.Add(previewBox);
+            DockOrder.Apply(this, previewBox, bar, header);
 
-            header.BringToFront();
-            bar.BringToFront();
         }
 
         private void OpenIl()

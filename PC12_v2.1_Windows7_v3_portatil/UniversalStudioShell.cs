@@ -23,6 +23,10 @@ namespace ModernPC12
         private readonly Color hover = Color.FromArgb(52, 55, 60);
         private readonly Color border = Color.FromArgb(61, 64, 69);
 
+        public override Color MenuStripGradientBegin { get { return chrome; } }
+        public override Color MenuStripGradientEnd { get { return chrome; } }
+        public override Color SeparatorDark { get { return border; } }
+        public override Color SeparatorLight { get { return chrome; } }
         public override Color ToolStripDropDownBackground { get { return chrome; } }
         public override Color MenuBorder { get { return border; } }
         public override Color MenuItemBorder { get { return hover; } }
@@ -106,32 +110,43 @@ namespace ModernPC12
             ShowLadder();
         }
 
+        // A ancoragem e resolvida do ultimo filho para o primeiro: quem entra por
+        // ultimo escolhe seu espaco antes e fica na borda externa. BringToFront()
+        // move o controle para o indice 0, ou seja, para o FIM dessa fila; aplicado
+        // as barras, ele fazia o painel Fill ocupar toda a area antes e as barras
+        // passavam a ser desenhadas por cima do conteudo.
         private void BuildUi()
         {
-            MenuStrip menu = BuildMenu();
-            Controls.Add(menu);
-
-            ToolStrip toolbar = BuildToolbar();
-            Controls.Add(toolbar);
-
-            Panel status = BuildStatusBar();
-            Controls.Add(status);
-
             Panel workspace = new Panel();
             workspace.Dock = DockStyle.Fill;
             workspace.BackColor = Shell;
             Controls.Add(workspace);
 
-            Panel rail = BuildRail();
-            workspace.Controls.Add(rail);
+            Panel status = BuildStatusBar();
+            Controls.Add(status);
 
-            inspector = BuildInspector();
-            workspace.Controls.Add(inspector);
+            ToolStrip toolbar = BuildToolbar();
+            Controls.Add(toolbar);
+
+            MenuStrip menu = BuildMenu();
+            Controls.Add(menu);
+            MainMenuStrip = menu;
 
             Panel center = new Panel();
             center.Dock = DockStyle.Fill;
             center.BackColor = Workspace;
             workspace.Controls.Add(center);
+
+            inspector = BuildInspector();
+            workspace.Controls.Add(inspector);
+
+            Panel rail = BuildRail();
+            workspace.Controls.Add(rail);
+
+            host = new Panel();
+            host.Dock = DockStyle.Fill;
+            host.BackColor = Workspace;
+            center.Controls.Add(host);
 
             Panel tab = new Panel();
             tab.Dock = DockStyle.Top;
@@ -140,12 +155,6 @@ namespace ModernPC12
             tab.Padding = new Padding(14, 0, 10, 0);
             center.Controls.Add(tab);
 
-            Panel accentLine = new Panel();
-            accentLine.Dock = DockStyle.Bottom;
-            accentLine.Height = 2;
-            accentLine.BackColor = Accent;
-            tab.Controls.Add(accentLine);
-
             documentTitle = new Label();
             documentTitle.Dock = DockStyle.Fill;
             documentTitle.TextAlign = ContentAlignment.MiddleLeft;
@@ -153,18 +162,11 @@ namespace ModernPC12
             documentTitle.Font = new Font("Segoe UI Semibold", 9.2f, FontStyle.Bold);
             tab.Controls.Add(documentTitle);
 
-            host = new Panel();
-            host.Dock = DockStyle.Fill;
-            host.BackColor = Workspace;
-            center.Controls.Add(host);
-
-            host.BringToFront();
-            tab.BringToFront();
-            rail.BringToFront();
-            inspector.BringToFront();
-            toolbar.BringToFront();
-            menu.BringToFront();
-            status.BringToFront();
+            Panel accentLine = new Panel();
+            accentLine.Dock = DockStyle.Bottom;
+            accentLine.Height = 2;
+            accentLine.BackColor = Accent;
+            tab.Controls.Add(accentLine);
         }
 
         private MenuStrip BuildMenu()
@@ -666,9 +668,6 @@ namespace ModernPC12
         {
             foreach (Control c in root.Controls)
             {
-                Panel p = c as Panel;
-                if (p != null && p.Dock == DockStyle.Left && p.Width >= 220 && p.Width <= 250) p.Width = 210;
-
                 Label label = c as Label;
                 if (label != null && label.Text != null && label.Text.Length > 90) label.Visible = false;
 

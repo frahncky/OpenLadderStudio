@@ -94,6 +94,7 @@ namespace ModernPC12
             tabs.Dock = DockStyle.Fill;
             tabs.Font = new Font("Segoe UI Semibold", 9.0f);
             Controls.Add(tabs);
+            DockOrder.Apply(this, tabs, header);
 
             TabPage projectTab = new TabPage("Projeto PC12");
             projectTab.BackColor = Canvas;
@@ -105,7 +106,6 @@ namespace ModernPC12
             tabs.TabPages.Add(serialTab);
             BuildSerialTab(serialTab);
 
-            header.BringToFront();
         }
 
         private void BuildProjectTab(Control parent)
@@ -145,7 +145,7 @@ namespace ModernPC12
             reportBox.BackColor = Color.White;
             reportBox.ForeColor = TextPrimary;
             parent.Controls.Add(reportBox);
-            commands.BringToFront();
+            DockOrder.Apply(parent, reportBox, commands);
         }
 
         private void BuildSerialTab(Control parent)
@@ -280,9 +280,8 @@ namespace ModernPC12
             logBox.BackColor = Color.FromArgb(20, 28, 36);
             logBox.ForeColor = Color.FromArgb(218, 232, 245);
             parent.Controls.Add(logBox);
+            DockOrder.Apply(parent, logBox, actions, settings);
 
-            settings.BringToFront();
-            actions.BringToFront();
         }
 
         private Button ActionButton(string text, int left, int top, int width)

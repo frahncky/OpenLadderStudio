@@ -138,7 +138,6 @@ namespace ModernPC12
             header.Dock = DockStyle.Top;
             header.Height = 64;
             header.BackColor = Color.White;
-            Controls.Add(header);
 
             Label brand = new Label();
             brand.Text = "PC12 LADDER STUDIO";
@@ -169,7 +168,6 @@ namespace ModernPC12
             commandBar.Dock = DockStyle.Top;
             commandBar.Height = 58;
             commandBar.BackColor = Color.FromArgb(237, 242, 247);
-            Controls.Add(commandBar);
 
             int x = 16;
             AddCommandButton(commandBar, "NOVO", x, 76, delegate { NewProject(true); }); x += 82;
@@ -186,7 +184,6 @@ namespace ModernPC12
             bottom.Height = 34;
             bottom.BackColor = Color.White;
             bottom.Padding = new Padding(18, 0, 18, 0);
-            Controls.Add(bottom);
 
             statusLabel = new Label();
             statusLabel.Dock = DockStyle.Fill;
@@ -206,14 +203,20 @@ namespace ModernPC12
             Panel body = new Panel();
             body.Dock = DockStyle.Fill;
             body.BackColor = CanvasColor;
+            // A ancoragem e resolvida do ultimo filho para o primeiro: quem entra por
+            // ultimo escolhe seu espaco antes e fica na borda externa. O painel Fill
+            // precisa entrar primeiro, senao ele ocupa toda a area e as barras passam
+            // a se sobrepor ao conteudo.
             Controls.Add(body);
+            Controls.Add(bottom);
+            Controls.Add(commandBar);
+            Controls.Add(header);
 
             Panel toolbox = new Panel();
             toolbox.Dock = DockStyle.Left;
             toolbox.Width = 238;
             toolbox.BackColor = Navy;
             toolbox.AutoScroll = true;
-            body.Controls.Add(toolbox);
 
             Label toolsTitle = new Label();
             toolsTitle.Text = "ELEMENTOS TP02";
@@ -253,6 +256,7 @@ namespace ModernPC12
             editorHost.Padding = new Padding(18);
             editorHost.BackColor = CanvasColor;
             body.Controls.Add(editorHost);
+            body.Controls.Add(toolbox);
 
             Panel editorCard = new Panel();
             editorCard.Dock = DockStyle.Fill;

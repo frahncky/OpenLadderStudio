@@ -145,6 +145,7 @@ namespace ModernPC12
             horizontal.SplitterDistance = 500;
             horizontal.BackColor = Canvas;
             Controls.Add(horizontal);
+            DockOrder.Apply(this, horizontal, commands, header);
 
             SplitContainer main = new SplitContainer();
             main.Dock = DockStyle.Fill;
@@ -253,8 +254,6 @@ namespace ModernPC12
             compareBox.ForeColor = Color.FromArgb(220, 233, 245);
             comparePanel.Controls.Add(compareBox);
 
-            header.BringToFront();
-            commands.BringToFront();
         }
 
         private void AddGridColumn(string header, string name, int width)
