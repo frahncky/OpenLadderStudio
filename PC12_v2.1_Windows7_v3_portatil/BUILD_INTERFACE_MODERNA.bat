@@ -8,9 +8,18 @@ echo ================================================
 echo.
 
 set "CSC="
+set "SOURCE=ModernPC12.cs"
 
-if exist "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" set "CSC=%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe"
-if not defined CSC if exist "%WINDIR%\Microsoft.NET\Framework\v3.5\csc.exe" set "CSC=%WINDIR%\Microsoft.NET\Framework\v3.5\csc.exe"
+if not exist "%SOURCE%" (
+    echo ERRO: arquivo-fonte %SOURCE% nao encontrado nesta pasta.
+    echo.
+    exit /b 2
+)
+
+call :setCompiler "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe"
+call :setCompiler "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+call :setCompiler "%WINDIR%\Microsoft.NET\Framework\v3.5\csc.exe"
+call :setCompiler "%WINDIR%\Microsoft.NET\Framework\v2.0.50727\csc.exe"
 
 if not defined CSC (
     echo ERRO: compilador C# do .NET Framework nao encontrado.
@@ -22,16 +31,26 @@ if not defined CSC (
     exit /b 1
 )
 
-"%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Moderno.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "ModernPC12.cs"
+echo Compilador localizado:
+echo %CSC%
+echo.
+
+"%CSC%" /nologo /target:winexe /optimize+ /out:"PC12_Moderno.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "%SOURCE%"
 
 if errorlevel 1 (
     echo.
     echo ERRO: nao foi possivel compilar a interface moderna.
+    echo O iniciador principal ainda pode usar o pc12.exe como fallback.
     pause
-    exit /b 1
+    exit /b 3
 )
 
 echo.
 echo Interface criada com sucesso: PC12_Moderno.exe
 echo.
+exit /b 0
+
+:setCompiler
+if defined CSC exit /b 0
+if exist "%~1" set "CSC=%~1"
 exit /b 0

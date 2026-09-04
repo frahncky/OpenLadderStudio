@@ -48,6 +48,8 @@ namespace ModernPC12
         private ModernButton navTools;
         private ModernButton navHelp;
         private ComboBox portCombo;
+        private Label portStatusLabel;
+        private Label portHintLabel;
         private const string AppTitle = "PC12 Modern";
         private const int SidebarWidth = 224;
         private const int TopBarHeight = 54;
@@ -342,7 +344,7 @@ namespace ModernPC12
             detail.MaximumSize = new Size(730, 0);
             workspace.Controls.Add(detail);
 
-            CardPanel portCard = CreateCard(34, 96, 732, 168);
+            CardPanel portCard = CreateCard(34, 96, 732, 204);
             workspace.Controls.Add(portCard);
             AddCardTitle(portCard, "Porta serial", "As portas abaixo são as detectadas pelo Windows neste momento.");
 
@@ -351,6 +353,7 @@ namespace ModernPC12
             portCombo.Font = new Font("Segoe UI", 10.0f);
             portCombo.Location = new Point(24, 104);
             portCombo.Size = new Size(240, 28);
+            portCombo.SelectedIndexChanged += delegate { UpdatePortDetails(); };
             portCard.Controls.Add(portCombo);
             RefreshPorts();
 
@@ -358,11 +361,30 @@ namespace ModernPC12
             refresh.Click += delegate { RefreshPorts(); };
             portCard.Controls.Add(refresh);
 
+            ModernButton copyPort = SecondaryButton(WithGlyph("≡", "COPIAR PORTA"), 436, 101, 160);
+            copyPort.Click += delegate { CopySelectedPort(); };
+            portCard.Controls.Add(copyPort);
+
+            ModernButton openPc12 = PrimaryButton(WithGlyph("▶", "ABRIR PC12"), 604, 101, 120);
+            openPc12.Click += delegate { LaunchPc12(false); };
+            portCard.Controls.Add(openPc12);
+
+            portStatusLabel = NewLabel(string.Empty, 8.8f, FontStyle.Bold, TextPrimary);
+            portStatusLabel.Location = new Point(24, 168);
+            portCard.Controls.Add(portStatusLabel);
+
+            portHintLabel = NewLabel(string.Empty, 8.3f, FontStyle.Regular, TextSecondary);
+            portHintLabel.Location = new Point(24, 186);
+            portHintLabel.MaximumSize = new Size(690, 0);
+            portCard.Controls.Add(portHintLabel);
+
             ModernButton deviceManager = SecondaryButton(WithGlyph("↗", "GERENCIADOR DE DISPOSITIVOS"), 436, 101, 230);
             deviceManager.Click += delegate { OpenDeviceManager(); };
+            deviceManager.Location = new Point(436, 130);
+            deviceManager.Size = new Size(288, 28);
             portCard.Controls.Add(deviceManager);
 
-            CardPanel checklist = CreateCard(34, 284, 732, 230);
+            CardPanel checklist = CreateCard(34, 320, 732, 230);
             workspace.Controls.Add(checklist);
             AddCardTitle(checklist, "Checklist TP02", "Antes de tentar conectar no PLC, confirme estes pontos:");
             AddChecklist(checklist, 24, 100, "Conversor USB/serial conectado ao computador e reconhecido pelo Windows.");
@@ -746,17 +768,79 @@ namespace ModernPC12
             }
         }
 
+        private void CopySelectedPort()
+        {
+            string selectedPort = GetSelectedPort();
+            if (selectedPort == null)
+            {
+                MessageBox.Show("Nenhuma porta COM disponível para copiar.", AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                Clipboard.SetText(selectedPort);
+                MessageBox.Show("Porta copiada: " + selectedPort, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Não foi possível copiar a porta selecionada.\r\n\r\n" + ex.Message, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private string GetSelectedPort()
+        {
+            if (portCombo == null || portCombo.SelectedItem == null) return null;
+
+            string selectedPort = Convert.ToString(portCombo.SelectedItem);
+            if (string.IsNullOrEmpty(selectedPort) || !selectedPort.StartsWith("COM", StringComparison.OrdinalIgnoreCase)) return null;
+            return selectedPort;
+        }
+
+        private void UpdatePortDetails()
+        {
+            if (portStatusLabel == null || portHintLabel == null) return;
+
+            string selectedPort = GetSelectedPort();
+            if (selectedPort == null)
+            {
+                portStatusLabel.Text = "Nenhuma porta COM detectada";
+                portHintLabel.Text = "Conecte o conversor USB/serial, clique em ATUALIZAR e depois use a mesma porta dentro do PC12.";
+                return;
+            }
+
+            portStatusLabel.Text = "Porta pronta para configurar: " + selectedPort;
+            portHintLabel.Text = "Use " + selectedPort + " nas configurações de comunicação do PC12 para manter o PLC e o Windows apontando para a mesma porta serial.";
+        }
+
         private void RefreshPorts()
         {
             if (portCombo == null) return;
+            string previousSelection = GetSelectedPort();
             portCombo.Items.Clear();
             string[] ports = SerialPort.GetPortNames();
             Array.Sort(ports);
             int i;
             for (i = 0; i < ports.Length; i++) portCombo.Items.Add(ports[i]);
-            if (portCombo.Items.Count > 0) portCombo.SelectedIndex = 0;
-            else portCombo.Items.Add("Nenhuma porta COM detectada");
+
+            if (portCombo.Items.Count > 0)
+            {
+                if (!string.IsNullOrEmpty(previousSelection) && portCombo.Items.Contains(previousSelection))
+                {
+                    portCombo.SelectedItem = previousSelection;
+                }
+                else
+                {
+                    portCombo.SelectedIndex = 0;
+                }
+            }
+            else
+            {
+                portCombo.Items.Add("Nenhuma porta COM detectada");
+            }
+
             if (portCombo.SelectedIndex < 0) portCombo.SelectedIndex = 0;
+            UpdatePortDetails();
             UpdateGlobalStatus();
         }
 

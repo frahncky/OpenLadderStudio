@@ -9,6 +9,7 @@ A nova camada **PC12 Modern** adiciona uma central visual mais atual para Window
 - painel inicial com status do pacote;
 - abertura do PC12 em modo normal ou como administrador;
 - detecção das portas COM disponíveis;
+- cópia rápida da porta COM selecionada para configurar a mesma porta dentro do PC12;
 - resumo visual da ajuda local e do último projeto conhecido;
 - atalho para abrir a pasta do último projeto salvo quando o caminho ainda existe;
 - acesso rápido ao Gerenciador de Dispositivos;
@@ -27,7 +28,7 @@ Abra:
 
 Na primeira execução, o script tenta compilar automaticamente a interface `PC12_Moderno.exe` usando o compilador C# do .NET Framework instalado no Windows 7. Depois disso, as próximas execuções abrem diretamente a nova central.
 
-Se a compilação não estiver disponível, o script inicia o `pc12.exe` original como fallback, portanto a funcionalidade existente não é perdida.
+Se a compilação não estiver disponível, o script informa o motivo e inicia o `pc12.exe` original como fallback, portanto a funcionalidade existente não é perdida.
 
 ## Arquivos da modernização
 
