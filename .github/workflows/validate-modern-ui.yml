@@ -1,4 +1,4 @@
-name: Validar PC12 Modern
+name: Validar OpenLadder Studio
 
 on:
   push:
@@ -10,32 +10,26 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Baixar repositorio
+      - name: Baixar repositório
         uses: actions/checkout@v4
 
-      - name: Preparar fonte Ladder compatível
+      - name: Preparar fonte Ladder
         shell: powershell
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
           (Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'
 
-      - name: Compilar componentes
+      - name: Compilar atualizador
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Bridge_Lab.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02BridgeLab.cs"
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_RBP_Reader.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02ProgramReader.cs"
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.TP02AutoDecoderProgram /out:"TP02_Auto_Decoder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02MachineDecoder.cs" "TP02AutoDecoder.cs"
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_Calibration_Campaign.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02CalibrationCampaign.cs"
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_IL_to_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02IlToLadder.cs"
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"PC12_Updater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Updater.cs"
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"OpenLadderUpdater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Updater.cs"
 
-      - name: Compilar PC12 Studio direto v0.8
+      - name: Compilar OpenLadder Studio v0.9
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.DirectStudioProgram /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12DirectStudio.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs" "PC12Updater.cs"
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.DirectStudioProgram /out:"OpenLadderStudio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12DirectStudio.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs" "PC12Updater.cs"
 
       - name: Instalar Inno Setup 6 se necessário
         shell: powershell
@@ -44,31 +38,31 @@ jobs:
           if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
           if (-not (Test-Path $iscc)) { throw 'ISCC.exe não encontrado.' }
 
-      - name: Gerar Setup instalável
+      - name: Gerar instalador
         shell: cmd
         run: |
           "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\PC12Studio.iss"
 
-      - name: Gerar SHA-256 do Setup
+      - name: Gerar SHA-256
         shell: powershell
         run: |
-          $setup = 'installer\output\PC12-Studio-TP02-Setup.exe'
+          $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  PC12-Studio-TP02-Setup.exe" | Set-Content -Encoding ASCII 'installer\output\PC12-Studio-TP02-Setup.exe.sha256'
+          "$hash  OpenLadder-Studio-Setup.exe" | Set-Content -Encoding ASCII 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
 
       - name: Publicar aplicativo
         uses: actions/upload-artifact@v4
         with:
-          name: PC12-Studio-TP02
+          name: OpenLadder-Studio
           path: |
-            PC12_v2.1_Windows7_v3_portatil/PC12_Studio.exe
-            PC12_v2.1_Windows7_v3_portatil/PC12_Updater.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderUpdater.exe
             PC12_v2.1_Windows7_v3_portatil/version.txt
 
       - name: Publicar instalador
         uses: actions/upload-artifact@v4
         with:
-          name: PC12-Studio-TP02-Setup
+          name: OpenLadder-Studio-Setup
           path: |
-            installer/output/PC12-Studio-TP02-Setup.exe
-            installer/output/PC12-Studio-TP02-Setup.exe.sha256
+            installer/output/OpenLadder-Studio-Setup.exe
+            installer/output/OpenLadder-Studio-Setup.exe.sha256
