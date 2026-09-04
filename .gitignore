@@ -1,5 +1,11 @@
 PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.exe
 PC12_v2.1_Windows7_v3_portatil/OpenLadderUpdater.exe
+PC12_v2.1_Windows7_v3_portatil/OpenLadderEditor.exe
+PC12_v2.1_Windows7_v3_portatil/OpenLadderDeviceManager.exe
+PC12_v2.1_Windows7_v3_portatil/OpenLadderModbus.exe
+PC12_v2.1_Windows7_v3_portatil/OpenLadderMemoryMap.exe
+PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.ico
+PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.icon.png
 PC12_v2.1_Windows7_v3_portatil/PC12_Studio.exe
 PC12_v2.1_Windows7_v3_portatil/PC12_Moderno.exe
 PC12_v2.1_Windows7_v3_portatil/PC12_Ladder.exe
@@ -16,4 +22,5 @@ PC12_v2.1_Windows7_v3_portatil/*.rules.tsv
 PC12_v2.1_Windows7_v3_portatil/*.cal.txt
 PC12_v2.1_Windows7_v3_portatil/*.verified.il.txt
 PC12_v2.1_Windows7_v3_portatil/*.build.cs
+installer/PC12Studio.build.iss
 installer/output/
