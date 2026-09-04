@@ -2,6 +2,22 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.32] - 2026-09-04
+
+### Protocolo PG do PC12
+- a comunicação do TP02 deixa de usar Computer Link como caminho principal para o cabo de programação validado pelo PC12 original;
+- engenharia reversa estática do `pc12.exe` confirmou uma camada PG própria, diferente dos comandos ASCII `PSR/MRV/SCS/WRV/RUN/STP` do Host Protocol;
+- o primeiro handshake do PC12 foi identificado exatamente como `43 4F 4E 2D 49 43 42 0D`, correspondente a `CON-ICB<CR>`;
+- o segundo quadro de identificação usado pelo PC12 foi identificado como `F0 00 0F`;
+- a rotina original força 19200 bps, 8 bits e 1 stop bit e valida quadros binários pela regra de checksum em que a soma dos bytes módulo 256 resulta em `FF`;
+- nova tela **Link PG - WEG TP02** testa os perfis 19200/8O1 e 19200/8N1, com fallback de DTR/RTS, registra TX/RX em hexadecimal e informa se o Link PG foi confirmado;
+- a porta COM utilizada é preservada nas configurações do OpenLadder Studio.
+
+### Segurança operacional
+- a v0.32 é deliberadamente limitada ao handshake e identificação PG;
+- `RUN`, `STOP`, escrita de registradores, escrita de bobinas, download e apagamento de programa não são enviados pelo novo módulo;
+- os comandos que alteram o PLC só serão incorporados ao protocolo PG depois da confirmação física do Link com o mesmo PLC/cabo que já funciona no PC12.
+
 ## [0.31] - 2026-09-04
 
 ### Comunicação WEG TP02
