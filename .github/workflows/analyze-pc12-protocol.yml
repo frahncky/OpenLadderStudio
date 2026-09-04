@@ -16,88 +16,97 @@ jobs:
         shell: pwsh
         run: python -m pip install --disable-pip-version-check pefile capstone
 
-      - name: Localizar chamadas seriais e buffers
-        shell: python
-        run: |
-          import pathlib, pefile
-          from capstone import Cs, CS_ARCH_X86, CS_MODE_32
-          from capstone.x86 import X86_OP_MEM, X86_OP_IMM
-
-          path = pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe')
-          data = path.read_bytes()
-          pe = pefile.PE(str(path))
-          image_base = pe.OPTIONAL_HEADER.ImageBase
-          print('IMAGE_BASE', hex(image_base), 'ENTRY', hex(image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint))
-
-          targets = {}
-          for entry in getattr(pe, 'DIRECTORY_ENTRY_IMPORT', []):
-              for imp in entry.imports:
-                  if imp.name:
-                      name = imp.name.decode('ascii', 'ignore')
-                      if name in {'CreateFileA','ReadFile','WriteFile','SetCommState','GetCommState','SetupComm','SetCommMask','WaitCommEvent','PurgeComm','ClearCommError','CloseHandle'}:
-                          targets[imp.address] = name
-          print('IAT TARGETS')
-          for va,name in sorted(targets.items()): print(name, hex(va))
-
-          text = next(s for s in pe.sections if s.Name.rstrip(b'\0') == b'.text')
-          code = text.get_data()
-          base = image_base + text.VirtualAddress
-          md = Cs(CS_ARCH_X86, CS_MODE_32)
-          md.detail = True
-          ins = list(md.disasm(code, base))
-          by_addr = {x.address:i for i,x in enumerate(ins)}
-
-          calls=[]
-          for i,x in enumerate(ins):
-              if x.mnemonic != 'call' or not x.operands: continue
-              op=x.operands[0]
-              resolved=None
-              if op.type == X86_OP_MEM and op.mem.base == 0 and op.mem.index == 0:
-                  resolved=op.mem.disp & 0xffffffff
-              if resolved in targets:
-                  calls.append((i, targets[resolved], resolved))
-
-          print('\nSERIAL CALL SITES', len(calls))
-          for n,(idx,name,iat) in enumerate(calls):
-              print('\n===', n, name, 'CALL_AT', hex(ins[idx].address), 'IAT', hex(iat), '===')
-              for y in ins[max(0,idx-35):min(len(ins),idx+16)]:
-                  mark='>>' if y.address==ins[idx].address else '  '
-                  print(mark, hex(y.address), y.mnemonic, y.op_str)
-
-          print('\n=== STATIC STRING XREFS AROUND LINK/PG MESSAGES ===')
-          markers=[b'TP02 Link Success !',b'Link Protocol fail',b'Not PG Protocol Function',b'PLC Mode: Running',b'PLC Mode: Program']
-          for marker in markers:
-              fo=data.find(marker)
-              if fo<0: continue
-              rva=pe.get_rva_from_offset(fo)
-              va=image_base+rva
-              print('\nMARKER', marker.decode(), 'FILE',hex(fo),'VA',hex(va))
-              refs=[]
-              for i,x in enumerate(ins):
-                  for op in x.operands:
-                      if op.type==X86_OP_IMM and (op.imm & 0xffffffff)==va:
-                          refs.append(i)
-                      elif op.type==X86_OP_MEM and op.mem.base==0 and op.mem.index==0 and (op.mem.disp & 0xffffffff)==va:
-                          refs.append(i)
-              print('XREFS', [hex(ins[i].address) for i in refs])
-              for idx in refs[:8]:
-                  print('--- context',hex(ins[idx].address),'---')
-                  for y in ins[max(0,idx-25):min(len(ins),idx+25)]: print(hex(y.address),y.mnemonic,y.op_str)
-
-      - name: Procurar tabelas PG e padrões de checksum
+      - name: Resolver thunks seriais Borland
         shell: python
         run: |
           import pathlib, pefile, struct
-          data=pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe').read_bytes()
-          pe=pefile.PE(data=data)
-          base=pe.OPTIONAL_HEADER.ImageBase
-          for marker in [b'PGN',b'PG1',b'hPGM',b'HPGW',b'hpgO',b'pgL']:
+          from capstone import Cs, CS_ARCH_X86, CS_MODE_32, CS_GRP_CALL, CS_GRP_JUMP
+          from capstone.x86 import X86_OP_MEM, X86_OP_IMM
+
+          path=pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe')
+          data=path.read_bytes(); pe=pefile.PE(str(path)); ib=pe.OPTIONAL_HEADER.ImageBase
+          print('SECTIONS')
+          for s in pe.sections:
+              print(s.Name.rstrip(b'\0').decode(errors='ignore'), 'VA',hex(ib+s.VirtualAddress),'VS',hex(s.Misc_VirtualSize),'RAW',hex(s.PointerToRawData),hex(s.SizeOfRawData),'CHAR',hex(s.Characteristics))
+
+          imports={}
+          wanted={'CreateFileA','ReadFile','WriteFile','SetCommState','GetCommState','SetupComm','SetCommMask','WaitCommEvent','PurgeComm','ClearCommError','CloseHandle'}
+          for entry in getattr(pe,'DIRECTORY_ENTRY_IMPORT',[]):
+              for imp in entry.imports:
+                  if imp.name:
+                      name=imp.name.decode('ascii','ignore')
+                      if name in wanted: imports[imp.address]=name
+          print('\nIMPORTS', {hex(k):v for k,v in imports.items()})
+
+          # Find raw FF 25 [iat] / FF 15 [iat] import thunks/calls in every executable section.
+          thunks={}
+          direct=[]
+          for s in pe.sections:
+              if not (s.Characteristics & 0x20000000): continue
+              raw=s.get_data(); secva=ib+s.VirtualAddress
+              for i in range(len(raw)-6):
+                  if raw[i] != 0xff or raw[i+1] not in (0x15,0x25): continue
+                  ptr=struct.unpack_from('<I',raw,i+2)[0]
+                  if ptr not in imports: continue
+                  va=secva+i
+                  if raw[i+1]==0x25: thunks[va]=imports[ptr]
+                  else: direct.append((va,imports[ptr]))
+          print('\nTHUNKS')
+          for va,n in sorted(thunks.items()): print(n,hex(va))
+          print('DIRECT IMPORT CALLS',[(n,hex(va)) for va,n in direct])
+
+          md=Cs(CS_ARCH_X86,CS_MODE_32); md.detail=True
+          allins=[]
+          for s in pe.sections:
+              if not (s.Characteristics & 0x20000000): continue
+              allins.extend(list(md.disasm(s.get_data(), ib+s.VirtualAddress)))
+          allins.sort(key=lambda x:x.address)
+
+          # Call xrefs to thunks, including direct rel32 call destination.
+          xrefs=[]
+          for idx,x in enumerate(allins):
+              if x.mnemonic!='call' or not x.operands: continue
+              op=x.operands[0]; dest=None
+              if op.type==X86_OP_IMM: dest=op.imm & 0xffffffff
+              elif op.type==X86_OP_MEM and op.mem.base==0 and op.mem.index==0:
+                  ptr=op.mem.disp & 0xffffffff
+                  if ptr in imports: xrefs.append((idx,imports[ptr],ptr,'iat'))
+              if dest in thunks: xrefs.append((idx,thunks[dest],dest,'thunk'))
+          print('\nSERIAL XREFS',len(xrefs))
+          for k,(idx,name,dest,kind) in enumerate(xrefs):
+              x=allins[idx]
+              print('\n===',k,name,'AT',hex(x.address),'VIA',kind,hex(dest),'===')
+              for y in allins[max(0,idx-45):min(len(allins),idx+20)]:
+                  print(('>>' if y.address==x.address else '  '),hex(y.address),y.mnemonic,y.op_str)
+
+          # xrefs to important UI strings across ALL executable sections
+          print('\nSTRING XREFS')
+          for marker in [b'TP02 Link Success !',b'Link Protocol fail',b'PLC Mode: Running',b'PLC Mode: Program',b'Not PG Protocol Function']:
+              fo=data.find(marker)
+              if fo<0: continue
+              va=ib+pe.get_rva_from_offset(fo)
+              refs=[]
+              for idx,x in enumerate(allins):
+                  for op in x.operands:
+                      if op.type==X86_OP_IMM and (op.imm & 0xffffffff)==va: refs.append(idx); break
+                      if op.type==X86_OP_MEM and op.mem.base==0 and op.mem.index==0 and (op.mem.disp & 0xffffffff)==va: refs.append(idx); break
+              print(marker.decode(),'VA',hex(va),'REFS',[hex(allins[i].address) for i in refs])
+              for idx in refs[:10]:
+                  print('---',hex(allins[idx].address),'---')
+                  for y in allins[max(0,idx-35):min(len(allins),idx+35)]: print(hex(y.address),y.mnemonic,y.op_str)
+
+      - name: Procurar constantes e quadros próximos da camada PG
+        shell: python
+        run: |
+          import pathlib, pefile, struct
+          data=pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe').read_bytes(); pe=pefile.PE(data=data); ib=pe.OPTIONAL_HEADER.ImageBase
+          for marker in [b'PGN',b'PG1',b'TP02 Link Success !',b'Link Protocol fail']:
               pos=0
               while True:
                   pos=data.find(marker,pos)
                   if pos<0: break
-                  try: va=base+pe.get_rva_from_offset(pos)
+                  try: va=ib+pe.get_rva_from_offset(pos)
                   except: va=0
-                  print(marker.decode(errors='ignore'),'FILE',hex(pos),'VA',hex(va))
-                  print(data[max(0,pos-64):min(len(data),pos+96)].hex(' '))
+                  print('\n',marker,'OFFSET',hex(pos),'VA',hex(va))
+                  print(data[max(0,pos-96):min(len(data),pos+160)].hex(' '))
                   pos+=1
