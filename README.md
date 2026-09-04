@@ -4,9 +4,9 @@ O **OpenLadder Studio** é um ambiente moderno de programação Ladder e ferrame
 
 O projeto começou pela compatibilidade com o **WEG TP02** e com o **PC12 Design Center 2.1**, mas o núcleo do OpenLadder Studio não é mais acoplado a um único fabricante. O TP02 permanece como o primeiro driver específico em desenvolvimento, enquanto a plataforma usa perfis de dispositivo, drivers, configurações por controlador, mapas de memória e um modelo Ladder universal.
 
-## Versão atual — 0.17
+## Versão atual — 0.18
 
-A versão 0.17 adiciona **monitoramento online periódico** ao monitor Modbus. O usuário pode iniciar a atualização automática de entradas, saídas e registradores com intervalos configuráveis, sem precisar clicar repetidamente em **LER DISPOSITIVO**.
+A versão 0.18 adiciona **histórico e gráficos de tendências em tempo real** ao monitor Modbus. O usuário pode selecionar uma variável da tabela, adicioná-la ao rastreamento e acompanhar sua evolução durante leituras manuais ou durante o monitoramento online periódico.
 
 Principais recursos:
 
@@ -32,11 +32,15 @@ Principais recursos:
 - divisão automática em blocos de até 2000 bits para FC01/FC02 e 125 registradores para FC03/FC04;
 - consolidação dos blocos em uma única tabela de resultados;
 - resposta bruta organizada por bloco, endereço e quantidade;
-- **monitoramento online com intervalos de 250 ms, 500 ms, 1 s, 2 s e 5 s**;
-- **proteção contra leituras concorrentes durante atualização online**;
-- **intervalo de monitoramento salvo separadamente para cada perfil de PLC**;
+- monitoramento online com intervalos de 250 ms, 500 ms, 1 s, 2 s e 5 s;
+- proteção contra leituras concorrentes durante atualização online;
+- intervalo de monitoramento salvo separadamente para cada perfil de PLC;
 - indicação de ciclo e horário da última atualização;
-- parada automática do temporizador ao fechar a janela ou editar o mapa de memória;
+- **rastreamento de até 8 sinais simultâneos**;
+- **histórico de até 600 amostras por sinal**;
+- **gráfico temporal em tempo real** para coils, discrete inputs e registradores;
+- **estatísticas de valor atual, mínimo, máximo e quantidade de amostras**;
+- **exportação do histórico para CSV**;
 - verificação de portabilidade do projeto Ladder para o controlador selecionado;
 - atualizador e instalador próprios.
 
@@ -163,21 +167,33 @@ Limites por requisição usados pelo monitor:
 - FC01 / FC02: até **2000 bits** por bloco;
 - FC03 / FC04: até **125 registradores** por bloco.
 
-## Monitoramento online — v0.17
+## Monitoramento online
 
-O monitor Modbus possui agora os controles **INICIAR ONLINE** e **PARAR ONLINE**. O intervalo pode ser escolhido entre:
-
-- 250 ms;
-- 500 ms;
-- 1 s;
-- 2 s;
-- 5 s.
+O monitor Modbus possui os controles **INICIAR ONLINE** e **PARAR ONLINE**. O intervalo pode ser escolhido entre 250 ms, 500 ms, 1 s, 2 s e 5 s.
 
 Ao iniciar o modo online, a leitura é executada imediatamente e depois repetida no intervalo escolhido. A janela informa o número do ciclo e o horário da última tentativa de atualização.
 
 O temporizador é interrompido enquanto uma leitura está em andamento, evitando sobreposição de requisições. Isso também é aplicado às leituras em múltiplos blocos. O intervalo selecionado é salvo no perfil de conexão do PLC, mas o modo online **não é reativado automaticamente ao abrir o programa**, evitando comunicação inesperada com o equipamento.
 
-A versão atual continua somente em leitura para Modbus e para as ferramentas modernas do TP02. Nenhuma escrita, alteração de saída ou comando de RUN/STOP é executado pelo monitor online.
+## Histórico e tendências — v0.18
+
+Depois de executar pelo menos uma leitura, selecione uma linha da tabela de resultados e clique em **RASTREAR LINHA**. O sinal passa a ser registrado nas próximas leituras que incluírem aquele endereço e aquela função Modbus.
+
+O botão **GRÁFICOS** abre a janela de tendências. Atualmente ela permite:
+
+- até **8 sinais rastreados** ao mesmo tempo;
+- até **600 amostras por sinal** mantidas em memória;
+- sinais binários exibidos como 0/1;
+- registradores exibidos pelo valor decimal lido;
+- atualização visual automática do gráfico;
+- valor atual, mínimo, máximo e número de amostras;
+- limpar as amostras de um sinal sem removê-lo do rastreamento;
+- remover um sinal do rastreamento;
+- exportar todo o histórico para um arquivo `.csv`.
+
+O histórico atual é mantido apenas durante a sessão do monitor. O CSV é a forma de persistência intencional desta versão, evitando gravação contínua em disco a cada ciclo de leitura.
+
+A versão atual continua somente em leitura para Modbus e para as ferramentas modernas do TP02. Nenhuma escrita, alteração de saída ou comando de RUN/STOP é executado pelo monitor online ou pelo módulo de tendências.
 
 ## WEG TP02
 
@@ -209,6 +225,8 @@ Recursos atuais:
 - seleção rápida por área do mapa de memória;
 - leitura sequencial automática em blocos;
 - monitoramento online periódico;
+- histórico e gráfico de sinais selecionados;
+- exportação CSV;
 - Unit ID configurável;
 - serial: COM, baud rate, data bits, paridade e stop bits;
 - TCP: host/IP e porta;
@@ -236,7 +254,7 @@ O inicializador compila e abre `OpenLadderStudio.exe`.
 
 - `OpenLadderEditor.exe` — editor Ladder;
 - `OpenLadderDeviceManager.exe` — catálogo, criação e seleção de controladores;
-- `OpenLadderModbus.exe` — monitor Modbus RTU/TCP, mapa de memória e atualização online;
+- `OpenLadderModbus.exe` — monitor Modbus RTU/TCP, mapa de memória, modo online, histórico e tendências;
 - `OpenLadderMemoryMap.exe` — editor de mapa de memória por controlador;
 - `OpenLadderUpdater.exe` — atualizador;
 - `INICIAR_PC12_CLASSICO.bat` — PC12 legado para compatibilidade.
@@ -253,9 +271,11 @@ O inicializador compila e abre `OpenLadderStudio.exe`.
 - `PLCMemoryMapV15.cs` — mapa de memória com suporte a áreas extensas;
 - `ModbusCore.cs` — protocolo Modbus RTU/TCP em leitura;
 - `ModbusBulkReader.cs` — divisão, execução e consolidação de leituras em múltiplos blocos;
+- `ModbusTrendHistory.cs` — histórico, desenho do gráfico e exportação CSV;
 - `ModbusMonitorV14.cs` — base visual do monitor integrada ao mapa de memória;
 - `PrepareModbusMonitorV15.ps1` — preparação da lógica de leitura em blocos;
 - `PrepareModbusMonitorV17.ps1` — monitoramento online periódico e proteção contra reentrada;
+- `PrepareModbusMonitorV18.ps1` — integração do histórico e das tendências ao monitor;
 - `LadderEditor.cs` — editor Ladder;
 - `TP02BridgeLab.cs` — comunicação e análise do TP02/PC12;
 - `TP02ProgramReader.cs` — leitura RBP;
@@ -273,12 +293,13 @@ A aplicação usa **Windows Forms + .NET Framework**, sem bibliotecas externas o
 ## Próximas etapas
 
 1. permitir importação/exportação de perfis e mapas de memória;
-2. adicionar histórico e gráfico temporal das variáveis monitoradas;
-3. desacoplar completamente o monitor TP02 das classes de interface antigas;
-4. adicionar drivers específicos para novos fabricantes;
-5. criar compiladores de destino por família de PLC;
-6. validar geração e transferência de programas em hardware real;
-7. ampliar o modelo Ladder universal para instruções avançadas e blocos de função.
+2. permitir seleção e comparação de múltiplos sinais no mesmo gráfico;
+3. adicionar escalas e conversões de engenharia para registradores;
+4. desacoplar completamente o monitor TP02 das classes de interface antigas;
+5. adicionar drivers específicos para novos fabricantes;
+6. criar compiladores de destino por família de PLC;
+7. validar geração e transferência de programas em hardware real;
+8. ampliar o modelo Ladder universal para instruções avançadas e blocos de função.
 
 ## Identidade do projeto
 
@@ -287,4 +308,4 @@ A aplicação usa **Windows Forms + .NET Framework**, sem bibliotecas externas o
 **Primeiro driver específico:** WEG TP02  
 **Protocolos genéricos atuais:** Modbus RTU e Modbus TCP (leitura)  
 **Software legado compatível:** PC12 Design Center 2.1  
-**Versão atual:** 0.17
+**Versão atual:** 0.18
