@@ -67,11 +67,17 @@ jobs:
         run: |
           "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.TP02AutoDecoderProgram /out:"TP02_Auto_Decoder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02MachineDecoder.cs" "TP02AutoDecoder.cs"
 
+      - name: Compilar reconstrutor IL para Ladder
+        shell: cmd
+        working-directory: PC12_v2.1_Windows7_v3_portatil
+        run: |
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"TP02_IL_to_Ladder.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "TP02IlToLadder.cs"
+
       - name: Compilar PC12 Studio unificado v0.7
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgramV07 /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "PC12StudioV07.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs"
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.UnifiedProgramV07 /out:"PC12_Studio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Studio.cs" "PC12StudioV07.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs"
 
       - name: Publicar executaveis de teste
         uses: actions/upload-artifact@v4
@@ -87,3 +93,4 @@ jobs:
             PC12_v2.1_Windows7_v3_portatil/TP02_Opcode_Calibration.exe
             PC12_v2.1_Windows7_v3_portatil/TP02_Calibration_Campaign.exe
             PC12_v2.1_Windows7_v3_portatil/TP02_Auto_Decoder.exe
+            PC12_v2.1_Windows7_v3_portatil/TP02_IL_to_Ladder.exe
