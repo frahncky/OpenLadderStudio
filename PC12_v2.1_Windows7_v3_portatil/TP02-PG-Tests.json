@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.4",
-  "title": "TP02 PG - campanha segura com deteccao experimental de RUN/STOP",
+  "packageVersion": "2026.09.04.5",
+  "title": "TP02 PG - validacao controlada do primeiro comando READ-ONLY do PC12",
   "sweeps": 2,
   "passiveCaptureMs": 5000,
   "stopOnUnknown": true,
   "campaign": {
-    "enabled": true,
+    "enabled": false,
     "runs": 12,
     "rearmBetweenRuns": true,
     "rearmDelayMs": 900,
@@ -93,14 +93,50 @@
       ]
     },
     {
-      "id": "capture-after-hello",
-      "name": "Escuta passiva final apos campanha",
+      "id": "read-program-static-verified",
+      "name": "Read PLC Program - PC12 original - validacao unica",
+      "type": "txrx",
+      "enabled": true,
+      "sweepProfiles": false,
+      "safetyClass": "READ_ONLY_VERIFIED",
+      "txHex": "34 03 00 00 A0 28",
+      "timeoutMs": 4000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "capture-after-read",
+      "name": "Escuta passiva final apos Read PLC Program",
       "type": "passive",
       "enabled": true,
       "sweepProfiles": false,
       "safetyClass": "PASSIVE",
       "txHex": "",
       "timeoutMs": 0,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "read-system-part-1",
+      "name": "Read PLC System parte 1 - confirmado estaticamente - aguardando bancada",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "0A 03 60 00 AC E6",
+      "timeoutMs": 4000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "read-system-part-2",
+      "name": "Read PLC System parte 2 - confirmado estaticamente - aguardando bancada",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "0A 03 60 AC AC 3A",
+      "timeoutMs": 4000,
       "passiveAfterMs": 5000,
       "expected": []
     },
@@ -112,18 +148,6 @@
       "sweepProfiles": false,
       "safetyClass": "CANDIDATE",
       "txHex": "F0 00 0F",
-      "timeoutMs": 3000,
-      "passiveAfterMs": 5000,
-      "expected": []
-    },
-    {
-      "id": "read-program-candidate",
-      "name": "Candidato estatico Read PLC Program",
-      "type": "txrx",
-      "enabled": false,
-      "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
-      "txHex": "34 03 00 00 A0 28",
       "timeoutMs": 3000,
       "passiveAfterMs": 5000,
       "expected": []
@@ -142,24 +166,29 @@
     }
   ],
   "safety": {
-    "readOnlyAllowlist": [],
+    "readOnlyAllowlist": [
+      "34 03 00 00 A0 28"
+    ],
     "blockedTx": [
       "0F 00 F0",
       "F0 00 0F"
     ],
     "notes": [
-      "A campanha transmite somente CON-ICB<CR>.",
-      "Sao executados 12 ciclos de caracterizacao apos a primeira resposta valida.",
-      "DTR/RTS sao rearmados entre ciclos sem transmitir dados durante o rearme.",
+      "Este pacote desativa temporariamente a campanha de 12 ciclos para validar um unico comando de leitura apos o HELLO.",
       "C0 01 09 35 foi correlacionado experimentalmente com PLC em RUN: HELLO-RUN.",
       "80 01 09 75 foi correlacionado experimentalmente com PLC em STOP: HELLO-STOP.",
-      "A diferenca RUN/STOP observada esta no bit 0x40 do primeiro byte; o checksum acompanha a alteracao.",
       "0D 01 09 E8 permanece fisicamente observado, mas nao classificado.",
-      "Mudancas entre variantes conhecidas sao registradas; qualquer quarto quadro ou byte espontaneo interrompe a campanha e e preservado no relatorio.",
+      "34 03 00 00 A0 28 foi rastreado no pc12.exe original ao handler Read PLC Program: o PC12 monta os 6 bytes no buffer TX e chama a rotina serial de transmissao.",
+      "34 03 00 00 A0 28 fecha soma modulo 256 em FF e e o unico quadro novo desta etapa incluido na readOnlyAllowlist.",
+      "A transmissao de Read PLC Program exige marcacao manual da caixa READ-ONLY VERIFICADAS no Laboratorio PG.",
+      "A validacao envia 34 03 00 00 A0 28 uma unica vez depois de um HELLO valido; depois somente registra RX e faz captura passiva.",
+      "0A 03 60 00 AC E6 e 0A 03 60 AC AC 3A foram rastreados ao handler Read PLC System, mas continuam CANDIDATE e desabilitados ate a validacao do primeiro read.",
+      "Leituras Vxxxx, Dxxxx, WCxxx e FILE usam campos de endereco dinamicos e permanecem fora da allowlist nesta etapa.",
       "Etapas CANDIDATE nunca sao transmitidas.",
       "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
       "F0 00 0F permanece nao classificado e bloqueado.",
-      "0F 00 F0 permanece bloqueado por estar associado ao Clear All Memory na analise estatica do PC12."
+      "0F 00 F0 permanece bloqueado por estar associado ao Clear All Memory na analise estatica do PC12.",
+      "RUN, STOP remoto, escrita, download e apagamento permanecem fora desta validacao."
     ]
   }
 }
