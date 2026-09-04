@@ -13,10 +13,13 @@ if errorlevel 1 goto :erro
 "%CSC%" /nologo /target:winexe /optimize+ /out:"OpenLadderUpdater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Updater.cs"
 if errorlevel 1 goto :erro
 
+"%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.DeviceManagerProgram /out:"OpenLadderDeviceManager.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PLCPlatform.cs" "PLCDeviceManager.cs"
+if errorlevel 1 goto :erro
+
 "%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.LadderProgram /out:"OpenLadderEditor.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "LadderEditor.build.cs"
 if errorlevel 1 goto :erro
 
-"%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.DirectStudioProgram /out:"OpenLadderStudio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12DirectStudio.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs" "PC12Updater.cs"
+"%CSC%" /nologo /target:winexe /optimize+ /main:ModernPC12.DirectStudioProgram /out:"OpenLadderStudio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12DirectStudio.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs" "PC12Updater.cs" "PLCPlatform.cs" "PLCDeviceManager.cs"
 if errorlevel 1 goto :erro
 
 del /q "LadderEditor.build.cs" >nul 2>&1
