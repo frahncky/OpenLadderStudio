@@ -15,7 +15,7 @@ Nenhuma regra inferida é considerada confirmada automaticamente.
 
 ## Como abrir
 
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_CAMPANHA_CALIBRACAO.bat`
+No OpenLadder Studio: menu **Ferramentas → Calibração TP02**, ou o item **Calibração** na barra de navegação. É necessário ter um perfil WEG TP02 selecionado.
 
 ## Testes pré-cadastrados
 

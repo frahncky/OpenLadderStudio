@@ -39,6 +39,26 @@ foreach ($size in @('16', '24', '32', '48', '64', '128', '256')) {
     if (-not $iconText.Contains($size)) { throw "Tamanho $size ausente do pipeline de ícone." }
 }
 
+$buildScript = Join-Path $portable 'BUILD_INTERFACE_MODERNA.bat'
+if (-not (Test-Path $buildScript)) { throw "Arquivo obrigatório ausente: $buildScript" }
+
+$buildText = [System.IO.File]::ReadAllText($buildScript)
+$produced = @()
+foreach ($hit in [Regex]::Matches($buildText, '/out:"([A-Za-z0-9_]+\.exe)"')) {
+    $produced += $hit.Groups[1].Value
+}
+if ($produced.Count -eq 0) { throw 'Nenhum executável encontrado em BUILD_INTERFACE_MODERNA.bat.' }
+
+foreach ($launcher in Get-ChildItem -Path $portable -Filter 'INICIAR_*.bat') {
+    $launcherText = [System.IO.File]::ReadAllText($launcher.FullName).Replace('%~dp0', '')
+    foreach ($hit in [Regex]::Matches($launcherText, '([A-Za-z0-9_]+\.exe)')) {
+        $exe = $hit.Groups[1].Value
+        if ($produced -contains $exe) { continue }
+        if (Test-Path (Join-Path $portable $exe)) { continue }
+        throw "$($launcher.Name) chama $exe, que não é gerado pelo build nem existe no repositório."
+    }
+}
+
 $generated = @(
     (Join-Path $repoRoot 'installer\PC12Studio.build.iss'),
     (Join-Path $portable 'StudioUi.build.cs'),

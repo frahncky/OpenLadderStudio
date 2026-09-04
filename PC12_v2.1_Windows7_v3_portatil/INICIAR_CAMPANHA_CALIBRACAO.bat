@@ -1,6 +1,0 @@
-@echo off
-setlocal
-cd /d "%~dp0"
-call "%~dp0BUILD_INTERFACE_MODERNA.bat"
-if errorlevel 1 exit /b 1
-start "" "%~dp0TP02_Calibration_Campaign.exe"

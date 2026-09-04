@@ -17,10 +17,10 @@ Fluxo previsto:
 ## Arquivos
 
 - `PLCPlatform.cs` — contratos, perfis, registro de drivers, capacidades e modelo Ladder universal.
-- `PLCDeviceManager.cs` — catálogo visual de controladores e seleção do perfil padrão.
+- `PLCDeviceManagerV16.cs` — catálogo visual de controladores e seleção do perfil padrão.
 - `ModbusCore.cs` — implementação genérica Modbus RTU e Modbus TCP.
-- `ModbusMonitor.cs` — monitor de coils, entradas e registradores.
-- `PrepareStudioBuild.ps1` — integra o seletor de controlador e o monitor Modbus ao shell principal durante o build.
+- `ModbusMonitorV14.cs` — monitor de coils, entradas e registradores; o build aplica sobre ele as etapas de preparação V15, V17 e V18.
+- `PrepareUniversalStudioV20.ps1` — integra o seletor de controlador, o mapa de memória e o monitor Modbus ao shell principal durante o build.
 - `INICIAR_CONTROLADORES.bat` — inicializa o gerenciador de controladores.
 - `INICIAR_MODBUS.bat` — inicializa o monitor Modbus.
 

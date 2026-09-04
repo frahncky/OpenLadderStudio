@@ -16,7 +16,7 @@ Arquivos atuais mais próximos desta camada:
 - `StudioUi.cs`;
 - `LadderEditor.cs`;
 - `PLCDeviceManagerV16.cs`;
-- `PLCMemoryMapManagerV15.cs`;
+- `PLCMemoryMapManager.cs`;
 - `ModbusMonitorV14.cs` e etapas de preparação associadas.
 
 A camada de apresentação pode consumir serviços e contratos do núcleo, mas o núcleo não deve depender de WinForms.
