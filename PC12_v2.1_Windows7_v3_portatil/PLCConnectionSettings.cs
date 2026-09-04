@@ -21,6 +21,7 @@ namespace ModernPC12
         public int DefaultFunction = 3;
         public int StartAddress = 0;
         public int Quantity = 10;
+        public int MonitorIntervalMs = 1000;
     }
 
     internal static class PlcConnectionSettingsStore
@@ -87,6 +88,7 @@ namespace ModernPC12
                 s.DefaultFunction = GetInt(data, "function", s.DefaultFunction, 1, 4);
                 s.StartAddress = GetInt(data, "startAddress", s.StartAddress, 0, 65535);
                 s.Quantity = GetInt(data, "quantity", s.Quantity, 1, 2000);
+                s.MonitorIntervalMs = GetInt(data, "monitorIntervalMs", s.MonitorIntervalMs, 250, 5000);
             }
             catch
             {
@@ -117,7 +119,8 @@ namespace ModernPC12
                 "timeoutMs=" + s.TimeoutMs.ToString(CultureInfo.InvariantCulture),
                 "function=" + s.DefaultFunction.ToString(CultureInfo.InvariantCulture),
                 "startAddress=" + s.StartAddress.ToString(CultureInfo.InvariantCulture),
-                "quantity=" + s.Quantity.ToString(CultureInfo.InvariantCulture)
+                "quantity=" + s.Quantity.ToString(CultureInfo.InvariantCulture),
+                "monitorIntervalMs=" + s.MonitorIntervalMs.ToString(CultureInfo.InvariantCulture)
             });
         }
 
