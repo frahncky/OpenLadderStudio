@@ -26,7 +26,7 @@ Checksum:
 
 O quadro está estaticamente confirmado como uma requisição do fluxo Read PLC Program, mas **não é autônomo**.
 
-## Evidência física do quadro isolado
+## Evidência física do quadro 34 isolado
 
 O Laboratório PG transmitiu `34 03 00 00 A0 28` uma única vez após HELLO válido em duas condições controladas:
 
@@ -35,23 +35,60 @@ O Laboratório PG transmitiu `34 03 00 00 A0 28` uma única vez após HELLO vál
 
 Portanto, o quadro principal não deve permanecer em `readOnlyAllowlist` quando usado isoladamente.
 
-## Preâmbulo obrigatório encontrado no fluxo
+## Preâmbulo 38 00 C7 — semântica fechada estaticamente
 
-A análise aprofundada do mesmo handler mostrou que, antes de montar `34 03 00 00 A0 28`, o PC12 executa outro intercâmbio serial.
+A análise aprofundada mostrou que `38 00 C7` é montado explicitamente em apenas dois fluxos de programa localizados no executável:
 
-Em `0x4B1B79` o programa monta:
+- `0x4AF8D4`: fluxo `Compare PLC Program...`;
+- `0x4B1B79`: fluxo `Read PLC Program...`.
 
-`38 00 C7`
+Nos dois pontos o PC12 executa a mesma sequência:
 
-Define comprimento `3` e chama `0x46F5E6` em `0x4B1BB0`. O fluxo contém novas chamadas de comunicação em caso de erro/repetição.
+- grava `38 00 C7` no buffer TX `0x4FA7A8`;
+- define comprimento TX `3` em `0x4FA8AC`;
+- define modo de recepção `2` em `0x560364`;
+- define comprimento de dados esperado `2` em `0x560360`;
+- chama a rotina serial `0x46F5E6`.
 
-Depois desse intercâmbio, o PC12 consulta dados recebidos. Em `0x4B1D31–0x4B1D43`, os bytes em `0x530232` e `0x530233` são combinados em um valor de 16 bits **antes** de o quadro `34 03 00 00 A0 28` ser montado.
+Checksum da requisição:
 
-Isso demonstra que a requisição `34...` depende do estado/resposta produzidos por uma etapa anterior do protocolo.
+`38 + 00 + C7 = FF`.
 
-### Evidência adicional sobre `38 00 C7`
+### Formato esperado da resposta ao 38
 
-A mesma construção de `38 00 C7` aparece também no fluxo rotulado `Compare PLC Program...`. Isso reforça a interpretação de que o quadro participa de uma preparação/consulta comum a operações de leitura/comparação de programa, mas sua semântica exata e sua resposta esperada ainda precisam ser fechadas antes de qualquer validação física.
+Na rotina de recepção, quando `0x560364 = 2`, o PC12 espera comprimento total igual a `0x560360 + 3`. Para o preâmbulo 38 isso significa **5 bytes de resposta**.
+
+Depois da recepção o PC12:
+
+1. soma todos os bytes recebidos e exige soma módulo 256 igual a `0xFF`;
+2. marca TIME-OUT quando não há quadro completo;
+3. marca CHECK SUM ERROR quando a soma não fecha em `0xFF`;
+4. testa o bit `0x80` do primeiro byte da resposta; se esse bit estiver ativo, entra no tratador de erro do PLC;
+5. no tratador de erro, o byte de resposta em `0x530232` é usado como código de erro;
+6. quando o bit `0x80` está limpo e o checksum é válido, o fluxo de Read/Compare combina `0x530232` e `0x530233` em big-endian para formar um valor de 16 bits antes de prosseguir.
+
+Nos fluxos Read/Compare esse valor de 16 bits é usado como metadado do programa antes da leitura por blocos. Portanto, `38 00 C7` está classificado estaticamente como **consulta de pré-leitura/metadados do programa**, sem evidência de alteração de memória ou estado operacional.
+
+### Política para a primeira validação física do 38
+
+A validação de bancada deve transmitir somente `38 00 C7`, uma única vez, depois de um HELLO válido, e deve encerrar sem transmitir `34...` nem qualquer outro comando. A resposta será apenas caracterizada.
+
+Critérios esperados para uma resposta normal:
+
+- exatamente 5 bytes;
+- soma módulo 256 = `FF`;
+- bit `0x80` do primeiro byte limpo;
+- bytes 2 e 3 interpretáveis como valor de 16 bits big-endian.
+
+Se o bit `0x80` vier ativo, a resposta deve ser registrada como quadro de erro e nenhum comando posterior deve ser enviado.
+
+## Estrutura da etapa 34 após o preâmbulo
+
+Depois de um 38 válido, o PC12 monta `34 03 00 00 A0 28`, configura `0x560364 = 2` e `0x560360 = 0xF0`. Isso faz a rotina serial esperar até **243 bytes** (`0xF0 + 3`) para a resposta do primeiro bloco.
+
+Ao longo do fluxo, os bytes de endereço do quadro `34` são recalculados e o checksum é recomposto para solicitar blocos subsequentes. Portanto, a leitura integral do programa é uma sequência de múltiplos blocos e não uma única requisição fixa.
+
+A etapa 34 permanece desabilitada até que a resposta física ao 38 seja conhecida.
 
 ## Ramo condicional de senha
 
@@ -85,16 +122,15 @@ Os quadros desses handlers dependem do endereço/página solicitado. Como ainda 
 
 ## Estado atual do gate de segurança
 
-Após os dois ensaios sem RX, o pacote de bancada voltou ao modo conservador:
+Para a próxima validação, apenas `38 00 C7` pode entrar temporariamente na `readOnlyAllowlist`, com as seguintes proteções:
 
-- `readOnlyAllowlist` vazia;
-- `34 03 00 00 A0 28` desabilitado e reclassificado como `CANDIDATE` para uso isolado;
-- `38 00 C7` registrado como preâmbulo candidato, desabilitado;
-- `14 00 EB` registrado como candidato do ramo de senha, desabilitado;
-- Read PLC System e leituras de registradores continuam desabilitados;
-- somente HELLO e captura passiva ficam ativos.
-
-Nenhum novo quadro será transmitido até a análise estática definir a sequência e os critérios de resposta esperados.
+- autorização manual obrigatória no Laboratório PG;
+- uma única transmissão após HELLO válido;
+- nenhum `34...` ativo no mesmo ensaio;
+- nenhum Read PLC System ativo;
+- nenhum comando de senha ativo;
+- captura e relatório do RX antes de qualquer passo posterior;
+- `F0 00 0F`, `0F 00 F0`, RUN/STOP remoto, escrita, download e apagamento continuam bloqueados.
 
 ## Estado experimental do HELLO
 
