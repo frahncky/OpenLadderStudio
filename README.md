@@ -1,15 +1,19 @@
 # OpenLadder Studio
 
-O **OpenLadder Studio** é um ambiente moderno de programação Ladder e ferramentas de engenharia para o PLC **WEG TP02**.
+O **OpenLadder Studio** é um ambiente moderno de programação Ladder, monitoramento e ferramentas de engenharia para PLCs.
 
-O projeto preserva a compatibilidade com o **PC12 Design Center 2.1** e com seus arquivos legados, mas o nome do novo software é **OpenLadder Studio**. O PC12 passa a ser tratado apenas como software legado, fonte de compatibilidade e referência para a evolução do projeto.
+O **WEG TP02** é o primeiro controlador com suporte específico do projeto. A arquitetura agora é **multi-fabricante**, com perfis de dispositivos, drivers desacoplados e uma representação Ladder intermediária independente do fabricante. Também foi adicionada comunicação genérica **Modbus RTU** e **Modbus TCP** em modo de leitura.
 
-## OpenLadder Studio — interface principal
+O projeto preserva a compatibilidade com o **PC12 Design Center 2.1** e com seus arquivos legados, mas o nome do novo software é **OpenLadder Studio**. O PC12 é tratado apenas como software legado, fonte de compatibilidade e referência para a evolução do driver TP02.
+
+## Interface principal
 
 A interface principal é compilada como `OpenLadderStudio.exe` e reúne no mesmo ambiente:
 
 - Editor Ladder moderno;
-- comunicação e diagnóstico do TP02;
+- seleção de controlador e perfil de dispositivo;
+- monitor Modbus RTU/TCP genérico;
+- comunicação e diagnóstico específicos do TP02;
 - TP02 Bridge Lab;
 - leitor da memória de programa por `RBP`;
 - decodificador `RBP -> Boolean/IL`;
@@ -22,9 +26,69 @@ O arquivo `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat` recompila as interfa
 
 A interface principal usa tema escuro, barra de menus, barra de ferramentas, área central de edição, painéis laterais e barra de status, seguindo uma organização semelhante a softwares industriais atuais.
 
-## Editor Ladder — Etapa 2
+## Arquitetura multi-fabricante
 
-O editor Ladder próprio usa a nomenclatura real do TP02 e já possui:
+A nova camada usa a seguinte separação:
+
+`Editor Ladder -> Modelo Ladder universal -> Driver/Compilador do fabricante -> PLC`
+
+Arquivos principais dessa arquitetura:
+
+- `PLCPlatform.cs` — interfaces, capacidades, perfis, registro de drivers e modelo Ladder universal;
+- `PLCDeviceManager.cs` — catálogo visual de controladores e escolha do perfil padrão;
+- `ModbusCore.cs` — implementação de Modbus RTU e TCP;
+- `ModbusMonitor.cs` — monitor de coils, entradas e registradores;
+- `PrepareStudioBuild.ps1` — integra o seletor de controlador e o monitor Modbus ao shell principal;
+- `docs/PLC_DRIVER_ARCHITECTURE.md` — documentação técnica detalhada.
+
+O perfil selecionado é salvo em `%APPDATA%\OpenLadder Studio\device.profile`.
+
+### Situação dos drivers
+
+| Perfil | Comunicação | Monitoramento | Programação Ladder | Situação |
+|---|---:|---:|---:|---|
+| WEG TP02-60MR | Sim | Sim | Em desenvolvimento | Implementado em leitura segura |
+| Modbus RTU genérico | Sim | FC 01/02/03/04 | Não | Experimental funcional |
+| Modbus TCP genérico | Sim | FC 01/02/03/04 | Não | Experimental funcional |
+| Schneider Modicon M221 | Perfil cadastrado | Via Modbus quando aplicável | Não | Planejado |
+| Delta DVP | Perfil cadastrado | Via Modbus quando aplicável | Não | Planejado |
+| Siemens S7-1200 | Perfil cadastrado | Não | Não | Planejado |
+| Mitsubishi FX5U | Perfil cadastrado | Não | Não | Planejado |
+| Omron CP1L | Perfil cadastrado | Não | Não | Planejado |
+| Allen-Bradley Micro850 | Perfil cadastrado | Não | Não | Planejado |
+
+Perfis marcados como **Planejado** não são apresentados como suporte operacional. Transferência de programa e escrita permanecem desabilitadas enquanto não houver implementação e validação real no hardware.
+
+## Monitor Modbus RTU/TCP
+
+O OpenLadder Studio já possui comunicação genérica de leitura para equipamentos que exponham mapa Modbus.
+
+Funções implementadas:
+
+- `01` — Read Coils;
+- `02` — Read Discrete Inputs;
+- `03` — Read Holding Registers;
+- `04` — Read Input Registers.
+
+No **Modbus RTU** podem ser configurados porta COM, baud rate, data bits, paridade, stop bits, Unit ID, endereço inicial, quantidade e timeout. O cliente calcula e valida CRC-16 Modbus.
+
+No **Modbus TCP** podem ser configurados host/IP, porta, Unit ID, endereço inicial, quantidade e timeout. O cliente valida o cabeçalho MBAP, Transaction ID e Protocol ID.
+
+O monitor pode ser aberto pelo menu **PLC** do OpenLadder Studio ou separadamente por:
+
+`PC12_v2.1_Windows7_v3_portatil/INICIAR_MODBUS.bat`
+
+## Gerenciador de controladores
+
+O menu **PLC > Selecionar controlador...** abre o catálogo multi-fabricante. Também pode ser iniciado por:
+
+`PC12_v2.1_Windows7_v3_portatil/INICIAR_CONTROLADORES.bat`
+
+O shell principal passa a mostrar o controlador escolhido no painel de propriedades e na barra de status.
+
+## Editor Ladder
+
+O editor Ladder próprio usa atualmente a nomenclatura real do TP02 e já possui:
 
 - contatos normalmente abertos e fechados;
 - pontos `X0001–X0384`, `Y0001–Y0384`, `C0001–C2048` e `SC001–SC128`;
@@ -39,15 +103,13 @@ O editor Ladder próprio usa a nomenclatura real do TP02 e já possui:
 - múltiplos rungs, desfazer, edição, salvar/abrir e validação estrutural;
 - formato `.pladder` versão 2 com leitura da versão anterior.
 
-A validação do editor ainda não substitui a compilação oficial do PC12.
+A próxima evolução do editor é converter esse modelo específico para o **modelo Ladder universal**, permitindo compiladores diferentes por família de PLC.
 
-## TP02 Bridge Lab — Etapa 3
+## TP02 Bridge Lab
 
-A terceira etapa inicia a compatibilidade real com o PC12 e a comunicação direta com o TP02.
+O Bridge mantém as ferramentas específicas de compatibilidade com o WEG TP02 e o PC12.
 
-### Laboratório de arquivos do PC12
-
-Foi confirmado que `lastfile.cpu` e `lastfile.dir` são apenas arquivos auxiliares/históricos. Um projeto salvo pelo PC12 é formado por um conjunto de arquivos com o mesmo nome-base:
+Um projeto salvo pelo PC12 é formado por um conjunto de arquivos com o mesmo nome-base:
 
 - `.PLC` — programa do usuário;
 - `.sys1` — memória de sistema `WSxxx`;
@@ -63,83 +125,27 @@ Foi confirmado que `lastfile.cpu` e `lastfile.dir` são apenas arquivos auxiliar
 
 O Bridge permite localizar arquivos auxiliares, gerar SHA-256/hexdump, extrair strings, comparar arquivos byte a byte e salvar relatórios de engenharia reversa.
 
-### Comunicação serial somente leitura
+### Comunicação TP02 em modo seguro
 
-O Bridge implementa a moldura ASCII do protocolo TP02 com checksum por complemento de dois e oferece:
+A moldura ASCII do protocolo TP02 oferece atualmente:
 
 - `PSR` — ler estado do PLC;
 - `MCR` — ler entradas, saídas, relés auxiliares e especiais;
-- `MRV` — ler registradores `V`, `D`, `WS`, `WC` e `F`.
+- `MRV` — ler registradores `V`, `D`, `WS`, `WC` e `F`;
+- `RBP` — ler memória de programa.
 
-A configuração inicial é 19200 bps, 7 bits, paridade EVEN, 2 stop bits, estação 01 e tempo de resposta 50 ms, podendo ser ajustada para coincidir com o PLC.
+A configuração inicial é 19200 bps, 7 bits, paridade EVEN, 2 stop bits, estação 01 e tempo de resposta configurável.
 
-## Leitor RBP — Etapa 4
+## Leitor e decodificador RBP
 
-O `TP02ProgramReader.cs` implementa o comando oficial `RBP` em modo somente leitura.
+O `TP02ProgramReader.cs` implementa o comando `RBP` em modo somente leitura, com leitura de passos da memória, validação de checksum, agrupamento em 3 bytes / 6 caracteres hexadecimais e salvamento de dumps `.rbpdump`.
 
-Recursos atuais:
+O `TP02MachineDecoder.cs`, `TP02AutoDecoder.cs`, `TP02OpcodeCalibration.cs` e `TP02CalibrationCampaign.cs` formam a camada de pesquisa para reconstrução do programa Ladder do TP02.
 
-- endereço inicial `0000–4000`, adequado ao TP02-40/60;
-- leitura de 1 a 100 passos por comando;
-- opção rápida para ler `0000–0099`;
-- checksum de comando e validação da resposta;
-- agrupamento de cada passo em **3 bytes / 6 caracteres hexadecimais**;
-- tabela com `passo`, `word`, byte alto, byte baixo e byte externo;
-- salvamento de dumps `.rbpdump`;
-- integração direta no menu **Ler programa** do OpenLadder Studio.
+A metodologia está documentada em:
 
-## Decodificador RBP -> Boolean/IL — Etapa 5
-
-O `TP02MachineDecoder.cs` adiciona uma camada de engenharia reversa controlada entre a leitura RBP e a futura reconstrução Ladder.
-
-Recursos:
-
-- abertura de dumps `.rbpdump`;
-- tabela por passo com `WORD`, `HIGH`, `LOW` e `EXT`;
-- comparação de dois dumps no mesmo intervalo;
-- cálculo do XOR dos 24 bits de cada passo alterado;
-- indicação de quais bytes `HIGH/LOW/EXT` mudaram;
-- cadastro local de um WORD como `STR`, `STR NOT`, `AND`, `AND NOT`, `OR`, `OR NOT`, `AND STR`, `OR STR`, `OUT`, `TMR`, `CNT`, `FUN` ou `END`;
-- operando associado ao mapeamento;
-- nível de evidência: `Manual`, `Teste controlado`, `Inferido por comparação` ou `Não confirmado`;
-- mapa local em `tp02_opcode_map.tsv`;
-- exportação do dump para uma lista `.il.txt`, mantendo `UNKNOWN` onde ainda não houver prova suficiente;
-- amostra RBP documentada no manual com os words `5E1509`, `204006` e `20C10F`, mantidos como `UNKNOWN` até existir associação semântica comprovada.
-
-## Calibração automática de opcodes — Etapa 6
-
-O `TP02OpcodeCalibration.cs` automatiza a comparação de vários experimentos controlados.
-
-Fluxo:
-
-1. criar no PC12 original programas mínimos que diferem em apenas um item;
-2. ler sempre a mesma faixa com `RBP`;
-3. salvar cada leitura como `.rbpdump`;
-4. informar ao laboratório qual instrução e operando foram usados;
-5. executar **INFERIR MÁSCARAS**.
-
-O laboratório calcula:
-
-- máscara de bits que variam entre operandos da mesma instrução;
-- máscara candidata de opcode, usando os bits que permanecem constantes;
-- valor candidato do opcode;
-- comparação de instruções diferentes usando o mesmo operando;
-- XOR de 24 bits para localizar diferenças de opcode;
-- representação binária por `HIGH / LOW / EXT`;
-- relatório de calibração `.cal.txt`.
-
-Há também um **ROTEIRO DE TESTES** embutido com sequências como:
-
-- `STR X0001`, `STR X0002`, `STR X0004`, `STR X0016`;
-- `STR X0001`, `STR NOT X0001`, `AND X0001`, `AND NOT X0001`, `OR X0001`, `OR NOT X0001`;
-- `STR X0001`, `STR Y0001`, `STR C0001`, `STR SC001`;
-- testes separados de `OUT`, `TMR` e `CNT`.
-
-Uma máscara inferida **não é automaticamente tratada como comprovada**. Ela deve ser repetida com vários endereços e famílias de operandos antes de virar regra definitiva no decodificador.
-
-A metodologia de pesquisa também está documentada em `docs/TP02_OPCODE_RESEARCH.md`.
-
-**Nenhum comando `WBP`, RUN, STOP, escrita de registradores ou limpeza de memória é exposto nas ferramentas modernas.**
+- `docs/TP02_OPCODE_RESEARCH.md`;
+- `docs/TP02_CALIBRATION_CAMPAIGN.md`.
 
 ## Como iniciar
 
@@ -147,11 +153,17 @@ A metodologia de pesquisa também está documentada em `docs/TP02_OPCODE_RESEARC
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat`
 
+### Gerenciador de controladores
+
+`PC12_v2.1_Windows7_v3_portatil/INICIAR_CONTROLADORES.bat`
+
+### Monitor Modbus
+
+`PC12_v2.1_Windows7_v3_portatil/INICIAR_MODBUS.bat`
+
 ### Editor Ladder separado
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_EDITOR_LADDER.bat`
-
-Esse inicializador gera e abre `OpenLadderEditor.exe`.
 
 ### TP02 Bridge Lab separado
 
@@ -173,48 +185,36 @@ Esse inicializador gera e abre `OpenLadderEditor.exe`.
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12_CLASSICO.bat`
 
-## Arquivos principais
+## Build e instalador
 
-- `PC12DirectStudio.cs` — shell principal do **OpenLadder Studio**;
-- `LadderEditor.cs` — editor Ladder;
-- `TP02BridgeLab.cs` — análise de projetos PC12 e comunicação somente leitura;
-- `TP02ProgramReader.cs` — leitor `RBP` da memória de programa;
-- `TP02MachineDecoder.cs` — comparação de WORDs RBP e exportação para IL;
-- `TP02OpcodeCalibration.cs` — inferência automática de máscaras de opcode/operando;
-- `TP02CalibrationCampaign.cs` — campanha de calibração;
-- `TP02AutoDecoder.cs` — decodificação automática;
-- `TP02IlToLadder.cs` — reconstrução IL -> Ladder;
-- `PC12Updater.cs` — atualizador do OpenLadder Studio;
-- `PC12Studio.cs` e `ModernPC12.cs` — componentes de transição/compatibilidade mantidos no código;
-- `docs/TP02_OPCODE_RESEARCH.md` — metodologia e registro de evidências dos opcodes;
-- `BUILD_INTERFACE_MODERNA.bat` — compilação local das interfaces;
-- `INICIAR_PC12.bat` — inicializador principal.
+`BUILD_INTERFACE_MODERNA.bat` gera:
+
+- `OpenLadderStudio.exe`;
+- `OpenLadderEditor.exe`;
+- `OpenLadderDeviceManager.exe`;
+- `OpenLadderModbus.exe`;
+- `OpenLadderUpdater.exe`.
+
+O instalador inclui atalhos para o OpenLadder Studio, gerenciador de controladores, monitor Modbus e atualizador.
 
 ## Compatibilidade
 
 As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas, mantendo **Windows 7 SP1 como base mínima** e visando também Windows 8.1, 10 e 11.
 
-## Arquitetura de transição
+## Próximas etapas
 
-1. central moderna e diagnóstico — concluído;
-2. editor Ladder moderno — iniciado;
-3. instruções e endereçamento reais do TP02 — iniciado;
-4. interface unificada OpenLadder Studio — iniciada;
-5. engenharia reversa do formato nativo do PC12 — em andamento;
-6. comunicação serial em modo somente leitura — iniciada;
-7. leitura do programa por `RBP` — implementada em nível de linguagem de máquina;
-8. laboratório de decodificação RBP para Boolean/IL — implementado;
-9. inferência automática de máscaras de opcode/operando — implementada;
-10. validação dos opcodes com dumps controlados reais — depende dos experimentos no hardware/PC12;
-11. reconstrução automática Boolean/IL -> Ladder;
-12. importação `.PLC` / RBP -> `.pladder`;
-13. geração controlada do formato nativo;
-14. transferência de programa após validação com hardware;
-15. substituição progressiva do PC12 legado.
+1. mapeamento de memória configurável por modelo;
+2. monitor online geral baseado em `IPlcDriver`;
+3. migração do editor para o modelo Ladder universal;
+4. compiladores por família de PLC;
+5. drivers específicos para outros fabricantes;
+6. escrita Modbus após validação;
+7. transferência de programa apenas para drivers e compiladores validados em hardware.
 
 ## Identidade do projeto
 
 **Nome do software:** OpenLadder Studio  
-**PLC-alvo:** WEG TP02  
+**Primeiro driver específico:** WEG TP02  
+**Protocolos genéricos atuais:** Modbus RTU e Modbus TCP em leitura  
 **Software legado compatível:** PC12 Design Center 2.1  
 **Versão atual:** 0.11
