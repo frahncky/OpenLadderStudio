@@ -19,12 +19,10 @@ namespace ModernPC12
     {
         private readonly Color Navy = Color.FromArgb(18, 39, 63);
         private readonly Color NavyLight = Color.FromArgb(27, 55, 86);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
         private readonly Color Canvas = Color.FromArgb(244, 247, 250);
         private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
 
         private Panel host;
-        private Button activeTab;
         private LadderEditorForm ladderForm;
         private TP02BridgeForm bridgeForm;
         private TP02ProgramReaderForm readerForm;
@@ -50,29 +48,29 @@ namespace ModernPC12
         {
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
-            header.Height = 52;
+            header.Height = 46;
             header.BackColor = Color.White;
             Controls.Add(header);
 
             Label brand = new Label();
             brand.Text = "PC12 STUDIO TP02";
             brand.AutoSize = true;
-            brand.Font = new Font("Segoe UI Semibold", 13.0f, FontStyle.Bold);
+            brand.Font = new Font("Segoe UI Semibold", 12.5f, FontStyle.Bold);
             brand.ForeColor = Navy;
-            brand.Location = new Point(18, 8);
+            brand.Location = new Point(18, 12);
             header.Controls.Add(brand);
 
             Label version = new Label();
             version.Text = "v0.8";
             version.AutoSize = true;
-            version.Font = new Font("Segoe UI", 8.2f);
+            version.Font = new Font("Segoe UI", 8.0f);
             version.ForeColor = TextSecondary;
-            version.Location = new Point(20, 31);
+            version.Location = new Point(184, 16);
             header.Controls.Add(version);
 
             Panel nav = new Panel();
             nav.Dock = DockStyle.Top;
-            nav.Height = 42;
+            nav.Height = 40;
             nav.BackColor = Navy;
             Controls.Add(nav);
 
@@ -98,7 +96,7 @@ namespace ModernPC12
         {
             Button b = new Button();
             b.Text = text;
-            b.Location = new Point(left, 4);
+            b.Location = new Point(left, 3);
             b.Size = new Size(width, 34);
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderSize = 0;
@@ -112,7 +110,6 @@ namespace ModernPC12
                 action(sender, e);
             };
             parent.Controls.Add(b);
-            if (text == "LADDER") activeTab = b;
         }
 
         private void SetActive(Button button)
@@ -126,7 +123,6 @@ namespace ModernPC12
                 }
             }
             button.BackColor = NavyLight;
-            activeTab = button;
         }
 
         private void Prepare(Form child)
@@ -152,9 +148,24 @@ namespace ModernPC12
             if (updaterForm != null && !updaterForm.IsDisposed) updaterForm.Hide();
         }
 
+        private static void HideLabel(Control root, string text)
+        {
+            foreach (Control c in root.Controls)
+            {
+                Label l = c as Label;
+                if (l != null && string.Equals(l.Text, text, StringComparison.OrdinalIgnoreCase)) l.Visible = false;
+                if (c.HasChildren) HideLabel(c, text);
+            }
+        }
+
         private void ShowLadder()
         {
-            if (ladderForm == null || ladderForm.IsDisposed) ladderForm = new LadderEditorForm();
+            if (ladderForm == null || ladderForm.IsDisposed)
+            {
+                ladderForm = new LadderEditorForm();
+                HideLabel(ladderForm, "PC12 LADDER STUDIO");
+                HideLabel(ladderForm, "Editor Ladder moderno • WEG TP02");
+            }
             Prepare(ladderForm);
             SelectTab("LADDER");
         }
@@ -207,7 +218,7 @@ namespace ModernPC12
             foreach (Control c in Controls)
             {
                 Panel p = c as Panel;
-                if (p != null && p.Height == 42 && p.BackColor == Navy) { nav = p; break; }
+                if (p != null && p.Height == 40 && p.BackColor == Navy) { nav = p; break; }
             }
             if (nav == null) return;
             foreach (Control c in nav.Controls)
