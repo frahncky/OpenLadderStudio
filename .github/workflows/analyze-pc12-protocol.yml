@@ -12,70 +12,92 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
-      - name: Identificar binário PC12
+      - name: Preparar análise PE
         shell: pwsh
-        run: |
-          $p = 'PC12_v2.1_Windows7_v3_portatil/pc12.exe'
-          Get-Item $p | Format-List Name,Length,FullName
-          Get-FileHash $p -Algorithm SHA256
+        run: python -m pip install --disable-pip-version-check pefile capstone
 
-      - name: Extrair strings relevantes
+      - name: Localizar chamadas seriais e buffers
         shell: python
         run: |
-          import re, hashlib, pathlib
-          p = pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe')
-          data = p.read_bytes()
-          print('SIZE', len(data))
-          print('SHA256', hashlib.sha256(data).hexdigest())
-          ascii_strings = [m.decode('latin1', 'ignore') for m in re.findall(rb'[\x20-\x7e]{3,}', data)]
-          wide_raw = re.findall(rb'(?:[\x20-\x7e]\x00){3,}', data)
-          wide_strings = [b[::2].decode('latin1', 'ignore') for b in wide_raw]
-          keys = ['COM','LINK','UNLINK','SERIAL','PORT','BAUD','19200','RS422','RS-422','PLC','TP02','RUN','STOP','READ','WRITE','UPLOAD','DOWNLOAD','MONITOR','PASSWORD','TIMEOUT','MCR','MRV','RBP','SCS','WRV','WBP','PSR','STP','RTC','CLR','ROM','PG']
-          def relevant(s):
-              u=s.upper()
-              return any(k in u for k in keys)
-          print('\n=== ASCII RELEVANT STRINGS ===')
-          for s in ascii_strings:
-              if relevant(s): print(repr(s))
-          print('\n=== UTF16 RELEVANT STRINGS ===')
-          for s in wide_strings:
-              if relevant(s): print(repr(s))
-          print('\n=== EXACT 3-LETTER TOKENS AROUND KNOWN COMMANDS ===')
-          for token in [b'MCR',b'MRV',b'RBP',b'SCS',b'WRV',b'WBP',b'PSR',b'STP',b'RUN',b'RTC',b'PAS',b'ROM',b'CLR']:
-              positions=[m.start() for m in re.finditer(re.escape(token), data)]
-              print(token.decode(), positions[:40], 'count=', len(positions))
+          import pathlib, pefile
+          from capstone import Cs, CS_ARCH_X86, CS_MODE_32
+          from capstone.x86 import X86_OP_MEM, X86_OP_IMM
 
-      - name: Mostrar imports e chamadas seriais
-        shell: pwsh
-        run: |
-          $p = Resolve-Path 'PC12_v2.1_Windows7_v3_portatil/pc12.exe'
-          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-          $vs = & $vswhere -latest -property installationPath
-          $dump = Get-ChildItem (Join-Path $vs 'VC\Tools\MSVC') -Filter dumpbin.exe -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'Hostx64\\x86\\dumpbin.exe$' } | Select-Object -First 1
-          if (-not $dump) { $dump = Get-ChildItem (Join-Path $vs 'VC\Tools\MSVC') -Filter dumpbin.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 }
-          Write-Host "DUMPBIN=$($dump.FullName)"
-          & $dump.FullName /imports $p | Select-String -Pattern 'CreateFile|ReadFile|WriteFile|SetComm|GetComm|EscapeComm|PurgeComm|ClearComm|WaitComm|SetupComm|CloseHandle' -Context 2,2
-          & $dump.FullName /disasm $p > pc12.disasm.txt
-          Write-Host '=== REFERENCES A SERIAL APIS NO DISASSEMBLY ==='
-          Select-String -Path pc12.disasm.txt -Pattern 'WriteFile|ReadFile|SetCommState|CreateFileA|WaitCommEvent|PurgeComm|ClearCommError' -Context 20,20 | Select-Object -First 80
+          path = pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe')
+          data = path.read_bytes()
+          pe = pefile.PE(str(path))
+          image_base = pe.OPTIONAL_HEADER.ImageBase
+          print('IMAGE_BASE', hex(image_base), 'ENTRY', hex(image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint))
 
-      - name: Procurar padrões de link PG no binário
+          targets = {}
+          for entry in getattr(pe, 'DIRECTORY_ENTRY_IMPORT', []):
+              for imp in entry.imports:
+                  if imp.name:
+                      name = imp.name.decode('ascii', 'ignore')
+                      if name in {'CreateFileA','ReadFile','WriteFile','SetCommState','GetCommState','SetupComm','SetCommMask','WaitCommEvent','PurgeComm','ClearCommError','CloseHandle'}:
+                          targets[imp.address] = name
+          print('IAT TARGETS')
+          for va,name in sorted(targets.items()): print(name, hex(va))
+
+          text = next(s for s in pe.sections if s.Name.rstrip(b'\0') == b'.text')
+          code = text.get_data()
+          base = image_base + text.VirtualAddress
+          md = Cs(CS_ARCH_X86, CS_MODE_32)
+          md.detail = True
+          ins = list(md.disasm(code, base))
+          by_addr = {x.address:i for i,x in enumerate(ins)}
+
+          calls=[]
+          for i,x in enumerate(ins):
+              if x.mnemonic != 'call' or not x.operands: continue
+              op=x.operands[0]
+              resolved=None
+              if op.type == X86_OP_MEM and op.mem.base == 0 and op.mem.index == 0:
+                  resolved=op.mem.disp & 0xffffffff
+              if resolved in targets:
+                  calls.append((i, targets[resolved], resolved))
+
+          print('\nSERIAL CALL SITES', len(calls))
+          for n,(idx,name,iat) in enumerate(calls):
+              print('\n===', n, name, 'CALL_AT', hex(ins[idx].address), 'IAT', hex(iat), '===')
+              for y in ins[max(0,idx-35):min(len(ins),idx+16)]:
+                  mark='>>' if y.address==ins[idx].address else '  '
+                  print(mark, hex(y.address), y.mnemonic, y.op_str)
+
+          print('\n=== STATIC STRING XREFS AROUND LINK/PG MESSAGES ===')
+          markers=[b'TP02 Link Success !',b'Link Protocol fail',b'Not PG Protocol Function',b'PLC Mode: Running',b'PLC Mode: Program']
+          for marker in markers:
+              fo=data.find(marker)
+              if fo<0: continue
+              rva=pe.get_rva_from_offset(fo)
+              va=image_base+rva
+              print('\nMARKER', marker.decode(), 'FILE',hex(fo),'VA',hex(va))
+              refs=[]
+              for i,x in enumerate(ins):
+                  for op in x.operands:
+                      if op.type==X86_OP_IMM and (op.imm & 0xffffffff)==va:
+                          refs.append(i)
+                      elif op.type==X86_OP_MEM and op.mem.base==0 and op.mem.index==0 and (op.mem.disp & 0xffffffff)==va:
+                          refs.append(i)
+              print('XREFS', [hex(ins[i].address) for i in refs])
+              for idx in refs[:8]:
+                  print('--- context',hex(ins[idx].address),'---')
+                  for y in ins[max(0,idx-25):min(len(ins),idx+25)]: print(hex(y.address),y.mnemonic,y.op_str)
+
+      - name: Procurar tabelas PG e padrões de checksum
         shell: python
         run: |
-          import pathlib, re, struct
-          data = pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe').read_bytes()
-          markers = [b'TP02 Link Success !', b'Link Protocol fail', b'Not PG Protocol Function', b'COM1:Linking', b'PLC Mode: Running', b'PLC Mode: Program']
-          for m in markers:
-              pos = data.find(m)
-              print('\nMARKER', m, 'FILE_OFFSET', pos)
-              if pos >= 0:
-                  lo=max(0,pos-128); hi=min(len(data),pos+256)
-                  print(data[lo:hi].hex(' '))
-          print('\n=== CANDIDATOS BINARIOS CURTOS REPETIDOS ===')
-          # procura sequencias curtas perto de regiões de comunicação com muitos bytes de controle
-          for start in range(0, len(data)-64, 16):
-              chunk=data[start:start+32]
-              controls=sum(1 for b in chunk if b < 0x20)
-              printable=sum(1 for b in chunk if 0x20 <= b < 0x7f)
-              if controls >= 12 and 4 <= printable <= 16 and any(x in chunk for x in (b'PG', b'COM', b'TP')):
-                  print(start, chunk.hex(' '))
+          import pathlib, pefile, struct
+          data=pathlib.Path(r'PC12_v2.1_Windows7_v3_portatil/pc12.exe').read_bytes()
+          pe=pefile.PE(data=data)
+          base=pe.OPTIONAL_HEADER.ImageBase
+          for marker in [b'PGN',b'PG1',b'hPGM',b'HPGW',b'hpgO',b'pgL']:
+              pos=0
+              while True:
+                  pos=data.find(marker,pos)
+                  if pos<0: break
+                  try: va=base+pe.get_rva_from_offset(pos)
+                  except: va=0
+                  print(marker.decode(errors='ignore'),'FILE',hex(pos),'VA',hex(va))
+                  print(data[max(0,pos-64):min(len(data),pos+96)].hex(' '))
+                  pos+=1
