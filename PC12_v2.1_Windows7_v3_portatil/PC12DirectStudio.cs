@@ -16,12 +16,41 @@ namespace ModernPC12
         }
     }
 
+    /// <summary>
+    /// Ordena a ancoragem dos filhos de um container.
+    ///
+    /// O layout do Windows Forms percorre os filhos do ultimo indice para o primeiro:
+    /// quem esta no indice mais alto escolhe seu espaco primeiro e fica na borda
+    /// externa. Um controle Fill inserido por ultimo ocupa toda a area util e as
+    /// barras ancoradas passam a se sobrepor ao conteudo.
+    ///
+    /// Passe o controle Fill primeiro e depois as barras, da mais interna para a mais
+    /// externa.
+    /// </summary>
+    internal static class DockOrder
+    {
+        public static void Apply(Control parent, params Control[] fillThenInnerToOuter)
+        {
+            if (parent == null || fillThenInnerToOuter == null) return;
+            int i;
+            for (i = 0; i < fillThenInnerToOuter.Length; i++)
+            {
+                Control c = fillThenInnerToOuter[i];
+                if (c != null && c.Parent == parent) parent.Controls.SetChildIndex(c, i);
+            }
+        }
+    }
+
     internal sealed class OpenLadderColorTable : ProfessionalColorTable
     {
         private readonly Color chrome = Color.FromArgb(37, 39, 43);
         private readonly Color hover = Color.FromArgb(52, 55, 60);
         private readonly Color border = Color.FromArgb(61, 64, 69);
 
+        public override Color MenuStripGradientBegin { get { return chrome; } }
+        public override Color MenuStripGradientEnd { get { return chrome; } }
+        public override Color SeparatorDark { get { return border; } }
+        public override Color SeparatorLight { get { return chrome; } }
         public override Color ToolStripDropDownBackground { get { return chrome; } }
         public override Color MenuBorder { get { return border; } }
         public override Color MenuItemBorder { get { return hover; } }
@@ -63,6 +92,7 @@ namespace ModernPC12
         private Label statusText;
         private Label modeText;
         private Label projectValue;
+        private Label rungsValue;
         private Label connectionValue;
         private Button activeRailButton;
 
@@ -89,33 +119,49 @@ namespace ModernPC12
             ShowLadder();
         }
 
+        // O layout ancorado do Windows Forms percorre os filhos do fim para o inicio da
+        // colecao: o ultimo controle adicionado escolhe seu espaco primeiro e fica na
+        // borda externa. Por isso cada container recebe o controle Fill primeiro e os
+        // controles de borda depois, do mais interno para o mais externo.
+        //
+        // BringToFront() move o controle para o indice 0, ou seja, para o FIM da fila de
+        // ancoragem. Aplicado a barras ancoradas, ele fazia o painel Fill ocupar toda a
+        // area antes e as barras se sobrepunham ao conteudo: era o que deixava o menu
+        // flutuando sobre a area de trabalho e a trilha lateral cobrindo a paleta do
+        // editor ladder.
         private void BuildUi()
         {
-            MenuStrip menu = BuildMenu();
-            Controls.Add(menu);
-
-            ToolStrip toolbar = BuildToolbar();
-            Controls.Add(toolbar);
-
-            Panel status = BuildStatusBar();
-            Controls.Add(status);
-
             Panel workspace = new Panel();
             workspace.Dock = DockStyle.Fill;
             workspace.BackColor = Shell;
             Controls.Add(workspace);
 
-            Panel rail = BuildRail();
-            workspace.Controls.Add(rail);
+            Panel status = BuildStatusBar();
+            Controls.Add(status);
 
-            inspector = BuildInspector();
-            workspace.Controls.Add(inspector);
+            ToolStrip toolbar = BuildToolbar();
+            Controls.Add(toolbar);
+
+            MenuStrip menu = BuildMenu();
+            Controls.Add(menu);
+            MainMenuStrip = menu;
 
             Panel center = new Panel();
             center.Dock = DockStyle.Fill;
             center.BackColor = Workspace;
             center.Padding = new Padding(0);
             workspace.Controls.Add(center);
+
+            inspector = BuildInspector();
+            workspace.Controls.Add(inspector);
+
+            Panel rail = BuildRail();
+            workspace.Controls.Add(rail);
+
+            host = new Panel();
+            host.Dock = DockStyle.Fill;
+            host.BackColor = Workspace;
+            center.Controls.Add(host);
 
             Panel tab = new Panel();
             tab.Dock = DockStyle.Top;
@@ -124,12 +170,6 @@ namespace ModernPC12
             tab.Padding = new Padding(14, 0, 10, 0);
             center.Controls.Add(tab);
 
-            Panel accentLine = new Panel();
-            accentLine.Dock = DockStyle.Bottom;
-            accentLine.Height = 2;
-            accentLine.BackColor = Accent;
-            tab.Controls.Add(accentLine);
-
             documentTitle = new Label();
             documentTitle.Dock = DockStyle.Fill;
             documentTitle.TextAlign = ContentAlignment.MiddleLeft;
@@ -137,18 +177,11 @@ namespace ModernPC12
             documentTitle.Font = new Font("Segoe UI Semibold", 9.0f, FontStyle.Bold);
             tab.Controls.Add(documentTitle);
 
-            host = new Panel();
-            host.Dock = DockStyle.Fill;
-            host.BackColor = Workspace;
-            center.Controls.Add(host);
-
-            host.BringToFront();
-            tab.BringToFront();
-            rail.BringToFront();
-            inspector.BringToFront();
-            toolbar.BringToFront();
-            menu.BringToFront();
-            status.BringToFront();
+            Panel accentLine = new Panel();
+            accentLine.Dock = DockStyle.Bottom;
+            accentLine.Height = 2;
+            accentLine.BackColor = Accent;
+            tab.Controls.Add(accentLine);
         }
 
         private MenuStrip BuildMenu()
@@ -273,48 +306,43 @@ namespace ModernPC12
             p.Dock = DockStyle.Right;
             p.Width = 246;
             p.BackColor = Chrome;
-            p.Padding = new Padding(16, 12, 16, 12);
 
             Label title = InspectorLabel("PROPRIEDADES", 9.0f, true, Muted);
             title.Location = new Point(16, 14);
             p.Controls.Add(title);
 
-            Label project = InspectorLabel("Projeto", 8.2f, false, Muted);
-            project.Location = new Point(16, 52);
-            p.Controls.Add(project);
+            int y = 52;
+            Label ignored;
+            y = AddInspectorField(p, y, "Projeto", "Sem nome", out projectValue);
+            y = AddInspectorField(p, y, "Redes", "0 rung(s)", out rungsValue);
 
-            projectValue = InspectorLabel("Sem nome", 9.2f, true, Fore);
-            projectValue.Location = new Point(16, 72);
-            p.Controls.Add(projectValue);
+            AddDivider(p, y);
+            y += 16;
 
-            AddDivider(p, 106);
-
-            Label device = InspectorLabel("Controlador", 8.2f, false, Muted);
-            device.Location = new Point(16, 122);
-            p.Controls.Add(device);
-
-            Label deviceValue = InspectorLabel("WEG TP02-60MR", 9.2f, true, Fore);
-            deviceValue.Location = new Point(16, 142);
-            p.Controls.Add(deviceValue);
+            y = AddInspectorField(p, y, "Controlador", "WEG TP02-60MR", out ignored);
 
             Label station = InspectorLabel("Estação  01", 8.4f, false, Muted);
-            station.Location = new Point(16, 168);
+            station.Location = new Point(16, y);
             p.Controls.Add(station);
+            y += 30;
 
-            AddDivider(p, 202);
+            AddDivider(p, y);
+            y += 16;
 
             Label status = InspectorLabel("CONEXÃO", 8.2f, true, Muted);
-            status.Location = new Point(16, 218);
+            status.Location = new Point(16, y);
             p.Controls.Add(status);
+            y += 26;
 
             connectionValue = InspectorLabel("●  OFFLINE", 9.2f, true, Color.FromArgb(168, 174, 181));
-            connectionValue.Location = new Point(16, 244);
+            connectionValue.Location = new Point(16, y);
             p.Controls.Add(connectionValue);
+            y += 36;
 
             Button open = new Button();
             open.Text = "Configurar comunicação";
-            open.Location = new Point(16, 280);
-            open.Size = new Size(210, 34);
+            open.Location = new Point(16, y);
+            open.Size = new Size(214, 34);
             open.FlatStyle = FlatStyle.Flat;
             open.FlatAppearance.BorderColor = Border;
             open.BackColor = ChromeLight;
@@ -324,6 +352,22 @@ namespace ModernPC12
             p.Controls.Add(open);
 
             return p;
+        }
+
+        // Legenda em cima, valor embaixo. O valor tem largura fixa com reticencias,
+        // para que um nome de projeto longo nunca vaze do painel.
+        private int AddInspectorField(Control parent, int top, string caption, string initial, out Label value)
+        {
+            Label c = InspectorLabel(caption, 8.2f, false, Muted);
+            c.Location = new Point(16, top);
+            parent.Controls.Add(c);
+
+            value = InspectorLabel(initial, 9.2f, true, Fore);
+            value.AutoSize = false;
+            value.AutoEllipsis = true;
+            value.Bounds = new Rectangle(16, top + 20, 214, 19);
+            parent.Controls.Add(value);
+            return top + 48;
         }
 
         private Panel BuildStatusBar()
@@ -445,12 +489,6 @@ namespace ModernPC12
         {
             foreach (Control c in root.Controls)
             {
-                Panel p = c as Panel;
-                if (p != null && p.Dock == DockStyle.Left && p.Width >= 220 && p.Width <= 250)
-                {
-                    p.Width = 210;
-                }
-
                 Label label = c as Label;
                 if (label != null && label.Text != null && label.Text.Length > 90)
                 {
@@ -491,7 +529,17 @@ namespace ModernPC12
                 FieldInfo field = typeof(LadderEditorForm).GetField("projectLabel", BindingFlags.Instance | BindingFlags.NonPublic);
                 Label l = field == null ? null : field.GetValue(ladderForm) as Label;
                 string value = l == null ? string.Empty : (l.Text ?? string.Empty).Trim();
-                projectValue.Text = string.IsNullOrEmpty(value) ? "Sem nome" : value;
+                if (string.IsNullOrEmpty(value))
+                {
+                    projectValue.Text = "Sem nome";
+                }
+                else
+                {
+                    // O editor publica "<nome>   |   <n> rung(s)" em um rotulo unico.
+                    string[] parts = value.Split('|');
+                    projectValue.Text = parts[0].Trim();
+                    if (parts.Length > 1) rungsValue.Text = parts[1].Trim();
+                }
             }
             catch
             {

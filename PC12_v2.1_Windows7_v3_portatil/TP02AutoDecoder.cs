@@ -150,6 +150,7 @@ namespace ModernPC12
             split.SplitterDistance = 480;
             split.BackColor = Canvas;
             Controls.Add(split);
+            DockOrder.Apply(this, split, commands, header);
 
             grid = new DataGridView();
             grid.Dock = DockStyle.Fill;
@@ -182,8 +183,6 @@ namespace ModernPC12
             logBox.ForeColor = Color.FromArgb(220, 233, 245);
             split.Panel2.Controls.Add(logBox);
 
-            header.BringToFront();
-            commands.BringToFront();
         }
 
         private void OpenDump()
