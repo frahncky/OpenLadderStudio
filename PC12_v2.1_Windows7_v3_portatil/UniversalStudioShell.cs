@@ -65,7 +65,6 @@ namespace ModernPC12
 
         private Panel host;
         private Panel inspector;
-        private Label documentTitle;
         private Label statusText;
         private Label modeText;
         private Label projectValue;
@@ -75,8 +74,15 @@ namespace ModernPC12
         private Label supportValue;
         private Label capabilityValue;
         private Label connectionValue;
-        private Button activeRailButton;
-        private readonly Dictionary<string, Button> railButtons = new Dictionary<string, Button>();
+        private readonly Dictionary<string, NavButton> navButtons = new Dictionary<string, NavButton>();
+        private Panel navPanel;
+        private DocTabStrip tabStrip;
+        private StudioConsole console;
+        private StudioPanel consolePanel;
+        private bool inspectorAllowed = true;
+        private ToolStripMenuItem miNav;
+        private ToolStripMenuItem miProps;
+        private ToolStripMenuItem miConsole;
 
         private PlcDeviceProfile currentProfile;
         private IPlcDriver currentDriver;
@@ -115,6 +121,9 @@ namespace ModernPC12
         // move o controle para o indice 0, ou seja, para o FIM dessa fila; aplicado
         // as barras, ele fazia o painel Fill ocupar toda a area antes e as barras
         // passavam a ser desenhadas por cima do conteudo.
+        // A ancoragem e resolvida do ultimo filho para o primeiro: quem entra por
+        // ultimo escolhe seu espaco antes e fica na borda externa. O painel Fill
+        // precisa entrar primeiro.
         private void BuildUi()
         {
             Panel workspace = new Panel();
@@ -122,10 +131,10 @@ namespace ModernPC12
             workspace.BackColor = Shell;
             Controls.Add(workspace);
 
-            Panel status = BuildStatusBar();
+            Control status = BuildStatusBar();
             Controls.Add(status);
 
-            ToolStrip toolbar = BuildToolbar();
+            Control toolbar = BuildToolbar();
             Controls.Add(toolbar);
 
             MenuStrip menu = BuildMenu();
@@ -140,33 +149,25 @@ namespace ModernPC12
             inspector = BuildInspector();
             workspace.Controls.Add(inspector);
 
-            Panel rail = BuildRail();
-            workspace.Controls.Add(rail);
+            navPanel = BuildNav();
+            workspace.Controls.Add(navPanel);
 
             host = new Panel();
             host.Dock = DockStyle.Fill;
             host.BackColor = Workspace;
             center.Controls.Add(host);
 
-            Panel tab = new Panel();
-            tab.Dock = DockStyle.Top;
-            tab.Height = 36;
-            tab.BackColor = ChromeLight;
-            tab.Padding = new Padding(14, 0, 10, 0);
-            center.Controls.Add(tab);
+            consolePanel = BuildConsole();
+            center.Controls.Add(consolePanel);
 
-            documentTitle = new Label();
-            documentTitle.Dock = DockStyle.Fill;
-            documentTitle.TextAlign = ContentAlignment.MiddleLeft;
-            documentTitle.ForeColor = Fore;
-            documentTitle.Font = new Font("Segoe UI Semibold", 9.2f, FontStyle.Bold);
-            tab.Controls.Add(documentTitle);
-
-            Panel accentLine = new Panel();
-            accentLine.Dock = DockStyle.Bottom;
-            accentLine.Height = 2;
-            accentLine.BackColor = Accent;
-            tab.Controls.Add(accentLine);
+            tabStrip = new DocTabStrip();
+            tabStrip.SelectedChanged += delegate { ApplySelectedTab(); };
+            tabStrip.TabClosed += delegate(StudioTab t)
+            {
+                if (t.Document != null && !t.Document.IsDisposed) t.Document.Visible = false;
+                console.Write(0, "Documento fechado: " + t.Title);
+            };
+            center.Controls.Add(tabStrip);
         }
 
         private MenuStrip BuildMenu()
@@ -195,6 +196,18 @@ namespace ModernPC12
             editar.DropDownItems.Add(DropItem("Excluir rung", delegate { InvokeLadder("DeleteSelectedRung", null); }));
             editar.DropDownItems.Add(DropItem("Validar programa", delegate { InvokeLadder("ValidateProject", new object[] { true }); }));
 
+            miNav = DropItem("Painel de navegação", delegate { TogglePanel(0); });
+            miProps = DropItem("Painel de propriedades", delegate { TogglePanel(1); });
+            miConsole = DropItem("Painel de saída", delegate { TogglePanel(2); });
+            miNav.Checked = true;
+            miProps.Checked = true;
+            miConsole.Checked = true;
+
+            ToolStripMenuItem exibir = MenuItem("Exibir");
+            exibir.DropDownItems.Add(miNav);
+            exibir.DropDownItems.Add(miProps);
+            exibir.DropDownItems.Add(miConsole);
+
             ToolStripMenuItem plc = MenuItem("PLC");
             plc.DropDownItems.Add(DropItem("Selecionar controlador...", delegate { ShowDeviceManager(); }));
             plc.DropDownItems.Add(new ToolStripSeparator());
@@ -221,79 +234,178 @@ namespace ModernPC12
 
             menu.Items.Add(arquivo);
             menu.Items.Add(editar);
+            menu.Items.Add(exibir);
             menu.Items.Add(plc);
             menu.Items.Add(ferramentas);
             menu.Items.Add(ajuda);
             return menu;
         }
 
-        private ToolStrip BuildToolbar()
+        private int toolCursor;
+
+        private void AddToolButton(Control bar, string text, StudioIcon icon, bool emphasis, EventHandler action)
         {
-            ToolStrip bar = new ToolStrip();
+            IconToolButton b = new IconToolButton();
+            b.Text = text;
+            b.Icon = icon;
+            b.Emphasis = emphasis;
+            b.Height = 54;
+            b.Width = b.MeasureWidth();
+            b.Location = new Point(toolCursor, 3);
+            if (action != null) b.Click += action;
+            bar.Controls.Add(b);
+            toolCursor += b.Width;
+        }
+
+        private void AddToolSeparator(Control bar)
+        {
+            Panel sep = new Panel();
+            sep.BackColor = Border;
+            sep.Bounds = new Rectangle(toolCursor + 7, 15, 1, 30);
+            bar.Controls.Add(sep);
+            toolCursor += 15;
+        }
+
+        private Control BuildToolbar()
+        {
+            StudioPanel bar = new StudioPanel();
             bar.Dock = DockStyle.Top;
-            bar.Height = 40;
-            bar.BackColor = Chrome;
-            bar.ForeColor = Fore;
-            bar.GripStyle = ToolStripGripStyle.Hidden;
-            bar.Padding = new Padding(8, 4, 8, 4);
-            bar.RenderMode = ToolStripRenderMode.Professional;
-            bar.Renderer = new ToolStripProfessionalRenderer(new UniversalStudioColorTable());
+            bar.Height = 60;
+            bar.Fill = Chrome;
+            bar.BottomLine = Border;
 
-            bar.Items.Add(ToolButton("Novo", delegate { InvokeLadder("NewProject", new object[] { true }); }));
-            bar.Items.Add(ToolButton("Abrir", delegate { InvokeLadder("OpenProject", null); }));
-            bar.Items.Add(ToolButton("Salvar", delegate { InvokeLadder("SaveProject", new object[] { false }); }));
-            bar.Items.Add(new ToolStripSeparator());
-            bar.Items.Add(ToolButton("Desfazer", delegate { InvokeLadder("Undo", null); }));
-            bar.Items.Add(ToolButton("+ Rung", delegate { InvokeLadder("AddRung", null); }));
-            bar.Items.Add(ToolButton("Validar", delegate { InvokeLadder("ValidateProject", new object[] { true }); }));
-            bar.Items.Add(new ToolStripSeparator());
-
-            ToolStripButton device = ToolButton("Controlador", delegate { ShowDeviceManager(); });
-            device.ForeColor = Accent;
-            device.Font = new Font("Segoe UI Semibold", 9.0f, FontStyle.Bold);
-            bar.Items.Add(device);
-            bar.Items.Add(ToolButton("Comunicação", delegate { ShowCommunication(); }));
-            bar.Items.Add(ToolButton("Monitor", delegate { ShowMonitor(); }));
-            bar.Items.Add(ToolButton("Portabilidade", delegate { CheckPortability(); }));
-            bar.Items.Add(new ToolStripSeparator());
-            bar.Items.Add(ToolButton("Atualizar", delegate { ShowUpdater(); }));
-
-            ToolStripLabel brand = new ToolStripLabel("OpenLadder Studio  v0.12");
-            brand.Alignment = ToolStripItemAlignment.Right;
+            Label brand = new Label();
+            brand.Text = "OpenLadder Studio  v0.12";
+            brand.Dock = DockStyle.Right;
+            brand.Width = 210;
+            brand.TextAlign = ContentAlignment.MiddleRight;
             brand.ForeColor = Muted;
-            brand.Margin = new Padding(10, 0, 8, 0);
-            bar.Items.Add(brand);
+            brand.Font = StudioTheme.Ui;
+            brand.Padding = new Padding(0, 0, 16, 0);
+            bar.Controls.Add(brand);
+
+            toolCursor = 10;
+            AddToolButton(bar, "Novo", StudioIcon.Doc, false, delegate { InvokeLadder("NewProject", new object[] { true }); });
+            AddToolButton(bar, "Abrir", StudioIcon.Folder, false, delegate { InvokeLadder("OpenProject", null); });
+            AddToolButton(bar, "Salvar", StudioIcon.Save, false, delegate { InvokeLadder("SaveProject", new object[] { false }); });
+            AddToolSeparator(bar);
+            AddToolButton(bar, "Desfazer", StudioIcon.Undo, false, delegate { InvokeLadder("Undo", null); });
+            AddToolButton(bar, "Rung", StudioIcon.Plus, false, delegate { InvokeLadder("AddRung", null); });
+            AddToolButton(bar, "Validar", StudioIcon.Check, false, delegate { InvokeLadder("ValidateProject", new object[] { true }); });
+            AddToolSeparator(bar);
+            AddToolButton(bar, "Controlador", StudioIcon.Chip, true, delegate { ShowDeviceManager(); });
+            AddToolButton(bar, "Comunicação", StudioIcon.Plug, false, delegate { ShowCommunication(); });
+            AddToolButton(bar, "Monitor", StudioIcon.Monitor, false, delegate { ShowMonitor(); });
+            AddToolButton(bar, "Portabilidade", StudioIcon.Folder, false, delegate { CheckPortability(); });
+            AddToolSeparator(bar);
+            AddToolButton(bar, "Atualizar", StudioIcon.Refresh, false, delegate { ShowUpdater(); });
             return bar;
         }
 
-        private Panel BuildRail()
+        private NavButton NavItem(string text, StudioIcon icon, string key, EventHandler action)
         {
-            Panel rail = new Panel();
-            rail.Dock = DockStyle.Left;
-            rail.Width = 70;
-            rail.BackColor = Color.FromArgb(31, 33, 37);
-            rail.Padding = new Padding(0, 10, 0, 0);
+            NavButton b = new NavButton();
+            b.Text = text;
+            b.Icon = icon;
+            b.Key = key;
+            if (action != null) b.Click += action;
+            if (key.Length > 0) navButtons[key] = b;
+            return b;
+        }
 
-            Label mark = new Label();
-            mark.Text = "OL";
-            mark.Dock = DockStyle.Top;
-            mark.Height = 42;
-            mark.TextAlign = ContentAlignment.MiddleCenter;
-            mark.ForeColor = Accent;
-            mark.Font = new Font("Segoe UI Semibold", 13.0f, FontStyle.Bold);
-            rail.Controls.Add(mark);
+        private Control BuildBrand()
+        {
+            StudioPanel brand = new StudioPanel();
+            brand.Dock = DockStyle.Top;
+            brand.Height = 64;
+            brand.Fill = StudioTheme.NavBg;
+            brand.BottomLine = Border;
+            brand.Paint += delegate(object sender, PaintEventArgs e)
+            {
+                Graphics g = e.Graphics;
+                using (SolidBrush b = new SolidBrush(Accent))
+                    g.FillRectangle(b, new Rectangle(18, 18, 28, 28));
+                StudioGlyph.Draw(g, StudioIcon.Ladder, new Rectangle(22, 22, 20, 20), Color.White);
+                TextRenderer.DrawText(g, "OpenLadder", new Font("Segoe UI Semibold", 11.0f, FontStyle.Bold),
+                    new Point(56, 16), Fore);
+                string sub = currentProfile == null
+                    ? "Studio"
+                    : "Studio  •  " + currentProfile.Model;
+                TextRenderer.DrawText(g, sub, StudioTheme.Small, new Point(58, 37), Muted);
+            };
+            return brand;
+        }
 
-            int top = 56;
-            AddRailButton(rail, "LD", "Editor Ladder", top, delegate { ShowLadder(); }); top += 50;
-            AddRailButton(rail, "DEV", "Selecionar controlador", top, delegate { ShowDeviceManager(); }); top += 50;
-            AddRailButton(rail, "PLC", "Comunicação", top, delegate { ShowCommunication(); }); top += 50;
-            AddRailButton(rail, "MON", "Monitor online", top, delegate { ShowMonitor(); }); top += 50;
-            AddRailButton(rail, "RBP", "Ler programa do PLC", top, delegate { ShowReader(); }); top += 50;
-            AddRailButton(rail, "DEC", "Decodificador TP02", top, delegate { ShowDecoder(); }); top += 50;
-            AddRailButton(rail, "CAL", "Calibração TP02", top, delegate { ShowCalibration(); }); top += 50;
-            AddRailButton(rail, "IL", "IL para Ladder", top, delegate { ShowIl(); }); top += 50;
-            AddRailButton(rail, "UPD", "Atualizações", top, delegate { ShowUpdater(); });
-            return rail;
+        private Panel BuildNav()
+        {
+            Panel nav = new Panel();
+            nav.Dock = DockStyle.Left;
+            nav.Width = 228;
+            nav.BackColor = StudioTheme.NavBg;
+
+            List<Control> items = new List<Control>();
+            items.Add(BuildBrand());
+            items.Add(new NavSection("Editor ladder"));
+            items.Add(NavItem("Editor Ladder", StudioIcon.Ladder, "LD", delegate { ShowLadder(); }));
+            items.Add(NavItem("Validar projeto", StudioIcon.Check, "", delegate { InvokeLadder("ValidateProject", new object[] { true }); }));
+            items.Add(new NavSection("Controlador"));
+            items.Add(NavItem("Selecionar controlador", StudioIcon.Chip, "DEV", delegate { ShowDeviceManager(); }));
+            items.Add(new NavSection("Comunicação"));
+            items.Add(NavItem("Comunicação", StudioIcon.Plug, "PLC", delegate { ShowCommunication(); }));
+            items.Add(NavItem("Monitor online", StudioIcon.Monitor, "MON", delegate { ShowMonitor(); }));
+            items.Add(NavItem("Ler programa (RBP)", StudioIcon.Download, "RBP", delegate { ShowReader(); }));
+            items.Add(new NavSection("Análise TP02"));
+            items.Add(NavItem("Decodificador", StudioIcon.Bolt, "DEC", delegate { ShowDecoder(); }));
+            items.Add(NavItem("Calibração", StudioIcon.Gear, "CAL", delegate { ShowCalibration(); }));
+            items.Add(NavItem("IL para Ladder", StudioIcon.Convert, "IL", delegate { ShowIl(); }));
+            items.Add(new NavSection("Sistema"));
+            items.Add(NavItem("Atualizações", StudioIcon.Refresh, "UPD", delegate { ShowUpdater(); }));
+
+            // Filhos ancorados ao topo empilham do ultimo para o primeiro:
+            // insere na ordem inversa para que a lista acima seja a ordem visual.
+            int i;
+            for (i = items.Count - 1; i >= 0; i--) nav.Controls.Add(items[i]);
+            return nav;
+        }
+
+        private StudioPanel BuildConsole()
+        {
+            StudioPanel wrap = new StudioPanel();
+            wrap.Dock = DockStyle.Bottom;
+            wrap.Height = 150;
+            wrap.Fill = Color.FromArgb(22, 24, 27);
+
+            console = new StudioConsole();
+            console.Dock = DockStyle.Fill;
+            wrap.Controls.Add(console);
+
+            StudioPanel head = new StudioPanel();
+            head.Dock = DockStyle.Top;
+            head.Height = 27;
+            head.Fill = Chrome;
+            head.BottomLine = Border;
+            head.Paint += delegate(object sender, PaintEventArgs e)
+            {
+                StudioGlyph.Draw(e.Graphics, StudioIcon.Terminal, new Rectangle(12, 6, 14, 14), Muted);
+                TextRenderer.DrawText(e.Graphics, "SAÍDA", StudioTheme.Section, new Point(34, 8), Muted);
+            };
+            wrap.Controls.Add(head);
+
+            Button clear = new Button();
+            clear.Text = "Limpar";
+            clear.Dock = DockStyle.Right;
+            clear.Width = 74;
+            clear.FlatStyle = FlatStyle.Flat;
+            clear.FlatAppearance.BorderSize = 0;
+            clear.BackColor = Chrome;
+            clear.ForeColor = Muted;
+            clear.Font = StudioTheme.Small;
+            clear.Cursor = Cursors.Hand;
+            clear.TabStop = false;
+            clear.Click += delegate { console.Items.Clear(); };
+            head.Controls.Add(clear);
+
+            return wrap;
         }
 
         private Panel BuildInspector()
@@ -637,18 +749,113 @@ namespace ModernPC12
                 || string.Equals(currentProfile.DriverId, "generic.modbus.tcp", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static StudioIcon IconFor(string railCode)
+        {
+            switch (railCode)
+            {
+                case "LD": return StudioIcon.Ladder;
+                case "DEV": return StudioIcon.Chip;
+                case "PLC": return StudioIcon.Plug;
+                case "MON": return StudioIcon.Monitor;
+                case "RBP": return StudioIcon.Download;
+                case "DEC": return StudioIcon.Bolt;
+                case "CAL": return StudioIcon.Gear;
+                case "IL": return StudioIcon.Convert;
+                case "UPD": return StudioIcon.Refresh;
+            }
+            return StudioIcon.Doc;
+        }
+
+        /// <summary>
+        /// Abre (ou reativa) um documento. Os formularios permanecem no host e apenas
+        /// alternam a visibilidade, para que cada aba preserve o proprio estado.
+        /// </summary>
         private void ShowDocument(Form child, string title, string railCode)
         {
-            HideChildren();
-            host.Controls.Clear();
-            documentTitle.Text = title;
-            child.TopLevel = false;
-            child.FormBorderStyle = FormBorderStyle.None;
-            child.Dock = DockStyle.Fill;
-            host.Controls.Add(child);
-            child.Show();
-            child.BringToFront();
-            SelectRail(railCode);
+            if (child.Parent != host)
+            {
+                child.TopLevel = false;
+                child.FormBorderStyle = FormBorderStyle.None;
+                child.Dock = DockStyle.Fill;
+                host.Controls.Add(child);
+                console.Write(0, "Documento aberto: " + title);
+            }
+
+            StudioTab tab = tabStrip.Find(railCode);
+            if (tab == null)
+            {
+                tab = new StudioTab();
+                tab.Key = railCode;
+                tab.Title = title;
+                tab.Icon = IconFor(railCode);
+                tab.Status = title;
+                tab.Closable = railCode != "LD";
+                tab.Document = child;
+                tabStrip.Open(tab);
+            }
+            else
+            {
+                tabStrip.SelectKey(railCode);
+            }
+            ApplySelectedTab();
+        }
+
+        private StudioTab lastTab;
+
+        private void ApplySelectedTab()
+        {
+            if (tabStrip == null || host == null) return;
+            StudioTab tab = tabStrip.Selected;
+
+            // Guarda o texto de status na aba que sai, para restaura-lo ao voltar.
+            if (lastTab != null && statusText != null) lastTab.Status = statusText.Text;
+
+            int i;
+            for (i = 0; i < host.Controls.Count; i++)
+                host.Controls[i].Visible = tab != null && host.Controls[i] == tab.Document;
+
+            SelectNav(tab == null ? "" : tab.Key);
+            if (inspector != null) inspector.Visible = inspectorAllowed && tab != null && tab.Key == "LD";
+            lastTab = tab;
+            if (tab == null) return;
+
+            if (!tab.Document.IsDisposed)
+            {
+                tab.Document.Show();
+                tab.Document.BringToFront();
+            }
+            if (!string.IsNullOrEmpty(tab.Status)) statusText.Text = tab.Status;
+        }
+
+        private void SelectNav(string key)
+        {
+            foreach (KeyValuePair<string, NavButton> pair in navButtons)
+            {
+                bool active = pair.Key == key;
+                if (pair.Value.Active == active) continue;
+                pair.Value.Active = active;
+                pair.Value.Invalidate();
+            }
+        }
+
+        private void TogglePanel(int which)
+        {
+            if (which == 0)
+            {
+                navPanel.Visible = !navPanel.Visible;
+                miNav.Checked = navPanel.Visible;
+            }
+            else if (which == 1)
+            {
+                inspectorAllowed = !inspectorAllowed;
+                miProps.Checked = inspectorAllowed;
+                ApplySelectedTab();
+            }
+            else
+            {
+                consolePanel.Visible = !consolePanel.Visible;
+                miConsole.Checked = consolePanel.Visible;
+            }
         }
 
         private void PrepareLadderForStudio(LadderEditorForm form)
@@ -680,6 +887,7 @@ namespace ModernPC12
             ShowLadder();
             try
             {
+                if (console != null) console.Write(0, "Comando do editor: " + methodName);
                 MethodInfo method = typeof(LadderEditorForm).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
                 if (method == null) throw new MissingMethodException(methodName);
                 method.Invoke(ladderForm, args);
@@ -713,64 +921,11 @@ namespace ModernPC12
             }
         }
 
-        private void HideChildren()
-        {
-            Form[] forms = new Form[] { ladderForm, bridgeForm, readerForm, decoderForm, calibrationForm, ilForm, updaterForm, modbusForm };
-            for (int i = 0; i < forms.Length; i++)
-                if (forms[i] != null && !forms[i].IsDisposed) forms[i].Hide();
-        }
-
-        private void AddRailButton(Control parent, string code, string tip, int top, EventHandler action)
-        {
-            Button b = new Button();
-            b.Name = "rail_" + code;
-            b.Text = code;
-            b.Location = new Point(7, top);
-            b.Size = new Size(56, 42);
-            b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderSize = 0;
-            b.BackColor = Color.FromArgb(31, 33, 37);
-            b.ForeColor = Muted;
-            b.Font = new Font("Segoe UI Semibold", code.Length > 2 ? 7.4f : 9.0f, FontStyle.Bold);
-            b.Cursor = Cursors.Hand;
-            b.TabStop = false;
-            ToolTip tt = new ToolTip();
-            tt.SetToolTip(b, tip);
-            b.Click += delegate(object sender, EventArgs e)
-            {
-                if (!b.Enabled) return;
-                SetActiveRail(b);
-                action(sender, e);
-            };
-            parent.Controls.Add(b);
-            railButtons[code] = b;
-        }
-
         private void SetRailEnabled(string code, bool enabled)
         {
-            Button b;
-            if (!railButtons.TryGetValue(code, out b)) return;
+            NavButton b;
+            if (!navButtons.TryGetValue(code, out b)) return;
             b.Enabled = enabled;
-            b.ForeColor = enabled ? (b == activeRailButton ? Color.White : Muted) : Disabled;
-            b.Cursor = enabled ? Cursors.Hand : Cursors.Default;
-        }
-
-        private void SelectRail(string code)
-        {
-            Button b;
-            if (railButtons.TryGetValue(code, out b) && b.Enabled) SetActiveRail(b);
-        }
-
-        private void SetActiveRail(Button b)
-        {
-            if (activeRailButton != null && !activeRailButton.IsDisposed)
-            {
-                activeRailButton.BackColor = Color.FromArgb(31, 33, 37);
-                activeRailButton.ForeColor = activeRailButton.Enabled ? Muted : Disabled;
-            }
-            b.BackColor = AccentDark;
-            b.ForeColor = Color.White;
-            activeRailButton = b;
         }
 
         private ToolStripMenuItem MenuItem(string text)
