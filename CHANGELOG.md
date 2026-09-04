@@ -2,6 +2,21 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.45] - 2026-09-04
+
+### Protocolo PG — preflight de status
+- a análise estática do `pc12.exe` confirmou `F0 00 0F` como consulta de status/preflight da conexão, e não como comando de apagamento;
+- o PC12 espera resposta de 5 bytes ao F0 e usa o bit `0x40` do primeiro byte recebido para determinar o estado operacional do PLC;
+- a configuração serial do PC12 original foi fechada em 19200/8O1 para a taxa validada em bancada;
+- o ensaio isolado de `38 00 C7` após o HELLO retornou zero bytes, mostrando que a sequência precisava do preflight anterior;
+- pacote `2026.09.04.8` valida somente `HELLO -> F0 -> captura passiva`, mantendo `38...` e `34...` desabilitados.
+
+### Segurança operacional
+- motor PG Lab atualizado para 1.2;
+- `F0 00 0F` deixa o bloqueio interno, mas só pode ser transmitido como `READ_ONLY_VERIFIED`, com autorização manual e presença explícita na `readOnlyAllowlist`;
+- `0F 00 F0` continua bloqueado internamente e no pacote como Clear All Memory;
+- RUN/STOP remoto, escrita, download, apagamento, senha e demais comandos candidatos continuam desabilitados.
+
 ## [0.32] - 2026-09-04
 
 ### Protocolo PG do PC12
