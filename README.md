@@ -7,6 +7,7 @@ Modernização da experiência de uso do **PC12 Design Center 2.1** para o PLC *
 A nova camada **PC12 Modern** adiciona uma central visual mais atual para Windows 7, com:
 
 - painel inicial com status do pacote;
+- faixas visuais de compatibilidade, dependências e fallback logo na abertura;
 - abertura do PC12 em modo normal ou como administrador;
 - detecção das portas COM disponíveis;
 - cópia rápida da porta COM selecionada para configurar a mesma porta dentro do PC12;

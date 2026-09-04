@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
@@ -26,14 +27,14 @@ namespace ModernPC12
         private readonly Color NavyLight = Color.FromArgb(27, 55, 86);
         private readonly Color Accent = Color.FromArgb(0, 122, 204);
         private readonly Color AccentHover = Color.FromArgb(0, 102, 170);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
+        private readonly Color Canvas = Color.FromArgb(240, 244, 248);
         private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
         private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
         private readonly Color Success = Color.FromArgb(27, 132, 86);
         private readonly Color Warning = Color.FromArgb(190, 112, 20);
         private readonly Color SurfaceMuted = Color.FromArgb(235, 240, 245);
-        private readonly Color SurfaceMutedHover = Color.FromArgb(220, 229, 238);
-        private readonly Color Border = Color.FromArgb(224, 231, 238);
+        private readonly Color SurfaceMutedHover = Color.FromArgb(215, 225, 235);
+        private readonly Color Border = Color.FromArgb(215, 220, 230);
 
         private readonly string baseDir;
         private readonly string pc12Path;
@@ -94,6 +95,7 @@ namespace ModernPC12
             topBar.Height = TopBarHeight;
             topBar.BackColor = Color.White;
             topBar.MouseDown += DragWindow;
+            topBar.DoubleClick += ToggleMaximize;
             Controls.Add(topBar);
 
             Label brand = new Label();
@@ -103,6 +105,7 @@ namespace ModernPC12
             brand.ForeColor = Navy;
             brand.Location = new Point(24, 16);
             brand.MouseDown += DragWindow;
+            brand.DoubleClick += ToggleMaximize;
             topBar.Controls.Add(brand);
 
             Label edition = new Label();
@@ -112,6 +115,7 @@ namespace ModernPC12
             edition.ForeColor = TextSecondary;
             edition.Location = new Point(152, 19);
             edition.MouseDown += DragWindow;
+            edition.DoubleClick += ToggleMaximize;
             topBar.Controls.Add(edition);
 
             FlatWindowButton close = new FlatWindowButton("×");
@@ -278,7 +282,12 @@ namespace ModernPC12
             intro.MaximumSize = new Size(720, 0);
             workspace.Controls.Add(intro);
 
-            CardPanel launchCard = CreateCard(34, 98, 356, 190);
+            AddSummaryBadge(workspace, 36, 86, "✓ Compatível com Windows 7", Color.FromArgb(220, 242, 235), Success);
+            AddSummaryBadge(workspace, 232, 86, "◆ Sem dependências externas", Color.FromArgb(233, 240, 249), Accent);
+            AddSummaryBadge(workspace, 474, 86, "↗ Fallback para PC12 clássico", Color.FromArgb(250, 235, 215), Warning);
+
+            CardPanel launchCard = CreateCard(34, 124, 356, 190);
+            launchCard.AccentColor = Accent;
             workspace.Controls.Add(launchCard);
             AddCardTitle(launchCard, "Programar PLC", "Abra o PC12 Design Center 2.1 mantendo toda a compatibilidade com os projetos existentes.");
             ModernButton launch = PrimaryButton(WithGlyph("▶", "ABRIR PC12"), 24, 128, 150);
@@ -289,14 +298,16 @@ namespace ModernPC12
             launchAdmin.Click += delegate { LaunchPc12(true); };
             launchCard.Controls.Add(launchAdmin);
 
-            CardPanel connectionCard = CreateCard(410, 98, 356, 190);
+            CardPanel connectionCard = CreateCard(410, 124, 356, 190);
+            connectionCard.AccentColor = Success;
             workspace.Controls.Add(connectionCard);
             AddCardTitle(connectionCard, "Conexão serial", "Veja rapidamente as portas COM disponíveis e acesse as verificações de comunicação com o TP02.");
             ModernButton connection = SecondaryButton(WithGlyph("⇄", "VER CONEXÃO"), 24, 128, 170);
             connection.Click += delegate { ShowConnection(); };
             connectionCard.Controls.Add(connection);
 
-            CardPanel healthCard = CreateCard(34, 308, 732, 214);
+            CardPanel healthCard = CreateCard(34, 334, 732, 214);
+            healthCard.AccentColor = Warning;
             workspace.Controls.Add(healthCard);
             AddCardTitle(healthCard, "Diagnóstico rápido", "Situação do pacote portátil e recursos necessários para iniciar o software.");
 
@@ -326,7 +337,7 @@ namespace ModernPC12
             healthCard.Controls.Add(copyDiagnostics);
 
             Label note = NewLabel("Compatibilidade preservada: o editor ladder e o protocolo de comunicação continuam sendo executados pelo PC12 original.", 8.6f, FontStyle.Regular, TextSecondary);
-            note.Location = new Point(36, 544);
+            note.Location = new Point(36, 574);
             note.MaximumSize = new Size(720, 0);
             workspace.Controls.Add(note);
         }
@@ -345,6 +356,7 @@ namespace ModernPC12
             workspace.Controls.Add(detail);
 
             CardPanel portCard = CreateCard(34, 96, 732, 204);
+            portCard.AccentColor = Accent;
             workspace.Controls.Add(portCard);
             AddCardTitle(portCard, "Porta serial", "As portas abaixo são as detectadas pelo Windows neste momento.");
 
@@ -385,6 +397,8 @@ namespace ModernPC12
             portCard.Controls.Add(deviceManager);
 
             CardPanel checklist = CreateCard(34, 320, 732, 230);
+            checklist.AccentColor = Success;
+            checklist.FillColor = Color.FromArgb(248, 251, 253);
             workspace.Controls.Add(checklist);
             AddCardTitle(checklist, "Checklist TP02", "Antes de tentar conectar no PLC, confirme estes pontos:");
             AddChecklist(checklist, 24, 100, "Conversor USB/serial conectado ao computador e reconhecido pelo Windows.");
@@ -406,6 +420,7 @@ namespace ModernPC12
             workspace.Controls.Add(detail);
 
             CardPanel card = CreateCard(34, 96, 732, 442);
+            card.AccentColor = Accent;
             workspace.Controls.Add(card);
 
             AddToolRow(card, 24, 24, "Abrir como administrador", "Use se o Windows estiver bloqueando gravação ou acesso à porta serial.", WithGlyph("▲", "EXECUTAR"), delegate { LaunchPc12(true); });
@@ -429,6 +444,8 @@ namespace ModernPC12
             workspace.Controls.Add(detail);
 
             CardPanel info = CreateCard(34, 96, 732, 220);
+            info.AccentColor = Accent;
+            info.FillColor = Color.FromArgb(248, 251, 253);
             workspace.Controls.Add(info);
             AddCardTitle(info, "Sobre esta versão", "O executável original foi mantido para preservar compatibilidade com o TP02 e com os arquivos de projeto existentes.");
 
@@ -474,6 +491,20 @@ namespace ModernPC12
             parent.Controls.Add(b);
         }
 
+        private void AddSummaryBadge(Control parent, int left, int top, string text, Color backColor, Color foreColor)
+        {
+            Label badge = new Label();
+            badge.AutoSize = false;
+            badge.Size = new Size(TextRenderer.MeasureText(text, new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold)).Width + 24, 26);
+            badge.Location = new Point(left, top);
+            badge.Text = "  " + text;
+            badge.TextAlign = ContentAlignment.MiddleLeft;
+            badge.Font = new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold);
+            badge.BackColor = backColor;
+            badge.ForeColor = foreColor;
+            parent.Controls.Add(badge);
+        }
+
         private void AddChecklist(Control parent, int left, int top, string text)
         {
             Label dot = NewLabel("✓", 10.0f, FontStyle.Bold, Success);
@@ -495,8 +526,9 @@ namespace ModernPC12
             pill.Text = "  " + text;
             pill.TextAlign = ContentAlignment.MiddleLeft;
             pill.Font = new Font("Segoe UI", 8.2f, FontStyle.Bold);
-            pill.BackColor = ok ? Color.FromArgb(230, 245, 238) : Color.FromArgb(252, 239, 226);
+            pill.BackColor = ok ? Color.FromArgb(220, 242, 235) : Color.FromArgb(250, 235, 215);
             pill.ForeColor = ok ? Success : Warning;
+            pill.BorderStyle = BorderStyle.FixedSingle;
             parent.Controls.Add(pill);
         }
 
@@ -535,6 +567,7 @@ namespace ModernPC12
             b.Font = new Font("Segoe UI Semibold", fontSize, FontStyle.Bold);
             b.NormalColor = normalColor;
             b.HoverColor = hoverColor;
+            b.PressedColor = ControlPaint.Dark(hoverColor, 0.05f);
             b.ForeColor = foreColor;
             return b;
         }
@@ -893,6 +926,8 @@ namespace ModernPC12
     {
         private Color normalColor;
         private Color hoverColor;
+        private Color pressedColor;
+        private bool isPressed;
 
         public Color NormalColor
         {
@@ -910,6 +945,12 @@ namespace ModernPC12
             set { hoverColor = value; }
         }
 
+        public Color PressedColor
+        {
+            get { return pressedColor; }
+            set { pressedColor = value; }
+        }
+
         public ModernButton()
         {
             FlatStyle = FlatStyle.Flat;
@@ -917,10 +958,13 @@ namespace ModernPC12
             Cursor = Cursors.Hand;
             normalColor = Color.White;
             hoverColor = Color.Gainsboro;
+            pressedColor = Color.Silver;
             BackColor = normalColor;
             UseVisualStyleBackColor = false;
-            MouseEnter += delegate { BackColor = hoverColor; };
-            MouseLeave += delegate { BackColor = normalColor; };
+            MouseEnter += delegate { if (!isPressed) BackColor = hoverColor; };
+            MouseLeave += delegate { if (!isPressed) BackColor = normalColor; };
+            MouseDown += delegate { isPressed = true; BackColor = pressedColor; };
+            MouseUp += delegate { isPressed = false; BackColor = ClientRectangle.Contains(PointToClient(Cursor.Position)) ? hoverColor : normalColor; };
         }
     }
 
@@ -944,20 +988,47 @@ namespace ModernPC12
     internal sealed class CardPanel : Panel
     {
         public Color BorderColor { get; set; }
+        public Color FillColor { get; set; }
+        public Color AccentColor { get; set; }
 
         public CardPanel()
         {
             BorderColor = Color.FromArgb(225, 230, 236);
+            FillColor = Color.White;
+            AccentColor = Color.Transparent;
             DoubleBuffered = true;
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            base.OnPaint(e);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+            Rectangle shadowRect = new Rectangle(3, 4, Width - 7, Height - 7);
+            using (SolidBrush shadow = new SolidBrush(Color.FromArgb(16, 23, 35, 48)))
+            {
+                e.Graphics.FillRectangle(shadow, shadowRect);
+            }
+
+            Rectangle cardRect = new Rectangle(0, 0, Width - 4, Height - 4);
+            using (SolidBrush fill = new SolidBrush(FillColor))
+            {
+                e.Graphics.FillRectangle(fill, cardRect);
+            }
+
+            if (AccentColor.A > 0)
+            {
+                using (SolidBrush accent = new SolidBrush(AccentColor))
+                {
+                    e.Graphics.FillRectangle(accent, 0, 0, cardRect.Width, 4);
+                }
+            }
+
             using (Pen p = new Pen(BorderColor))
             {
-                e.Graphics.DrawRectangle(p, 0, 0, Width - 1, Height - 1);
+                e.Graphics.DrawRectangle(p, cardRect);
             }
+
+            base.OnPaint(e);
         }
     }
 }
