@@ -10,18 +10,21 @@ function Invoke-Replace([string]$haystack, [string]$needle, [string]$replacement
     return $haystack.Replace($needle, $replacement)
 }
 
-function Invoke-RegexReplace([string]$haystack, [string]$pattern, [string]$replacement, [string]$label) {
-    $rx = New-Object System.Text.RegularExpressions.Regex($pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    if (-not $rx.IsMatch($haystack)) {
-        throw "Padrao nao encontrado em UniversalStudioShell.cs ($label). Ajuste PrepareUniversalStudioV20.ps1."
+function Invoke-SectionReplace([string]$haystack, [string]$startAnchor, [string]$endAnchor, [string]$replacement, [bool]$keepEnd, [string]$label) {
+    $start = $haystack.IndexOf($startAnchor)
+    if ($start -lt 0) {
+        throw "Inicio nao encontrado em UniversalStudioShell.cs ($label)."
     }
-    return $rx.Replace($haystack, $replacement, 1)
+    $end = $haystack.IndexOf($endAnchor, $start + $startAnchor.Length)
+    if ($end -lt 0) {
+        throw "Fim nao encontrado em UniversalStudioShell.cs ($label)."
+    }
+    $after = if ($keepEnd) { $end } else { $end + $endAnchor.Length }
+    return $haystack.Substring(0, $start) + $replacement + $haystack.Substring($after)
 }
 
-# Versao exibida no shell.
 $text = Invoke-Replace $text 'v0.12' 'v0.20' 'versao'
 
-# O editor Ladder passa a abrir com os paineis auxiliares recolhidos.
 $fieldNeedle = '        private bool inspectorAllowed = true;'
 $fieldInsert = @'
         private bool inspectorAllowed = false;
@@ -52,7 +55,6 @@ $viewInsert = @'
 '@
 $text = Invoke-Replace $text $viewNeedle $viewInsert.TrimEnd() 'menu modo foco'
 
-# Mapa de memoria fica no menu PLC, sem repetir a mesma acao em varias regioes.
 $plcNeedle = '            plc.DropDownItems.Add(DropItem("Selecionar controlador...", delegate { ShowDeviceManager(); }));'
 $plcInsert = @'
             plc.DropDownItems.Add(DropItem("Selecionar controlador...", delegate { ShowDeviceManager(); }));
@@ -60,7 +62,6 @@ $plcInsert = @'
 '@
 $text = Invoke-Replace $text $plcNeedle $plcInsert.TrimEnd() 'menu PLC'
 
-# Console recolhido por padrao.
 $consoleNeedle = @'
             consolePanel = BuildConsole();
             center.Controls.Add(consolePanel);
@@ -72,16 +73,13 @@ $consoleInsert = @'
 '@
 $text = Invoke-Replace $text $consoleNeedle.Trim() $consoleInsert.Trim() 'console inicial'
 
-# Barra superior mais baixa e sem nome/versao duplicados.
 $text = Invoke-Replace $text '            b.Height = 54;' '            b.Height = 42;' 'altura dos botoes'
 $text = Invoke-Replace $text '            b.Location = new Point(toolCursor, 3);' '            b.Location = new Point(toolCursor, 1);' 'posicao dos botoes'
 $text = Invoke-Replace $text '            sep.Bounds = new Rectangle(toolCursor + 7, 15, 1, 30);' '            sep.Bounds = new Rectangle(toolCursor + 7, 11, 1, 24);' 'separador da barra'
 $text = Invoke-Replace $text '            bar.Height = 60;' '            bar.Height = 46;' 'altura da barra'
 
-$brandPattern = [regex]::Escape('            Label brand = new Label();') + '.*?' + [regex]::Escape('            bar.Controls.Add(brand);') + '\s*'
-$text = Invoke-RegexReplace $text $brandPattern '' 'marca duplicada da barra'
+$text = Invoke-SectionReplace $text '            Label brand = new Label();' '            bar.Controls.Add(brand);' '' $false 'marca duplicada da barra'
 
-$toolbarPattern = [regex]::Escape('            toolCursor = 10;') + '.*?' + [regex]::Escape('            return bar;')
 $toolbarReplacement = @'
             toolCursor = 10;
             AddToolButton(bar, "Novo", StudioIcon.Doc, false, delegate { InvokeLadder("NewProject", new object[] { true }); });
@@ -95,10 +93,8 @@ $toolbarReplacement = @'
             AddToolButton(bar, "Monitor", StudioIcon.Monitor, false, delegate { ShowMonitor(); });
             return bar;
 '@
-$text = Invoke-RegexReplace $text $toolbarPattern $toolbarReplacement.TrimEnd() 'barra de ferramentas compacta'
+$text = Invoke-SectionReplace $text '            toolCursor = 10;' '            return bar;' $toolbarReplacement.TrimEnd() $false 'barra de ferramentas compacta'
 
-# Marca unica e compacta na lateral; remove modelo do PLC repetido no cabecalho.
-$brandMethodPattern = [regex]::Escape('        private Control BuildBrand()') + '.*?(?=' + [regex]::Escape('        private Panel BuildNav()') + ')'
 $brandMethodReplacement = @'
         private Control BuildBrand()
         {
@@ -120,13 +116,11 @@ $brandMethodReplacement = @'
         }
 
 '@
-$text = Invoke-RegexReplace $text $brandMethodPattern $brandMethodReplacement 'marca lateral compacta'
+$text = Invoke-SectionReplace $text '        private Control BuildBrand()' '        private Panel BuildNav()' $brandMethodReplacement $true 'marca lateral compacta'
 
 $text = Invoke-Replace $text '            nav.Width = 228;' '            nav.Width = 190;' 'largura da navegacao'
 $text = Invoke-Replace $text '            wrap.Height = 150;' '            wrap.Height = 110;' 'altura do console'
 
-# Inspetor enxuto: somente contexto necessario. Detalhes completos ficam no gerenciador do controlador.
-$inspectorPattern = [regex]::Escape('        private Panel BuildInspector()') + '.*?(?=' + [regex]::Escape('        private Panel BuildStatusBar()') + ')'
 $inspectorReplacement = @'
         private Panel BuildInspector()
         {
@@ -186,11 +180,10 @@ $inspectorReplacement = @'
         }
 
 '@
-$text = Invoke-RegexReplace $text $inspectorPattern $inspectorReplacement 'inspetor compacto'
+$text = Invoke-SectionReplace $text '        private Panel BuildInspector()' '        private Panel BuildStatusBar()' $inspectorReplacement $true 'inspetor compacto'
 
 $text = Invoke-Replace $text '            modeText.Width = 470;' '            modeText.Width = 300;' 'largura do status direito'
 
-$modePattern = [regex]::Escape('            if (modeText != null)') + '.*?' + [regex]::Escape('            UpdateRailCapabilities();')
 $modeReplacement = @'
             if (modeText != null)
             {
@@ -200,11 +193,10 @@ $modeReplacement = @'
 
             UpdateRailCapabilities();
 '@
-$text = Invoke-RegexReplace $text $modePattern $modeReplacement.TrimEnd() 'status sem repeticoes'
+$text = Invoke-SectionReplace $text '            if (modeText != null)' '            UpdateRailCapabilities();' $modeReplacement.TrimEnd() $false 'status sem repeticoes'
 
 $text = Invoke-Replace $text '            inspector.Visible = true;' '            inspector.Visible = false;' 'ladder sem inspetor por padrao'
 
-# Modo foco: F11 usa quase toda a janela para o programa Ladder.
 $toggleNeedle = '        private void TogglePanel(int which)'
 $toggleInsert = @'
         private void ToggleFocusMode()
@@ -250,7 +242,6 @@ $toggleInsert = @'
 '@
 $text = Invoke-Replace $text $toggleNeedle ($toggleInsert + $toggleNeedle) 'modo foco'
 
-# Gerenciador de mapa: uma unica entrada no menu PLC.
 $methodNeedle = '        private void ShowCommunication()'
 $methodInsert = @'
         private void ShowMemoryMapManager()
