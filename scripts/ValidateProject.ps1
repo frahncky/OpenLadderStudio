@@ -48,4 +48,4 @@ foreach ($path in $generated) {
     if (Test-Path $path) { Write-Host "Arquivo gerado presente no workspace: $path" }
 }
 
-Write-Host "OpenLadder Studio v$version: metadados e estrutura validados."
+Write-Host "OpenLadder Studio v${version}: metadados e estrutura validados."
