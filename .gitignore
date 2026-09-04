@@ -1,3 +1,5 @@
+PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.exe
+PC12_v2.1_Windows7_v3_portatil/OpenLadderUpdater.exe
 PC12_v2.1_Windows7_v3_portatil/PC12_Studio.exe
 PC12_v2.1_Windows7_v3_portatil/PC12_Moderno.exe
 PC12_v2.1_Windows7_v3_portatil/PC12_Ladder.exe
@@ -14,3 +16,4 @@ PC12_v2.1_Windows7_v3_portatil/*.rules.tsv
 PC12_v2.1_Windows7_v3_portatil/*.cal.txt
 PC12_v2.1_Windows7_v3_portatil/*.verified.il.txt
 PC12_v2.1_Windows7_v3_portatil/LadderEditor.build.cs
+installer/output/
