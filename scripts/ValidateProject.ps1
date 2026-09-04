@@ -78,6 +78,14 @@ foreach ($launcher in Get-ChildItem -Path $portable -Filter 'INICIAR_*.bat') {
     }
 }
 
+foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
+    $code = [System.IO.File]::ReadAllText($file.FullName)
+    if ($code -notmatch '(?m)class\s+\w+\s*:\s*Form\b') { continue }
+    if ($code -notmatch 'AutoScaleMode') {
+        throw "$($file.Name) declara formulário sem AutoScaleMode. Com o manifesto de DPI ativo, a janela deixa de ser escalada e aparece menor do que deveria."
+    }
+}
+
 $generated = @(
     (Join-Path $repoRoot 'installer\PC12Studio.build.iss'),
     (Join-Path $portable 'StudioUi.build.cs'),

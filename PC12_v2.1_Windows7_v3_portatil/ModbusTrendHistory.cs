@@ -174,6 +174,7 @@ namespace ModernPC12
 
             Text = "OpenLadder Studio - Tendências Modbus";
             StartPosition = FormStartPosition.CenterParent;
+            AutoScaleMode = AutoScaleMode.Dpi;
             Size = new Size(980, 620);
             MinimumSize = new Size(760, 500);
             BackColor = Shell;

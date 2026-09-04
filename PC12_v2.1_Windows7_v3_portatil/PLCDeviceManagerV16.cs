@@ -48,6 +48,7 @@ namespace ModernPC12
         {
             Text = "OpenLadder Studio - Controladores";
             StartPosition = FormStartPosition.CenterParent;
+            AutoScaleMode = AutoScaleMode.Dpi;
             Size = new Size(1080, 660);
             MinimumSize = new Size(960, 580);
             BackColor = Shell;
@@ -407,6 +408,7 @@ namespace ModernPC12
             original = profile;
             Text = profile == null ? "Novo controlador personalizado" : "Editar controlador personalizado";
             StartPosition = FormStartPosition.CenterParent;
+            AutoScaleMode = AutoScaleMode.Dpi;
             Size = new Size(570, 560);
             MinimumSize = new Size(570, 560);
             MaximumSize = new Size(570, 560);

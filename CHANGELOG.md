@@ -2,6 +2,18 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.24] - 2026-09-04
+
+### Correção
+- cinco formulários não declaravam `AutoScaleMode` e, com o reconhecimento de DPI
+  introduzido na v0.23, passavam a ser desenhados menores do que deveriam em telas
+  com escala: gerenciador de controladores (duas janelas), monitor Modbus, histórico
+  de tendências e mapa de memória;
+- todos os formulários passam a usar `AutoScaleMode.Dpi`.
+
+### Engenharia de software
+- `ValidateProject.ps1` passa a recusar qualquer formulário sem `AutoScaleMode`.
+
 ## [0.23] - 2026-09-04
 
 ### Interface
