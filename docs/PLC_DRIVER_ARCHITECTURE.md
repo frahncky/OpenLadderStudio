@@ -18,7 +18,10 @@ Fluxo previsto:
 
 - `PLCPlatform.cs` — contratos, perfis, registro de drivers, capacidades e modelo Ladder universal.
 - `PLCDeviceManager.cs` — catálogo visual de controladores e seleção do perfil padrão.
+- `ModbusCore.cs` — implementação genérica Modbus RTU e Modbus TCP.
+- `ModbusMonitor.cs` — monitor de coils, entradas e registradores.
 - `INICIAR_CONTROLADORES.bat` — inicializa o gerenciador de controladores.
+- `INICIAR_MODBUS.bat` — inicializa o monitor Modbus.
 
 O perfil escolhido é salvo em `%APPDATA%\OpenLadder Studio\device.profile`.
 
@@ -27,14 +30,29 @@ O perfil escolhido é salvo em `%APPDATA%\OpenLadder Studio\device.profile`.
 | Fabricante / perfil | Comunicação | Monitoramento | Leitura de programa | Download Ladder | Situação |
 |---|---:|---:|---:|---:|---|
 | WEG TP02-60MR | Sim | Sim | Sim, via RBP | Não | Implementado em leitura segura |
-| Modbus RTU genérico | Base de driver | Base de driver | Não | Não | Experimental |
-| Modbus TCP genérico | Base de driver | Base de driver | Não | Não | Experimental |
-| Schneider Modicon M221 | Não | Não | Não | Não | Perfil planejado |
-| Delta DVP | Não | Não | Não | Não | Perfil planejado |
+| Modbus RTU genérico | Sim | FC 01/02/03/04 | Não | Não | Experimental funcional |
+| Modbus TCP genérico | Sim | FC 01/02/03/04 | Não | Não | Experimental funcional |
+| Schneider Modicon M221 | Não como driver específico | Pode usar Modbus quando o mapa do equipamento permitir | Não | Não | Perfil planejado |
+| Delta DVP | Não como driver específico | Pode usar Modbus quando o modelo permitir | Não | Não | Perfil planejado |
 | Siemens S7-1200 | Não | Não | Não | Não | Perfil planejado |
 | Mitsubishi FX5U | Não | Não | Não | Não | Perfil planejado |
 | Omron CP1L | Não | Não | Não | Não | Perfil planejado |
 | Allen-Bradley Micro850 | Não | Não | Não | Não | Perfil planejado |
+
+## Modbus genérico implementado
+
+O monitor genérico executa somente funções de leitura nesta etapa:
+
+- `01` — Read Coils;
+- `02` — Read Discrete Inputs;
+- `03` — Read Holding Registers;
+- `04` — Read Input Registers.
+
+No RTU são configuráveis porta COM, baud rate, data bits, paridade, stop bits, Unit ID e timeout. O quadro RTU usa CRC-16 Modbus e valida a resposta recebida.
+
+No TCP são configuráveis endereço IP/host, porta, Unit ID e timeout. O cliente valida Transaction ID, Protocol ID e comprimento do quadro MBAP.
+
+Escrita de coils/registradores e transferência de programa continuam desabilitadas até validação específica.
 
 ## Regra de segurança técnica
 
@@ -42,10 +60,10 @@ O catálogo não deve confundir perfil cadastrado com suporte efetivo. Perfis ma
 
 ## Próximas etapas
 
-1. concluir cliente Modbus RTU genérico;
-2. concluir cliente Modbus TCP genérico;
-3. criar mapeamento de memória configurável por dispositivo;
-4. adaptar o monitor online para usar `IPlcDriver` em vez de classes TP02 diretamente;
-5. converter o editor atual para o modelo Ladder universal;
-6. criar compiladores por família de PLC;
-7. habilitar download somente nos drivers cuja compilação e transferência tenham sido validadas.
+1. criar mapeamento de memória configurável por dispositivo;
+2. integrar o seletor de controlador diretamente ao shell principal;
+3. adaptar o monitor online para usar `IPlcDriver` em vez de classes TP02 diretamente;
+4. converter o editor atual para o modelo Ladder universal;
+5. criar compiladores por família de PLC;
+6. habilitar escrita Modbus somente com confirmação e validação;
+7. habilitar download de programa apenas nos drivers cuja compilação e transferência tenham sido validadas em hardware.
