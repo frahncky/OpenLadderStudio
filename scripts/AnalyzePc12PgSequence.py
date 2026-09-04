@@ -4,161 +4,91 @@ from capstone import Cs, CsError, CS_ARCH_X86, CS_MODE_32
 from capstone.x86 import X86_OP_IMM, X86_OP_MEM
 
 EXE = os.path.join('PC12_v2.1_Windows7_v3_portatil', 'pc12.exe')
-TARGETS = [
-    b'CON-ICB\r', b'CON-ICB', b'CON-', b'ICB\r', b'ICB',
-    b'TP02 Link Success', b'Link Protocol fail', b'COM1:Linking'
-]
-
 pe = pefile.PE(EXE, fast_load=False)
 image_base = pe.OPTIONAL_HEADER.ImageBase
-with open(EXE,'rb') as f:
-    raw = f.read()
-
-md = Cs(CS_ARCH_X86, CS_MODE_32)
-md.detail = True
-md.skipdata = True
-
-sections=[]
+with open(EXE,'rb') as f: raw=f.read()
+md=Cs(CS_ARCH_X86,CS_MODE_32); md.detail=True; md.skipdata=True
 insns=[]
 for s in pe.sections:
-    name=s.Name.rstrip(b'\0').decode('latin1','replace')
-    va=image_base+s.VirtualAddress
-    data=s.get_data()
-    executable=bool(s.Characteristics & 0x20000000)
-    sections.append((name,s.PointerToRawData,s.SizeOfRawData,va,s.Misc_VirtualSize,executable))
-    if executable:
-        for ins in md.disasm(data,va):
-            insns.append(ins)
+    if s.Characteristics & 0x20000000:
+        insns.extend(md.disasm(s.get_data(), image_base+s.VirtualAddress))
 insns.sort(key=lambda i:i.address)
 
-print('=== PE SECTIONS ===')
-for name,off,rawsz,va,vsz,exe in sections:
-    print(f'{name:8} off=0x{off:06X} raw=0x{rawsz:06X} va=0x{va:08X} vsz=0x{vsz:06X} exec={exe}')
-print(f'Executable instructions decoded: {len(insns)}')
+def ops(ins):
+    if getattr(ins,'id',0)==0:return []
+    try:return ins.operands
+    except CsError:return []
 
+def callers(target):
+    out=[]
+    for idx,ins in enumerate(insns):
+        if ins.mnemonic!='call':continue
+        for op in ops(ins):
+            if op.type==X86_OP_IMM and (op.imm & 0xffffffff)==target:
+                out.append((idx,ins))
+    return out
 
-def find_all(hay,needle):
-    p=0; out=[]
+def refs(target):
+    out=[]
+    for idx,ins in enumerate(insns):
+        for op in ops(ins):
+            if op.type==X86_OP_IMM and (op.imm & 0xffffffff)==target:
+                out.append((idx,ins));break
+            if op.type==X86_OP_MEM and (op.mem.disp & 0xffffffff)==target:
+                out.append((idx,ins));break
+    return out
+
+def window(idx,b=18,a=35):
+    for j in range(max(0,idx-b),min(len(insns),idx+a)):
+        i=insns[j];m='>>' if j==idx else '  '
+        print(f'{m} {i.address:08X}: {i.mnemonic:<8} {i.op_str}')
+
+def range_dump(start,end):
+    for i in insns:
+        if start<=i.address<end:
+            print(f'{i.address:08X}: {i.mnemonic:<8} {i.op_str}')
+
+def find_all(h,n):
+    p=0;o=[]
     while True:
-        p=hay.find(needle,p)
-        if p<0:return out
-        out.append(p); p+=1
+        p=h.find(n,p)
+        if p<0:return o
+        o.append(p);p+=1
 
 def off_to_va(off):
     try:return image_base+pe.get_rva_from_offset(off)
-    except Exception:return None
+    except:return None
 
-def va_to_off(va):
-    try:return pe.get_offset_from_rva(va-image_base)
-    except Exception:return None
+print('=== PHYSICAL OBSERVATION ===')
+print('Known good serial profile from PLC test: 19200 8O1 DTR/RTS ON')
+print('HELLO TX = 43 4F 4E 2D 49 43 42 0D')
+print('HELLO RX = 4E 01 09 35')
 
-def get_operands(ins):
-    # Capstone emits pseudo-instructions for embedded data when skipdata is on.
-    # Those instructions have no detail/operands and must not abort the scan.
-    if getattr(ins, 'id', 0) == 0 or str(getattr(ins, 'mnemonic', '')).startswith('.byte'):
-        return []
-    try:
-        return ins.operands
-    except CsError:
-        return []
+print('\n=== HELLO BUILDER 0x46F01D ===')
+range_dump(0x0046F01D,0x0046F07A)
 
-def xrefs_to(values):
-    vals=set(v for v in values if v is not None)
-    refs=[]
-    for idx,ins in enumerate(insns):
-        for op in get_operands(ins):
-            if op.type==X86_OP_IMM and (op.imm & 0xffffffff) in vals:
-                refs.append((idx,ins)); break
-            if op.type==X86_OP_MEM and (op.mem.disp & 0xffffffff) in vals:
-                refs.append((idx,ins)); break
-    return refs
+print('\n=== NEXT ADJACENT PG ROUTINES 0x46F07A..0x46F590 ===')
+range_dump(0x0046F07A,0x0046F590)
 
-def dump_window(idx,before=24,after=48):
-    lo=max(0,idx-before); hi=min(len(insns),idx+after)
-    for j in range(lo,hi):
-        ins=insns[j]; mark='>>' if j==idx else '  '
-        print(f'{mark} {ins.address:08X}: {ins.mnemonic:<8} {ins.op_str}')
+print('\n=== CALLERS OF PG ROUTINES ===')
+for target in [0x0046F01D,0x0046F07A,0x0046F0EF,0x0046F15B,0x0046F1D0,0x0046F250,0x0046F2C0,0x0046F330,0x0046F430,0x0046F5E6,0x0046F7F7,0x0046FA9E]:
+    cs=callers(target)
+    print(f'\nTARGET 0x{target:08X}: {len(cs)} caller(s)')
+    for idx,ins in cs[:20]:
+        print(f'-- caller at 0x{ins.address:08X} --')
+        window(idx,14,28)
 
-def pointer_chain_for_va(va):
-    vals=[va]
-    seen={va}
-    frontier=[va]
-    for depth in range(2):
-        nxt=[]
-        for value in frontier:
-            pat=struct.pack('<I',value & 0xffffffff)
-            for off in find_all(raw,pat)[:30]:
-                pva=off_to_va(off)
-                if pva is not None and pva not in seen:
-                    print(f' pointer depth={depth+1} file_off=0x{off:X} va=0x{pva:08X} -> 0x{value:08X}')
-                    seen.add(pva); vals.append(pva); nxt.append(pva)
-        frontier=nxt
-    return vals
+print('\n=== REFERENCES TO TX GLOBALS ===')
+for target in [0x004FA7A8,0x004FA7A9,0x004FA7AA,0x004FA7AB,0x004FA8AC,0x004FA8B7,0x004FA8B9,0x00560360,0x00560364]:
+    rr=refs(target)
+    filt=[(idx,i) for idx,i in rr if 0x0046E000<=i.address<=0x00471000 or 0x004AD000<=i.address<=0x004AE500]
+    print(f'GLOBAL 0x{target:08X}: {len(filt)} nearby refs')
+    for idx,i in filt[:40]:print(f'  0x{i.address:08X}: {i.mnemonic:<8} {i.op_str}')
 
-print('\n=== STRING/PARTIAL TARGETS ===')
-for target in TARGETS:
-    offs=find_all(raw,target)
-    print(f'\nTARGET {target!r}: {len(offs)} occurrence(s)')
-    for off in offs[:8]:
-        va=off_to_va(off)
-        print(f' file_off=0x{off:X} va={"0x%08X"%va if va else "?"}')
-        if va is None: continue
-        vals=pointer_chain_for_va(va)
-        refs=xrefs_to(vals)
-        print(' xrefs=',len(refs))
-        for idx,ins in refs[:8]:
-            print(f' -- XREF 0x{ins.address:08X} --')
-            dump_window(idx)
-
-print('\n=== RAW CONSTANTS ===')
-patterns={
-    'HELLO full':bytes([0x43,0x4F,0x4E,0x2D,0x49,0x43,0x42,0x0D]),
-    'HELLO no CR':bytes([0x43,0x4F,0x4E,0x2D,0x49,0x43,0x42]),
-    'HELLO dword1':bytes([0x43,0x4F,0x4E,0x2D]),
-    'HELLO dword2':bytes([0x49,0x43,0x42,0x0D]),
-    'RX 8O1':bytes([0x4E,0x01,0x09,0x35]),
-    'RX 8N1':bytes([0xC0,0x01,0x09,0x35]),
-    'F0 probe':bytes([0xF0,0x00,0x0F]),
-}
-for label,pat in patterns.items():
+print('\n=== RAW STRING AND RESOURCE CHECK ===')
+for label,pat in [('CON-ICB',b'CON-ICB'),('wrong F0 resource',bytes([0xF0,0x00,0x0F]))]:
     offs=find_all(raw,pat)
-    print(f'{label}: {pat.hex(" ").upper()} occurrences={len(offs)} {list(map(hex,offs[:20]))}')
-    for off in offs[:5]:
-        va=off_to_va(off)
-        print(f'  off=0x{off:X} va={"0x%08X"%va if va else "?"}')
-        lo=max(0,off-64); hi=min(len(raw),off+len(pat)+128)
-        print('  raw-near=',raw[lo:hi].hex(' ').upper())
-        if va:
-            vals=pointer_chain_for_va(va)
-            refs=xrefs_to(vals)
-            print('  xrefs=',len(refs))
-            for idx,ins in refs[:8]:
-                print(f'  -- XREF 0x{ins.address:08X} --')
-                dump_window(idx,20,45)
+    print(label,[(hex(o),hex(off_to_va(o)) if off_to_va(o) else '?') for o in offs])
 
-print('\n=== HELLO DWORD IMMEDIATES ===')
-for imm in [0x2D4E4F43,0x0D424349,0x3509014E,0x350901C0,0x000F00F0]:
-    refs=xrefs_to([imm])
-    print(f'IMM 0x{imm:08X}: {len(refs)} refs')
-    for idx,ins in refs[:12]:
-        print(f'  0x{ins.address:08X}: {ins.mnemonic} {ins.op_str}')
-        dump_window(idx,14,30)
-
-print('\n=== BYTE-COMPARE CANDIDATES ===')
-for imm in [0x4E,0x01,0x09,0x35,0xC0,0xF0,0x0F]:
-    refs=xrefs_to([imm])
-    useful=[]
-    for idx,ins in refs:
-        if ins.mnemonic.startswith(('cmp','test','mov','push')):
-            useful.append((idx,ins))
-    print(f'IMM 0x{imm:02X}: {len(useful)} cmp/test/mov/push refs')
-    for idx,ins in useful[:30]:
-        print(f'  0x{ins.address:08X}: {ins.mnemonic:<7} {ins.op_str}')
-
-print('\n=== DIRECT RAW CONTEXT OF F0 00 0F ===')
-for off in find_all(raw, bytes([0xF0,0x00,0x0F])):
-    va=off_to_va(off)
-    print(f'F0 at off=0x{off:X}, va={"0x%08X"%va if va else "?"}')
-    for radius in [32,128,512]:
-        lo=max(0,off-radius); hi=min(len(raw),off+3+radius)
-        print(f' radius={radius}: {raw[lo:hi].hex(" ").upper()}')
+print('\n=== LINK UI RANGE 0x4AD680..0x4AE345 ===')
+range_dump(0x004AD680,0x004AE345)
