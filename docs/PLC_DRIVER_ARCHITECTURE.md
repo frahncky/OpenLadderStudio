@@ -1,6 +1,6 @@
 # Arquitetura multi-fabricante do OpenLadder Studio
 
-O OpenLadder Studio passa a separar a interface, o modelo Ladder, os perfis de dispositivos e os drivers de comunicação. O objetivo é permitir evolução para vários fabricantes sem acoplar o núcleo do software ao WEG TP02.
+O OpenLadder Studio separa a interface, o modelo Ladder, os perfis de dispositivos e os drivers de comunicação. O objetivo é permitir evolução para vários fabricantes sem acoplar o núcleo do software ao WEG TP02.
 
 ## Camadas
 
@@ -20,10 +20,22 @@ Fluxo previsto:
 - `PLCDeviceManager.cs` — catálogo visual de controladores e seleção do perfil padrão.
 - `ModbusCore.cs` — implementação genérica Modbus RTU e Modbus TCP.
 - `ModbusMonitor.cs` — monitor de coils, entradas e registradores.
+- `PrepareStudioBuild.ps1` — integra o seletor de controlador e o monitor Modbus ao shell principal durante o build.
 - `INICIAR_CONTROLADORES.bat` — inicializa o gerenciador de controladores.
 - `INICIAR_MODBUS.bat` — inicializa o monitor Modbus.
 
-O perfil escolhido é salvo em `%APPDATA%\OpenLadder Studio\device.profile`.
+O perfil escolhido é salvo em `%APPDATA%\OpenLadder Studio\device.profile`. O shell principal carrega esse perfil e passa a exibir o controlador selecionado no painel de propriedades e na barra de status.
+
+## Integração na interface principal
+
+O menu **PLC** do OpenLadder Studio passa a oferecer:
+
+- **Selecionar controlador...** — abre o catálogo multi-fabricante;
+- **Monitor Modbus RTU/TCP...** — abre o monitor genérico;
+- **Comunicação TP02** — mantém as ferramentas específicas já existentes para o WEG TP02;
+- leitura e decodificação de programa TP02 continuam separadas enquanto dependem do protocolo RBP.
+
+A barra de ferramentas também recebe acesso direto ao monitor Modbus.
 
 ## Situação atual
 
@@ -61,9 +73,8 @@ O catálogo não deve confundir perfil cadastrado com suporte efetivo. Perfis ma
 ## Próximas etapas
 
 1. criar mapeamento de memória configurável por dispositivo;
-2. integrar o seletor de controlador diretamente ao shell principal;
-3. adaptar o monitor online para usar `IPlcDriver` em vez de classes TP02 diretamente;
-4. converter o editor atual para o modelo Ladder universal;
-5. criar compiladores por família de PLC;
-6. habilitar escrita Modbus somente com confirmação e validação;
-7. habilitar download de programa apenas nos drivers cuja compilação e transferência tenham sido validadas em hardware.
+2. adaptar o monitor online geral para usar `IPlcDriver` em vez de classes TP02 diretamente;
+3. converter o editor atual para o modelo Ladder universal;
+4. criar compiladores por família de PLC;
+5. habilitar escrita Modbus somente com confirmação e validação;
+6. habilitar download de programa apenas nos drivers cuja compilação e transferência tenham sido validadas em hardware.
