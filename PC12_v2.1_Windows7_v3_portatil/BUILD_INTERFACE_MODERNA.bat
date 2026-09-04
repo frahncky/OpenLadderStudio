@@ -10,7 +10,7 @@ if not defined CSC exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' -replace 'PC12 Ladder Studio','OpenLadder Studio' -replace 'PC12 LADDER STUDIO','OPENLADDER STUDIO' | Set-Content 'LadderEditor.build.cs'"
 if errorlevel 1 goto :erro
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content 'UniversalStudioShell.cs') -replace 'v0.12','v0.13' | Set-Content 'UniversalStudioShell.build.cs'"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUniversalStudioV13.ps1"
 if errorlevel 1 goto :erro
 
 "%CSC%" /nologo /target:winexe /optimize+ /out:"OpenLadderUpdater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Updater.cs"
