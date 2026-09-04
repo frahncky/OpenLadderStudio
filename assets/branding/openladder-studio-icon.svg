@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="OpenLadder Studio">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c2228"/>
+      <stop offset="1" stop-color="#0c1015"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="248" height="248" rx="34" fill="url(#bg)" stroke="#3e4852" stroke-width="3"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M42 48v160M214 48v160" stroke="#2daa6b" stroke-width="7"/>
+    <path d="M42 112h36M84 88v48M104 88v48M104 112h20" stroke="#eef2f6" stroke-width="6"/>
+    <rect x="124" y="80" width="52" height="64" rx="9" fill="#272e36" stroke="#5baaf5" stroke-width="4"/>
+    <path d="M137 96h26M137 108h19" stroke="#5baaf5" stroke-width="4"/>
+    <path d="M176 112h8" stroke="#eef2f6" stroke-width="6"/>
+    <path d="M190 94c-10 9-10 27 0 36M204 94c10 9 10 27 0 36" stroke="#eef2f6" stroke-width="6"/>
+    <path d="M42 168h40l14-14h50l14 14h54" stroke="#4ec9b0" stroke-width="4"/>
+  </g>
+  <g fill="#4ec9b0">
+    <circle cx="141" cy="125" r="3"/>
+    <circle cx="153" cy="125" r="3"/>
+    <circle cx="165" cy="125" r="3"/>
+    <circle cx="81" cy="168" r="4"/>
+    <circle cx="159" cy="168" r="4"/>
+  </g>
+</svg>

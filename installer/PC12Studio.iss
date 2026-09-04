@@ -1,5 +1,7 @@
+; OpenLadder Studio installer template.
+; A versão é injetada a partir de version.txt por scripts/PrepareInstaller.ps1.
 #define MyAppName "OpenLadder Studio"
-#define MyAppVersion "0.21"
+#define MyAppVersion "@OPENLADDER_VERSION@"
 #define MyAppPublisher "Francisco S. Viana"
 #define MyAppExeName "OpenLadderStudio.exe"
 

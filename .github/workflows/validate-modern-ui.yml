@@ -20,6 +20,10 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
+      - name: Validar metadados e estrutura
+        shell: powershell
+        run: .\scripts\ValidateProject.ps1
+
       - name: Compilar OpenLadder Studio e ferramentas
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
@@ -27,12 +31,17 @@ jobs:
           call BUILD_INTERFACE_MODERNA.bat
           if errorlevel 1 exit /b 1
           if not exist OpenLadderStudio.ico exit /b 1
+          if not exist OpenLadderStudio.icon.png exit /b 1
           if not exist OpenLadderStudio.exe exit /b 1
           if not exist OpenLadderEditor.exe exit /b 1
           if not exist OpenLadderDeviceManager.exe exit /b 1
           if not exist OpenLadderModbus.exe exit /b 1
           if not exist OpenLadderMemoryMap.exe exit /b 1
           if not exist OpenLadderUpdater.exe exit /b 1
+
+      - name: Preparar instalador
+        shell: powershell
+        run: .\scripts\PrepareInstaller.ps1
 
       - name: Instalar Inno Setup 6 se necessário
         shell: powershell
@@ -44,7 +53,7 @@ jobs:
       - name: Gerar instalador
         shell: cmd
         run: |
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\PC12Studio.iss"
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\PC12Studio.build.iss"
 
       - name: Gerar SHA-256
         shell: powershell
@@ -59,6 +68,7 @@ jobs:
           name: OpenLadder-Studio
           path: |
             PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.ico
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.icon.png
             PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderEditor.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderDeviceManager.exe
@@ -87,7 +97,16 @@ jobs:
           $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
           $sha = 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
           $title = "OpenLadder Studio v$version"
-          $notes = "Versão oficial com área Ladder ampliada, interface compacta sem informações repetidas, painéis auxiliares recolhidos por padrão, modo foco F11, arquitetura multi-PLC, monitoramento Modbus, histórico e tendências e ícone oficial padronizado."
+
+          $notes = "OpenLadder Studio v$version. Consulte CHANGELOG.md para os detalhes desta versão."
+          if (Test-Path 'CHANGELOG.md') {
+            $change = Get-Content 'CHANGELOG.md' -Raw
+            $escaped = [Regex]::Escape($version)
+            $match = [Regex]::Match($change, "(?ms)^## \[$escaped\][^\r\n]*\r?\n(.*?)(?=^## \[|\z)")
+            if ($match.Success -and -not [string]::IsNullOrWhiteSpace($match.Groups[1].Value)) {
+              $notes = $match.Groups[1].Value.Trim()
+            }
+          }
 
           function Update-ExistingRelease {
             gh release upload $tag $setup $sha --clobber --repo $env:GITHUB_REPOSITORY
