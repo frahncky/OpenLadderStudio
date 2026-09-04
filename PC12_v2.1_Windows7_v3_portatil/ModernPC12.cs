@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 
 namespace ModernPC12
@@ -30,9 +31,14 @@ namespace ModernPC12
         private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
         private readonly Color Success = Color.FromArgb(27, 132, 86);
         private readonly Color Warning = Color.FromArgb(190, 112, 20);
+        private readonly Color SurfaceMuted = Color.FromArgb(235, 240, 245);
+        private readonly Color SurfaceMutedHover = Color.FromArgb(220, 229, 238);
+        private readonly Color Border = Color.FromArgb(224, 231, 238);
 
         private readonly string baseDir;
         private readonly string pc12Path;
+        private readonly string lastFileCpuPath;
+        private readonly string lastFileDirPath;
         private Panel workspace;
         private Label titleLabel;
         private Label statusLabel;
@@ -42,6 +48,10 @@ namespace ModernPC12
         private ModernButton navTools;
         private ModernButton navHelp;
         private ComboBox portCombo;
+        private const string AppTitle = "PC12 Modern";
+        private const int SidebarWidth = 224;
+        private const int TopBarHeight = 54;
+        private static readonly string[] HelpCandidates = new string[] { "PC12HELP.HLP", "Tp022.hlp", "HELPDLG.HLP" };
 
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HT_CAPTION = 0x2;
@@ -56,8 +66,10 @@ namespace ModernPC12
         {
             baseDir = AppDomain.CurrentDomain.BaseDirectory;
             pc12Path = Path.Combine(baseDir, "pc12.exe");
+            lastFileCpuPath = Path.Combine(baseDir, "lastfile.cpu");
+            lastFileDirPath = Path.Combine(baseDir, "lastfile.dir");
 
-            Text = "PC12 Modern";
+            Text = AppTitle;
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(940, 620);
             Size = new Size(1080, 700);
@@ -66,6 +78,7 @@ namespace ModernPC12
             Font = new Font("Segoe UI", 9.0f, FontStyle.Regular, GraphicsUnit.Point);
             AutoScaleMode = AutoScaleMode.Dpi;
             DoubleBuffered = true;
+            Icon = SystemIcons.Application;
 
             BuildShell();
             ShowHome();
@@ -76,7 +89,7 @@ namespace ModernPC12
         {
             Panel topBar = new Panel();
             topBar.Dock = DockStyle.Top;
-            topBar.Height = 54;
+            topBar.Height = TopBarHeight;
             topBar.BackColor = Color.White;
             topBar.MouseDown += DragWindow;
             Controls.Add(topBar);
@@ -124,7 +137,7 @@ namespace ModernPC12
 
             Panel sidebar = new Panel();
             sidebar.Dock = DockStyle.Left;
-            sidebar.Width = 224;
+            sidebar.Width = SidebarWidth;
             sidebar.BackColor = Navy;
             shell.Controls.Add(sidebar);
 
@@ -152,19 +165,19 @@ namespace ModernPC12
             productSub.Location = new Point(24, 86);
             sidebar.Controls.Add(productSub);
 
-            navHome = CreateNavButton("Início", 128);
+            navHome = CreateNavButton("⌂", "Início", 128);
             navHome.Click += delegate { ShowHome(); };
             sidebar.Controls.Add(navHome);
 
-            navConnection = CreateNavButton("Conexão", 176);
+            navConnection = CreateNavButton("⇄", "Conexão", 176);
             navConnection.Click += delegate { ShowConnection(); };
             sidebar.Controls.Add(navConnection);
 
-            navTools = CreateNavButton("Ferramentas", 224);
+            navTools = CreateNavButton("⚙", "Ferramentas", 224);
             navTools.Click += delegate { ShowTools(); };
             sidebar.Controls.Add(navTools);
 
-            navHelp = CreateNavButton("Ajuda e informações", 272);
+            navHelp = CreateNavButton("ℹ", "Ajuda e informações", 272);
             navHelp.Click += delegate { ShowHelp(); };
             sidebar.Controls.Add(navHelp);
 
@@ -222,18 +235,11 @@ namespace ModernPC12
             topBar.BringToFront();
         }
 
-        private ModernButton CreateNavButton(string text, int top)
+        private ModernButton CreateNavButton(string glyph, string text, int top)
         {
-            ModernButton b = new ModernButton();
-            b.Text = text;
-            b.Location = new Point(14, top);
-            b.Size = new Size(196, 40);
+            ModernButton b = CreateButton(WithGlyph(glyph, text), 14, top, 196, 40, 9.4f, Navy, NavyLight, Color.FromArgb(225, 235, 245));
             b.TextAlign = ContentAlignment.MiddleLeft;
             b.Padding = new Padding(14, 0, 0, 0);
-            b.Font = new Font("Segoe UI Semibold", 9.4f, FontStyle.Bold);
-            b.NormalColor = Navy;
-            b.HoverColor = NavyLight;
-            b.ForeColor = Color.FromArgb(225, 235, 245);
             return b;
         }
 
@@ -273,29 +279,52 @@ namespace ModernPC12
             CardPanel launchCard = CreateCard(34, 98, 356, 190);
             workspace.Controls.Add(launchCard);
             AddCardTitle(launchCard, "Programar PLC", "Abra o PC12 Design Center 2.1 mantendo toda a compatibilidade com os projetos existentes.");
-            ModernButton launch = PrimaryButton("ABRIR PC12", 24, 128, 150);
+            ModernButton launch = PrimaryButton(WithGlyph("▶", "ABRIR PC12"), 24, 128, 150);
             launch.Click += delegate { LaunchPc12(false); };
             launchCard.Controls.Add(launch);
+
+            ModernButton launchAdmin = SecondaryButton(WithGlyph("▲", "COMO ADMIN"), 186, 128, 146);
+            launchAdmin.Click += delegate { LaunchPc12(true); };
+            launchCard.Controls.Add(launchAdmin);
 
             CardPanel connectionCard = CreateCard(410, 98, 356, 190);
             workspace.Controls.Add(connectionCard);
             AddCardTitle(connectionCard, "Conexão serial", "Veja rapidamente as portas COM disponíveis e acesse as verificações de comunicação com o TP02.");
-            ModernButton connection = SecondaryButton("VER CONEXÃO", 24, 128, 150);
+            ModernButton connection = SecondaryButton(WithGlyph("⇄", "VER CONEXÃO"), 24, 128, 170);
             connection.Click += delegate { ShowConnection(); };
             connectionCard.Controls.Add(connection);
 
-            CardPanel healthCard = CreateCard(34, 308, 732, 146);
+            CardPanel healthCard = CreateCard(34, 308, 732, 214);
             workspace.Controls.Add(healthCard);
             AddCardTitle(healthCard, "Diagnóstico rápido", "Situação do pacote portátil e recursos necessários para iniciar o software.");
 
             bool exeOk = File.Exists(pc12Path);
             string ports = GetPortsSummary();
+            bool helpOk = GetHelpFilePath() != null;
             AddInfoPill(healthCard, exeOk ? "Executável encontrado" : "Executável ausente", 24, 96, exeOk);
             AddInfoPill(healthCard, ports, 220, 96, true);
-            AddInfoPill(healthCard, Environment.OSVersion.VersionString, 420, 96, true);
+            AddInfoPill(healthCard, helpOk ? "Ajuda local pronta" : "Ajuda local ausente", 420, 96, helpOk);
+
+            Label recentProjectTitle = NewLabel("Último projeto conhecido", 10.2f, FontStyle.Bold, TextPrimary);
+            recentProjectTitle.Location = new Point(24, 138);
+            healthCard.Controls.Add(recentProjectTitle);
+
+            Label recentProject = NewLabel(GetRecentProjectSummary(), 8.6f, FontStyle.Regular, TextSecondary);
+            recentProject.Location = new Point(24, 164);
+            recentProject.MaximumSize = new Size(500, 0);
+            healthCard.Controls.Add(recentProject);
+
+            ModernButton openRecent = SecondaryButton(WithGlyph("↗", "ABRIR PASTA"), 534, 154, 170);
+            openRecent.Enabled = HasRecentProjectFolder();
+            openRecent.Click += delegate { OpenRecentProjectFolder(); };
+            healthCard.Controls.Add(openRecent);
+
+            ModernButton copyDiagnostics = SecondaryButton(WithGlyph("≡", "COPIAR DIAGNÓSTICO"), 534, 106, 170);
+            copyDiagnostics.Click += delegate { CopyDiagnostics(); };
+            healthCard.Controls.Add(copyDiagnostics);
 
             Label note = NewLabel("Compatibilidade preservada: o editor ladder e o protocolo de comunicação continuam sendo executados pelo PC12 original.", 8.6f, FontStyle.Regular, TextSecondary);
-            note.Location = new Point(36, 476);
+            note.Location = new Point(36, 544);
             note.MaximumSize = new Size(720, 0);
             workspace.Controls.Add(note);
         }
@@ -325,11 +354,11 @@ namespace ModernPC12
             portCard.Controls.Add(portCombo);
             RefreshPorts();
 
-            ModernButton refresh = SecondaryButton("ATUALIZAR", 280, 101, 120);
+            ModernButton refresh = SecondaryButton(WithGlyph("⟳", "ATUALIZAR"), 280, 101, 140);
             refresh.Click += delegate { RefreshPorts(); };
             portCard.Controls.Add(refresh);
 
-            ModernButton deviceManager = SecondaryButton("GERENCIADOR DE DISPOSITIVOS", 416, 101, 250);
+            ModernButton deviceManager = SecondaryButton(WithGlyph("↗", "GERENCIADOR DE DISPOSITIVOS"), 436, 101, 230);
             deviceManager.Click += delegate { OpenDeviceManager(); };
             portCard.Controls.Add(deviceManager);
 
@@ -354,13 +383,15 @@ namespace ModernPC12
             detail.Location = new Point(36, 50);
             workspace.Controls.Add(detail);
 
-            CardPanel card = CreateCard(34, 96, 732, 302);
+            CardPanel card = CreateCard(34, 96, 732, 442);
             workspace.Controls.Add(card);
 
-            AddToolRow(card, 24, 24, "Abrir como administrador", "Use se o Windows estiver bloqueando gravação ou acesso à porta serial.", "EXECUTAR", delegate { LaunchPc12(true); });
-            AddToolRow(card, 24, 94, "Resetar último arquivo", "Remove somente os arquivos lastfile.cpu e lastfile.dir para evitar o erro de abertura automática.", "RESETAR", delegate { ResetLastFile(); });
-            AddToolRow(card, 24, 164, "Abrir pasta do PC12", "Acesse diretamente os arquivos do pacote portátil.", "ABRIR PASTA", delegate { OpenFolder(); });
-            AddToolRow(card, 24, 234, "Modo clássico", "Inicia o executável original diretamente, sem passar por esta central.", "INICIAR", delegate { LaunchPc12(false); });
+            AddToolRow(card, 24, 24, "Abrir como administrador", "Use se o Windows estiver bloqueando gravação ou acesso à porta serial.", WithGlyph("▲", "EXECUTAR"), delegate { LaunchPc12(true); });
+            AddToolRow(card, 24, 94, "Resetar último arquivo", "Remove somente os arquivos lastfile.cpu e lastfile.dir para evitar o erro de abertura automática.", WithGlyph("×", "RESETAR"), delegate { ResetLastFile(); });
+            AddToolRow(card, 24, 164, "Abrir pasta do PC12", "Acesse diretamente os arquivos do pacote portátil.", WithGlyph("↗", "ABRIR PASTA"), delegate { OpenFolder(); });
+            AddToolRow(card, 24, 234, "Abrir pasta do último projeto", "Facilita retomar o trabalho recente quando o caminho salvo ainda está disponível.", WithGlyph("↗", "ÚLTIMO PROJETO"), delegate { OpenRecentProjectFolder(); });
+            AddToolRow(card, 24, 304, "Copiar diagnóstico", "Gera um resumo rápido do ambiente, portas COM e arquivos de suporte para compartilhar em suporte técnico.", WithGlyph("≡", "COPIAR"), delegate { CopyDiagnostics(); });
+            AddToolRow(card, 24, 374, "Modo clássico", "Inicia o executável original diretamente, sem passar por esta central.", WithGlyph("▶", "INICIAR"), delegate { LaunchPc12(false); });
         }
 
         private void ShowHelp()
@@ -384,11 +415,11 @@ namespace ModernPC12
             body.MaximumSize = new Size(680, 0);
             info.Controls.Add(body);
 
-            ModernButton localHelp = PrimaryButton("ABRIR AJUDA DO PC12", 34, 342, 190);
+            ModernButton localHelp = PrimaryButton(WithGlyph("?", "ABRIR AJUDA DO PC12"), 34, 342, 210);
             localHelp.Click += delegate { OpenHelpFile(); };
             workspace.Controls.Add(localHelp);
 
-            ModernButton folder = SecondaryButton("ABRIR PASTA", 240, 342, 150);
+            ModernButton folder = SecondaryButton(WithGlyph("↗", "ABRIR PASTA"), 260, 342, 150);
             folder.Click += delegate { OpenFolder(); };
             workspace.Controls.Add(folder);
         }
@@ -413,10 +444,10 @@ namespace ModernPC12
 
             Label d = NewLabel(description, 8.3f, FontStyle.Regular, TextSecondary);
             d.Location = new Point(left, top + 24);
-            d.MaximumSize = new Size(490, 0);
+            d.MaximumSize = new Size(470, 0);
             parent.Controls.Add(d);
 
-            ModernButton b = SecondaryButton(buttonText, 560, top + 6, 132);
+            ModernButton b = SecondaryButton(buttonText, 542, top + 6, 150);
             b.Click += action;
             parent.Controls.Add(b);
         }
@@ -453,7 +484,7 @@ namespace ModernPC12
             p.Location = new Point(left, top);
             p.Size = new Size(width, height);
             p.BackColor = Color.White;
-            p.BorderColor = Color.FromArgb(224, 231, 238);
+            p.BorderColor = Border;
             return p;
         }
 
@@ -468,37 +499,39 @@ namespace ModernPC12
             return l;
         }
 
-        private ModernButton PrimaryButton(string text, int left, int top, int width)
+        private string WithGlyph(string glyph, string text)
+        {
+            return glyph + "  " + text;
+        }
+
+        private ModernButton CreateButton(string text, int left, int top, int width, int height, float fontSize, Color normalColor, Color hoverColor, Color foreColor)
         {
             ModernButton b = new ModernButton();
             b.Text = text;
             b.Location = new Point(left, top);
-            b.Size = new Size(width, 38);
-            b.Font = new Font("Segoe UI Semibold", 8.6f, FontStyle.Bold);
-            b.NormalColor = Accent;
-            b.HoverColor = AccentHover;
-            b.ForeColor = Color.White;
+            b.Size = new Size(width, height);
+            b.Font = new Font("Segoe UI Semibold", fontSize, FontStyle.Bold);
+            b.NormalColor = normalColor;
+            b.HoverColor = hoverColor;
+            b.ForeColor = foreColor;
             return b;
+        }
+
+        private ModernButton PrimaryButton(string text, int left, int top, int width)
+        {
+            return CreateButton(text, left, top, width, 38, 8.6f, Accent, AccentHover, Color.White);
         }
 
         private ModernButton SecondaryButton(string text, int left, int top, int width)
         {
-            ModernButton b = new ModernButton();
-            b.Text = text;
-            b.Location = new Point(left, top);
-            b.Size = new Size(width, 38);
-            b.Font = new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold);
-            b.NormalColor = Color.FromArgb(235, 240, 245);
-            b.HoverColor = Color.FromArgb(220, 229, 238);
-            b.ForeColor = Navy;
-            return b;
+            return CreateButton(text, left, top, width, 38, 8.4f, SurfaceMuted, SurfaceMutedHover, Navy);
         }
 
         private void LaunchPc12(bool admin)
         {
             if (!File.Exists(pc12Path))
             {
-                MessageBox.Show("O arquivo pc12.exe não foi encontrado nesta pasta.", "PC12 Modern", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("O arquivo pc12.exe não foi encontrado nesta pasta.", AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 UpdateGlobalStatus();
                 return;
             }
@@ -514,7 +547,7 @@ namespace ModernPC12
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Não foi possível iniciar o PC12.\r\n\r\n" + ex.Message, "PC12 Modern", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Não foi possível iniciar o PC12.\r\n\r\n" + ex.Message, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -525,15 +558,13 @@ namespace ModernPC12
 
             try
             {
-                string cpu = Path.Combine(baseDir, "lastfile.cpu");
-                string dir = Path.Combine(baseDir, "lastfile.dir");
-                if (File.Exists(cpu)) File.Delete(cpu);
-                if (File.Exists(dir)) File.Delete(dir);
-                MessageBox.Show("Referência ao último arquivo removida com sucesso.", "PC12 Modern", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (File.Exists(lastFileCpuPath)) File.Delete(lastFileCpuPath);
+                if (File.Exists(lastFileDirPath)) File.Delete(lastFileDirPath);
+                MessageBox.Show("Referência ao último arquivo removida com sucesso.", AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Não foi possível resetar os arquivos.\r\n\r\n" + ex.Message, "PC12 Modern", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Não foi possível resetar os arquivos.\r\n\r\n" + ex.Message, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -545,31 +576,27 @@ namespace ModernPC12
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "PC12 Modern", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void OpenHelpFile()
         {
-            string[] candidates = new string[] { "PC12HELP.HLP", "Tp022.hlp", "HELPDLG.HLP" };
-            int i;
-            for (i = 0; i < candidates.Length; i++)
+            string file = GetHelpFilePath();
+            if (file == null)
             {
-                string file = Path.Combine(baseDir, candidates[i]);
-                if (File.Exists(file))
-                {
-                    try
-                    {
-                        Process.Start(file);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("O Windows não conseguiu abrir o arquivo de ajuda antigo.\r\n\r\n" + ex.Message, "PC12 Modern", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                    return;
-                }
+                MessageBox.Show("Arquivo de ajuda não encontrado.", AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
             }
-            MessageBox.Show("Arquivo de ajuda não encontrado.", "PC12 Modern", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            try
+            {
+                Process.Start(file);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("O Windows não conseguiu abrir o arquivo de ajuda antigo.\r\n\r\n" + ex.Message, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void OpenDeviceManager()
@@ -580,7 +607,114 @@ namespace ModernPC12
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "PC12 Modern", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private string GetHelpFilePath()
+        {
+            int i;
+            for (i = 0; i < HelpCandidates.Length; i++)
+            {
+                string file = Path.Combine(baseDir, HelpCandidates[i]);
+                if (File.Exists(file)) return file;
+            }
+            return null;
+        }
+
+        private string ReadFirstUsefulLine(string path)
+        {
+            if (!File.Exists(path)) return null;
+
+            string[] lines = File.ReadAllLines(path);
+            int i;
+            for (i = 0; i < lines.Length; i++)
+            {
+                string candidate = lines[i].Trim().Trim('"');
+                if (candidate.Length > 0 && candidate != "@") return candidate;
+            }
+            return null;
+        }
+
+        private string GetRecentProjectPath()
+        {
+            string cpuValue = ReadFirstUsefulLine(lastFileCpuPath);
+            if (!string.IsNullOrEmpty(cpuValue)) return cpuValue;
+
+            string dirValue = ReadFirstUsefulLine(lastFileDirPath);
+            if (!string.IsNullOrEmpty(dirValue)) return dirValue;
+
+            return null;
+        }
+
+        private string GetRecentProjectFolder()
+        {
+            string recentProject = GetRecentProjectPath();
+            if (string.IsNullOrEmpty(recentProject)) return null;
+            if (Directory.Exists(recentProject)) return recentProject;
+
+            string folder = Path.GetDirectoryName(recentProject);
+            if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder)) return folder;
+            return null;
+        }
+
+        private bool HasRecentProjectFolder()
+        {
+            return GetRecentProjectFolder() != null;
+        }
+
+        private string GetRecentProjectSummary()
+        {
+            string recentProject = GetRecentProjectPath();
+            if (string.IsNullOrEmpty(recentProject)) return "Nenhum projeto recente salvo nos arquivos lastfile.*";
+
+            string folder = GetRecentProjectFolder();
+            if (folder == null) return recentProject + " (caminho salvo, mas não encontrado neste computador)";
+            return recentProject;
+        }
+
+        private void OpenRecentProjectFolder()
+        {
+            string folder = GetRecentProjectFolder();
+            if (folder == null)
+            {
+                MessageBox.Show("Nenhuma pasta de projeto recente está disponível no momento.", AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                Process.Start("explorer.exe", "\"" + folder + "\"");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Não foi possível abrir a pasta do último projeto.\r\n\r\n" + ex.Message, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private string BuildDiagnosticsReport()
+        {
+            StringBuilder report = new StringBuilder();
+            report.AppendLine(AppTitle);
+            report.AppendLine("Pasta: " + baseDir);
+            report.AppendLine("pc12.exe: " + (File.Exists(pc12Path) ? "encontrado" : "ausente"));
+            report.AppendLine("Ajuda local: " + (GetHelpFilePath() != null ? "disponível" : "ausente"));
+            report.AppendLine("Último projeto: " + GetRecentProjectSummary());
+            report.AppendLine("Sistema: " + Environment.OSVersion.VersionString);
+            report.AppendLine("Portas COM: " + GetPortListSummary());
+            return report.ToString();
+        }
+
+        private void CopyDiagnostics()
+        {
+            try
+            {
+                Clipboard.SetText(BuildDiagnosticsReport());
+                MessageBox.Show("Diagnóstico copiado para a área de transferência.", AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Não foi possível copiar o diagnóstico.\r\n\r\n" + ex.Message, AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -604,6 +738,14 @@ namespace ModernPC12
             if (ports.Length == 0) return "Nenhuma porta COM";
             if (ports.Length == 1) return "1 porta COM detectada";
             return ports.Length.ToString() + " portas COM detectadas";
+        }
+
+        private string GetPortListSummary()
+        {
+            string[] ports = SerialPort.GetPortNames();
+            Array.Sort(ports);
+            if (ports.Length == 0) return "nenhuma";
+            return string.Join(", ", ports);
         }
 
         private void UpdateGlobalStatus()
