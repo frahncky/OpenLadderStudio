@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.3",
-  "title": "TP02 PG - campanha segura de caracterizacao do HELLO",
+  "packageVersion": "2026.09.04.4",
+  "title": "TP02 PG - campanha segura com deteccao experimental de RUN/STOP",
   "sweeps": 2,
   "passiveCaptureMs": 5000,
   "stopOnUnknown": true,
@@ -69,7 +69,7 @@
   "steps": [
     {
       "id": "hello-pg",
-      "name": "Handshake PG PC12",
+      "name": "Handshake PG PC12 + estado operacional",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": true,
@@ -79,15 +79,15 @@
       "passiveAfterMs": 0,
       "expected": [
         {
-          "name": "HELLO-C0",
+          "name": "HELLO-RUN",
           "hex": "C0 01 09 35"
         },
         {
-          "name": "HELLO-80",
+          "name": "HELLO-STOP",
           "hex": "80 01 09 75"
         },
         {
-          "name": "HELLO-0D",
+          "name": "HELLO-0D-NAO-CLASSIFICADO",
           "hex": "0D 01 09 E8"
         }
       ]
@@ -151,7 +151,10 @@
       "A campanha transmite somente CON-ICB<CR>.",
       "Sao executados 12 ciclos de caracterizacao apos a primeira resposta valida.",
       "DTR/RTS sao rearmados entre ciclos sem transmitir dados durante o rearme.",
-      "HELLO-C0, HELLO-80 e HELLO-0D sao respostas fisicamente observadas e sao contadas separadamente.",
+      "C0 01 09 35 foi correlacionado experimentalmente com PLC em RUN: HELLO-RUN.",
+      "80 01 09 75 foi correlacionado experimentalmente com PLC em STOP: HELLO-STOP.",
+      "A diferenca RUN/STOP observada esta no bit 0x40 do primeiro byte; o checksum acompanha a alteracao.",
+      "0D 01 09 E8 permanece fisicamente observado, mas nao classificado.",
       "Mudancas entre variantes conhecidas sao registradas; qualquer quarto quadro ou byte espontaneo interrompe a campanha e e preservado no relatorio.",
       "Etapas CANDIDATE nunca sao transmitidas.",
       "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
