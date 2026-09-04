@@ -3,7 +3,7 @@ $path = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
 $text = [System.IO.File]::ReadAllText($path)
 
 $fieldNeedle = '        private TP02BridgeForm bridgeForm;'
-$fieldReplacement = "        private TP02BridgeForm bridgeForm;`r`n        private TP02ControlV31Form tp02ControlForm;"
+$fieldReplacement = "        private TP02BridgeForm bridgeForm;`r`n        private TP02PgLinkV32Form tp02ControlForm;"
 if (-not $text.Contains($fieldNeedle)) { throw 'Campo bridgeForm nao encontrado no shell gerado.' }
 $text = $text.Replace($fieldNeedle, $fieldReplacement)
 
@@ -22,9 +22,9 @@ if (-not $section.Contains($oldCreate)) { throw 'Criacao do TP02BridgeForm nao e
 if (-not $section.Contains($oldShowPrefix)) { throw 'ShowDocument do TP02BridgeForm nao encontrado em ShowCommunication.' }
 if (-not $section.Contains($oldStatus)) { throw 'Status do driver TP02 nao encontrado em ShowCommunication.' }
 
-$section = $section.Replace($oldCreate, 'if (tp02ControlForm == null || tp02ControlForm.IsDisposed) tp02ControlForm = new TP02ControlV31Form();')
+$section = $section.Replace($oldCreate, 'if (tp02ControlForm == null || tp02ControlForm.IsDisposed) tp02ControlForm = new TP02PgLinkV32Form();')
 $section = $section.Replace($oldShowPrefix, 'ShowDocument(tp02ControlForm,')
-$section = $section.Replace($oldStatus, 'statusText.Text = "TP02: auto-deteccao e diagnostico MMI";')
+$section = $section.Replace($oldStatus, 'statusText.Text = "TP02: Link PG compativel com PC12";')
 $text = $text.Substring(0, $start) + $section + $text.Substring($end)
 
 [System.IO.File]::WriteAllText($path, $text, [System.Text.Encoding]::UTF8)
