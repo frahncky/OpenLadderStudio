@@ -1,5 +1,5 @@
 #define MyAppName "OpenLadder Studio"
-#define MyAppVersion "0.13"
+#define MyAppVersion "0.14"
 #define MyAppPublisher "Francisco S. Viana"
 #define MyAppExeName "OpenLadderStudio.exe"
 
