@@ -15,11 +15,12 @@ PrivilegesRequired=lowest
 MinVersion=6.1sp1
 OutputDir=output
 OutputBaseFilename=OpenLadder-Studio-Setup
+SetupIconFile=..\PC12_v2.1_Windows7_v3_portatil\OpenLadderStudio.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 SetupLogging=yes
-UninstallDisplayIcon={app}\OpenLadderStudio.exe
+UninstallDisplayIcon={app}\OpenLadderStudio.ico
 UninstallDisplayName=OpenLadder Studio
 CloseApplications=yes
 RestartApplications=yes
@@ -37,6 +38,7 @@ Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderUpdater.exe"; DestDir: "{ap
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderDeviceManager.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderModbus.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderMemoryMap.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderStudio.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\version.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Dirs]
@@ -46,12 +48,12 @@ Name: "{userdocs}\OpenLadder Studio\Calibration"
 Name: "{userdocs}\OpenLadder Studio\Backups"
 
 [Icons]
-Name: "{group}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"
-Name: "{group}\Gerenciar controladores"; Filename: "{app}\OpenLadderDeviceManager.exe"; WorkingDir: "{app}"
-Name: "{group}\Monitor Modbus"; Filename: "{app}\OpenLadderModbus.exe"; WorkingDir: "{app}"
-Name: "{group}\Mapa de memória"; Filename: "{app}\OpenLadderMemoryMap.exe"; WorkingDir: "{app}"
-Name: "{group}\Verificar atualizações"; Filename: "{app}\OpenLadderUpdater.exe"; WorkingDir: "{app}"
-Name: "{autodesktop}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
+Name: "{group}\Gerenciar controladores"; Filename: "{app}\OpenLadderDeviceManager.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
+Name: "{group}\Monitor Modbus"; Filename: "{app}\OpenLadderModbus.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
+Name: "{group}\Mapa de memória"; Filename: "{app}\OpenLadderMemoryMap.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
+Name: "{group}\Verificar atualizações"; Filename: "{app}\OpenLadderUpdater.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
+Name: "{autodesktop}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\OpenLadderStudio.exe"; Description: "Abrir OpenLadder Studio"; Flags: nowait postinstall skipifsilent
