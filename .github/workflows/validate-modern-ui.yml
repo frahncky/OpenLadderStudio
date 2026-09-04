@@ -26,6 +26,7 @@ jobs:
           if not exist OpenLadderEditor.exe exit /b 1
           if not exist OpenLadderDeviceManager.exe exit /b 1
           if not exist OpenLadderModbus.exe exit /b 1
+          if not exist OpenLadderMemoryMap.exe exit /b 1
           if not exist OpenLadderUpdater.exe exit /b 1
 
       - name: Instalar Inno Setup 6 se necessário
@@ -56,6 +57,7 @@ jobs:
             PC12_v2.1_Windows7_v3_portatil/OpenLadderEditor.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderDeviceManager.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderModbus.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderMemoryMap.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderUpdater.exe
             PC12_v2.1_Windows7_v3_portatil/version.txt
 
@@ -79,7 +81,7 @@ jobs:
           $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
           $sha = 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
           $title = "OpenLadder Studio v$version"
-          $notes = "Versão oficial do OpenLadder Studio com arquitetura multi-PLC, seleção de controladores, monitor Modbus RTU/TCP e modelo Ladder universal."
+          $notes = "Versão oficial com arquitetura multi-PLC, configurações de conexão persistentes por controlador, monitor Modbus RTU/TCP e mapa de memória configurável por perfil."
 
           cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
           if ($LASTEXITCODE -eq 0) {
