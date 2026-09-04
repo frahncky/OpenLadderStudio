@@ -8,6 +8,7 @@ A nova camada **PC12 Modern** adiciona uma central visual mais atual para Window
 
 - painel inicial com status do pacote;
 - faixas visuais de compatibilidade, dependências e fallback logo na abertura;
+- painel principal em destaque com ações rápidas para abrir o PC12 e acessar a conexão serial;
 - abertura do PC12 em modo normal ou como administrador;
 - detecção das portas COM disponíveis;
 - cópia rápida da porta COM selecionada para configurar a mesma porta dentro do PC12;

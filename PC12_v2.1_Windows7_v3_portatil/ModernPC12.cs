@@ -273,20 +273,39 @@ namespace ModernPC12
         {
             ClearWorkspace("Visão geral", navHome);
 
-            Label welcome = NewLabel("PC12 com uma experiência mais organizada", 20.0f, FontStyle.Bold, TextPrimary);
-            welcome.Location = new Point(34, 14);
-            workspace.Controls.Add(welcome);
+            HeroPanel hero = CreateHeroPanel(34, 14, 732, 188);
+            workspace.Controls.Add(hero);
 
-            Label intro = NewLabel("A interface moderna centraliza inicialização, diagnóstico, portas COM e ferramentas sem alterar o executável original do PC12.", 9.5f, FontStyle.Regular, TextSecondary);
-            intro.Location = new Point(36, 50);
-            intro.MaximumSize = new Size(720, 0);
-            workspace.Controls.Add(intro);
+            Label welcome = NewLabel("PC12 com uma experiência mais moderna", 22.0f, FontStyle.Bold, Color.White);
+            welcome.Location = new Point(28, 24);
+            hero.Controls.Add(welcome);
 
-            AddSummaryBadge(workspace, 36, 86, "✓ Compatível com Windows 7", Color.FromArgb(220, 242, 235), Success);
-            AddSummaryBadge(workspace, 232, 86, "◆ Sem dependências externas", Color.FromArgb(233, 240, 249), Accent);
-            AddSummaryBadge(workspace, 474, 86, "↗ Fallback para PC12 clássico", Color.FromArgb(250, 235, 215), Warning);
+            Label intro = NewLabel("Centralize inicialização, suporte e diagnóstico do TP02 sem alterar o executável legado do PC12.", 9.6f, FontStyle.Regular, Color.FromArgb(220, 232, 246));
+            intro.Location = new Point(30, 62);
+            intro.MaximumSize = new Size(470, 0);
+            hero.Controls.Add(intro);
 
-            CardPanel launchCard = CreateCard(34, 124, 356, 190);
+            AddSummaryBadge(hero, 30, 104, "✓ Compatível com Windows 7", Color.FromArgb(220, 242, 235), Success);
+            AddSummaryBadge(hero, 226, 104, "◆ Sem dependências externas", Color.FromArgb(233, 240, 249), Accent);
+            AddSummaryBadge(hero, 468, 104, "↗ Fallback para PC12 clássico", Color.FromArgb(250, 235, 215), Warning);
+
+            ModernButton launchHero = PrimaryButton(WithGlyph("▶", "ABRIR PC12"), 30, 138, 156);
+            launchHero.Click += delegate { LaunchPc12(false); };
+            hero.Controls.Add(launchHero);
+
+            ModernButton adminHero = SecondaryButton(WithGlyph("▲", "COMO ADMIN"), 198, 138, 150);
+            adminHero.Click += delegate { LaunchPc12(true); };
+            hero.Controls.Add(adminHero);
+
+            ModernButton connectionHero = SecondaryButton(WithGlyph("⇄", "VER CONEXÃO"), 360, 138, 158);
+            connectionHero.Click += delegate { ShowConnection(); };
+            hero.Controls.Add(connectionHero);
+
+            Label quickTitle = NewLabel("Acesso rápido", 10.0f, FontStyle.Bold, TextSecondary);
+            quickTitle.Location = new Point(36, 220);
+            workspace.Controls.Add(quickTitle);
+
+            CardPanel launchCard = CreateCard(34, 248, 356, 190);
             launchCard.AccentColor = Accent;
             workspace.Controls.Add(launchCard);
             AddCardTitle(launchCard, "Programar PLC", "Abra o PC12 Design Center 2.1 mantendo toda a compatibilidade com os projetos existentes.");
@@ -298,7 +317,7 @@ namespace ModernPC12
             launchAdmin.Click += delegate { LaunchPc12(true); };
             launchCard.Controls.Add(launchAdmin);
 
-            CardPanel connectionCard = CreateCard(410, 124, 356, 190);
+            CardPanel connectionCard = CreateCard(410, 248, 356, 190);
             connectionCard.AccentColor = Success;
             workspace.Controls.Add(connectionCard);
             AddCardTitle(connectionCard, "Conexão serial", "Veja rapidamente as portas COM disponíveis e acesse as verificações de comunicação com o TP02.");
@@ -306,7 +325,11 @@ namespace ModernPC12
             connection.Click += delegate { ShowConnection(); };
             connectionCard.Controls.Add(connection);
 
-            CardPanel healthCard = CreateCard(34, 334, 732, 214);
+            Label diagnosticsTitle = NewLabel("Estado do ambiente", 10.0f, FontStyle.Bold, TextSecondary);
+            diagnosticsTitle.Location = new Point(36, 456);
+            workspace.Controls.Add(diagnosticsTitle);
+
+            CardPanel healthCard = CreateCard(34, 484, 732, 214);
             healthCard.AccentColor = Warning;
             workspace.Controls.Add(healthCard);
             AddCardTitle(healthCard, "Diagnóstico rápido", "Situação do pacote portátil e recursos necessários para iniciar o software.");
@@ -337,7 +360,7 @@ namespace ModernPC12
             healthCard.Controls.Add(copyDiagnostics);
 
             Label note = NewLabel("Compatibilidade preservada: o editor ladder e o protocolo de comunicação continuam sendo executados pelo PC12 original.", 8.6f, FontStyle.Regular, TextSecondary);
-            note.Location = new Point(36, 574);
+            note.Location = new Point(36, 724);
             note.MaximumSize = new Size(720, 0);
             workspace.Controls.Add(note);
         }
@@ -540,6 +563,16 @@ namespace ModernPC12
             p.BackColor = Color.White;
             p.BorderColor = Border;
             return p;
+        }
+
+        private HeroPanel CreateHeroPanel(int left, int top, int width, int height)
+        {
+            HeroPanel hero = new HeroPanel();
+            hero.Location = new Point(left, top);
+            hero.Size = new Size(width, height);
+            hero.StartColor = Color.FromArgb(22, 49, 82);
+            hero.EndColor = Color.FromArgb(0, 122, 204);
+            return hero;
         }
 
         private Label NewLabel(string text, float size, FontStyle style, Color color)
@@ -1029,6 +1062,34 @@ namespace ModernPC12
             }
 
             base.OnPaint(e);
+        }
+    }
+
+    internal sealed class HeroPanel : Panel
+    {
+        public Color StartColor { get; set; }
+        public Color EndColor { get; set; }
+
+        public HeroPanel()
+        {
+            DoubleBuffered = true;
+            StartColor = Color.FromArgb(22, 49, 82);
+            EndColor = Color.FromArgb(0, 122, 204);
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            using (LinearGradientBrush background = new LinearGradientBrush(ClientRectangle, StartColor, EndColor, LinearGradientMode.Horizontal))
+            {
+                e.Graphics.FillRectangle(background, ClientRectangle);
+            }
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using (SolidBrush glow = new SolidBrush(Color.FromArgb(24, 255, 255, 255)))
+            {
+                e.Graphics.FillEllipse(glow, Width - 210, -40, 190, 190);
+                e.Graphics.FillEllipse(glow, Width - 150, 70, 110, 110);
+            }
         }
     }
 }
