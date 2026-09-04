@@ -2,6 +2,18 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.29] - 2026-09-04
+
+### Comunicação WEG TP02
+- nova varredura automática de parâmetros na tela de Comunicação. O botão VARRER
+  PARÂMETROS percorre 144 combinações de baud rate, paridade, bits de dados, stop bits
+  e prefixo de quadro, e para na primeira que obtiver resposta do PLC;
+- ao encontrar, os parâmetros são aplicados aos campos da tela, prontos para uso;
+- a varredura roda em thread própria, com botão de parada e progresso no registro, de
+  modo que a janela continua respondendo durante os testes;
+- silêncio em todas as combinações é informação útil e passa a ser dito de forma
+  explícita: indica elo físico ou estação divergente, não parâmetro serial.
+
 ## [0.28] - 2026-09-04
 
 ### Comunicação WEG TP02

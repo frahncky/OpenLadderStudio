@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace ModernPC12
@@ -39,6 +40,9 @@ namespace ModernPC12
         private NumericUpDown responseTimeBox;
         private CheckBox doubleColonCheck;
         private CheckBox dtrCheck;
+        private Button scanButton;
+        private Thread scanThread;
+        private volatile bool scanCancel;
         private CheckBox rtsCheck;
         private TextBox mcrAddressBox;
         private TextBox mrvAddressBox;
@@ -57,6 +61,7 @@ namespace ModernPC12
             AutoScaleMode = AutoScaleMode.Dpi;
             BuildUi();
             RefreshPorts();
+            FormClosing += delegate { scanCancel = true; };
         }
 
         private void BuildUi()
@@ -286,6 +291,10 @@ namespace ModernPC12
             Label warning = NewLabel("Somente comandos de leitura estão habilitados nesta etapa: PSR, MCR e MRV. RBP será liberado após validar a codificação do programa Boolean.", 8.7f, FontStyle.Regular, TextSecondary, 18, 92);
             actions.Controls.Add(warning);
 
+            scanButton = ActionButton("VARRER PARÂMETROS", 150, 116, 190);
+            scanButton.Click += delegate { ToggleScan(); };
+            actions.Controls.Add(scanButton);
+
             Button clear = ActionButton("LIMPAR LOG", 18, 116, 120);
             clear.Click += delegate { logBox.Clear(); };
             actions.Controls.Add(clear);
@@ -501,6 +510,12 @@ namespace ModernPC12
 
         private void ExecuteRead(string command, string payload)
         {
+            if (scanThread != null && scanThread.IsAlive)
+            {
+                MessageBox.Show("Aguarde a varredura terminar ou pare a varredura antes de enviar um comando.",
+                    "TP02 Bridge Lab", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             if (portCombo.SelectedItem == null)
             {
                 MessageBox.Show("Nenhuma porta COM selecionada.", "TP02 Bridge Lab", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -672,6 +687,199 @@ namespace ModernPC12
         private void Log(string kind, string message)
         {
             logBox.AppendText("[" + DateTime.Now.ToString("HH:mm:ss") + "] " + kind + "  " + message + Environment.NewLine);
+        }
+
+        private delegate void LogHandler(string kind, string message);
+        private delegate void ApplyHandler(int baud, Parity parity, int dataBits, StopBits stopBits, string prefix);
+
+        /// <summary>
+        /// Percorre combinacoes de baud, paridade, bits, stop bits e prefixo ate que o
+        /// TP02 responda alguma coisa. Roda em thread propria: sao mais de cem tentativas
+        /// e cada uma abre e fecha a porta, o que congelaria a janela se fosse na UI.
+        /// </summary>
+        private void ToggleScan()
+        {
+            if (scanThread != null && scanThread.IsAlive)
+            {
+                scanCancel = true;
+                Log("VARRER", "Cancelamento solicitado.");
+                return;
+            }
+
+            if (portCombo.SelectedItem == null)
+            {
+                MessageBox.Show("Nenhuma porta COM selecionada.", "TP02 Bridge Lab", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string portName = portCombo.SelectedItem.ToString();
+            int station = (int)stationBox.Value;
+            const string responseCodes = "0123456789ABCDEF";
+            char responseCode = responseCodes[(int)responseTimeBox.Value];
+            bool dtr = dtrCheck.Checked;
+            bool rts = rtsCheck.Checked;
+
+            scanCancel = false;
+            scanButton.Text = "PARAR VARREDURA";
+            Log("VARRER", "Iniciando em " + portName + ", estação "
+                + station.ToString("00", CultureInfo.InvariantCulture)
+                + ", DTR=" + (dtr ? "on" : "off") + " RTS=" + (rts ? "on" : "off") + ".");
+            Log("VARRER", "Se o PLC estiver em outra estação, ajuste o campo Estação antes de varrer.");
+
+            scanThread = new Thread(delegate() { ScanWorker(portName, station, responseCode, dtr, rts); });
+            scanThread.IsBackground = true;
+            scanThread.Start();
+        }
+
+        private void ScanWorker(string portName, int station, char responseCode, bool dtr, bool rts)
+        {
+            int[] bauds = new int[] { 19200, 9600, 38400, 4800, 2400, 1200 };
+            Parity[] parities = new Parity[] { Parity.Even, Parity.None, Parity.Odd };
+            int[] dataBitsOptions = new int[] { 7, 8 };
+            StopBits[] stopOptions = new StopBits[] { StopBits.Two, StopBits.One };
+            string[] prefixes = new string[] { ":", "::" };
+
+            int total = bauds.Length * parities.Length * dataBitsOptions.Length * stopOptions.Length * prefixes.Length;
+            int tested = 0;
+            bool found = false;
+
+            for (int b = 0; b < bauds.Length && !found && !scanCancel; b++)
+            {
+                for (int pa = 0; pa < parities.Length && !found && !scanCancel; pa++)
+                {
+                    for (int db = 0; db < dataBitsOptions.Length && !found && !scanCancel; db++)
+                    {
+                        for (int sb = 0; sb < stopOptions.Length && !found && !scanCancel; sb++)
+                        {
+                            for (int px = 0; px < prefixes.Length && !found && !scanCancel; px++)
+                            {
+                                tested++;
+                                string frame = BuildScanFrame(prefixes[px], station, responseCode);
+                                string response;
+                                if (TryCombination(portName, bauds[b], parities[pa], dataBitsOptions[db],
+                                        stopOptions[sb], dtr, rts, frame, out response))
+                                {
+                                    found = true;
+                                    LogSafe("ACHOU", "Resposta com " + Describe(bauds[b], parities[pa], dataBitsOptions[db], stopOptions[sb])
+                                        + ", prefixo " + prefixes[px] + ".");
+                                    LogSafe("RX", EscapeFrame(response) + "   " + ToHex(response));
+                                    ApplySafe(bauds[b], parities[pa], dataBitsOptions[db], stopOptions[sb], prefixes[px]);
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!found && !scanCancel)
+                {
+                    LogSafe("VARRER", bauds[b].ToString(CultureInfo.InvariantCulture) + " bps sem resposta ("
+                        + tested.ToString(CultureInfo.InvariantCulture) + " de "
+                        + total.ToString(CultureInfo.InvariantCulture) + " testadas).");
+                }
+            }
+
+            if (scanCancel) LogSafe("VARRER", "Varredura cancelada.");
+            else if (!found)
+            {
+                LogSafe("VARRER", "Nenhuma das " + total.ToString(CultureInfo.InvariantCulture)
+                    + " combinações obteve resposta na estação "
+                    + station.ToString("00", CultureInfo.InvariantCulture) + ".");
+                LogSafe("VARRER", "Silêncio em todas indica elo físico ou estação divergente, não parâmetro serial. "
+                    + "Confirme cabo e conversor, e tente outra estação.");
+            }
+            FinishSafe();
+        }
+
+        private static string Describe(int baud, Parity parity, int dataBits, StopBits stopBits)
+        {
+            string p = parity == Parity.Even ? "E" : parity == Parity.Odd ? "O" : "N";
+            return baud.ToString(CultureInfo.InvariantCulture) + " "
+                + dataBits.ToString(CultureInfo.InvariantCulture) + p
+                + (stopBits == StopBits.Two ? "2" : "1");
+        }
+
+        private static string BuildScanFrame(string prefix, int station, char responseCode)
+        {
+            string core = station.ToString("00", CultureInfo.InvariantCulture) + "?" + responseCode + "PSR";
+            return prefix + core + Checksum(core) + "\r";
+        }
+
+        private static bool TryCombination(string portName, int baud, Parity parity, int dataBits,
+            StopBits stopBits, bool dtr, bool rts, string frame, out string response)
+        {
+            response = string.Empty;
+            SerialPort port = null;
+            try
+            {
+                port = new SerialPort(portName);
+                port.BaudRate = baud;
+                port.DataBits = dataBits;
+                port.Parity = parity;
+                port.StopBits = stopBits;
+                port.Encoding = Encoding.ASCII;
+                port.WriteTimeout = 800;
+                port.DtrEnable = dtr;
+                port.RtsEnable = rts;
+                port.Handshake = Handshake.None;
+                port.Open();
+                port.DiscardInBuffer();
+                port.DiscardOutBuffer();
+                port.Write(frame);
+                bool complete;
+                response = ReadUntilCarriageReturn(port, 400, out complete);
+                return response.Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (port != null)
+                {
+                    try { if (port.IsOpen) port.Close(); }
+                    catch { }
+                    port.Dispose();
+                }
+            }
+        }
+
+        private void LogSafe(string kind, string message)
+        {
+            if (logBox == null || logBox.IsDisposed) return;
+            if (logBox.InvokeRequired)
+            {
+                logBox.BeginInvoke(new LogHandler(LogSafe), new object[] { kind, message });
+                return;
+            }
+            Log(kind, message);
+        }
+
+        private void ApplySafe(int baud, Parity parity, int dataBits, StopBits stopBits, string prefix)
+        {
+            if (logBox == null || logBox.IsDisposed) return;
+            if (logBox.InvokeRequired)
+            {
+                logBox.BeginInvoke(new ApplyHandler(ApplySafe),
+                    new object[] { baud, parity, dataBits, stopBits, prefix });
+                return;
+            }
+            baudCombo.SelectedItem = baud.ToString(CultureInfo.InvariantCulture);
+            parityCombo.SelectedItem = parity.ToString();
+            dataBitsCombo.SelectedItem = dataBits.ToString(CultureInfo.InvariantCulture);
+            stopBitsCombo.SelectedItem = stopBits == StopBits.Two ? "2" : "1";
+            doubleColonCheck.Checked = prefix == "::";
+            Log("VARRER", "Parâmetros aplicados na tela. Use LER STATUS (PSR) para confirmar.");
+        }
+
+        private void FinishSafe()
+        {
+            if (logBox == null || logBox.IsDisposed) return;
+            if (logBox.InvokeRequired)
+            {
+                logBox.BeginInvoke(new MethodInvoker(FinishSafe));
+                return;
+            }
+            scanButton.Text = "VARRER PARÂMETROS";
         }
 
         private static string DescribePort(SerialPort port)
