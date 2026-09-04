@@ -1,220 +1,158 @@
 # OpenLadder Studio
 
-O **OpenLadder Studio** é um ambiente moderno de programação Ladder, monitoramento e ferramentas de engenharia para PLCs.
+O **OpenLadder Studio** é um ambiente moderno de programação Ladder e ferramentas de engenharia para PLCs, com arquitetura preparada para múltiplos fabricantes e protocolos.
 
-O **WEG TP02** é o primeiro controlador com suporte específico do projeto. A arquitetura agora é **multi-fabricante**, com perfis de dispositivos, drivers desacoplados e uma representação Ladder intermediária independente do fabricante. Também foi adicionada comunicação genérica **Modbus RTU** e **Modbus TCP** em modo de leitura.
+O projeto começou pela compatibilidade com o **WEG TP02** e com o **PC12 Design Center 2.1**, mas o núcleo do OpenLadder Studio deixou de ser acoplado a um único fabricante. O TP02 permanece como o primeiro driver específico em desenvolvimento, enquanto a plataforma passa a usar perfis de dispositivo, drivers e um modelo Ladder universal.
 
-O projeto preserva a compatibilidade com o **PC12 Design Center 2.1** e com seus arquivos legados, mas o nome do novo software é **OpenLadder Studio**. O PC12 é tratado apenas como software legado, fonte de compatibilidade e referência para a evolução do driver TP02.
+## Versão atual — 0.12
 
-## Interface principal
+A versão 0.12 introduz o **shell universal multi-PLC** como interface principal do `OpenLadderStudio.exe`.
 
-A interface principal é compilada como `OpenLadderStudio.exe` e reúne no mesmo ambiente:
+Principais recursos:
 
 - Editor Ladder moderno;
-- seleção de controlador e perfil de dispositivo;
-- monitor Modbus RTU/TCP genérico;
-- comunicação e diagnóstico específicos do TP02;
-- TP02 Bridge Lab;
-- leitor da memória de programa por `RBP`;
-- decodificador `RBP -> Boolean/IL`;
-- laboratório de calibração automática de opcodes;
-- conversão IL -> Ladder;
-- verificação de atualizações;
-- acesso às ferramentas de compatibilidade com o PC12 original.
-
-O arquivo `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat` recompila as interfaces e abre prioritariamente o **OpenLadder Studio**.
-
-A interface principal usa tema escuro, barra de menus, barra de ferramentas, área central de edição, painéis laterais e barra de status, seguindo uma organização semelhante a softwares industriais atuais.
+- modelo intermediário Ladder independente do fabricante;
+- seleção de controlador por fabricante, família e modelo;
+- painel de propriedades atualizado conforme o PLC selecionado;
+- ativação e desativação automática de recursos conforme as capacidades do driver;
+- comunicação WEG TP02 em modo seguro de leitura;
+- leitura do programa TP02 por `RBP`;
+- decodificação e calibração de opcodes TP02;
+- reconstrução IL -> Ladder para a pesquisa TP02;
+- monitor **Modbus RTU** genérico;
+- monitor **Modbus TCP** genérico;
+- funções Modbus 01, 02, 03 e 04 em leitura;
+- CRC-16 para Modbus RTU;
+- validação de MBAP e Transaction ID para Modbus TCP;
+- verificação de portabilidade do projeto Ladder para o controlador selecionado;
+- atualizador e instalador próprios.
 
 ## Arquitetura multi-fabricante
 
-A nova camada usa a seguinte separação:
+O fluxo principal passa a ser:
 
 `Editor Ladder -> Modelo Ladder universal -> Driver/Compilador do fabricante -> PLC`
 
-Arquivos principais dessa arquitetura:
+A separação é feita em cinco camadas:
 
-- `PLCPlatform.cs` — interfaces, capacidades, perfis, registro de drivers e modelo Ladder universal;
-- `PLCDeviceManager.cs` — catálogo visual de controladores e escolha do perfil padrão;
-- `ModbusCore.cs` — implementação de Modbus RTU e TCP;
-- `ModbusMonitor.cs` — monitor de coils, entradas e registradores;
-- `PrepareStudioBuild.ps1` — integra o seletor de controlador e o monitor Modbus ao shell principal;
-- `docs/PLC_DRIVER_ARCHITECTURE.md` — documentação técnica detalhada.
+1. **Interface OpenLadder Studio** — editor, projetos, monitoramento e ferramentas;
+2. **Modelo Ladder universal** — representação independente do fabricante;
+3. **Perfil de dispositivo** — fabricante, família, modelo, protocolo, transporte e nível de suporte;
+4. **Driver de PLC** — comunicação e monitoramento específicos;
+5. **Compilador de destino** — futura geração do programa executável de cada família.
 
-O perfil selecionado é salvo em `%APPDATA%\OpenLadder Studio\device.profile`.
+A documentação técnica dessa arquitetura está em `docs/PLC_DRIVER_ARCHITECTURE.md`.
 
-### Situação dos drivers
+## Controladores e drivers
 
-| Perfil | Comunicação | Monitoramento | Programação Ladder | Situação |
-|---|---:|---:|---:|---|
-| WEG TP02-60MR | Sim | Sim | Em desenvolvimento | Implementado em leitura segura |
-| Modbus RTU genérico | Sim | FC 01/02/03/04 | Não | Experimental funcional |
-| Modbus TCP genérico | Sim | FC 01/02/03/04 | Não | Experimental funcional |
-| Schneider Modicon M221 | Perfil cadastrado | Via Modbus quando aplicável | Não | Planejado |
-| Delta DVP | Perfil cadastrado | Via Modbus quando aplicável | Não | Planejado |
-| Siemens S7-1200 | Perfil cadastrado | Não | Não | Planejado |
-| Mitsubishi FX5U | Perfil cadastrado | Não | Não | Planejado |
-| Omron CP1L | Perfil cadastrado | Não | Não | Planejado |
-| Allen-Bradley Micro850 | Perfil cadastrado | Não | Não | Planejado |
+| Fabricante / perfil | Comunicação | Monitoramento | Leitura de programa | Download Ladder | Situação |
+|---|---:|---:|---:|---:|---|
+| WEG TP02-60MR | Sim | Sim | Sim, via RBP | Não | Implementado em leitura segura |
+| Modbus RTU genérico | Sim | Sim | Não | Não | Experimental |
+| Modbus TCP genérico | Sim | Sim | Não | Não | Experimental |
+| Schneider Modicon M221 | Não | Não | Não | Não | Planejado |
+| Delta DVP | Não | Não | Não | Não | Planejado |
+| Siemens S7-1200 | Não | Não | Não | Não | Planejado |
+| Mitsubishi FX5U | Não | Não | Não | Não | Planejado |
+| Omron CP1L | Não | Não | Não | Não | Planejado |
+| Allen-Bradley Micro850 | Não | Não | Não | Não | Planejado |
 
-Perfis marcados como **Planejado** não são apresentados como suporte operacional. Transferência de programa e escrita permanecem desabilitadas enquanto não houver implementação e validação real no hardware.
+Perfis planejados aparecem no catálogo, mas não são apresentados como drivers funcionais. Escrita e transferência de programa só serão habilitadas após implementação e validação real no hardware.
 
-## Monitor Modbus RTU/TCP
+## WEG TP02
 
-O OpenLadder Studio já possui comunicação genérica de leitura para equipamentos que exponham mapa Modbus.
+O TP02 continua sendo o primeiro driver específico do projeto. Atualmente o OpenLadder Studio possui:
 
-Funções implementadas:
+- comunicação serial TP02;
+- leitura de estado e memória em modo seguro;
+- comandos de leitura `PSR`, `MCR` e `MRV`;
+- leitura da memória de programa por `RBP`;
+- análise de dumps `.rbpdump`;
+- laboratório de decodificação RBP -> Boolean/IL;
+- campanha de calibração de opcodes;
+- reconstrução IL -> Ladder;
+- ferramentas de compatibilidade e análise dos arquivos do PC12.
 
-- `01` — Read Coils;
-- `02` — Read Discrete Inputs;
-- `03` — Read Holding Registers;
-- `04` — Read Input Registers.
+Nenhum comando de escrita, RUN, STOP, limpeza de memória ou download de programa é liberado sem validação específica.
 
-No **Modbus RTU** podem ser configurados porta COM, baud rate, data bits, paridade, stop bits, Unit ID, endereço inicial, quantidade e timeout. O cliente calcula e valida CRC-16 Modbus.
+## Modbus RTU/TCP
 
-No **Modbus TCP** podem ser configurados host/IP, porta, Unit ID, endereço inicial, quantidade e timeout. O cliente valida o cabeçalho MBAP, Transaction ID e Protocol ID.
+A camada Modbus genérica foi criada para permitir monitoramento de equipamentos de diferentes fabricantes que exponham um mapa Modbus.
 
-O monitor pode ser aberto pelo menu **PLC** do OpenLadder Studio ou separadamente por:
+Recursos atuais:
 
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_MODBUS.bat`
+- `01 - Read Coils`;
+- `02 - Read Discrete Inputs`;
+- `03 - Read Holding Registers`;
+- `04 - Read Input Registers`;
+- configuração de endereço inicial e quantidade;
+- Unit ID configurável;
+- serial: COM, baud rate, data bits, paridade e stop bits;
+- TCP: host/IP e porta;
+- timeout configurável;
+- visualização decimal, hexadecimal e resposta bruta.
 
-## Gerenciador de controladores
+O uso de Modbus genérico não implica capacidade de compilar ou transferir Ladder para o PLC. Essa função depende do compilador e do protocolo de programação específicos de cada fabricante.
 
-O menu **PLC > Selecionar controlador...** abre o catálogo multi-fabricante. Também pode ser iniciado por:
+## Editor Ladder universal
 
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_CONTROLADORES.bat`
+O editor atual possui contatos normalmente abertos e fechados, bobinas, ramificações, temporizadores, contadores, SET/RESET, bordas, funções e END.
 
-O shell principal passa a mostrar o controlador escolhido no painel de propriedades e na barra de status.
-
-## Editor Ladder
-
-O editor Ladder próprio usa atualmente a nomenclatura real do TP02 e já possui:
-
-- contatos normalmente abertos e fechados;
-- pontos `X0001–X0384`, `Y0001–Y0384`, `C0001–C2048` e `SC001–SC128`;
-- bobina `OUT` para `Y` e `C`;
-- ramificações paralelas;
-- `TMR` e `CNT` com identificadores `V0001–V0256`;
-- presets diretos ou por `D0001–D2048`;
-- `SET` F-23 e `RESET` F-24;
-- detectores de borda F-05/F-06;
-- bloco genérico `FUN`;
-- `END` F-00;
-- múltiplos rungs, desfazer, edição, salvar/abrir e validação estrutural;
-- formato `.pladder` versão 2 com leitura da versão anterior.
-
-A próxima evolução do editor é converter esse modelo específico para o **modelo Ladder universal**, permitindo compiladores diferentes por família de PLC.
-
-## TP02 Bridge Lab
-
-O Bridge mantém as ferramentas específicas de compatibilidade com o WEG TP02 e o PC12.
-
-Um projeto salvo pelo PC12 é formado por um conjunto de arquivos com o mesmo nome-base:
-
-- `.PLC` — programa do usuário;
-- `.sys1` — memória de sistema `WSxxx`;
-- `.sys2` — marcadores especiais `SCxxx`;
-- `.cnt` — posição/final do programa Ladder;
-- `.reg1` — registradores `Vxxxx`;
-- `.reg2` — registradores `Dxxxx`;
-- `.reg3` — registradores `WCxxx`;
-- `.sym` — símbolos/rótulos;
-- `.file` — registradores de texto;
-- `.cmt` — comentários;
-- `.typ` — tipo do módulo básico.
-
-O Bridge permite localizar arquivos auxiliares, gerar SHA-256/hexdump, extrair strings, comparar arquivos byte a byte e salvar relatórios de engenharia reversa.
-
-### Comunicação TP02 em modo seguro
-
-A moldura ASCII do protocolo TP02 oferece atualmente:
-
-- `PSR` — ler estado do PLC;
-- `MCR` — ler entradas, saídas, relés auxiliares e especiais;
-- `MRV` — ler registradores `V`, `D`, `WS`, `WC` e `F`;
-- `RBP` — ler memória de programa.
-
-A configuração inicial é 19200 bps, 7 bits, paridade EVEN, 2 stop bits, estação 01 e tempo de resposta configurável.
-
-## Leitor e decodificador RBP
-
-O `TP02ProgramReader.cs` implementa o comando `RBP` em modo somente leitura, com leitura de passos da memória, validação de checksum, agrupamento em 3 bytes / 6 caracteres hexadecimais e salvamento de dumps `.rbpdump`.
-
-O `TP02MachineDecoder.cs`, `TP02AutoDecoder.cs`, `TP02OpcodeCalibration.cs` e `TP02CalibrationCampaign.cs` formam a camada de pesquisa para reconstrução do programa Ladder do TP02.
-
-A metodologia está documentada em:
-
-- `docs/TP02_OPCODE_RESEARCH.md`;
-- `docs/TP02_CALIBRATION_CAMPAIGN.md`.
+O arquivo `UniversalLadderAdapter.cs` converte a estrutura atual do editor para o modelo universal definido em `PLCPlatform.cs`. A interface possui a função **Verificar portabilidade do Ladder**, que informa a situação do projeto em relação ao controlador selecionado e deixa explícito quando ainda não existe compilador para o destino.
 
 ## Como iniciar
 
-### OpenLadder Studio — recomendado
+### OpenLadder Studio
 
 `PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12.bat`
 
-### Gerenciador de controladores
+O inicializador compila e abre `OpenLadderStudio.exe`.
 
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_CONTROLADORES.bat`
+### Ferramentas separadas
 
-### Monitor Modbus
+- `OpenLadderEditor.exe` — editor Ladder;
+- `OpenLadderDeviceManager.exe` — catálogo e seleção de controladores;
+- `OpenLadderModbus.exe` — monitor Modbus RTU/TCP;
+- `OpenLadderUpdater.exe` — atualizador;
+- `INICIAR_PC12_CLASSICO.bat` — PC12 legado para compatibilidade.
 
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_MODBUS.bat`
+## Arquivos principais
 
-### Editor Ladder separado
-
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_EDITOR_LADDER.bat`
-
-### TP02 Bridge Lab separado
-
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_BRIDGE_TP02.bat`
-
-### Leitor RBP separado
-
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_LEITOR_RBP.bat`
-
-### Decodificador RBP separado
-
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_DECODIFICADOR_RBP.bat`
-
-### Calibração automática separada
-
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_CALIBRACAO_OPCODE.bat`
-
-### PC12 clássico — compatibilidade
-
-`PC12_v2.1_Windows7_v3_portatil/INICIAR_PC12_CLASSICO.bat`
-
-## Build e instalador
-
-`BUILD_INTERFACE_MODERNA.bat` gera:
-
-- `OpenLadderStudio.exe`;
-- `OpenLadderEditor.exe`;
-- `OpenLadderDeviceManager.exe`;
-- `OpenLadderModbus.exe`;
-- `OpenLadderUpdater.exe`.
-
-O instalador inclui atalhos para o OpenLadder Studio, gerenciador de controladores, monitor Modbus e atualizador.
+- `UniversalStudioShell.cs` — shell principal multi-PLC;
+- `UniversalLadderAdapter.cs` — conversão do editor para o modelo Ladder universal;
+- `PLCPlatform.cs` — contratos, perfis, drivers e modelo universal;
+- `PLCDeviceManager.cs` — catálogo e seleção de controladores;
+- `ModbusCore.cs` — protocolo Modbus RTU/TCP em leitura;
+- `ModbusMonitor.cs` — interface de monitoramento Modbus;
+- `LadderEditor.cs` — editor Ladder;
+- `TP02BridgeLab.cs` — comunicação e análise do TP02/PC12;
+- `TP02ProgramReader.cs` — leitura RBP;
+- `TP02MachineDecoder.cs` — análise da linguagem de máquina TP02;
+- `TP02OpcodeCalibration.cs` e `TP02CalibrationCampaign.cs` — pesquisa de opcodes;
+- `TP02AutoDecoder.cs` — decodificação automática experimental;
+- `TP02IlToLadder.cs` — reconstrução IL -> Ladder;
+- `BUILD_INTERFACE_MODERNA.bat` — compilação local;
+- `.github/workflows/validate-modern-ui.yml` — validação automática em Windows.
 
 ## Compatibilidade
 
-As interfaces usam **Windows Forms + .NET Framework**, sem bibliotecas externas, mantendo **Windows 7 SP1 como base mínima** e visando também Windows 8.1, 10 e 11.
+A aplicação usa **Windows Forms + .NET Framework**, sem bibliotecas externas obrigatórias, mantendo **Windows 7 SP1 como base mínima** e visando também Windows 8.1, 10 e 11.
 
 ## Próximas etapas
 
-1. mapeamento de memória configurável por modelo;
-2. monitor online geral baseado em `IPlcDriver`;
-3. migração do editor para o modelo Ladder universal;
-4. compiladores por família de PLC;
-5. drivers específicos para outros fabricantes;
-6. escrita Modbus após validação;
-7. transferência de programa apenas para drivers e compiladores validados em hardware.
+1. persistir configurações de conexão por perfil de dispositivo;
+2. criar mapa de memória Modbus configurável por fabricante/modelo;
+3. desacoplar completamente o monitor TP02 das classes de interface antigas;
+4. adicionar drivers específicos para novos fabricantes;
+5. criar compiladores de destino por família de PLC;
+6. validar geração e transferência de programas em hardware real;
+7. ampliar o modelo Ladder universal para instruções avançadas e blocos de função.
 
 ## Identidade do projeto
 
 **Nome do software:** OpenLadder Studio  
+**Arquitetura:** multi-fabricante / multi-protocolo  
 **Primeiro driver específico:** WEG TP02  
-**Protocolos genéricos atuais:** Modbus RTU e Modbus TCP em leitura  
+**Protocolos genéricos atuais:** Modbus RTU e Modbus TCP (leitura)  
 **Software legado compatível:** PC12 Design Center 2.1  
-**Versão atual:** 0.11
+**Versão atual:** 0.12
