@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.2",
+  "packageVersion": "2026.09.04.3",
   "title": "TP02 PG - campanha segura de caracterizacao do HELLO",
   "sweeps": 2,
   "passiveCaptureMs": 5000,
@@ -85,6 +85,10 @@
         {
           "name": "HELLO-80",
           "hex": "80 01 09 75"
+        },
+        {
+          "name": "HELLO-0D",
+          "hex": "0D 01 09 E8"
         }
       ]
     },
@@ -147,8 +151,8 @@
       "A campanha transmite somente CON-ICB<CR>.",
       "Sao executados 12 ciclos de caracterizacao apos a primeira resposta valida.",
       "DTR/RTS sao rearmados entre ciclos sem transmitir dados durante o rearme.",
-      "HELLO-C0 e HELLO-80 sao contados separadamente; mudancas entre variantes sao registradas.",
-      "Qualquer terceiro quadro ou byte espontaneo interrompe a campanha e e preservado no relatorio.",
+      "HELLO-C0, HELLO-80 e HELLO-0D sao respostas fisicamente observadas e sao contadas separadamente.",
+      "Mudancas entre variantes conhecidas sao registradas; qualquer quarto quadro ou byte espontaneo interrompe a campanha e e preservado no relatorio.",
       "Etapas CANDIDATE nunca sao transmitidas.",
       "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
       "F0 00 0F permanece nao classificado e bloqueado.",
