@@ -3,21 +3,31 @@ $sourcePath = Join-Path (Get-Location) 'UniversalStudioShell.cs'
 $outputPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
 $text = [System.IO.File]::ReadAllText($sourcePath)
 
-$text = $text.Replace('v0.12', 'v0.18')
+# String.Replace devolve o texto intacto quando a agulha nao existe, entao uma
+# mudanca no shell faria recursos da v0.18 sumirem do build em silencio.
+# Toda substituicao passa por aqui e falha alto se a agulha nao for encontrada.
+function Invoke-Replace([string]$haystack, [string]$needle, [string]$replacement, [string]$label) {
+    if (-not $haystack.Contains($needle)) {
+        throw "Ancora nao encontrada em UniversalStudioShell.cs ($label). Ajuste PrepareUniversalStudioV18.ps1."
+    }
+    return $haystack.Replace($needle, $replacement)
+}
+
+$text = Invoke-Replace $text 'v0.12' 'v0.18' 'versao'
 
 $menuNeedle = '            plc.DropDownItems.Add(DropItem("Selecionar controlador...", delegate { ShowDeviceManager(); }));'
 $menuInsert = @'
             plc.DropDownItems.Add(DropItem("Selecionar controlador...", delegate { ShowDeviceManager(); }));
             plc.DropDownItems.Add(DropItem("Mapa de memória...", delegate { ShowMemoryMapManager(); }));
 '@
-$text = $text.Replace($menuNeedle, $menuInsert.TrimEnd())
+$text = Invoke-Replace $text $menuNeedle $menuInsert.TrimEnd() 'menu PLC'
 
-$toolbarNeedle = '            bar.Items.Add(ToolButton("Comunicação", delegate { ShowCommunication(); }));'
+$toolbarNeedle = '            AddToolButton(bar, "Comunicação", StudioIcon.Plug, false, delegate { ShowCommunication(); });'
 $toolbarInsert = @'
-            bar.Items.Add(ToolButton("Comunicação", delegate { ShowCommunication(); }));
-            bar.Items.Add(ToolButton("Mapa", delegate { ShowMemoryMapManager(); }));
+            AddToolButton(bar, "Comunicação", StudioIcon.Plug, false, delegate { ShowCommunication(); });
+            AddToolButton(bar, "Mapa", StudioIcon.Grid, false, delegate { ShowMemoryMapManager(); });
 '@
-$text = $text.Replace($toolbarNeedle, $toolbarInsert.TrimEnd())
+$text = Invoke-Replace $text $toolbarNeedle $toolbarInsert.TrimEnd() 'barra de ferramentas'
 
 $changeNeedle = @'
             Button change = InspectorButton("Trocar controlador", 16, 500, 238);
@@ -33,7 +43,7 @@ $changeInsert = @'
             memoryMap.Click += delegate { ShowMemoryMapManager(); };
             p.Controls.Add(memoryMap);
 '@
-$text = $text.Replace($changeNeedle.Trim(), $changeInsert.Trim())
+$text = Invoke-Replace $text $changeNeedle.Trim() $changeInsert.Trim() 'inspetor'
 
 $methodNeedle = '        private void ShowCommunication()'
 $methodInsert = @'
@@ -48,6 +58,6 @@ $methodInsert = @'
         }
 
 '@
-$text = $text.Replace($methodNeedle, $methodInsert + $methodNeedle)
+$text = Invoke-Replace $text $methodNeedle ($methodInsert + $methodNeedle) 'ShowCommunication'
 
 [System.IO.File]::WriteAllText($outputPath, $text, [System.Text.Encoding]::UTF8)
