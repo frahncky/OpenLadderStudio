@@ -4,9 +4,9 @@ O **OpenLadder Studio** é um ambiente moderno de programação Ladder e ferrame
 
 O projeto começou pela compatibilidade com o **WEG TP02** e com o **PC12 Design Center 2.1**, mas o núcleo do OpenLadder Studio não é mais acoplado a um único fabricante. O TP02 permanece como o primeiro driver específico em desenvolvimento, enquanto a plataforma usa perfis de dispositivo, drivers, configurações por controlador, mapas de memória e um modelo Ladder universal.
 
-## Versão atual — 0.16
+## Versão atual — 0.17
 
-A versão 0.16 adiciona **perfis personalizados de fabricante, família e modelo**, permitindo cadastrar PLCs reais do usuário e reutilizar imediatamente a comunicação Modbus RTU/TCP já implementada.
+A versão 0.17 adiciona **monitoramento online periódico** ao monitor Modbus. O usuário pode iniciar a atualização automática de entradas, saídas e registradores com intervalos configuráveis, sem precisar clicar repetidamente em **LER DISPOSITIVO**.
 
 Principais recursos:
 
@@ -14,16 +14,12 @@ Principais recursos:
 - Editor Ladder moderno;
 - modelo intermediário Ladder independente do fabricante;
 - seleção de controlador por fabricante, família e modelo;
-- **criação, edição e exclusão de controladores personalizados**;
-- **perfis personalizados Modbus RTU e Modbus TCP**;
+- criação, edição e exclusão de controladores personalizados;
+- perfis personalizados Modbus RTU e Modbus TCP;
 - persistência dos perfis personalizados em `%APPDATA%`;
 - configurações de conexão e mapa de memória independentes para cada modelo cadastrado;
-- painel de propriedades atualizado conforme o PLC selecionado;
-- ativação e desativação automática de recursos conforme as capacidades do driver;
 - comunicação WEG TP02 em modo seguro de leitura;
 - leitura do programa TP02 por `RBP`;
-- decodificação e calibração de opcodes TP02;
-- reconstrução IL -> Ladder para a pesquisa TP02;
 - monitor **Modbus RTU** genérico;
 - monitor **Modbus TCP** genérico;
 - funções Modbus 01, 02, 03 e 04 em leitura;
@@ -36,7 +32,11 @@ Principais recursos:
 - divisão automática em blocos de até 2000 bits para FC01/FC02 e 125 registradores para FC03/FC04;
 - consolidação dos blocos em uma única tabela de resultados;
 - resposta bruta organizada por bloco, endereço e quantidade;
-- exibição de endereços com o prefixo definido no mapa;
+- **monitoramento online com intervalos de 250 ms, 500 ms, 1 s, 2 s e 5 s**;
+- **proteção contra leituras concorrentes durante atualização online**;
+- **intervalo de monitoramento salvo separadamente para cada perfil de PLC**;
+- indicação de ciclo e horário da última atualização;
+- parada automática do temporizador ao fechar a janela ou editar o mapa de memória;
 - verificação de portabilidade do projeto Ladder para o controlador selecionado;
 - atualizador e instalador próprios.
 
@@ -74,7 +74,7 @@ A documentação técnica dessa arquitetura está em `docs/PLC_DRIVER_ARCHITECTU
 
 Perfis planejados aparecem no catálogo, mas não são apresentados como drivers funcionais. Escrita e transferência de programa só serão habilitadas após implementação e validação real no hardware.
 
-## Perfis personalizados — v0.16
+## Perfis personalizados
 
 Na tela **Controladores e drivers**, o usuário pode criar um novo perfil informando:
 
@@ -95,7 +95,8 @@ Cada perfil recebe um identificador próprio. Isso faz com que o OpenLadder Stud
 - timeout;
 - mapa de memória;
 - áreas monitoradas;
-- preferências de leitura.
+- preferências de leitura;
+- intervalo do monitoramento online.
 
 Um perfil personalizado pode ser editado ou excluído. Perfis nativos do OpenLadder Studio permanecem somente leitura. Se o perfil personalizado ativo for excluído, o software retorna ao controlador padrão em vez de manter uma referência inválida.
 
@@ -121,7 +122,8 @@ São persistidos, conforme aplicável:
 - timeout;
 - função Modbus preferida;
 - endereço inicial;
-- quantidade de pontos por requisição.
+- quantidade de pontos por requisição;
+- intervalo do monitoramento online.
 
 O monitor Modbus carrega automaticamente os valores do controlador ativo e salva a configuração ao executar uma leitura ou ao clicar em **SALVAR PERFIL**.
 
@@ -161,6 +163,22 @@ Limites por requisição usados pelo monitor:
 - FC01 / FC02: até **2000 bits** por bloco;
 - FC03 / FC04: até **125 registradores** por bloco.
 
+## Monitoramento online — v0.17
+
+O monitor Modbus possui agora os controles **INICIAR ONLINE** e **PARAR ONLINE**. O intervalo pode ser escolhido entre:
+
+- 250 ms;
+- 500 ms;
+- 1 s;
+- 2 s;
+- 5 s.
+
+Ao iniciar o modo online, a leitura é executada imediatamente e depois repetida no intervalo escolhido. A janela informa o número do ciclo e o horário da última tentativa de atualização.
+
+O temporizador é interrompido enquanto uma leitura está em andamento, evitando sobreposição de requisições. Isso também é aplicado às leituras em múltiplos blocos. O intervalo selecionado é salvo no perfil de conexão do PLC, mas o modo online **não é reativado automaticamente ao abrir o programa**, evitando comunicação inesperada com o equipamento.
+
+A versão atual continua somente em leitura para Modbus e para as ferramentas modernas do TP02. Nenhuma escrita, alteração de saída ou comando de RUN/STOP é executado pelo monitor online.
+
 ## WEG TP02
 
 O TP02 continua sendo o primeiro driver específico do projeto. Atualmente o OpenLadder Studio possui:
@@ -190,6 +208,7 @@ Recursos atuais:
 - configuração de endereço inicial e quantidade;
 - seleção rápida por área do mapa de memória;
 - leitura sequencial automática em blocos;
+- monitoramento online periódico;
 - Unit ID configurável;
 - serial: COM, baud rate, data bits, paridade e stop bits;
 - TCP: host/IP e porta;
@@ -217,7 +236,7 @@ O inicializador compila e abre `OpenLadderStudio.exe`.
 
 - `OpenLadderEditor.exe` — editor Ladder;
 - `OpenLadderDeviceManager.exe` — catálogo, criação e seleção de controladores;
-- `OpenLadderModbus.exe` — monitor Modbus RTU/TCP integrado ao mapa de memória;
+- `OpenLadderModbus.exe` — monitor Modbus RTU/TCP, mapa de memória e atualização online;
 - `OpenLadderMemoryMap.exe` — editor de mapa de memória por controlador;
 - `OpenLadderUpdater.exe` — atualizador;
 - `INICIAR_PC12_CLASSICO.bat` — PC12 legado para compatibilidade.
@@ -230,13 +249,13 @@ O inicializador compila e abre `OpenLadderStudio.exe`.
 - `PLCCustomProfiles.cs` — persistência dos perfis personalizados;
 - `PLCDeviceManagerV16.cs` — catálogo e editor de controladores personalizados;
 - `PreparePLCPlatformV16.ps1` — resolução dos perfis personalizados pelo núcleo;
-- `PLCConnectionSettings.cs` — persistência de parâmetros de comunicação por perfil;
+- `PLCConnectionSettings.cs` — persistência de parâmetros de comunicação e intervalo online por perfil;
 - `PLCMemoryMapV15.cs` — mapa de memória com suporte a áreas extensas;
-- `PLCMemoryMapManager.cs` — editor visual do mapa de memória;
 - `ModbusCore.cs` — protocolo Modbus RTU/TCP em leitura;
 - `ModbusBulkReader.cs` — divisão, execução e consolidação de leituras em múltiplos blocos;
 - `ModbusMonitorV14.cs` — base visual do monitor integrada ao mapa de memória;
 - `PrepareModbusMonitorV15.ps1` — preparação da lógica de leitura em blocos;
+- `PrepareModbusMonitorV17.ps1` — monitoramento online periódico e proteção contra reentrada;
 - `LadderEditor.cs` — editor Ladder;
 - `TP02BridgeLab.cs` — comunicação e análise do TP02/PC12;
 - `TP02ProgramReader.cs` — leitura RBP;
@@ -253,8 +272,8 @@ A aplicação usa **Windows Forms + .NET Framework**, sem bibliotecas externas o
 
 ## Próximas etapas
 
-1. adicionar monitoramento periódico configurável para áreas do mapa;
-2. permitir importação/exportação de perfis e mapas de memória;
+1. permitir importação/exportação de perfis e mapas de memória;
+2. adicionar histórico e gráfico temporal das variáveis monitoradas;
 3. desacoplar completamente o monitor TP02 das classes de interface antigas;
 4. adicionar drivers específicos para novos fabricantes;
 5. criar compiladores de destino por família de PLC;
@@ -268,4 +287,4 @@ A aplicação usa **Windows Forms + .NET Framework**, sem bibliotecas externas o
 **Primeiro driver específico:** WEG TP02  
 **Protocolos genéricos atuais:** Modbus RTU e Modbus TCP (leitura)  
 **Software legado compatível:** PC12 Design Center 2.1  
-**Versão atual:** 0.16
+**Versão atual:** 0.17
