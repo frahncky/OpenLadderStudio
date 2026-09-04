@@ -56,11 +56,9 @@ function New-OpenLadderBitmap([int]$size) {
     $bluePen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
     $bluePen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
 
-    # Trilhos Ladder: a cor verde é a assinatura visual principal do OpenLadder Studio.
     $g.DrawLine($railPen, 42*$scale, 48*$scale, 42*$scale, 208*$scale)
     $g.DrawLine($railPen, 214*$scale, 48*$scale, 214*$scale, 208*$scale)
 
-    # Rung principal: contato -> bloco PLC -> bobina.
     $y = 112 * $scale
     $g.DrawLine($linePen, 42*$scale, $y, 78*$scale, $y)
     $g.DrawLine($linePen, 84*$scale, 88*$scale, 84*$scale, 136*$scale)
@@ -82,7 +80,6 @@ function New-OpenLadderBitmap([int]$size) {
     $g.DrawArc($linePen, 180*$scale, 92*$scale, 22*$scale, 40*$scale, 105, 150)
     $g.DrawArc($linePen, 194*$scale, 92*$scale, 22*$scale, 40*$scale, 285, 150)
 
-    # Rung secundário simplificado: reforça a leitura do ícone em tamanhos pequenos.
     $lowerY = 168 * $scale
     $g.DrawLine($accentPen, 42*$scale, $lowerY, 82*$scale, $lowerY)
     $g.DrawLine($accentPen, 82*$scale, $lowerY, 96*$scale, 154*$scale)
@@ -94,8 +91,8 @@ function New-OpenLadderBitmap([int]$size) {
     $g.FillEllipse($dotBrush, (78*$scale), ($lowerY - $dotSize/2), $dotSize, $dotSize)
     $g.FillEllipse($dotBrush, (156*$scale), ($lowerY - $dotSize/2), $dotSize, $dotSize)
 
-    $dotBrush.Dispose(); $panelBrush.Dispose(); $bluePen.Dispose(); $accentPen.Dispose();
-    $linePen.Dispose(); $railPen.Dispose(); $border.Dispose(); $bg.Dispose();
+    $dotBrush.Dispose(); $panelBrush.Dispose(); $bluePen.Dispose(); $accentPen.Dispose()
+    $linePen.Dispose(); $railPen.Dispose(); $border.Dispose(); $bg.Dispose()
     $plcPath.Dispose(); $outer.Dispose(); $g.Dispose()
     return $bmp
 }
@@ -104,7 +101,7 @@ function Get-PngBytes([System.Drawing.Bitmap]$bitmap) {
     $ms = New-Object System.IO.MemoryStream
     try {
         $bitmap.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
-        return $ms.ToArray()
+        return ,([byte[]]$ms.ToArray())
     }
     finally {
         $ms.Dispose()
@@ -130,8 +127,8 @@ $icoPath = Join-Path (Get-Location) 'OpenLadderStudio.ico'
 $stream = New-Object System.IO.FileStream($icoPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
 $writer = New-Object System.IO.BinaryWriter($stream)
 try {
-    $writer.Write([UInt16]0)                 # reserved
-    $writer.Write([UInt16]1)                 # icon
+    $writer.Write([UInt16]0)
+    $writer.Write([UInt16]1)
     $writer.Write([UInt16]$frames.Count)
 
     $offset = 6 + (16 * $frames.Count)
@@ -149,7 +146,7 @@ try {
     }
 
     foreach ($frame in $frames) {
-        $writer.Write($frame.Bytes)
+        $writer.Write([byte[]]$frame.Bytes)
     }
 }
 finally {
