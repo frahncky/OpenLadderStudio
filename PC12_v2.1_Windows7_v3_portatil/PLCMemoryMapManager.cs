@@ -101,6 +101,8 @@ namespace ModernPC12
             footer.Resize += delegate { close.Left = footer.ClientSize.Width - close.Width - 14; };
 
             grid = new DataGridView();
+            grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
             grid.Dock = DockStyle.Fill;
             grid.BackgroundColor = Shell;
             grid.BorderStyle = BorderStyle.None;

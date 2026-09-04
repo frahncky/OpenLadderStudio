@@ -153,6 +153,8 @@ namespace ModernPC12
             DockOrder.Apply(this, split, commands, header);
 
             grid = new DataGridView();
+            grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
             grid.Dock = DockStyle.Fill;
             grid.ReadOnly = true;
             grid.AllowUserToAddRows = false;

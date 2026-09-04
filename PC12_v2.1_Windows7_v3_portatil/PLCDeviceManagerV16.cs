@@ -125,6 +125,8 @@ namespace ModernPC12
             Controls.Add(split);
 
             grid = new DataGridView();
+            grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
             grid.Dock = DockStyle.Fill;
             grid.BackgroundColor = Shell;
             grid.BorderStyle = BorderStyle.None;

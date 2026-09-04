@@ -86,6 +86,14 @@ foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
     }
 }
 
+foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
+    $code = [System.IO.File]::ReadAllText($file.FullName)
+    if ($code -notmatch 'new DataGridView\(\)') { continue }
+    if ($code -notmatch 'ColumnHeadersHeightSizeMode') {
+        throw "$($file.Name) tem DataGridView sem ColumnHeadersHeightSizeMode. A faixa de cabeçalho fica com altura fixa e a fonte, em pontos, invade a primeira linha em telas com escala."
+    }
+}
+
 $generated = @(
     (Join-Path $repoRoot 'installer\PC12Studio.build.iss'),
     (Join-Path $portable 'StudioUi.build.cs'),

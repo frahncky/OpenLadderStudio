@@ -224,6 +224,8 @@ namespace ModernPC12
             rawBox.BringToFront();
 
             resultGrid = new DataGridView();
+            resultGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            resultGrid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
             resultGrid.Dock = DockStyle.Fill;
             resultGrid.BackgroundColor = Shell;
             resultGrid.BorderStyle = BorderStyle.None;

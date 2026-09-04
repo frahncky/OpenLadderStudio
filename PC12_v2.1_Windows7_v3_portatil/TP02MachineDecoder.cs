@@ -154,6 +154,8 @@ namespace ModernPC12
             horizontal.Panel1.Controls.Add(main);
 
             grid = new DataGridView();
+            grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
             grid.Dock = DockStyle.Fill;
             grid.ReadOnly = true;
             grid.AllowUserToAddRows = false;

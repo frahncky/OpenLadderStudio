@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.25] - 2026-09-04
+
+### Correção
+- corrigida a sobreposição entre o cabeçalho de colunas e a primeira linha das listas
+  em telas com escala: a faixa de cabeçalho tinha altura fixa em pixels enquanto a
+  fonte, definida em pontos, crescia com o DPI;
+- cabeçalho e linhas dos sete grids do software passam a se ajustar ao conteúdo:
+  controladores, mapa de memória, monitor Modbus, decodificador, calibração,
+  campanha de calibração e decodificador de máquina.
+
+### Engenharia de software
+- `ValidateProject.ps1` passa a recusar `DataGridView` sem `ColumnHeadersHeightSizeMode`.
+
 ## [0.24] - 2026-09-04
 
 ### Correção
