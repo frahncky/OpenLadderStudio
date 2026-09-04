@@ -16,7 +16,7 @@ if errorlevel 1 goto :erro
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePLCPlatformV16.ps1"
 if errorlevel 1 goto :erro
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUniversalStudioV18.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUniversalStudioV20.ps1"
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareMemoryMapV15.ps1"
 if errorlevel 1 goto :erro
