@@ -16,23 +16,18 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
-      - name: Preparar fonte Ladder
-        shell: powershell
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
-          (Get-Content 'LadderEditor.cs') -replace 'internal sealed class LadderCanvas : Control','internal sealed class LadderCanvas : ScrollableControl' | Set-Content 'LadderEditor.build.cs'
-
-      - name: Compilar atualizador
+      - name: Compilar OpenLadder Studio e ferramentas
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /out:"OpenLadderUpdater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12Updater.cs"
-
-      - name: Compilar OpenLadder Studio
-        shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
-        run: |
-          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:winexe /optimize+ /main:ModernPC12.DirectStudioProgram /out:"OpenLadderStudio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "PC12DirectStudio.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "TP02BridgeLab.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs" "PC12Updater.cs"
+          call BUILD_INTERFACE_MODERNA.bat
+          if errorlevel 1 exit /b 1
+          if not exist OpenLadderStudio.exe exit /b 1
+          if not exist OpenLadderEditor.exe exit /b 1
+          if not exist OpenLadderDeviceManager.exe exit /b 1
+          if not exist OpenLadderModbus.exe exit /b 1
+          if not exist OpenLadderMemoryMap.exe exit /b 1
+          if not exist OpenLadderUpdater.exe exit /b 1
 
       - name: Instalar Inno Setup 6 se necessário
         shell: powershell
@@ -59,6 +54,10 @@ jobs:
           name: OpenLadder-Studio
           path: |
             PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderEditor.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderDeviceManager.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderModbus.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderMemoryMap.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderUpdater.exe
             PC12_v2.1_Windows7_v3_portatil/version.txt
 
@@ -82,7 +81,7 @@ jobs:
           $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
           $sha = 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
           $title = "OpenLadder Studio v$version"
-          $notes = "Versão oficial do OpenLadder Studio. Atualizações podem ser instaladas pela aba ATUALIZAR do próprio software."
+          $notes = "Versão oficial com arquitetura multi-PLC, perfis personalizados Modbus RTU/TCP, mapa de memória, leitura automática em múltiplos blocos e monitoramento online periódico configurável entre 250 ms e 5 s."
 
           cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
           if ($LASTEXITCODE -eq 0) {
