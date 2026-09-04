@@ -33,7 +33,7 @@ namespace ModernPC12
 
         public DirectStudioForm()
         {
-            Text = "PC12 Studio TP02";
+            Text = "OpenLadder Studio";
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(1180, 720);
             Size = new Size(1450, 900);
@@ -53,7 +53,7 @@ namespace ModernPC12
             Controls.Add(header);
 
             Label brand = new Label();
-            brand.Text = "PC12 STUDIO TP02";
+            brand.Text = "OPENLADDER STUDIO";
             brand.AutoSize = true;
             brand.Font = new Font("Segoe UI Semibold", 12.5f, FontStyle.Bold);
             brand.ForeColor = Navy;
@@ -61,11 +61,11 @@ namespace ModernPC12
             header.Controls.Add(brand);
 
             Label version = new Label();
-            version.Text = "v0.8";
+            version.Text = "v0.9";
             version.AutoSize = true;
             version.Font = new Font("Segoe UI", 8.0f);
             version.ForeColor = TextSecondary;
-            version.Location = new Point(184, 16);
+            version.Location = new Point(194, 16);
             header.Controls.Add(version);
 
             Panel nav = new Panel();
