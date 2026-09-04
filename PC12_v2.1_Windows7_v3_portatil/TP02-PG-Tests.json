@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "2026.09.04.1",
+  "title": "TP02 PG - pacote seguro de bancada",
+  "sweeps": 2,
+  "passiveCaptureMs": 5000,
+  "stopOnUnknown": true,
+  "serialProfiles": [
+    {
+      "name": "Perfil A",
+      "baud": 19200,
+      "dataBits": 8,
+      "parity": "None",
+      "stopBits": "One",
+      "dtr": false,
+      "rts": false,
+      "attempts": 4,
+      "rxWindowMs": 1300,
+      "interAttemptMs": 120
+    },
+    {
+      "name": "Perfil B",
+      "baud": 19200,
+      "dataBits": 8,
+      "parity": "None",
+      "stopBits": "One",
+      "dtr": true,
+      "rts": true,
+      "attempts": 4,
+      "rxWindowMs": 1300,
+      "interAttemptMs": 120
+    },
+    {
+      "name": "Perfil C",
+      "baud": 19200,
+      "dataBits": 8,
+      "parity": "Odd",
+      "stopBits": "One",
+      "dtr": false,
+      "rts": false,
+      "attempts": 4,
+      "rxWindowMs": 1400,
+      "interAttemptMs": 150
+    },
+    {
+      "name": "Perfil validado TP02",
+      "baud": 19200,
+      "dataBits": 8,
+      "parity": "Odd",
+      "stopBits": "One",
+      "dtr": true,
+      "rts": true,
+      "attempts": 8,
+      "rxWindowMs": 1800,
+      "interAttemptMs": 180
+    }
+  ],
+  "steps": [
+    {
+      "id": "hello-pg",
+      "name": "Handshake PG PC12",
+      "type": "txrx",
+      "enabled": true,
+      "sweepProfiles": true,
+      "safetyClass": "HANDSHAKE",
+      "txHex": "43 4F 4E 2D 49 43 42 0D",
+      "timeoutMs": 1800,
+      "passiveAfterMs": 0,
+      "expected": [
+        {
+          "name": "HELLO-C0",
+          "hex": "C0 01 09 35"
+        },
+        {
+          "name": "HELLO-80",
+          "hex": "80 01 09 75"
+        }
+      ]
+    },
+    {
+      "id": "capture-after-hello",
+      "name": "Escuta passiva apos Link PG",
+      "type": "passive",
+      "enabled": true,
+      "sweepProfiles": false,
+      "safetyClass": "PASSIVE",
+      "txHex": "",
+      "timeoutMs": 0,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "f0-unclassified",
+      "name": "Quadro F0 00 0F",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "F0 00 0F",
+      "timeoutMs": 3000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "read-program-candidate",
+      "name": "Candidato estatico Read PLC Program",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "34 03 00 00 A0 28",
+      "timeoutMs": 3000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "clear-all-memory",
+      "name": "Clear All Memory - PC12 original",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "BLOCKED",
+      "txHex": "0F 00 F0",
+      "timeoutMs": 0,
+      "passiveAfterMs": 0,
+      "expected": []
+    }
+  ],
+  "safety": {
+    "readOnlyAllowlist": [],
+    "blockedTx": [
+      "0F 00 F0",
+      "F0 00 0F"
+    ],
+    "notes": [
+      "O modo padrao transmite somente CON-ICB<CR>.",
+      "Etapas CANDIDATE nunca sao transmitidas.",
+      "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
+      "F0 00 0F permanece nao classificado e bloqueado.",
+      "0F 00 F0 permanece bloqueado por estar associado ao Clear All Memory na analise estatica do PC12."
+    ]
+  }
+}
