@@ -110,3 +110,4 @@ $shell = Invoke-ReplaceText $shell '        private void RefreshProfileUi()' $me
 & (Join-Path $root 'PrepareUiEfficiencyV56.ps1')
 & (Join-Path $root 'PrepareLadderCanvasV57.ps1')
 & (Join-Path $root 'PrepareInteractionV58.ps1')
+& (Join-Path $root 'PrepareToolbarClarityV59.ps1')
