@@ -2,10 +2,9 @@ $ErrorActionPreference = 'Stop'
 
 $root = Get-Location
 $shellPath = Join-Path $root 'UniversalStudioShell.build.cs'
-$uiPath = Join-Path $root 'StudioUi.build.cs'
 $updaterPath = Join-Path $root 'PC12Updater.build.cs'
 
-foreach ($p in @($shellPath, $uiPath, $updaterPath)) {
+foreach ($p in @($shellPath, $updaterPath)) {
     if (-not (Test-Path $p)) { throw "Arquivo de build nao encontrado: $p" }
 }
 
@@ -22,31 +21,11 @@ function Replace-Section([string]$text, [string]$startAnchor, [string]$endAnchor
     return $text.Substring(0, $start) + $replacement + $text.Substring($end)
 }
 
-# -----------------------------------------------------------------------------
-# Toolbar: largura calculada com a fonte usada no estado de destaque.
-# -----------------------------------------------------------------------------
-$ui = LF ([System.IO.File]::ReadAllText($uiPath))
-$measureOld = @'
-        public int MeasureWidth()
-        {
-            int label = TextRenderer.MeasureText(Text, StudioTheme.Ui).Width;
-            return Math.Max(76, label + 46);
-        }
-'@
-$measureNew = @'
-        public int MeasureWidth()
-        {
-            int label = TextRenderer.MeasureText(Text, StudioTheme.UiBold).Width;
-            return Math.Max(92, label + 54);
-        }
-'@
-$ui = Replace-Required $ui $measureOld.TrimEnd() $measureNew.TrimEnd() 'largura toolbar'
-[System.IO.File]::WriteAllText($uiPath, $ui, [System.Text.Encoding]::UTF8)
-
-# -----------------------------------------------------------------------------
-# Shell: lista simples de elementos, sem busca, sem apagar; identidade enxuta.
-# -----------------------------------------------------------------------------
 $shell = LF ([System.IO.File]::ReadAllText($shellPath))
+
+# Garante largura suficiente na propria criacao do botao; "Conectar" nao pode
+# ser abreviado mesmo quando usa fonte em destaque.
+$shell = Replace-Required $shell '            b.Width = b.MeasureWidth();' '            b.Width = Math.Max(b.MeasureWidth(), text == "Conectar" ? 112 : 88);' 'largura toolbar'
 
 # A verificacao de update deve ocorrer uma unica vez ao abrir, sem updater oculto
 # instalando silenciosamente por tras da interface.
@@ -85,7 +64,6 @@ $brand = @'
                     using (SolidBrush b = new SolidBrush(Accent)) g.FillRectangle(b, new Rectangle(18, 14, 36, 36));
                     StudioGlyph.Draw(g, StudioIcon.Ladder, new Rectangle(25, 21, 22, 22), Color.White);
                 }
-
                 TextRenderer.DrawText(g, "OpenLadder Studio", new Font("Segoe UI Semibold", 11.2f, FontStyle.Bold),
                     new Point(68, 22), Fore);
             };
@@ -140,12 +118,9 @@ $elementLibrary = @'
 '@
 $shell = Replace-Section $shell '        private Panel BuildElementLibrary()' '        private void AddElementTool' $elementLibrary 'lista simples de elementos'
 
-# Remove textos de status redundantes.
 $shell = $shell.Replace('            statusText.Text = "Editor Ladder universal";', '            statusText.Text = "Pronto";')
 $shell = $shell.Replace('            statusText.Text = "Modelo Ladder universal verificado";', '            statusText.Text = "Verificação concluída";')
 
-# Aviso de versao deve ser impossivel de passar despercebido: destaque persistente
-# na barra inferior e uma notificacao unica por abertura.
 $noticeOld = @'
                         updateNotice.Text = "Atualização v" + latestVersion + " disponível";
                         updateNotice.Visible = true;
@@ -169,10 +144,6 @@ $shell = Replace-Required $shell $noticeOld.TrimEnd() $noticeNew.TrimEnd() 'avis
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
 
-# -----------------------------------------------------------------------------
-# Updater: ao iniciar o instalador encerra o aplicativo inteiro, nao apenas a
-# aba/formulario do atualizador. O FormClosing do Studio salva a sessao.
-# -----------------------------------------------------------------------------
 $updater = LF ([System.IO.File]::ReadAllText($updaterPath))
 $launchOld = @'
                 Process.Start(psi);
