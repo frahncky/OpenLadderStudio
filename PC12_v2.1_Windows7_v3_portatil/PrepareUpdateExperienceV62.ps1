@@ -13,10 +13,6 @@ function Replace-Required([string]$text, [string]$needle, [string]$replacement, 
     return $text.Replace($needle, $replacement)
 }
 
-# -----------------------------------------------------------------------------
-# Updater automático: deixa de ficar invisível. O usuário passa a enxergar
-# verificação, download, validação, fechamento e início do instalador.
-# -----------------------------------------------------------------------------
 $updater = LF ([System.IO.File]::ReadAllText($updaterPath))
 $automaticOld = @'
             if (automatic)
@@ -86,19 +82,12 @@ $automaticNew = @'
             }
 '@
 $updater = Replace-Required $updater $automaticOld.TrimEnd() $automaticNew.TrimEnd() 'modo automático visível'
-
-# Textos de progresso mais claros.
 $updater = $updater.Replace('statusLabel.Text = "Baixando...";', 'statusLabel.Text = "Baixando a atualização...";')
 $updater = $updater.Replace('statusLabel.Text = "Baixando... " + value.ToString(CultureInfo.InvariantCulture) + "%";', 'statusLabel.Text = "Baixando a atualização... " + value.ToString(CultureInfo.InvariantCulture) + "%";')
 $updater = $updater.Replace('statusLabel.Text = "Verificando...";', 'statusLabel.Text = "Verificando o arquivo baixado...";')
 $updater = $updater.Replace('statusLabel.Text = "Fechando o OpenLadder Studio...";', 'statusLabel.Text = "Fechando o OpenLadder Studio para instalar a atualização...";')
-
 [System.IO.File]::WriteAllText($updaterPath, $updater, [System.Text.Encoding]::UTF8)
 
-# -----------------------------------------------------------------------------
-# Shell: deixa explícito que o programa fechará e abrirá sozinho e mostra
-# feedback imediato quando o usuário aceita a instalação.
-# -----------------------------------------------------------------------------
 $shell = LF ([System.IO.File]::ReadAllText($shellPath))
 $shell = $shell.Replace(
     '"A versão v" + latestVersion + " do OpenLadder Studio está disponível.\r\n\r\nDeseja baixar e instalar agora?",',
@@ -125,11 +114,8 @@ $startNew = @'
             }
 '@
 $shell = Replace-Required $shell $startOld.TrimEnd() $startNew.TrimEnd() 'feedback após aceitar atualização'
-
-# Pequena revisão final de português dos textos mais visíveis.
 $shell = $shell.Replace('Monitor online', 'Monitor on-line')
 $shell = $shell.Replace('Verificador de atualizações aberto.', 'Janela de atualização aberta.')
-shell = $shell
-
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
+
 Write-Host 'V62 aplicada: atualização automática visível, progresso claro e textos revisados.'
