@@ -101,3 +101,5 @@ $method = @'
 '@
 $shell = Invoke-ReplaceText $shell '        private void RefreshProfileUi()' $method.TrimEnd() 'metodo de verificacao'
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
+
+& (Join-Path $root 'PrepareUpdateResumeV50.ps1')
