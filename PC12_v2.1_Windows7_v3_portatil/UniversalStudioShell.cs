@@ -96,6 +96,7 @@ namespace ModernPC12
         private TP02IlToLadderForm ilForm;
         private PC12UpdaterForm updaterForm;
         private ModbusMonitorForm modbusForm;
+        private LadderSimulatorForm simulatorForm;
 
         public UniversalStudioForm()
         {
@@ -220,6 +221,7 @@ namespace ModernPC12
 
             ToolStripMenuItem ferramentas = MenuItem("Ferramentas");
             ferramentas.DropDownItems.Add(DropItem("Verificar portabilidade do Ladder", delegate { CheckPortability(); }));
+            ferramentas.DropDownItems.Add(DropItem("Simulação de processo", delegate { ShowSimulator(); }));
             ferramentas.DropDownItems.Add(new ToolStripSeparator());
             ferramentas.DropDownItems.Add(DropItem("Decodificador TP02", delegate { ShowDecoder(); }));
             ferramentas.DropDownItems.Add(DropItem("Calibração TP02", delegate { ShowCalibration(); }));
@@ -351,6 +353,7 @@ namespace ModernPC12
             items.Add(new NavSection("Editor ladder"));
             items.Add(NavItem("Editor Ladder", StudioIcon.Ladder, "LD", delegate { ShowLadder(); }));
             items.Add(NavItem("Validar projeto", StudioIcon.Check, "", delegate { InvokeLadder("ValidateProject", new object[] { true }); }));
+            items.Add(NavItem("Simular processo", StudioIcon.Grid, "SIM", delegate { ShowSimulator(); }));
             items.Add(new NavSection("Controlador"));
             items.Add(NavItem("Selecionar controlador", StudioIcon.Chip, "DEV", delegate { ShowDeviceManager(); }));
             items.Add(new NavSection("Comunicação"));
@@ -721,6 +724,35 @@ namespace ModernPC12
             statusText.Text = "Atualizações do OpenLadder Studio";
         }
 
+        /// <summary>
+        /// Abre o PLC virtual. Usa o projeto aberto no editor quando ele tem elementos;
+        /// caso contrario mantem o programa de exemplo do simulador.
+        /// </summary>
+        private void ShowSimulator()
+        {
+            if (ladderForm == null || ladderForm.IsDisposed)
+            {
+                ladderForm = new LadderEditorForm();
+                PrepareLadderForStudio(ladderForm);
+            }
+
+            if (simulatorForm == null || simulatorForm.IsDisposed) simulatorForm = new LadderSimulatorForm();
+
+            UniversalLadderConversionReport report = UniversalLadderAdapter.FromEditor(ladderForm);
+            if (report.ElementCount > 0)
+            {
+                simulatorForm.LoadProgram(report.Program);
+                statusText.Text = "Simulação com o projeto do editor: " + report.Summary();
+            }
+            else
+            {
+                statusText.Text = "Simulação com o programa de exemplo: o editor ainda não tem elementos";
+            }
+
+            inspector.Visible = false;
+            ShowDocument(simulatorForm, "Simulação de processo", "SIM");
+        }
+
         private void CheckPortability()
         {
             ShowLadder();
@@ -765,6 +797,7 @@ namespace ModernPC12
                 case "CAL": return StudioIcon.Gear;
                 case "IL": return StudioIcon.Convert;
                 case "UPD": return StudioIcon.Refresh;
+                case "SIM": return StudioIcon.Grid;
             }
             return StudioIcon.Doc;
         }

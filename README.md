@@ -27,6 +27,9 @@ A versão oficial do produto é definida em `PC12_v2.1_Windows7_v3_portatil/vers
 - histórico e tendências de sinais;
 - exportação CSV;
 - suporte de leitura e pesquisa para WEG TP02;
+- PLC virtual com motor de varredura próprio e simulação de processo;
+- planta de esteira simulada com sensores, desviador e falhas injetáveis;
+- forçamento de pontos e execução passo a passo;
 - atualizador e instalador próprios;
 - modo foco do editor com `F11`.
 
@@ -34,6 +37,7 @@ A versão oficial do produto é definida em `PC12_v2.1_Windows7_v3_portatil/vers
 
 | Perfil | Comunicação | Monitoramento | Leitura de programa | Download Ladder |
 |---|---:|---:|---:|---:|
+| PLC virtual OpenLadder | Local | Sim | Sim | Sim, para o simulador |
 | WEG TP02-60MR | Sim | Sim | Sim, via RBP | Não |
 | Modbus RTU genérico | Sim | Sim | Não | Não |
 | Modbus TCP genérico | Sim | Sim | Não | Não |
@@ -43,7 +47,17 @@ A versão oficial do produto é definida em `PC12_v2.1_Windows7_v3_portatil/vers
 | Perfis Modbus personalizados | Sim | Sim | Não | Não |
 | Outros fabricantes cadastrados | Planejado | Planejado | Planejado | Planejado |
 
-A presença de um perfil no catálogo não significa que exista compilador ou protocolo de programação implementado para esse PLC.
+A presença de um perfil no catálogo não significa que exista compilador ou protocolo de programação implementado para esse PLC. O PLC virtual é a exceção: ele executa o Ladder localmente, sem hardware.
+
+## Simulação de processo
+
+O OpenLadder Studio executa o programa Ladder em um PLC virtual acoplado a uma planta simulada, para validar lógica antes de ligar equipamento real. A planta de referência é uma esteira com alimentador, sensores fotoelétricos, desviador pneumático e proteção térmica.
+
+A simulação é fenomenológica: reproduz o comportamento observável com modelos físicos plausíveis — rampa de motor, tempo de curso de pistão, atraso de sensor, histerese e atraso de transporte — e não a identificação de um equipamento específico.
+
+Abrir pelo shell em **Ferramentas → Simulação de processo**, ou como ferramenta separada por `INICIAR_SIMULADOR.bat`.
+
+Detalhes em [`docs/PROCESS_SIMULATION.md`](docs/PROCESS_SIMULATION.md).
 
 ## Arquitetura
 
@@ -95,6 +109,8 @@ cd PC12_v2.1_Windows7_v3_portatil
 BUILD_INTERFACE_MODERNA.bat
 ```
 
+O build compila também o autoteste `OpenLadderSimTest.exe` e o executa. Uma falha na verificação do motor de varredura ou da planta interrompe o build.
+
 Antes do build/release, a estrutura pode ser validada com:
 
 ```powershell
@@ -134,4 +150,5 @@ Consulte:
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — fluxo de contribuição e regras de código;
 - [`CHANGELOG.md`](CHANGELOG.md) — histórico das versões;
 - [`docs/SOFTWARE_ARCHITECTURE.md`](docs/SOFTWARE_ARCHITECTURE.md) — organização e plano de evolução;
-- [`docs/UI_GUIDELINES.md`](docs/UI_GUIDELINES.md) — identidade e padrões de interface.
+- [`docs/UI_GUIDELINES.md`](docs/UI_GUIDELINES.md) — identidade e padrões de interface;
+- [`docs/PROCESS_SIMULATION.md`](docs/PROCESS_SIMULATION.md) — PLC virtual, plantas simuladas e semântica do motor de varredura.

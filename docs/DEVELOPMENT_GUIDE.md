@@ -27,7 +27,8 @@ O primeiro codigo extraido deve ser sem dependencia de WinForms e mantido compat
 2. Mantenha a UI limitada a eventos, exibicao e composicao de dependencias.
 3. Preserve leitura e escrita de PLC como capacidades separadas e explicitamente controladas.
 4. Execute `powershell -ExecutionPolicy Bypass -File scripts/ValidateProject.ps1`.
-5. Execute `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat` em uma maquina Windows com .NET Framework antes de publicar executaveis.
+5. Execute `OpenLadderSimTest.exe` quando a mudanca tocar o motor de varredura ou as plantas simuladas. O build ja faz isso, mas rodar antes evita um ciclo de CI.
+6. Execute `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat` em uma maquina Windows com .NET Framework antes de publicar executaveis.
 
 ## Estrategia de migracao
 

@@ -401,6 +401,7 @@ namespace ModernPC12
             if (kind == PlcTransportKind.Serial) return "Serial";
             if (kind == PlcTransportKind.Tcp) return "TCP/IP";
             if (kind == PlcTransportKind.EthernetIndustrial) return "Ethernet industrial";
+            if (kind == PlcTransportKind.Virtual) return "Virtual";
             return "Específico do fabricante";
         }
     }

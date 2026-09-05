@@ -16,7 +16,8 @@ Fluxo previsto:
 
 ## Arquivos
 
-- `PLCPlatform.cs` — contratos, perfis, registro de drivers, capacidades e modelo Ladder universal.
+- `PLCPlatform.cs` — contratos, perfis, registro de drivers, capacidades, modelo Ladder universal e driver do PLC virtual.
+- `LadderSimulation.cs` e `ProcessSimulation.cs` — motor de varredura e plantas simuladas do PLC virtual.
 - `PLCDeviceManagerV16.cs` — catálogo visual de controladores e seleção do perfil padrão.
 - `ModbusCore.cs` — implementação genérica Modbus RTU e Modbus TCP.
 - `ModbusMonitorV14.cs` — monitor de coils, entradas e registradores; o build aplica sobre ele as etapas de preparação V15, V17 e V18.
@@ -41,6 +42,7 @@ A barra de ferramentas também recebe acesso direto ao monitor Modbus.
 
 | Fabricante / perfil | Comunicação | Monitoramento | Leitura de programa | Download Ladder | Situação |
 |---|---:|---:|---:|---:|---|
+| PLC virtual OpenLadder | Execução local | Sim | Sim | Sim, para o simulador | Implementado, sem hardware |
 | WEG TP02-60MR | Sim | Sim | Sim, via RBP | Não | Implementado em leitura segura |
 | Modbus RTU genérico | Sim | FC 01/02/03/04 | Não | Não | Experimental funcional |
 | Modbus TCP genérico | Sim | FC 01/02/03/04 | Não | Não | Experimental funcional |
@@ -92,6 +94,10 @@ e validá-lo em hardware real.
 Nenhum dos perfis novos foi validado em equipamento físico. Baud rate, paridade e mapa de
 endereços precisam ser conferidos no manual de cada equipamento e ajustados no mapa de
 memória por PLC — o catálogo não traz mapa de endereços presumido para esses modelos.
+
+## PLC virtual
+
+O perfil `openladder.simulator.plc` usa o driver `openladder.simulator`, que executa o modelo Ladder universal no motor de varredura interno em vez de falar com um equipamento. É o único driver com escrita e transferência de programa habilitadas, porque nenhuma saída física existe do outro lado. Está documentado em [`PROCESS_SIMULATION.md`](PROCESS_SIMULATION.md).
 
 ## Regra de segurança técnica
 

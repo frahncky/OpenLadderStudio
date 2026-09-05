@@ -9,7 +9,8 @@ namespace ModernPC12
         Serial,
         Tcp,
         EthernetIndustrial,
-        VendorSpecific
+        VendorSpecific,
+        Virtual
     }
 
     internal enum PlcSupportLevel
@@ -116,6 +117,9 @@ namespace ModernPC12
         public string Address;
         public string Parameter;
         public string FunctionCode;
+
+        /// <summary>Coluna de origem no rung. Preserva a posição das condições e dos ramos paralelos.</summary>
+        public int Column;
 
         public UniversalLadderElement()
         {
@@ -237,6 +241,39 @@ namespace ModernPC12
         }
     }
 
+    /// <summary>
+    /// PLC virtual do OpenLadder Studio. Executa o modelo Ladder universal em um motor de varredura
+    /// interno, sem hardware. É o único driver em que escrita e transferência de programa são seguras,
+    /// porque nenhuma saída física é acionada.
+    /// </summary>
+    internal sealed class SimulatedPlcDriver : PlcDriverBase
+    {
+        public const string DriverId = "openladder.simulator";
+        public const string ProfileId = "openladder.simulator.plc";
+
+        public SimulatedPlcDriver()
+            : base(DriverId, "PLC virtual OpenLadder", PlcSupportLevel.Implemented, CreateCapabilities())
+        {
+        }
+
+        private static PlcDriverCapabilities CreateCapabilities()
+        {
+            PlcDriverCapabilities c = new PlcDriverCapabilities();
+            c.Connect = true;
+            c.MonitorBits = true;
+            c.ReadRegisters = true;
+            c.WriteRegisters = true;
+            c.ReadProgram = true;
+            c.DownloadProgram = true;
+            return c;
+        }
+
+        public override string DescribeConnection(PlcDeviceProfile profile)
+        {
+            return "Execução local, sem porta serial nem rede. O programa é carregado no motor de varredura interno e as entradas vêm de uma planta virtual ou da tabela de forçamento.";
+        }
+    }
+
     internal sealed class PlannedVendorDriver : PlcDriverBase
     {
         private readonly string description;
@@ -261,6 +298,7 @@ namespace ModernPC12
         private static List<IPlcDriver> BuildDrivers()
         {
             List<IPlcDriver> list = new List<IPlcDriver>();
+            list.Add(new SimulatedPlcDriver());
             list.Add(new WegTp02Driver());
             list.Add(new GenericModbusRtuDriver());
             list.Add(new GenericModbusTcpDriver());
@@ -277,6 +315,7 @@ namespace ModernPC12
         private static List<PlcDeviceProfile> BuildProfiles()
         {
             List<PlcDeviceProfile> list = new List<PlcDeviceProfile>();
+            list.Add(Profile(SimulatedPlcDriver.ProfileId, "OpenLadder", "Simulação", "PLC virtual", "Execução local", PlcTransportKind.Virtual, SimulatedPlcDriver.DriverId, PlcSupportLevel.Implemented, "Executa o Ladder no simulador, sem hardware. Escrita e forçamento são liberados por não haver saída física."));
             list.Add(Profile("weg.tp02.60mr", "WEG", "TP02", "TP02-60MR", "TP02 ASCII", PlcTransportKind.Serial, "weg.tp02.serial", PlcSupportLevel.Implemented, "Primeiro controlador suportado pelo OpenLadder Studio."));
             list.Add(Profile("generic.modbus.rtu", "Genérico", "Modbus", "Modbus RTU", "Modbus RTU", PlcTransportKind.Serial, "generic.modbus.rtu", PlcSupportLevel.Experimental, "Base multi-fabricante para equipamentos que exponham mapa Modbus RTU."));
             list.Add(Profile("generic.modbus.tcp", "Genérico", "Modbus", "Modbus TCP", "Modbus TCP", PlcTransportKind.Tcp, "generic.modbus.tcp", PlcSupportLevel.Experimental, "Base multi-fabricante para equipamentos que exponham mapa Modbus TCP."));

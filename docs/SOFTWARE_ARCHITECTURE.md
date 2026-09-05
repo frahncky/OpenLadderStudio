@@ -17,7 +17,8 @@ Arquivos atuais mais próximos desta camada:
 - `LadderEditor.cs`;
 - `PLCDeviceManagerV16.cs`;
 - `PLCMemoryMapManager.cs`;
-- `ModbusMonitorV14.cs` e etapas de preparação associadas.
+- `ModbusMonitorV14.cs` e etapas de preparação associadas;
+- `LadderSimulator.cs`.
 
 A camada de apresentação pode consumir serviços e contratos do núcleo, mas o núcleo não deve depender de WinForms.
 
@@ -36,12 +37,15 @@ Contém os conceitos estáveis do produto:
 - capacidades do controlador;
 - contratos de driver;
 - endereçamento e áreas de memória;
-- validações independentes da interface.
+- validações independentes da interface;
+- motor de varredura e modelo de processo simulado.
 
 Arquivos atuais:
 
 - `PLCPlatform.cs`;
 - `UniversalLadderAdapter.cs`;
+- `LadderSimulation.cs`;
+- `ProcessSimulation.cs`;
 - estruturas de mapa de memória que não dependem de UI.
 
 Regra principal: o domínio não deve referenciar WinForms, arquivos de tela ou detalhes de comunicação serial/TCP.
@@ -58,7 +62,13 @@ Implementa comunicação, persistência e integração com equipamentos:
 
 Drivers devem implementar contratos definidos pelo núcleo.
 
-### 5. Build, instalação e release
+### 5. Verificação
+
+`SimulationSelfTest.cs` gera `OpenLadderSimTest.exe`, o primeiro teste automatizado do projeto. Ele executa o motor de varredura contra a planta simulada e é rodado pelo build local e pelo GitHub Actions.
+
+Novos testes de domínio devem seguir o mesmo padrão: console, sem dependência de WinForms no código sob teste e com código de saída diferente de zero em caso de falha.
+
+### 6. Build, instalação e release
 
 Responsável por gerar os executáveis, ícones, instalador, hashes e release.
 
@@ -112,7 +122,7 @@ O diretório legado permanece temporariamente apenas como área de compatibilida
 
 - eliminar scripts de patch de código fonte no build;
 - remover sufixos de versão dos nomes de classes/arquivos ativos;
-- introduzir testes automatizados para domínio, drivers e parsers;
+- ampliar os testes automatizados para drivers e parsers, a partir do autoteste da simulação;
 - empacotar componentes por responsabilidade.
 
 ## Critérios para novas funcionalidades
@@ -127,4 +137,4 @@ Antes de adicionar uma funcionalidade, decidir:
 
 ## Segurança operacional
 
-Recursos de escrita, RUN/STOP, limpeza de memória ou download de programa devem permanecer desabilitados até validação específica por família de PLC e hardware real. A arquitetura deve manter capacidades de leitura e escrita explicitamente separadas.
+Recursos de escrita, RUN/STOP, limpeza de memória ou download de programa devem permanecer desabilitados até validação específica por família de PLC e hardware real. A única exceção é o PLC virtual: nele escrita e forçamento são liberados porque não existe saída física. A arquitetura deve manter capacidades de leitura e escrita explicitamente separadas.

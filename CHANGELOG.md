@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.53] - 2026-09-05
+
+### Simulação de processo
+- motor de varredura Ladder próprio, com imagem de processo, contatos, bobinas, SET/RESET, TMR, TMR retentivo, CNT, contatos especiais e END;
+- planta virtual de esteira com alimentador, sensores fotoelétricos, desviador pneumático e proteção térmica;
+- modelagem das imperfeições físicas: rampa de motor, tempo de curso, atraso de sensor, histerese, jitter e atraso de transporte;
+- três falhas injetáveis: esteira patinando, sensor de saída travado e desviador emperrado;
+- janela de simulação com sinóptico animado, tabela de I/O, forçamento, botoeiras de campo e faixa de energização dos rungs;
+- execução em tempo real, passo a passo ou acelerada em 2x e 5x;
+- driver `PLC virtual OpenLadder` e perfil de dispositivo correspondente, com escrita liberada por não existir hardware.
+
+### Engenharia de software
+- primeiro autoteste automatizado do projeto: `OpenLadderSimTest.exe` verifica o motor de varredura e a planta no build e no CI;
+- `UniversalLadderElement` passa a preservar a coluna de origem, o que mantém os ramos paralelos fiéis ao editor;
+- `ValidateProject.ps1` passa a exigir os fontes da simulação e a bloquear dependência de WinForms no núcleo;
+- catálogo de módulos passa a classificar o motor de varredura e as plantas simuladas no domínio.
+
 ## [0.47] - 2026-09-04
 
 ### Pesquisa do protocolo TP02

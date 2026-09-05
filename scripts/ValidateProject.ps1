@@ -7,12 +7,16 @@ $installer = Join-Path $repoRoot 'installer\PC12Studio.iss'
 $universalPrep = Join-Path $portable 'PrepareUniversalStudioV20.ps1'
 $uiPrep = Join-Path $portable 'PrepareStudioUiV20.ps1'
 $iconPrep = Join-Path $portable 'GenerateOpenLadderIcon.ps1'
+$scanEngine = Join-Path $portable 'LadderSimulation.cs'
+$processModel = Join-Path $portable 'ProcessSimulation.cs'
+$simulatorUi = Join-Path $portable 'LadderSimulator.cs'
+$simulatorTest = Join-Path $portable 'SimulationSelfTest.cs'
 
 $architectureValidation = Join-Path $PSScriptRoot 'ValidateArchitecture.ps1'
 if (-not (Test-Path $architectureValidation)) { throw "Validador arquitetural ausente: $architectureValidation" }
 & $architectureValidation
 
-$required = @($versionPath, $installer, $universalPrep, $uiPrep, $iconPrep)
+$required = @($versionPath, $installer, $universalPrep, $uiPrep, $iconPrep, $scanEngine, $processModel, $simulatorUi, $simulatorTest)
 foreach ($path in $required) {
     if (-not (Test-Path $path)) { throw "Arquivo obrigatório ausente: $path" }
 }
@@ -41,6 +45,14 @@ if (-not $uiText.Contains('StudioIconPalette')) {
 $iconText = [System.IO.File]::ReadAllText($iconPrep)
 foreach ($size in @('16', '24', '32', '48', '64', '128', '256')) {
     if (-not $iconText.Contains($size)) { throw "Tamanho $size ausente do pipeline de ícone." }
+}
+
+# O nucleo da simulacao pertence ao dominio e nao pode depender de WinForms.
+foreach ($core in @($scanEngine, $processModel)) {
+    $coreText = [System.IO.File]::ReadAllText($core)
+    if ($coreText.Contains('System.Windows.Forms')) {
+        throw "O nucleo da simulacao nao pode depender de WinForms: $core"
+    }
 }
 
 $buildScript = Join-Path $portable 'BUILD_INTERFACE_MODERNA.bat'

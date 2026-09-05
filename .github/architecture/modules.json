@@ -7,7 +7,8 @@
       "name": "OpenLadderStudio.Core",
       "layer": "Domain",
       "owns": [
-        "PLC platform contracts, controller capabilities, memory addressing, universal ladder model"
+        "PLC platform contracts, controller capabilities, memory addressing, universal ladder model",
+        "ladder scan engine, virtual process image and simulated plant models"
       ],
       "mustNotDependOn": [
         "System.Windows.Forms",

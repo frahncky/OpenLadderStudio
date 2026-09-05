@@ -113,6 +113,7 @@ namespace ModernPC12
             target.Address = source.Address ?? string.Empty;
             target.Parameter = source.Parameter ?? string.Empty;
             target.FunctionCode = source.Mode ?? string.Empty;
+            target.Column = column;
             return target;
         }
 
