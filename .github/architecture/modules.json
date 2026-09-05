@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "PC12_v2.1_Windows7_v3_portatil",
+  "targetStructure": "src",
+  "modules": [
+    {
+      "name": "OpenLadderStudio.Core",
+      "layer": "Domain",
+      "owns": [
+        "PLC platform contracts, controller capabilities, memory addressing, universal ladder model"
+      ],
+      "mustNotDependOn": [
+        "System.Windows.Forms",
+        "serial or TCP protocol implementations"
+      ]
+    },
+    {
+      "name": "OpenLadderStudio.Application",
+      "layer": "Application",
+      "owns": [
+        "use-case orchestration, project workflows, controller selection, validation"
+      ],
+      "mustNotDependOn": [
+        "System.Windows.Forms"
+      ]
+    },
+    {
+      "name": "OpenLadderStudio.Drivers.Modbus",
+      "layer": "Infrastructure",
+      "owns": [
+        "Modbus communication, polling, bulk reads, trend history"
+      ],
+      "mustNotDependOn": [
+        "WinForms controls"
+      ]
+    },
+    {
+      "name": "OpenLadderStudio.Drivers.TP02",
+      "layer": "Infrastructure",
+      "owns": [
+        "TP02 framing, program reading, decoding and protocol-specific compatibility"
+      ],
+      "mustNotDependOn": [
+        "WinForms controls"
+      ]
+    },
+    {
+      "name": "OpenLadderStudio.UI",
+      "layer": "Presentation",
+      "owns": [
+        "WinForms shell, editor, device management, dialogs and visual monitoring"
+      ],
+      "mustNotDependOn": []
+    }
+  ],
+  "migrationRules": [
+    "New production code belongs under src once its target module exists.",
+    "The portable directory remains the compatibility and legacy-build boundary until the project build is migrated.",
+    "Generated .build.cs files must never be committed.",
+    "New protocol behavior is introduced through driver contracts, not through UI conditionals."
+  ]
+}

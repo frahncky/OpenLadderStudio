@@ -11,11 +11,14 @@
 
 ## Regras de arquitetura
 
+- classificar novos componentes pelo catalogo em `.github/architecture/modules.json` antes de cria-los;
 - UI não deve conter lógica de protocolo quando ela puder ficar em driver/serviço;
 - núcleo e modelo Ladder não devem depender de WinForms;
 - novos fabricantes devem entrar por perfis/contratos, não por condicionais espalhadas na interface;
 - escrita em PLC deve permanecer separada de leitura e exigir validação específica;
 - não criar novos arquivos com sufixo de versão quando um arquivo estável puder ser evoluído.
+
+Para a estratégia de migração e os limites impostos pelo build atual, consulte `docs/DEVELOPMENT_GUIDE.md`.
 
 ## Versionamento
 

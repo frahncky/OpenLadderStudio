@@ -8,6 +8,10 @@ $universalPrep = Join-Path $portable 'PrepareUniversalStudioV20.ps1'
 $uiPrep = Join-Path $portable 'PrepareStudioUiV20.ps1'
 $iconPrep = Join-Path $portable 'GenerateOpenLadderIcon.ps1'
 
+$architectureValidation = Join-Path $PSScriptRoot 'ValidateArchitecture.ps1'
+if (-not (Test-Path $architectureValidation)) { throw "Validador arquitetural ausente: $architectureValidation" }
+& $architectureValidation
+
 $required = @($versionPath, $installer, $universalPrep, $uiPrep, $iconPrep)
 foreach ($path in $required) {
     if (-not (Test-Path $path)) { throw "Arquivo obrigatório ausente: $path" }
