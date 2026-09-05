@@ -1,65 +1,17 @@
 $ErrorActionPreference = 'Stop'
 $root = Get-Location
 
-function Invoke-ReplaceOnce([string]$text, [string]$needle, [string]$replacement, [string]$label) {
+function Invoke-ReplaceText([string]$text, [string]$needle, [string]$replacement, [string]$label) {
     if (-not $text.Contains($needle)) { throw "Ancora nao encontrada: $label" }
     return $text.Replace($needle, $replacement)
 }
 
-$updaterPath = Join-Path $root 'PC12Updater.build.cs'
-$updater = [System.IO.File]::ReadAllText($updaterPath)
-$updaterAnchor = "namespace ModernPC12`r`n{"
-$updaterCode = @'
-namespace ModernPC12
-{
-    internal static class PC12UpdateChecker
-    {
-        private const string RepoApi = "https://api.github.com/repos/frahncky/OpenLadderStudio/releases/latest";
-
-        public static bool TryGetAvailableVersion(out string latestVersion)
-        {
-            latestVersion = string.Empty;
-            try
-            {
-                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
-                using (WebClient client = new WebClient())
-                {
-                    client.Headers[HttpRequestHeader.UserAgent] = "OpenLadder-Studio-Updater";
-                    string json = client.DownloadString(RepoApi);
-                    Match match = Regex.Match(json ?? string.Empty, "\\\"tag_name\\\"\\s*:\\s*\\\"v?([^\\\"]+)\\\"", RegexOptions.IgnoreCase);
-                    if (!match.Success) return false;
-                    latestVersion = match.Groups[1].Value.Trim();
-                    Version latest;
-                    Version current;
-                    return Version.TryParse(latestVersion, out latest)
-                        && Version.TryParse(ReadCurrentVersion(), out current)
-                        && latest.CompareTo(current) > 0;
-                }
-            }
-            catch { latestVersion = string.Empty; return false; }
-        }
-
-        private static string ReadCurrentVersion()
-        {
-            try
-            {
-                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "version.txt");
-                if (File.Exists(path)) return File.ReadAllText(path).Trim().TrimStart('v', 'V');
-            }
-            catch { }
-            return "0.10";
-        }
-    }
-'@
-$updater = Invoke-ReplaceOnce $updater $updaterAnchor ($updaterCode.TrimEnd()) 'namespace do atualizador'
-[System.IO.File]::WriteAllText($updaterPath, $updater, [System.Text.Encoding]::UTF8)
-
 $shellPath = Join-Path $root 'UniversalStudioShell.build.cs'
-$shell = [System.IO.File]::ReadAllText($shellPath)
-$shell = Invoke-ReplaceOnce $shell 'using System.Drawing;' "using System.Drawing;`r`nusing System.IO;`r`nusing System.Net;" 'imports de rede'
-$shell = Invoke-ReplaceOnce $shell 'using System.Reflection;' "using System.Reflection;`r`nusing System.Text.RegularExpressions;" 'import de regex'
-$shellAnchor = "namespace ModernPC12`r`n{"
-$shellChecker = @'
+$shell = [System.IO.File]::ReadAllText($shellPath).Replace("`r`n", "`n")
+$shell = Invoke-ReplaceText $shell 'using System.Drawing;' "using System.Drawing;`nusing System.IO;`nusing System.Net;" 'imports de rede'
+$shell = Invoke-ReplaceText $shell 'using System.Reflection;' "using System.Reflection;`nusing System.Text.RegularExpressions;`nusing System.Threading;" 'imports de verificacao'
+
+$checker = @'
 namespace ModernPC12
 {
     internal static class PC12UpdateChecker
@@ -101,12 +53,11 @@ namespace ModernPC12
         }
     }
 '@
-$shell = Invoke-ReplaceOnce $shell $shellAnchor ($shellChecker.TrimEnd()) 'namespace do shell'
-$shell = Invoke-ReplaceOnce $shell 'using System.Text.RegularExpressions;' "using System.Text.RegularExpressions;`r`nusing System.Threading;" 'using Thread'
-$shell = Invoke-ReplaceOnce $shell '        private Label statusText;' "        private Label statusText;`r`n        private LinkLabel updateNotice;" 'campo do aviso'
-$shell = Invoke-ReplaceOnce $shell '            ShowLadder();' "            ShowLadder();`r`n            Shown += delegate { CheckForUpdatesInBackground(); };" 'inicio da verificacao'
-$statusAnchor = '            p.Controls.Add(statusText);'
-$statusCode = @'
+$shell = Invoke-ReplaceText $shell "namespace ModernPC12`n{" $checker.TrimEnd() 'namespace do shell'
+$shell = Invoke-ReplaceText $shell '        private Label statusText;' "        private Label statusText;`n        private LinkLabel updateNotice;" 'campo do aviso'
+$shell = Invoke-ReplaceText $shell '            ShowLadder();' "            ShowLadder();`n            Shown += delegate { CheckForUpdatesInBackground(); };" 'inicio da verificacao'
+
+$notice = @'
             p.Controls.Add(statusText);
 
             updateNotice = new LinkLabel();
@@ -122,9 +73,9 @@ $statusCode = @'
             updateNotice.Click += delegate { ShowUpdater(); };
             p.Controls.Add(updateNotice);
 '@
-$shell = Invoke-ReplaceOnce $shell $statusAnchor ($statusCode.TrimEnd()) 'controle visual do aviso'
-$methodAnchor = '        private void RefreshProfileUi()'
-$methodCode = @'
+$shell = Invoke-ReplaceText $shell '            p.Controls.Add(statusText);' $notice.TrimEnd() 'controle visual do aviso'
+
+$method = @'
         private void CheckForUpdatesInBackground()
         {
             Thread worker = new Thread(delegate()
@@ -148,5 +99,5 @@ $methodCode = @'
 
         private void RefreshProfileUi()
 '@
-$shell = Invoke-ReplaceOnce $shell $methodAnchor ($methodCode.TrimEnd()) 'metodo de verificacao'
+$shell = Invoke-ReplaceText $shell '        private void RefreshProfileUi()' $method.TrimEnd() 'metodo de verificacao'
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
