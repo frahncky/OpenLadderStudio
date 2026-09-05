@@ -81,6 +81,9 @@ $buildReplacement = @'
 if (-not $updater.Contains($buildNeedle.Trim())) { throw 'Final do construtor do atualizador não encontrado.' }
 $updater = $updater.Replace($buildNeedle.Trim(), $buildReplacement.Trim())
 
+# A etapa de retomada V50 usa blocos multilinha CRLF. Forçamos o arquivo gerado
+# para o mesmo padrão do runner Windows antes de entregá-lo à etapa seguinte.
+$updater = $updater.Replace("`r`n", "`n").Replace("`n", "`r`n")
 [System.IO.File]::WriteAllText($updaterPath, $updater, [System.Text.Encoding]::UTF8)
 
 $shell = [System.IO.File]::ReadAllText($shellPath)
