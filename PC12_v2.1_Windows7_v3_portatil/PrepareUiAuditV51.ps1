@@ -48,13 +48,15 @@ $enumNew = @'
 '@
 $ui = Replace-Required $ui $enumOld.TrimEnd() $enumNew.TrimEnd() 'enum StudioIcon'
 
-$ui = Replace-Required $ui '                case StudioIcon.Undo:     return Color.FromArgb(190, 132, 235);' @'
+$paletteUndoOld = '                case StudioIcon.Undo:     return Color.FromArgb(190, 132, 235);'
+$paletteUndoNew = @'
                 case StudioIcon.Undo:     return Color.FromArgb(145, 166, 255);
                 case StudioIcon.Redo:     return Color.FromArgb(116, 184, 255);
-'@.TrimEnd() 'paleta undo redo'
+'@
+$ui = Replace-Required $ui $paletteUndoOld $paletteUndoNew.TrimEnd() 'paleta undo redo'
 
-$paletteAnchor = '                default:                  return StudioTheme.Fore;'
-$paletteNew = @'
+$paletteDefault = '                default:                  return StudioTheme.Fore;'
+$paletteLadder = @'
                 case StudioIcon.Select:    return Color.FromArgb(226, 232, 240);
                 case StudioIcon.ContactNO: return Color.FromArgb(125, 211, 252);
                 case StudioIcon.ContactNC: return Color.FromArgb(125, 211, 252);
@@ -63,7 +65,7 @@ $paletteNew = @'
                 case StudioIcon.Counter:   return Color.FromArgb(244, 114, 182);
                 default:                  return StudioTheme.Fore;
 '@
-$ui = Replace-Required $ui $paletteAnchor $paletteNew.TrimEnd() 'paleta Ladder'
+$ui = Replace-Required $ui $paletteDefault $paletteLadder.TrimEnd() 'paleta Ladder'
 
 $glyphAnchor = '                    case StudioIcon.Refresh:'
 $glyphInsert = @'
@@ -138,13 +140,13 @@ $commandNew = @'
 '@
 $ladder = Replace-Required $ladder $commandOld.TrimEnd() $commandNew.TrimEnd() 'toolbar Ladder'
 
-$erase = '            AddToolButton(toolbox, "×  Apagar", t, LadderTool.Erase); t += 48;'
+$eraseOld = '            AddToolButton(toolbox, "×  Apagar", t, LadderTool.Erase); t += 48;'
 $eraseNew = @'
             AddToolButton(toolbox, "×  Apagar", t, LadderTool.Erase); t += 42;
             AddToolActionButton(toolbox, "+  Adicionar linha", t, delegate { AddRung(); }, Color.FromArgb(72, 200, 136)); t += 38;
             AddToolActionButton(toolbox, "−  Remover linha", t, delegate { DeleteSelectedRung(); }, Color.FromArgb(224, 102, 102)); t += 48;
 '@
-$ladder = Replace-Required $ladder $erase $eraseNew.TrimEnd() 'linhas em Elementos'
+$ladder = Replace-Required $ladder $eraseOld $eraseNew.TrimEnd() 'linhas em Elementos'
 
 $helperAnchor = '        private void SetActiveTool(LadderTool tool)'
 $helper = @'
@@ -220,7 +222,12 @@ $undoRedo = @'
 '@
 $ladder = Replace-Section $ladder '        private void Undo()' '        private void MarkChanged(string message)' $undoRedo 'Undo Redo'
 $ladder = $ladder.Replace('            undoStack.Clear();', "            undoStack.Clear();`n            redoStack.Clear();")
-$ladder = Replace-Required $ladder '            else if (e.Control && e.KeyCode == Keys.Z) { Undo(); e.SuppressKeyPress = true; }' "            else if (e.Control && e.KeyCode == Keys.Z) { Undo(); e.SuppressKeyPress = true; }`n            else if (e.Control && e.KeyCode == Keys.Y) { Redo(); e.SuppressKeyPress = true; }" 'Ctrl+Y'
+$keyOld = '            else if (e.Control && e.KeyCode == Keys.Z) { Undo(); e.SuppressKeyPress = true; }'
+$keyNew = @'
+            else if (e.Control && e.KeyCode == Keys.Z) { Undo(); e.SuppressKeyPress = true; }
+            else if (e.Control && e.KeyCode == Keys.Y) { Redo(); e.SuppressKeyPress = true; }
+'@
+$ladder = Replace-Required $ladder $keyOld $keyNew.TrimEnd() 'Ctrl+Y'
 [System.IO.File]::WriteAllText($ladderPath, $ladder, [System.Text.Encoding]::UTF8)
 
 # -----------------------------------------------------------------------------
@@ -285,10 +292,24 @@ $toolbar = @'
 $toolbar = $toolbar.Replace('__VERSION__', $version)
 $shell = Replace-Section $shell '        private Control BuildToolbar()' '        private NavButton NavItem' $toolbar 'toolbar global'
 
-$shell = $shell.Replace('            editar.DropDownItems.Add(DropItem("Adicionar rung", delegate { InvokeLadder("AddRung", null); }));' + "`n", '')
-$shell = $shell.Replace('            editar.DropDownItems.Add(DropItem("Excluir rung", delegate { InvokeLadder("DeleteSelectedRung", null); }));' + "`n", '')
-$shell = Replace-Required $shell '            editar.DropDownItems.Add(DropItem("Desfazer", delegate { InvokeLadder("Undo", null); }));' "            editar.DropDownItems.Add(DropItem(\"Desfazer\", delegate { InvokeLadder(\"Undo\", null); }));`n            editar.DropDownItems.Add(DropItem(\"Refazer\", delegate { InvokeLadder(\"Redo\", null); }));" 'menu Refazer'
-$shell = Replace-Required $shell '            miProps = DropItem("Painel de propriedades", delegate { TogglePanel(1); });' "            miProps = DropItem(\"Painel de propriedades\", delegate { TogglePanel(1); });`n            miProps.Visible = false;" 'ocultar painel direito no menu'
+$addRungMenu = '            editar.DropDownItems.Add(DropItem("Adicionar rung", delegate { InvokeLadder("AddRung", null); }));' + "`n"
+$delRungMenu = '            editar.DropDownItems.Add(DropItem("Excluir rung", delegate { InvokeLadder("DeleteSelectedRung", null); }));' + "`n"
+$shell = $shell.Replace($addRungMenu, '')
+$shell = $shell.Replace($delRungMenu, '')
+
+$menuUndoOld = '            editar.DropDownItems.Add(DropItem("Desfazer", delegate { InvokeLadder("Undo", null); }));'
+$menuUndoNew = @'
+            editar.DropDownItems.Add(DropItem("Desfazer", delegate { InvokeLadder("Undo", null); }));
+            editar.DropDownItems.Add(DropItem("Refazer", delegate { InvokeLadder("Redo", null); }));
+'@
+$shell = Replace-Required $shell $menuUndoOld $menuUndoNew.TrimEnd() 'menu Refazer'
+
+$propsOld = '            miProps = DropItem("Painel de propriedades", delegate { TogglePanel(1); });'
+$propsNew = @'
+            miProps = DropItem("Painel de propriedades", delegate { TogglePanel(1); });
+            miProps.Visible = false;
+'@
+$shell = Replace-Required $shell $propsOld $propsNew.TrimEnd() 'ocultar painel direito no menu'
 
 $nav = @'
         private Panel BuildNav()
@@ -499,7 +520,17 @@ $prepare = @'
 
 '@
 $shell = Replace-Section $shell '        private void PrepareLadderForStudio(LadderEditorForm form)' '        private void CompactLadderControls(Control root)' $prepare 'integracao Ladder'
-$shell = Replace-Required $shell "                method.Invoke(ladderForm, args);`n                UpdateProjectName();" "                method.Invoke(ladderForm, args);`n                UpdateProjectName();`n                RefreshLadderSelectionProperties();" 'refresh propriedades'
+
+$invokeOld = @'
+                method.Invoke(ladderForm, args);
+                UpdateProjectName();
+'@
+$invokeNew = @'
+                method.Invoke(ladderForm, args);
+                UpdateProjectName();
+                RefreshLadderSelectionProperties();
+'@
+$shell = Replace-Required $shell $invokeOld.TrimEnd() $invokeNew.TrimEnd() 'refresh propriedades'
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
 
 Write-Host 'UI V51 aplicada: toolbar global, painel lateral unico, bobina correta, Refazer e linhas em Elementos.'
