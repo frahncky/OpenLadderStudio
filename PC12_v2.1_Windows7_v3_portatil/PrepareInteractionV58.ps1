@@ -33,17 +33,13 @@ $fieldReplacement = @'
 '@
 $ladder = Replace-Required $ladder $fieldAnchor $fieldReplacement.TrimEnd() 'campos hover'
 
-$ctorOld = @'
+$mouseDownAnchor = '            MouseDown += CanvasMouseDown;'
+$mouseDownReplacement = @'
             MouseDown += CanvasMouseDown;
-            MouseDoubleClick += CanvasMouseDoubleClick;
-'@
-$ctorNew = @'
-            MouseDown += CanvasMouseDown;
-            MouseDoubleClick += CanvasMouseDoubleClick;
             MouseMove += CanvasMouseMove;
             MouseLeave += delegate { HoverRung = -1; HoverColumn = -1; Invalidate(); };
 '@
-$ladder = Replace-Required $ladder $ctorOld.TrimEnd() $ctorNew.TrimEnd() 'eventos hover'
+$ladder = Replace-Required $ladder $mouseDownAnchor $mouseDownReplacement.TrimEnd() 'eventos hover'
 
 # Marca a ultima coluna como area de saida sem adicionar ruido ao diagrama.
 $gridAnchor = @'
