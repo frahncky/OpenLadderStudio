@@ -81,8 +81,19 @@ $buildReplacement = @'
 if (-not $updater.Contains($buildNeedle.Trim())) { throw 'Final do construtor do atualizador não encontrado.' }
 $updater = $updater.Replace($buildNeedle.Trim(), $buildReplacement.Trim())
 
-# A etapa de retomada V50 usa blocos multilinha CRLF. Forçamos o arquivo gerado
-# para o mesmo padrão do runner Windows antes de entregá-lo à etapa seguinte.
+# Marca a retomada no ponto realmente estável do fluxo: quando o instalador já foi
+# baixado/validado e o ProcessStartInfo recebe o executável a ser iniciado.
+$resumeCallNeedle = '                psi.FileName = downloadedSetup;'
+$resumeCallReplacement = @'
+                PrepareResumeAfterUpdate();
+                psi.FileName = downloadedSetup;
+'@
+if (-not $updater.Contains($resumeCallNeedle)) { throw 'Ponto de execução do instalador não encontrado.' }
+if (-not $updater.Contains('                PrepareResumeAfterUpdate();')) {
+    $updater = $updater.Replace($resumeCallNeedle, $resumeCallReplacement.TrimEnd())
+}
+
+# Mantem o arquivo gerado no padrão CRLF do runner Windows.
 $updater = $updater.Replace("`r`n", "`n").Replace("`n", "`r`n")
 [System.IO.File]::WriteAllText($updaterPath, $updater, [System.Text.Encoding]::UTF8)
 
