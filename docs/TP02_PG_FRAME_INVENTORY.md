@@ -101,3 +101,65 @@ Dois pontos concretos:
 Enviar opcode de efeito desconhecido a um PLC vivo pode apagar programa, alterar saídas ou
 corromper firmware. Toda transmissão nova deve passar pela mesma trava de segurança já usada
 no laboratório PG.
+
+---
+
+# Recuperação por emulação
+
+Data: 2026-09-05. Ferramenta: `scripts/emulate_pc12_frames.py`.
+
+## Por que emular
+
+A varredura estática acima tem um limite estrutural: só alcança quadros escritos byte
+a byte como imediatos. O handshake `CON-ICB` é o contraexemplo conhecido — está
+armazenado como cadeia e é copiado para o buffer, então não aparece.
+
+A emulação remove esse limite. As seções do PE são carregadas em um emulador x86, cada
+import é substituído por um stub, a função é executada e as escritas no buffer de
+transmissão são observadas. O quadro recuperado é o que a função realmente monta,
+independentemente de como.
+
+Nada roda no sistema hospedeiro: o código executa dentro do emulador, sem acesso a
+disco, rede ou porta serial.
+
+## Resultado
+
+Foram encontradas 182 chamadas à rotina de transmissão, em 32 funções distintas.
+Quadros recuperados:
+
+| Função | Quadro | LEN | Soma |
+|---|---|---:|---|
+| `0x0046F01D` | `43 4F 4E 2D 49 43 42 0D` — `CON-ICB<CR>` | 8 | — |
+| `0x0046F07A` | `03 00 FC` | 3 | FF |
+| `0x0046F0F0` | `0F 00 F0` | 3 | FF |
+| `0x0046F166` | `11 00 EE` | 3 | FF |
+| `0x0046F1DC` | `04 00 FB` | 3 | FF |
+| `0x0046F2BE` | `F0 00 0F` | 3 | FF |
+| `0x0046F4FA` | `02 00 FD` | 3 | FF |
+| `0x0046F570` | `01 00 FE` | 3 | FF |
+| `0x004B4133` | `0A 03 60 26 02 6A` | 6 | FF |
+| `0x004C1532` | `0A 03 53 F9 06 A0` | 6 | FF |
+
+Dois ganhos sobre a varredura estática:
+
+- **`CON-ICB<CR>` foi recuperado**, com comprimento 8. Confirma por execução o que antes
+  era afirmação baseada em leitura de código.
+- **`0F 00 F0` foi recuperado**, o quadro de apagamento de memória. A varredura estática
+  não o encontrava. Isso reforça a necessidade da trava que já existe no laboratório PG.
+
+Os quadros `0A 03 ...` aparecem agora **com o byte de checksum**, que a varredura
+estática não capturava, e fecham em `FF` como esperado.
+
+## Conjunto de opcodes conhecido
+
+Somando os dois métodos: `01`, `02`, `03`, `04`, `09`, `0A`, `0F`, `11`, `13`, `14`,
+`33`, `34`, `35`, `37`, `38`, `F0`, mais o handshake em ASCII.
+
+## Limites que permanecem
+
+- Das 182 chamadas, apenas 32 funções distintas foram alcançadas pelo rastreio de
+  prólogo; pode haver mais.
+- Funções cujo quadro depende de entrada do usuário ou de estado em execução produzem
+  quadro parcial, com posições não escritas.
+- A emulação recupera **o que é enviado**, não **o que significa**. Semântica e formato
+  de resposta continuam dependendo de captura em equipamento real.
