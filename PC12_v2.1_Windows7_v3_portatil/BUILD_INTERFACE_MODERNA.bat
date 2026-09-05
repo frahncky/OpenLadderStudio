@@ -28,6 +28,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareStudioUiV20.ps1
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareStudioUiV21.ps1"
 if errorlevel 1 goto :erro
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUiAuditV51.ps1"
+if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareMemoryMapV15.ps1"
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareModbusMonitorV15.ps1"
@@ -39,6 +41,8 @@ if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareAppBranding.ps1"
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareAutoUpdaterV36.ps1"
+if errorlevel 1 goto :erro
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUpdateResumeV50.ps1"
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUpdateNotification.ps1"
 if errorlevel 1 goto :erro
