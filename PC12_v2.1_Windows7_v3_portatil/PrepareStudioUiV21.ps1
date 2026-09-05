@@ -169,7 +169,21 @@ $tool = @'
 '@
 $text = Replace-Section $text '    internal sealed class IconToolButton : StudioControl' '    internal sealed class StudioTab' $tool 'IconToolButton V21'
 
-$text = Replace-Required $text '            Height = 32;\n            Dock = DockStyle.Top;\n            BackColor = StudioTheme.Shell;' '            Height = 36;\n            Dock = DockStyle.Top;\n            BackColor = StudioTheme.Chrome;' 'DocTabStrip'
+$tabNeedle = @'
+        public DocTabStrip()
+        {
+            Height = 32;
+            Dock = DockStyle.Top;
+            BackColor = StudioTheme.Shell;
+'@
+$tabReplacement = @'
+        public DocTabStrip()
+        {
+            Height = 36;
+            Dock = DockStyle.Top;
+            BackColor = StudioTheme.Chrome;
+'@
+$text = Replace-Required $text $tabNeedle.TrimEnd() $tabReplacement.TrimEnd() 'DocTabStrip'
 $text = Replace-Required $text '            BackColor = Color.FromArgb(22, 24, 27);' '            BackColor = Color.FromArgb(17, 23, 30);' 'console'
 
 [System.IO.File]::WriteAllText($path, $text, [System.Text.Encoding]::UTF8)
