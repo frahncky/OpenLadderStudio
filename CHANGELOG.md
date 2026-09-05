@@ -2,6 +2,91 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.62] - 2026-09-05
+
+### Atualização
+- a atualização automática passa a exibir uma janela própria, visível também na barra de tarefas;
+- o usuário acompanha as etapas de verificação da versão, download, validação do SHA-256 e fechamento para instalação;
+- o aviso informa antecipadamente que o OpenLadder Studio será fechado e reaberto automaticamente;
+- mensagens e estados do fluxo de atualização foram revisados para indicar claramente o que está acontecendo.
+
+### Interface
+- revisão final de termos exibidos, incluindo “Monitor on-line” e “Janela de atualização”.
+
+## [0.61] - 2026-09-05
+
+### Instalação e atualização
+- o aviso de nova versão passa a iniciar diretamente o atualizador externo;
+- o comando manual e a atualização automática passam a usar o mesmo fluxo;
+- antes de abrir o instalador, o estado da sessão é salvo e o OpenLadder Studio recebe uma solicitação de fechamento gracioso;
+- se o processo não encerrar dentro do prazo, o encerramento forçado é usado apenas como contingência;
+- o instalador preserva a reabertura do aplicativo e a retomada da sessão ao final.
+
+### Interface
+- revisão de acentuação e clareza dos textos do shell, do atualizador e do editor Ladder.
+
+## [0.60] - 2026-09-05
+
+### Interface
+- o botão “Conectar” deixa de aparecer permanentemente destacado;
+- o destaque visual fica reservado aos estados reais de interação e conexão.
+
+## [0.59] - 2026-09-05
+
+### Interface
+- os botões da barra superior passam a calcular a largura pelo texto real;
+- removido o truncamento por reticências, inclusive no comando “Conectar”;
+- dimensões mínimas foram reforçadas para permanecer legíveis em diferentes escalas de DPI;
+- estabilizado o feedback de hover das células do editor Ladder.
+
+## [0.58] - 2026-09-05
+
+### Editor Ladder
+- novo feedback visual ao passar o ponteiro sobre as células;
+- a coluna destinada às saídas passa a ser identificada e diferenciada visualmente;
+- o hover não interfere na seleção ativa do elemento.
+
+### Atualização
+- a verificação em segundo plano repete a consulta em caso de falha transitória de rede;
+- nenhum aviso é exibido quando a versão instalada já é a mais recente.
+
+## [0.57] - 2026-09-05
+
+### Editor Ladder
+- canvas redesenhado com mais espaço, guias discretas de coluna e trilhos mais definidos;
+- numeração das linhas e seleção receberam hierarquia visual mais clara;
+- contatos, bobinas, blocos e ramos paralelos ganharam desenho mais legível;
+- removidas referências visuais remanescentes ao antigo “PC12 Ladder Studio”.
+
+## [0.56] - 2026-09-05
+
+### Interface e produtividade
+- a barra superior foi simplificada, sem repetição do nome e da versão do aplicativo;
+- a barra de status passa a mostrar apenas o contexto operacional;
+- adicionados atalhos globais para novo, abrir, salvar, salvar como, desfazer, refazer, selecionar e apagar;
+- os atalhos Ladder continuam funcionando mesmo quando o foco está no painel lateral.
+
+## [0.55] - 2026-09-05
+
+### Interface
+- contatos, saídas, temporização, contagem, funções e operações de linha foram consolidados na lista “Elementos”;
+- as propriedades da seleção ficaram mais enxutas;
+- a tecla Delete passa a ser a ação visual única para excluir o componente selecionado;
+- a linguagem apresentada ao usuário foi padronizada de “rung” para “linha”;
+- ajuda e mensagens do editor foram simplificadas e alinhadas aos atalhos realmente disponíveis.
+
+## [0.54] - 2026-09-05
+
+### Interface
+- a biblioteca lateral passa a separar os componentes Ladder por categorias;
+- ações de seleção, edição e manutenção de linhas deixam de aparecer misturadas aos componentes;
+- a janela “Sobre” foi reduzida à identificação útil do produto.
+
+### Atualização
+- o estado da sessão passa a ser salvo antes da abertura do atualizador;
+- reforçado o fechamento do Studio e sua reabertura automática durante a instalação;
+- o aviso de nova versão ganhou ancoragem mais estável e permanece visível até a ação do usuário.
+
 ## [0.53] - 2026-09-05
 
 ### Simulação de processo
