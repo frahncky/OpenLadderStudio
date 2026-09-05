@@ -85,16 +85,13 @@ procedure CloseRunningOpenLadderForUpdate();
 var
   ResultCode: Integer;
 begin
-  if OpenLadderWasRunning and UpdateResumeRequested() then
+  if UpdateResumeRequested() then
   begin
-    { O updater solicita Application.Exit(); aguarda o FormClosing salvar a sessão. }
-    Sleep(1500);
-    if FindWindowByWindowName('{#MyAppName}') <> 0 then
-    begin
-      Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM OpenLadderStudio.exe /T', '', SW_HIDE,
-        ewWaitUntilTerminated, ResultCode);
-      Sleep(500);
-    end;
+    { A sessão já foi salva pelo Studio antes de abrir o atualizador. }
+    Sleep(1200);
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM OpenLadderStudio.exe /T', '', SW_HIDE,
+      ewWaitUntilTerminated, ResultCode);
+    Sleep(500);
   end;
 end;
 
