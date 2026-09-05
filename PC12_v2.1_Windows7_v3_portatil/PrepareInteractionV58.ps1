@@ -25,17 +25,13 @@ function Replace-Section([string]$text, [string]$startAnchor, [string]$endAnchor
 # -----------------------------------------------------------------------------
 $ladder = LF ([System.IO.File]::ReadAllText($ladderPath))
 
-$fieldsOld = @'
-        public int SelectedLane = 0;
-        public event EventHandler SelectionChanged;
-'@
-$fieldsNew = @'
+$fieldAnchor = '        public int SelectedLane = 0;'
+$fieldReplacement = @'
         public int SelectedLane = 0;
         private int HoverRung = -1;
         private int HoverColumn = -1;
-        public event EventHandler SelectionChanged;
 '@
-$ladder = Replace-Required $ladder $fieldsOld.TrimEnd() $fieldsNew.TrimEnd() 'campos hover'
+$ladder = Replace-Required $ladder $fieldAnchor $fieldReplacement.TrimEnd() 'campos hover'
 
 $ctorOld = @'
             MouseDown += CanvasMouseDown;
