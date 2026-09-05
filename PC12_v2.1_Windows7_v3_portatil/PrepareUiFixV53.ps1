@@ -107,7 +107,6 @@ $shell = Replace-Section $shell '        private Panel BuildElementLibrary()' ' 
 $shell = $shell.Replace('            statusText.Text = "Editor Ladder universal";', '            statusText.Text = "Pronto";')
 $shell = $shell.Replace('            statusText.Text = "Modelo Ladder universal verificado";', '            statusText.Text = "Verificação concluída";')
 
-# O ponto estavel e a ativacao do LinkLabel, independente da redacao anterior.
 $noticeVisible = '                        updateNotice.Visible = true;'
 $noticeExpanded = @'
                         updateNotice.Text = "● NOVA VERSÃO v" + latestVersion + " — ATUALIZAR";
@@ -128,17 +127,17 @@ $shell = Replace-Required $shell $noticeVisible $noticeExpanded.TrimEnd() 'aviso
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
 
+# Usa Process.Start como ancora estavel. A etapa anterior pode ter trocado Close()
+# ou incluido outras chamadas depois dela; Application.Exit e idempotente.
 $updater = LF ([System.IO.File]::ReadAllText($updaterPath))
-$launchOld = @'
-                Process.Start(psi);
-                Close();
-'@
-$launchNew = @'
-                statusLabel.Text = "Instalador iniciado. Fechando o OpenLadder Studio...";
+$launchAnchor = '                Process.Start(psi);'
+$launchReplacement = @'
                 Process.Start(psi);
                 Application.Exit();
 '@
-$updater = Replace-Required $updater $launchOld.TrimEnd() $launchNew.TrimEnd() 'fechar Studio no update'
+if (-not $updater.Contains('                Process.Start(psi);`n                Application.Exit();')) {
+    $updater = Replace-Required $updater $launchAnchor $launchReplacement.TrimEnd() 'fechar Studio no update'
+}
 [System.IO.File]::WriteAllText($updaterPath, $updater, [System.Text.Encoding]::UTF8)
 
 Write-Host 'V53 aplicada: update visivel, fechamento/reabertura, lista simples, textos enxutos e toolbar sem clipping.'
