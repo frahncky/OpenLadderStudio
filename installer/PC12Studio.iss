@@ -25,7 +25,7 @@ SetupLogging=yes
 UninstallDisplayIcon={app}\OpenLadderStudio.ico
 UninstallDisplayName=OpenLadder Studio
 CloseApplications=yes
-RestartApplications=no
+RestartApplications=yes
 ArchitecturesAllowed=x86 x64
 
 [Languages]
@@ -76,18 +76,36 @@ Filename: "{app}\OpenLadderStudio.exe"; Description: "Abrir OpenLadder Studio"; 
 var
   OpenLadderWasRunning: Boolean;
 
+function UpdateResumeRequested(): Boolean;
+begin
+  Result := FileExists(ExpandConstant('{localappdata}\OpenLadder Studio\resume-after-update.flag'));
+end;
+
+procedure CloseRunningOpenLadderForUpdate();
+var
+  ResultCode: Integer;
+begin
+  if OpenLadderWasRunning and UpdateResumeRequested() then
+  begin
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM OpenLadderStudio.exe /T', '', SW_HIDE,
+      ewWaitUntilTerminated, ResultCode);
+    Sleep(500);
+  end;
+end;
+
 function InitializeSetup(): Boolean;
 begin
   OpenLadderWasRunning := FindWindowByWindowName('{#MyAppName}') <> 0;
+  CloseRunningOpenLadderForUpdate();
   Result := True;
 end;
 
 function ShouldAutoReopenOpenLadder(): Boolean;
 begin
-  Result := OpenLadderWasRunning;
+  Result := OpenLadderWasRunning or UpdateResumeRequested();
 end;
 
 function WasOpenLadderClosedBeforeInstall(): Boolean;
 begin
-  Result := not OpenLadderWasRunning;
+  Result := (not OpenLadderWasRunning) and (not UpdateResumeRequested());
 end;
