@@ -12,40 +12,15 @@ function Replace-Required([string]$text, [string]$needle, [string]$replacement, 
     if (-not $text.Contains($needle)) { throw "Âncora não encontrada ($label)." }
     return $text.Replace($needle, $replacement)
 }
+function Replace-Section([string]$text, [string]$startAnchor, [string]$endAnchor, [string]$replacement, [string]$label) {
+    $start = $text.IndexOf($startAnchor)
+    if ($start -lt 0) { throw "Início não encontrado ($label)." }
+    $end = $text.IndexOf($endAnchor, $start + $startAnchor.Length)
+    if ($end -lt 0) { throw "Fim não encontrado ($label)." }
+    return $text.Substring(0, $start) + $replacement + $text.Substring($end)
+}
 
 $updater = LF ([System.IO.File]::ReadAllText($updaterPath))
-$automaticOld = @'
-            if (automatic)
-            {
-                ShowInTaskbar = false;
-                Opacity = 0.0;
-                WindowState = FormWindowState.Minimized;
-                Shown += delegate
-                {
-                    BeginInvoke(new MethodInvoker(delegate
-                    {
-                        try
-                        {
-                            CheckForUpdates();
-                            if (updateButton.Enabled
-                                && string.Equals(updateButton.Text, "ATUALIZAR", StringComparison.OrdinalIgnoreCase)
-                                && !string.IsNullOrEmpty(setupUrl))
-                            {
-                                DownloadAndInstall();
-                            }
-                            else
-                            {
-                                Close();
-                            }
-                        }
-                        catch
-                        {
-                            Close();
-                        }
-                    }));
-                };
-            }
-'@
 $automaticNew = @'
             if (automatic)
             {
@@ -80,8 +55,10 @@ $automaticNew = @'
                     }));
                 };
             }
+        }
+
 '@
-$updater = Replace-Required $updater $automaticOld.TrimEnd() $automaticNew.TrimEnd() 'modo automático visível'
+$updater = Replace-Section $updater '            if (automatic)' '        private void BuildUi()' $automaticNew 'modo automático visível'
 $updater = $updater.Replace('statusLabel.Text = "Baixando...";', 'statusLabel.Text = "Baixando a atualização...";')
 $updater = $updater.Replace('statusLabel.Text = "Baixando... " + value.ToString(CultureInfo.InvariantCulture) + "%";', 'statusLabel.Text = "Baixando a atualização... " + value.ToString(CultureInfo.InvariantCulture) + "%";')
 $updater = $updater.Replace('statusLabel.Text = "Verificando...";', 'statusLabel.Text = "Verificando o arquivo baixado...";')
