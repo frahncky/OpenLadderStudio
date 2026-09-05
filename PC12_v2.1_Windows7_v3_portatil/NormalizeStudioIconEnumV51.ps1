@@ -16,8 +16,8 @@ $audit = [System.Text.RegularExpressions.Regex]::Replace(
     1)
 [System.IO.File]::WriteAllText($auditPath, $audit, [System.Text.Encoding]::UTF8)
 
-# Torna apenas a substituicao do ponto de inicio do instalador resiliente a
-# pequenas mudancas de espaco/formatacao no updater moderno.
+# A V50 ainda tenta inserir o marcador pelo formato antigo. Se o AutoUpdater V36
+# já o colocou no ponto estável do instalador, a substituicao passa a ser idempotente.
 $resume = [System.IO.File]::ReadAllText($resumePath)
 $oldRequired = @'
 function Replace-Required([string]$text, [string]$needle, [string]$replacement, [string]$label) {
@@ -29,6 +29,7 @@ $newRequired = @'
 function Replace-Required([string]$text, [string]$needle, [string]$replacement, [string]$label) {
     if (-not $text.Contains($needle)) {
         if ($label -eq 'marcador antes do instalador') {
+            if ($text.Contains('PrepareResumeAfterUpdate();')) { return $text }
             $semantic = 'progress\.Value\s*=\s*100;\s*ProcessStartInfo\s+psi\s*=\s*new\s+ProcessStartInfo\(\);'
             $match = [System.Text.RegularExpressions.Regex]::Match($text, $semantic)
             if ($match.Success) {
