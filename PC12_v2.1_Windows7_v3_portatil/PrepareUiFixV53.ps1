@@ -27,20 +27,9 @@ $shell = LF ([System.IO.File]::ReadAllText($shellPath))
 # ser abreviado mesmo quando usa fonte em destaque.
 $shell = Replace-Required $shell '            b.Width = b.MeasureWidth();' '            b.Width = Math.Max(b.MeasureWidth(), text == "Conectar" ? 112 : 88);' 'largura toolbar'
 
-# A verificacao de update deve ocorrer uma unica vez ao abrir, sem updater oculto
-# instalando silenciosamente por tras da interface.
-$shell = $shell.Replace('            Shown += delegate { CheckForUpdatesInBackground(); };', '')
+# O Studio deve apenas verificar e sinalizar nova versao. A antiga rotina /AUTO
+# instalava em segundo plano sem aviso; desativa somente essa inscricao.
 $shell = $shell.Replace('            Shown += delegate { BeginInvoke(new MethodInvoker(delegate { StartAutomaticUpdater(); })); };', '')
-$ctorAnchor = @'
-            RefreshProfileUi();
-            ShowLadder();
-'@
-$ctorReplacement = @'
-            RefreshProfileUi();
-            ShowLadder();
-            Shown += delegate { BeginInvoke(new MethodInvoker(delegate { CheckForUpdatesInBackground(); })); };
-'@
-$shell = Replace-Required $shell $ctorAnchor.TrimEnd() $ctorReplacement.TrimEnd() 'check update no startup'
 
 $brand = @'
         private Control BuildBrand()
