@@ -23,21 +23,21 @@ function Replace-Section([string]$text, [string]$startAnchor, [string]$endAnchor
 }
 
 # -----------------------------------------------------------------------------
-# Toolbar: aumenta a largura minima dos botoes para nunca truncar "Conectar".
+# Toolbar: largura calculada com a fonte usada no estado de destaque.
 # -----------------------------------------------------------------------------
 $ui = LF ([System.IO.File]::ReadAllText($uiPath))
 $measureOld = @'
         public int MeasureWidth()
         {
-            int w = TextRenderer.MeasureText(Text, StudioTheme.Small).Width + 18;
-            return Math.Max(56, w);
+            int label = TextRenderer.MeasureText(Text, StudioTheme.Ui).Width;
+            return Math.Max(76, label + 46);
         }
 '@
 $measureNew = @'
         public int MeasureWidth()
         {
-            int w = TextRenderer.MeasureText(Text, StudioTheme.Small).Width + 28;
-            return Math.Max(78, w);
+            int label = TextRenderer.MeasureText(Text, StudioTheme.UiBold).Width;
+            return Math.Max(92, label + 54);
         }
 '@
 $ui = Replace-Required $ui $measureOld.TrimEnd() $measureNew.TrimEnd() 'largura toolbar'
