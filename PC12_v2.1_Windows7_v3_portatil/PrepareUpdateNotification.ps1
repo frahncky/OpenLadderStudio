@@ -113,3 +113,4 @@ $shell = Invoke-ReplaceText $shell '        private void RefreshProfileUi()' $me
 & (Join-Path $root 'PrepareToolbarClarityV59.ps1')
 & (Join-Path $root 'PrepareToolbarStateV60.ps1')
 & (Join-Path $root 'PrepareUpdateFlowV61.ps1')
+& (Join-Path $root 'PrepareUpdateExperienceV62.ps1')
