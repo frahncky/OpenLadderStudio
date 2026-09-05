@@ -41,10 +41,7 @@ $mouseDownReplacement = @'
 '@
 $ladder = Replace-Required $ladder $mouseDownAnchor $mouseDownReplacement.TrimEnd() 'eventos hover'
 
-# Marca a ultima coluna como area de saida sem adicionar ruido ao diagrama.
-$gridAnchor = @'
-            using (Pen railPen = new Pen(Color.FromArgb(32, 53, 70), 3.0f))
-'@
+$gridAnchor = '            using (Pen railPen = new Pen(Color.FromArgb(32, 53, 70), 3.0f))'
 $outputGuide = @'
             int outputLeft = LeftRail + (LadderRung.ColumnCount - 1) * cellWidth;
             using (Brush outputShade = new SolidBrush(Color.FromArgb(248, 250, 253)))
@@ -59,26 +56,17 @@ $outputGuide = @'
 
             using (Pen railPen = new Pen(Color.FromArgb(32, 53, 70), 3.0f))
 '@
-$ladder = Replace-Required $ladder $gridAnchor.TrimEnd() $outputGuide.TrimEnd() 'guia coluna de saida'
+$ladder = Replace-Required $ladder $gridAnchor $outputGuide.TrimEnd() 'guia coluna de saida'
 
-# Hover sutil apenas sobre a celula apontada; selecao continua tendo prioridade.
-$cellOld = @'
-                    Rectangle mainCell = new Rectangle(cellLeft + 3, y - 31, cellWidth - 6, 62);
-                    if (r == SelectedRung && c == SelectedColumn && SelectedLane == 0) DrawSelection(g, mainCell);
-                    DrawElement(g, Rungs[r].Elements[c], mainCell, y, false);
-'@
-$cellNew = @'
+$mainCellAnchor = '                    Rectangle mainCell = new Rectangle(cellLeft + 3, y - 31, cellWidth - 6, 62);'
+$mainCellReplacement = @'
                     Rectangle mainCell = new Rectangle(cellLeft + 3, y - 31, cellWidth - 6, 62);
                     if (r == HoverRung && c == HoverColumn && !(r == SelectedRung && c == SelectedColumn && SelectedLane == 0))
                         DrawHover(g, mainCell);
-                    if (r == SelectedRung && c == SelectedColumn && SelectedLane == 0) DrawSelection(g, mainCell);
-                    DrawElement(g, Rungs[r].Elements[c], mainCell, y, false);
 '@
-$ladder = Replace-Required $ladder $cellOld.TrimEnd() $cellNew.TrimEnd() 'hover celula'
+$ladder = Replace-Required $ladder $mainCellAnchor $mainCellReplacement.TrimEnd() 'hover celula'
 
-$selectionAnchor = @'
-        private static void DrawSelection(Graphics g, Rectangle cell)
-'@
+$selectionAnchor = '        private static void DrawSelection(Graphics g, Rectangle cell)'
 $hoverMethod = @'
         private static void DrawHover(Graphics g, Rectangle cell)
         {
@@ -93,11 +81,9 @@ $hoverMethod = @'
 
         private static void DrawSelection(Graphics g, Rectangle cell)
 '@
-$ladder = Replace-Required $ladder $selectionAnchor.TrimEnd() $hoverMethod.TrimEnd() 'metodo hover'
+$ladder = Replace-Required $ladder $selectionAnchor $hoverMethod.TrimEnd() 'metodo hover'
 
-$mouseAnchor = @'
-        private void CanvasMouseDown(object sender, MouseEventArgs e)
-'@
+$mouseAnchor = '        private void CanvasMouseDown(object sender, MouseEventArgs e)'
 $mouseMove = @'
         private void CanvasMouseMove(object sender, MouseEventArgs e)
         {
@@ -126,7 +112,7 @@ $mouseMove = @'
 
         private void CanvasMouseDown(object sender, MouseEventArgs e)
 '@
-$ladder = Replace-Required $ladder $mouseAnchor.TrimEnd() $mouseMove.TrimEnd() 'mouse move hover'
+$ladder = Replace-Required $ladder $mouseAnchor $mouseMove.TrimEnd() 'mouse move hover'
 
 [System.IO.File]::WriteAllText($ladderPath, $ladder, [System.Text.Encoding]::UTF8)
 
@@ -146,8 +132,6 @@ $checkMethod = @'
                     bool available = PC12UpdateChecker.TryGetAvailableVersion(out latestVersion);
                     if (IsDisposed) return;
 
-                    // latestVersion preenchida significa que a consulta respondeu.
-                    // Se nao ha update, encerra sem novas requisicoes ou avisos.
                     if (!string.IsNullOrEmpty(latestVersion))
                     {
                         if (!available) return;
