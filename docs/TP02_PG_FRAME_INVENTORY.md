@@ -163,3 +163,31 @@ Somando os dois métodos: `01`, `02`, `03`, `04`, `09`, `0A`, `0F`, `11`, `13`, 
   quadro parcial, com posições não escritas.
 - A emulação recupera **o que é enviado**, não **o que significa**. Semântica e formato
   de resposta continuam dependendo de captura em equipamento real.
+
+## Tentativa de emular o lado da recepção — resultado negativo
+
+Foi tentado exercitar o parser de resposta por emulação, injetando quadros sintéticos no
+`ReadFile` e observando a reação: quadro válido, checksum errado, bit `0x80` de erro,
+quadro curto e ausência de bytes.
+
+**Não funcionou, e vale registrar por quê**, para não se repetir o caminho.
+
+O que se confirmou por execução, antes de travar:
+
+- a rotina de preflight transmite `F0 00 0F` com comprimento 3;
+- ela deixa o modo de recepção em `2` e o comprimento de dados esperado em `2`,
+  exatamente como a leitura de código indicava. Com a regra `total = dados + 3`, a
+  resposta ao `F0` tem **5 bytes**.
+
+O que não se alcançou: nenhuma das tentativas chegou a chamar `ReadFile`. A função que
+contém as duas chamadas, `0x46F84C`, retorna antes disso em todos os casos, mesmo com o
+handle da porta, os sinalizadores vizinhos e a quantidade esperada pré-armados.
+
+A causa provável é que a recepção é orientada a evento — o código usa `SetCommMask` e
+`WaitCommEvent` — e depende de uma máquina de estados alimentada pelo laço de mensagens
+da aplicação, que um chamador isolado não reproduz. Emular isso exigiria modelar bem
+mais estado do que o ganho justifica.
+
+Conclusão prática: a emulação é excelente para recuperar **o que é enviado** e já provou
+isso. Para **o que é recebido**, o caminho barato continua sendo a captura em equipamento
+real, com o capturador da v0.47.
