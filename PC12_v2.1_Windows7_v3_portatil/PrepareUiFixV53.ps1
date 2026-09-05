@@ -23,12 +23,9 @@ function Replace-Section([string]$text, [string]$startAnchor, [string]$endAnchor
 
 $shell = LF ([System.IO.File]::ReadAllText($shellPath))
 
-# Garante largura suficiente na propria criacao do botao; "Conectar" nao pode
-# ser abreviado mesmo quando usa fonte em destaque.
 $shell = Replace-Required $shell '            b.Width = b.MeasureWidth();' '            b.Width = Math.Max(b.MeasureWidth(), text == "Conectar" ? 112 : 88);' 'largura toolbar'
 
-# O Studio deve apenas verificar e sinalizar nova versao. A antiga rotina /AUTO
-# instalava em segundo plano sem aviso; desativa somente essa inscricao.
+# Mantem apenas o verificador visivel; nao executa instalacao automatica oculta.
 $shell = $shell.Replace('            Shown += delegate { BeginInvoke(new MethodInvoker(delegate { StartAutomaticUpdater(); })); };', '')
 
 $brand = @'
@@ -110,11 +107,9 @@ $shell = Replace-Section $shell '        private Panel BuildElementLibrary()' ' 
 $shell = $shell.Replace('            statusText.Text = "Editor Ladder universal";', '            statusText.Text = "Pronto";')
 $shell = $shell.Replace('            statusText.Text = "Modelo Ladder universal verificado";', '            statusText.Text = "Verificação concluída";')
 
-$noticeOld = @'
-                        updateNotice.Text = "Atualização v" + latestVersion + " disponível";
-                        updateNotice.Visible = true;
-'@
-$noticeNew = @'
+# O ponto estavel e a ativacao do LinkLabel, independente da redacao anterior.
+$noticeVisible = '                        updateNotice.Visible = true;'
+$noticeExpanded = @'
                         updateNotice.Text = "● NOVA VERSÃO v" + latestVersion + " — ATUALIZAR";
                         updateNotice.Width = 300;
                         updateNotice.LinkColor = Color.FromArgb(251, 191, 36);
@@ -129,7 +124,7 @@ $noticeNew = @'
                             "Uma nova versão do OpenLadder Studio está disponível: v" + latestVersion + ".\r\n\r\nClique em Atualizar para instalar.",
                             "Nova versão disponível", MessageBoxButtons.OK, MessageBoxIcon.Information);
 '@
-$shell = Replace-Required $shell $noticeOld.TrimEnd() $noticeNew.TrimEnd() 'aviso visivel de update'
+$shell = Replace-Required $shell $noticeVisible $noticeExpanded.TrimEnd() 'aviso visivel de update'
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
 
