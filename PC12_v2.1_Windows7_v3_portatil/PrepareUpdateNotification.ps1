@@ -103,3 +103,4 @@ $shell = Invoke-ReplaceText $shell '        private void RefreshProfileUi()' $me
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
 
 & (Join-Path $root 'PrepareUpdateResumeV50.ps1')
+& (Join-Path $root 'PrepareUiAuditV52.ps1')
