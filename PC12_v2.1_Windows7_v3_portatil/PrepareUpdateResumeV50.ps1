@@ -26,14 +26,6 @@ function Replace-First([string]$text, [string]$needle, [string]$replacement, [st
 # -----------------------------------------------------------------------------
 $shell = [System.IO.File]::ReadAllText($shellPath).Replace("`r`n", "`n")
 
-$fieldNeedle = '        private bool inspectorAllowed = true;'
-$fieldReplacement = @'
-        private bool inspectorAllowed = true;
-        private string lastWorkTabKey = "LD";
-'@
-$fieldReplacement = $fieldReplacement.Replace("`r`n", "`n")
-$shell = Replace-Required $shell $fieldNeedle $fieldReplacement.TrimEnd() 'campo da sessao'
-
 $buildNeedle = '            BuildUi();'
 $buildReplacement = @'
             BuildUi();
@@ -42,20 +34,6 @@ $buildReplacement = @'
 '@
 $buildReplacement = $buildReplacement.Replace("`r`n", "`n")
 $shell = Replace-First $shell $buildNeedle $buildReplacement.TrimEnd() 'eventos da sessao'
-
-$showDocumentNeedle = @'
-        private void ShowDocument(Form child, string title, string railCode)
-        {
-'@
-$showDocumentReplacement = @'
-        private void ShowDocument(Form child, string title, string railCode)
-        {
-            if (!string.IsNullOrEmpty(railCode) && !string.Equals(railCode, "UPD", StringComparison.OrdinalIgnoreCase))
-                lastWorkTabKey = railCode;
-'@
-$showDocumentNeedle = $showDocumentNeedle.Replace("`r`n", "`n").TrimEnd()
-$showDocumentReplacement = $showDocumentReplacement.Replace("`r`n", "`n").TrimEnd()
-$shell = Replace-Required $shell $showDocumentNeedle $showDocumentReplacement 'ultima area de trabalho'
 
 $sessionMethods = @'
         private static string UpdateResumeDirectory()
@@ -87,6 +65,34 @@ $sessionMethods = @'
             catch { return string.Empty; }
         }
 
+        private string ResolveResumeTabKey()
+        {
+            try
+            {
+                if (tabStrip != null)
+                {
+                    StudioTab selected = tabStrip.Selected;
+                    if (selected != null && !string.IsNullOrEmpty(selected.Key)
+                        && !string.Equals(selected.Key, "UPD", StringComparison.OrdinalIgnoreCase))
+                        return selected.Key;
+
+                    List<StudioTab> tabs = tabStrip.Tabs;
+                    if (tabs != null)
+                    {
+                        for (int i = tabs.Count - 1; i >= 0; i--)
+                        {
+                            StudioTab tab = tabs[i];
+                            if (tab != null && !string.IsNullOrEmpty(tab.Key)
+                                && !string.Equals(tab.Key, "UPD", StringComparison.OrdinalIgnoreCase))
+                                return tab.Key;
+                        }
+                    }
+                }
+            }
+            catch { }
+            return "LD";
+        }
+
         private void SaveUpdateResumeState()
         {
             try
@@ -94,6 +100,7 @@ $sessionMethods = @'
                 string projectFile = string.Empty;
                 string ladderSnapshot = string.Empty;
                 bool ladderDirty = false;
+                string resumeTab = ResolveResumeTabKey();
 
                 if (ladderForm != null && !ladderForm.IsDisposed)
                 {
@@ -121,7 +128,7 @@ $sessionMethods = @'
 
                 System.Text.StringBuilder data = new System.Text.StringBuilder();
                 data.AppendLine("OPENLADDER-UPDATE-SESSION-1");
-                data.AppendLine("tab=" + SessionEncode(string.IsNullOrEmpty(lastWorkTabKey) ? "LD" : lastWorkTabKey));
+                data.AppendLine("tab=" + SessionEncode(resumeTab));
                 data.AppendLine("file=" + SessionEncode(projectFile));
                 data.AppendLine("dirty=" + (ladderDirty ? "1" : "0"));
                 data.AppendLine("ladder=" + SessionEncode(ladderSnapshot));
