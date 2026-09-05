@@ -24,13 +24,14 @@ function Replace-First([string]$text, [string]$needle, [string]$replacement, [st
 # inclusive alteracoes ainda nao salvas, o caminho do projeto e a ultima area
 # de trabalho aberta antes da tela de atualizacao.
 # -----------------------------------------------------------------------------
-$shell = [System.IO.File]::ReadAllText($shellPath)
+$shell = [System.IO.File]::ReadAllText($shellPath).Replace("`r`n", "`n")
 
 $fieldNeedle = '        private bool inspectorAllowed = true;'
 $fieldReplacement = @'
         private bool inspectorAllowed = true;
         private string lastWorkTabKey = "LD";
 '@
+$fieldReplacement = $fieldReplacement.Replace("`r`n", "`n")
 $shell = Replace-Required $shell $fieldNeedle $fieldReplacement.TrimEnd() 'campo da sessao'
 
 $buildNeedle = '            BuildUi();'
@@ -39,6 +40,7 @@ $buildReplacement = @'
             FormClosing += delegate { SaveUpdateResumeState(); };
             Shown += delegate { BeginInvoke(new MethodInvoker(delegate { RestoreUpdateResumeState(); })); };
 '@
+$buildReplacement = $buildReplacement.Replace("`r`n", "`n")
 $shell = Replace-First $shell $buildNeedle $buildReplacement.TrimEnd() 'eventos da sessao'
 
 $showDocumentNeedle = @'
@@ -51,7 +53,9 @@ $showDocumentReplacement = @'
             if (!string.IsNullOrEmpty(railCode) && !string.Equals(railCode, "UPD", StringComparison.OrdinalIgnoreCase))
                 lastWorkTabKey = railCode;
 '@
-$shell = Replace-Required $shell $showDocumentNeedle.TrimEnd() $showDocumentReplacement.TrimEnd() 'ultima area de trabalho'
+$showDocumentNeedle = $showDocumentNeedle.Replace("`r`n", "`n").TrimEnd()
+$showDocumentReplacement = $showDocumentReplacement.Replace("`r`n", "`n").TrimEnd()
+$shell = Replace-Required $shell $showDocumentNeedle $showDocumentReplacement 'ultima area de trabalho'
 
 $sessionMethods = @'
         private static string UpdateResumeDirectory()
@@ -115,7 +119,7 @@ $sessionMethods = @'
                     }
                 }
 
-                StringBuilder data = new StringBuilder();
+                System.Text.StringBuilder data = new System.Text.StringBuilder();
                 data.AppendLine("OPENLADDER-UPDATE-SESSION-1");
                 data.AppendLine("tab=" + SessionEncode(string.IsNullOrEmpty(lastWorkTabKey) ? "LD" : lastWorkTabKey));
                 data.AppendLine("file=" + SessionEncode(projectFile));
@@ -208,6 +212,7 @@ $sessionMethods = @'
         }
 
 '@
+$sessionMethods = $sessionMethods.Replace("`r`n", "`n")
 $sessionAnchor = '        private void StartAutomaticUpdater()'
 if (-not $shell.Contains($sessionAnchor)) { throw 'StartAutomaticUpdater nao encontrado no shell.' }
 $shell = $shell.Replace($sessionAnchor, $sessionMethods + $sessionAnchor)
@@ -219,7 +224,7 @@ $shell = $shell.Replace($sessionAnchor, $sessionMethods + $sessionAnchor)
 # restaurar a sessao. O instalador ja usa CLOSEAPPLICATIONS/RESTARTAPPLICATIONS
 # e a secao [Run] reabre o OpenLadder Studio quando ele estava aberto.
 # -----------------------------------------------------------------------------
-$updater = [System.IO.File]::ReadAllText($updaterPath)
+$updater = [System.IO.File]::ReadAllText($updaterPath).Replace("`r`n", "`n")
 
 $launchNeedle = @'
                 progress.Value = 100;
@@ -234,7 +239,9 @@ $launchReplacement = @'
 
                 ProcessStartInfo psi = new ProcessStartInfo();
 '@
-$updater = Replace-Required $updater $launchNeedle.TrimEnd() $launchReplacement.TrimEnd() 'marcador antes do instalador'
+$launchNeedle = $launchNeedle.Replace("`r`n", "`n").TrimEnd()
+$launchReplacement = $launchReplacement.Replace("`r`n", "`n").TrimEnd()
+$updater = Replace-Required $updater $launchNeedle $launchReplacement 'marcador antes do instalador'
 
 $updater = Replace-Required $updater '                psi.Arguments = "/SILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS";' '                psi.Arguments = "/SILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS";' 'argumentos do instalador'
 
@@ -261,6 +268,7 @@ $updaterMethods = @'
         }
 
 '@
+$updaterMethods = $updaterMethods.Replace("`r`n", "`n")
 $readAnchor = '        private string ReadCurrentVersion()'
 if (-not $updater.Contains($readAnchor)) { throw 'ReadCurrentVersion nao encontrado no updater.' }
 $updater = $updater.Replace($readAnchor, $updaterMethods + $readAnchor)
