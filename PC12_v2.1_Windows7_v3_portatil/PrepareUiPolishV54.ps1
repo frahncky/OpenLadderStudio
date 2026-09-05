@@ -21,28 +21,14 @@ $versionPath = Join-Path $root 'version.txt'
 $version = if (Test-Path $versionPath) { [System.IO.File]::ReadAllText($versionPath).Trim() } else { '0.54' }
 $shell = LF ([System.IO.File]::ReadAllText($shellPath))
 
-# Salva o estado antes mesmo de abrir a tela de atualizacao. Assim, mesmo se o
-# instalador precisar encerrar o processo, o projeto e a aba atual ja estao salvos.
-$showUpdaterOld = @'
-        private void ShowUpdater()
-        {
-            if (updaterForm == null || updaterForm.IsDisposed) updaterForm = new PC12UpdaterForm();
-            inspector.Visible = false;
-            ShowDocument(updaterForm, "Atualizações", "UPD");
-            statusText.Text = "Atualizações do OpenLadder Studio";
-        }
-'@
-$showUpdaterNew = @'
-        private void ShowUpdater()
-        {
-            SaveUpdateResumeState();
-            if (updaterForm == null || updaterForm.IsDisposed) updaterForm = new PC12UpdaterForm();
-            inspector.Visible = false;
-            ShowDocument(updaterForm, "Atualizações", "UPD");
-            statusText.Text = "Atualizações";
-        }
-'@
-$shell = Replace-Required $shell $showUpdaterOld.TrimEnd() $showUpdaterNew.TrimEnd() 'salvar sessao antes do updater'
+# Salva o estado ao entrar na tela de atualizacao sem depender da redacao do
+# corpo do metodo, que pode ser alterada por etapas anteriores do build.
+$showUpdaterAnchor = "        private void ShowUpdater()`n        {"
+$showUpdaterReplacement = "        private void ShowUpdater()`n        {`n            SaveUpdateResumeState();"
+if (-not $shell.Contains('private void ShowUpdater()')) { throw 'ShowUpdater nao encontrado.' }
+if (-not $shell.Contains('private void ShowUpdater()`n        {`n            SaveUpdateResumeState();')) {
+    $shell = Replace-Required $shell $showUpdaterAnchor $showUpdaterReplacement 'salvar sessao antes do updater'
+}
 
 # Lista lateral: somente componentes Ladder. Selecionar e operacoes de linha
 # deixam de aparecer misturadas com os componentes.
