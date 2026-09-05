@@ -20,80 +20,62 @@ function New-OpenLadderBitmap([int]$size) {
     $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
     $g.Clear([System.Drawing.Color]::Transparent)
 
-    $outer = New-RoundedRectPath (4*$scale) (4*$scale) (248*$scale) (248*$scale) (34*$scale)
-    $bgRect = New-Object System.Drawing.RectangleF((4*$scale), (4*$scale), (248*$scale), (248*$scale))
+    # Fundo simples e contrastante: permanece legivel nos tamanhos 16/24/32 px.
+    $outer = New-RoundedRectPath (5*$scale) (5*$scale) (246*$scale) (246*$scale) (38*$scale)
+    $bgRect = New-Object System.Drawing.RectangleF((5*$scale), (5*$scale), (246*$scale), (246*$scale))
     $bg = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
         $bgRect,
-        [System.Drawing.Color]::FromArgb(255, 28, 34, 40),
-        [System.Drawing.Color]::FromArgb(255, 12, 16, 21),
+        [System.Drawing.Color]::FromArgb(255, 16, 58, 82),
+        [System.Drawing.Color]::FromArgb(255, 8, 30, 45),
         90.0)
     $g.FillPath($bg, $outer)
 
-    $borderWidth = [Math]::Max(1.0, 3.0 * $scale)
-    $border = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 62, 72, 82), $borderWidth)
+    $border = New-Object System.Drawing.Pen(
+        [System.Drawing.Color]::FromArgb(255, 47, 96, 126),
+        [Math]::Max(1.0, 3.0*$scale))
     $g.DrawPath($border, $outer)
 
-    $green = [System.Drawing.Color]::FromArgb(255, 45, 170, 107)
-    $greenLight = [System.Drawing.Color]::FromArgb(255, 78, 201, 176)
-    $blue = [System.Drawing.Color]::FromArgb(255, 91, 170, 245)
-    $white = [System.Drawing.Color]::FromArgb(255, 238, 242, 246)
-    $panel = [System.Drawing.Color]::FromArgb(255, 39, 46, 54)
+    $white = [System.Drawing.Color]::FromArgb(255, 241, 245, 249)
+    $soft = [System.Drawing.Color]::FromArgb(255, 191, 219, 235)
+    $amber = [System.Drawing.Color]::FromArgb(255, 255, 194, 71)
+    $green = [System.Drawing.Color]::FromArgb(255, 34, 197, 94)
 
-    $railPen = New-Object System.Drawing.Pen($green, [Math]::Max(1.4, 7.0 * $scale))
-    $railPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $railPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+    # A marca combina uma pequena escada Ladder com um L e um O.
+    # Poucos elementos, traços grossos e nenhuma microinformacao decorativa.
+    $mainW = [Math]::Max(1.5, 9.0*$scale)
+    $secondaryW = [Math]::Max(1.1, 6.0*$scale)
+    $whitePen = New-Object System.Drawing.Pen($white, $mainW)
+    $whitePen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $whitePen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $softPen = New-Object System.Drawing.Pen($soft, $secondaryW)
+    $softPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $softPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $amberPen = New-Object System.Drawing.Pen($amber, [Math]::Max(1.5, 10.0*$scale))
+    $amberPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $amberPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
 
-    $linePen = New-Object System.Drawing.Pen($white, [Math]::Max(1.2, 6.0 * $scale))
-    $linePen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $linePen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $linePen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+    # Ladder: dois trilhos e tres degraus.
+    $g.DrawLine($whitePen, 55*$scale, 48*$scale, 55*$scale, 207*$scale)
+    $g.DrawLine($whitePen, 101*$scale, 48*$scale, 101*$scale, 207*$scale)
+    $g.DrawLine($softPen, 55*$scale, 76*$scale, 101*$scale, 76*$scale)
+    $g.DrawLine($softPen, 55*$scale, 128*$scale, 101*$scale, 128*$scale)
+    $g.DrawLine($softPen, 55*$scale, 180*$scale, 101*$scale, 180*$scale)
 
-    $accentPen = New-Object System.Drawing.Pen($greenLight, [Math]::Max(1.0, 3.5 * $scale))
-    $accentPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $accentPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+    # O em ambar: ponto focal e acento da identidade.
+    $g.DrawEllipse($amberPen, 132*$scale, 51*$scale, 66*$scale, 66*$scale)
 
-    $bluePen = New-Object System.Drawing.Pen($blue, [Math]::Max(1.0, 3.5 * $scale))
-    $bluePen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $bluePen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+    # L integrado ao lado direito: haste + base.
+    $g.DrawLine($whitePen, 135*$scale, 139*$scale, 135*$scale, 196*$scale)
+    $g.DrawLine($whitePen, 135*$scale, 196*$scale, 199*$scale, 196*$scale)
 
-    $g.DrawLine($railPen, 42*$scale, 48*$scale, 42*$scale, 208*$scale)
-    $g.DrawLine($railPen, 214*$scale, 48*$scale, 214*$scale, 208*$scale)
+    # Um unico estado verde, grande o bastante para nao virar ruido em 16 px.
+    $statusBrush = New-Object System.Drawing.SolidBrush($green)
+    $dot = [Math]::Max(3.0, 13.0*$scale)
+    $g.FillEllipse($statusBrush, 186*$scale, 137*$scale, $dot, $dot)
 
-    $y = 112 * $scale
-    $g.DrawLine($linePen, 42*$scale, $y, 78*$scale, $y)
-    $g.DrawLine($linePen, 84*$scale, 88*$scale, 84*$scale, 136*$scale)
-    $g.DrawLine($linePen, 104*$scale, 88*$scale, 104*$scale, 136*$scale)
-    $g.DrawLine($linePen, 104*$scale, $y, 124*$scale, $y)
-
-    $plcPath = New-RoundedRectPath (124*$scale) (80*$scale) (52*$scale) (64*$scale) (9*$scale)
-    $panelBrush = New-Object System.Drawing.SolidBrush($panel)
-    $g.FillPath($panelBrush, $plcPath)
-    $g.DrawPath($bluePen, $plcPath)
-    $g.DrawLine($bluePen, 137*$scale, 96*$scale, 163*$scale, 96*$scale)
-    $g.DrawLine($bluePen, 137*$scale, 108*$scale, 156*$scale, 108*$scale)
-    $dotBrush = New-Object System.Drawing.SolidBrush($greenLight)
-    $g.FillEllipse($dotBrush, 138*$scale, 122*$scale, 6*$scale, 6*$scale)
-    $g.FillEllipse($dotBrush, 150*$scale, 122*$scale, 6*$scale, 6*$scale)
-    $g.FillEllipse($dotBrush, 162*$scale, 122*$scale, 6*$scale, 6*$scale)
-
-    $g.DrawLine($linePen, 176*$scale, $y, 184*$scale, $y)
-    $g.DrawArc($linePen, 180*$scale, 92*$scale, 22*$scale, 40*$scale, 105, 150)
-    $g.DrawArc($linePen, 194*$scale, 92*$scale, 22*$scale, 40*$scale, 285, 150)
-
-    $lowerY = 168 * $scale
-    $g.DrawLine($accentPen, 42*$scale, $lowerY, 82*$scale, $lowerY)
-    $g.DrawLine($accentPen, 82*$scale, $lowerY, 96*$scale, 154*$scale)
-    $g.DrawLine($accentPen, 96*$scale, 154*$scale, 146*$scale, 154*$scale)
-    $g.DrawLine($accentPen, 146*$scale, 154*$scale, 160*$scale, $lowerY)
-    $g.DrawLine($accentPen, 160*$scale, $lowerY, 214*$scale, $lowerY)
-
-    $dotSize = [Math]::Max(2.0, 7.0 * $scale)
-    $g.FillEllipse($dotBrush, (78*$scale), ($lowerY - $dotSize/2), $dotSize, $dotSize)
-    $g.FillEllipse($dotBrush, (156*$scale), ($lowerY - $dotSize/2), $dotSize, $dotSize)
-
-    $dotBrush.Dispose(); $panelBrush.Dispose(); $bluePen.Dispose(); $accentPen.Dispose()
-    $linePen.Dispose(); $railPen.Dispose(); $border.Dispose(); $bg.Dispose()
-    $plcPath.Dispose(); $outer.Dispose(); $g.Dispose()
+    $statusBrush.Dispose()
+    $amberPen.Dispose(); $softPen.Dispose(); $whitePen.Dispose()
+    $border.Dispose(); $bg.Dispose(); $outer.Dispose(); $g.Dispose()
     return $bmp
 }
 
