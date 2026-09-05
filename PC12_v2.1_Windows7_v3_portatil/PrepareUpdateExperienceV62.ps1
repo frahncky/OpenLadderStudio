@@ -8,10 +8,6 @@ foreach ($p in @($shellPath, $updaterPath)) {
 }
 
 function LF([string]$text) { return $text.Replace("`r`n", "`n") }
-function Replace-Required([string]$text, [string]$needle, [string]$replacement, [string]$label) {
-    if (-not $text.Contains($needle)) { throw "Âncora não encontrada ($label)." }
-    return $text.Replace($needle, $replacement)
-}
 function Replace-Section([string]$text, [string]$startAnchor, [string]$endAnchor, [string]$replacement, [string]$label) {
     $start = $text.IndexOf($startAnchor)
     if ($start -lt 0) { throw "Início não encontrado ($label)." }
@@ -70,27 +66,18 @@ $shell = $shell.Replace(
     '"A versão v" + latestVersion + " do OpenLadder Studio está disponível.\r\n\r\nDeseja baixar e instalar agora?",',
     '"A versão v" + latestVersion + " do OpenLadder Studio está disponível.\r\n\r\nDeseja baixar e instalar agora?\r\n\r\nO programa será fechado e reaberto automaticamente durante a atualização.",')
 
-$startOld = @'
-            if (updateNotice != null) updateNotice.Enabled = false;
-            if (statusText != null)
-            {
-                statusText.Text = "Preparando a atualização...";
-                statusText.ForeColor = Color.FromArgb(251, 191, 36);
-            }
-'@
-$startNew = @'
+$noticeLine = '            if (updateNotice != null) updateNotice.Enabled = false;'
+if ($shell.Contains($noticeLine)) {
+    $shell = $shell.Replace($noticeLine, @'
             if (updateNotice != null)
             {
                 updateNotice.Text = "● PREPARANDO ATUALIZAÇÃO...";
                 updateNotice.Enabled = false;
             }
-            if (statusText != null)
-            {
-                statusText.Text = "O atualizador foi iniciado. O progresso será exibido em uma janela própria.";
-                statusText.ForeColor = Color.FromArgb(251, 191, 36);
-            }
-'@
-$shell = Replace-Required $shell $startOld.TrimEnd() $startNew.TrimEnd() 'feedback após aceitar atualização'
+'@.TrimEnd())
+}
+$shell = $shell.Replace('                statusText.Text = "Preparando a atualização...";',
+                        '                statusText.Text = "O atualizador foi iniciado. O progresso será exibido em uma janela própria.";')
 $shell = $shell.Replace('Monitor online', 'Monitor on-line')
 $shell = $shell.Replace('Verificador de atualizações aberto.', 'Janela de atualização aberta.')
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
