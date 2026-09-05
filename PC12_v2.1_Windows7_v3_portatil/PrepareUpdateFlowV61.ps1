@@ -186,18 +186,14 @@ if (-not $updater.Contains('private static void CloseRunningStudio()')) {
     $updater = $updater.Replace($readAnchor, $closeMethod + $readAnchor)
 }
 
-$launchOld = @'
-                PrepareResumeAfterUpdate();
-                psi.FileName = downloadedSetup;
-'@
-$launchNew = @'
+$prepareCall = '                PrepareResumeAfterUpdate();'
+$prepareReplacement = @'
                 statusLabel.Text = "Fechando o OpenLadder Studio...";
                 Application.DoEvents();
                 PrepareResumeAfterUpdate();
                 CloseRunningStudio();
-                psi.FileName = downloadedSetup;
 '@
-$updater = Replace-Required $updater $launchOld.TrimEnd() $launchNew.TrimEnd() 'fechamento antes do instalador'
+$updater = Replace-Required $updater $prepareCall $prepareReplacement.TrimEnd() 'fechamento antes do instalador'
 
 $portugueseUpdater = @{
     'card.Controls.Add(NewLabel("Instalada",' = 'card.Controls.Add(NewLabel("Versão instalada",'
