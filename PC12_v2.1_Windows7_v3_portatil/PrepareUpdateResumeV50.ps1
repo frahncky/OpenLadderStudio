@@ -228,8 +228,8 @@ $shell = $shell.Replace($sessionAnchor, $sessionMethods + $sessionAnchor)
 
 # -----------------------------------------------------------------------------
 # Updater: antes de iniciar o instalador marca que a proxima abertura deve
-# restaurar a sessao. O instalador ja usa CLOSEAPPLICATIONS/RESTARTAPPLICATIONS
-# e a secao [Run] reabre o OpenLadder Studio quando ele estava aberto.
+# restaurar a sessao. O instalador existente ja usa CLOSEAPPLICATIONS e
+# RESTARTAPPLICATIONS para fechar e reabrir o Studio.
 # -----------------------------------------------------------------------------
 $updater = [System.IO.File]::ReadAllText($updaterPath).Replace("`r`n", "`n")
 
@@ -249,8 +249,6 @@ $launchReplacement = @'
 $launchNeedle = $launchNeedle.Replace("`r`n", "`n").TrimEnd()
 $launchReplacement = $launchReplacement.Replace("`r`n", "`n").TrimEnd()
 $updater = Replace-Required $updater $launchNeedle $launchReplacement 'marcador antes do instalador'
-
-$updater = Replace-Required $updater '                psi.Arguments = "/SILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS";' '                psi.Arguments = "/SILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS";' 'argumentos do instalador'
 
 $updaterMethods = @'
         private static void PrepareResumeAfterUpdate()
