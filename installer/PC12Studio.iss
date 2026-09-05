@@ -87,17 +87,17 @@ var
 begin
   if UpdateResumeRequested() then
   begin
-    { A sessão já foi salva pelo Studio antes de abrir o atualizador. }
-    Sleep(1200);
-    Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM OpenLadderStudio.exe /T', '', SW_HIDE,
+    { O atualizador já solicitou o fechamento normal. Este é apenas o fallback. }
+    Sleep(1000);
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM OpenLadderStudio.exe /T', '', SW_HIDE,
       ewWaitUntilTerminated, ResultCode);
-    Sleep(500);
+    Sleep(300);
   end;
 end;
 
 function InitializeSetup(): Boolean;
 begin
-  OpenLadderWasRunning := FindWindowByWindowName('{#MyAppName}') <> 0;
+  OpenLadderWasRunning := UpdateResumeRequested() or (FindWindowByWindowName('{#MyAppName}') <> 0);
   CloseRunningOpenLadderForUpdate();
   Result := True;
 end;
