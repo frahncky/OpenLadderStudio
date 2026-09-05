@@ -26,14 +26,16 @@ function Replace-First([string]$text, [string]$needle, [string]$replacement, [st
 # -----------------------------------------------------------------------------
 $shell = [System.IO.File]::ReadAllText($shellPath).Replace("`r`n", "`n")
 
-$buildNeedle = '            BuildUi();'
-$buildReplacement = @'
+if (-not $shell.Contains('SaveUpdateResumeState();')) {
+    $buildNeedle = '            BuildUi();'
+    $buildReplacement = @'
             BuildUi();
             FormClosing += delegate { SaveUpdateResumeState(); };
             Shown += delegate { BeginInvoke(new MethodInvoker(delegate { RestoreUpdateResumeState(); })); };
 '@
-$buildReplacement = $buildReplacement.Replace("`r`n", "`n")
-$shell = Replace-First $shell $buildNeedle $buildReplacement.TrimEnd() 'eventos da sessao'
+    $buildReplacement = $buildReplacement.Replace("`r`n", "`n")
+    $shell = Replace-First $shell $buildNeedle $buildReplacement.TrimEnd() 'eventos da sessao'
+}
 
 $sessionMethods = @'
         private static string UpdateResumeDirectory()
@@ -147,8 +149,6 @@ $sessionMethods = @'
 
             try
             {
-                // Remove primeiro para evitar um ciclo de restauracao caso a aplicacao
-                // seja encerrada inesperadamente durante a propria restauracao.
                 try { File.Delete(marker); } catch { }
 
                 string statePath = UpdateResumeStatePath();
@@ -201,7 +201,6 @@ $sessionMethods = @'
             }
             catch
             {
-                // Em caso de snapshot antigo/incompativel, abre normalmente no Ladder.
                 try { ShowLadder(); } catch { }
             }
         }
@@ -220,43 +219,35 @@ $sessionMethods = @'
 
 '@
 $sessionMethods = $sessionMethods.Replace("`r`n", "`n")
-$sessionAnchor = '        private void StartAutomaticUpdater()'
-if (-not $shell.Contains($sessionAnchor)) { throw 'StartAutomaticUpdater nao encontrado no shell.' }
-$shell = $shell.Replace($sessionAnchor, $sessionMethods + $sessionAnchor)
+if (-not $shell.Contains('private void SaveUpdateResumeState()')) {
+    $sessionAnchor = '        private void StartAutomaticUpdater()'
+    if (-not $shell.Contains($sessionAnchor)) { throw 'StartAutomaticUpdater nao encontrado no shell.' }
+    $shell = $shell.Replace($sessionAnchor, $sessionMethods + $sessionAnchor)
+}
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
 
 # -----------------------------------------------------------------------------
 # Updater: antes de iniciar o instalador marca que a proxima abertura deve
-# restaurar a sessao. O instalador existente ja usa CLOSEAPPLICATIONS e
-# RESTARTAPPLICATIONS para fechar e reabrir o Studio.
+# restaurar a sessao. A chamada pode ter sido inserida pelo AutoUpdater V36.
 # -----------------------------------------------------------------------------
 $updater = [System.IO.File]::ReadAllText($updaterPath).Replace("`r`n", "`n")
 
-$launchNeedle = @'
-                progress.Value = 100;
-                ProcessStartInfo psi = new ProcessStartInfo();
-'@
-$launchReplacement = @'
-                progress.Value = 100;
-                statusLabel.ForeColor = Accent;
-                statusLabel.Text = "Fechando o OpenLadder Studio para atualizar...";
+if (-not $updater.Contains('PrepareResumeAfterUpdate();')) {
+    $fileNeedle = '                psi.FileName = downloadedSetup;'
+    $fileReplacement = @'
                 PrepareResumeAfterUpdate();
-                Application.DoEvents();
-
-                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = downloadedSetup;
 '@
-$launchNeedle = $launchNeedle.Replace("`r`n", "`n").TrimEnd()
-$launchReplacement = $launchReplacement.Replace("`r`n", "`n").TrimEnd()
-$updater = Replace-Required $updater $launchNeedle $launchReplacement 'marcador antes do instalador'
+    $fileReplacement = $fileReplacement.Replace("`r`n", "`n").TrimEnd()
+    $updater = Replace-Required $updater $fileNeedle $fileReplacement 'marcador antes do instalador'
+}
 
 $updaterMethods = @'
         private static void PrepareResumeAfterUpdate()
         {
             try
             {
-                // So cria o marcador se o Studio estiver realmente aberto. Assim,
-                // executar o updater isoladamente nao restaura uma sessao antiga.
                 Process[] studios = Process.GetProcessesByName("OpenLadderStudio");
                 if (studios == null || studios.Length == 0) return;
 
@@ -274,9 +265,11 @@ $updaterMethods = @'
 
 '@
 $updaterMethods = $updaterMethods.Replace("`r`n", "`n")
-$readAnchor = '        private string ReadCurrentVersion()'
-if (-not $updater.Contains($readAnchor)) { throw 'ReadCurrentVersion nao encontrado no updater.' }
-$updater = $updater.Replace($readAnchor, $updaterMethods + $readAnchor)
+if (-not $updater.Contains('private static void PrepareResumeAfterUpdate()')) {
+    $readAnchor = '        private string ReadCurrentVersion()'
+    if (-not $updater.Contains($readAnchor)) { throw 'ReadCurrentVersion nao encontrado no updater.' }
+    $updater = $updater.Replace($readAnchor, $updaterMethods + $readAnchor)
+}
 
 [System.IO.File]::WriteAllText($updaterPath, $updater, [System.Text.Encoding]::UTF8)
 Write-Host 'Retomada automatica apos atualizacao V50 aplicada.'
