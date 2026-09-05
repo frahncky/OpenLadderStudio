@@ -18,11 +18,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePLCPlatformV16.
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUniversalStudioV20.ps1"
 if errorlevel 1 goto :erro
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUniversalStudioV21.ps1"
+if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02ControlV30.ps1"
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02ControlV31.ps1"
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareStudioUiV20.ps1"
+if errorlevel 1 goto :erro
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareStudioUiV21.ps1"
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareMemoryMapV15.ps1"
 if errorlevel 1 goto :erro
