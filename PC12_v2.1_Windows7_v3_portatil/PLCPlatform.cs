@@ -189,7 +189,7 @@ namespace ModernPC12
 
         public override string DescribeConnection(PlcDeviceProfile profile)
         {
-            return "Serial TP02: 19200 bps, 7E2, estação configurável. Operações modernas atuais em modo seguro de leitura.";
+            return "Serial TP02: 19200 bps, 8O1, estação configurável. É o perfil que o PC12 original força ao abrir a porta. Operações modernas atuais em modo seguro de leitura.";
         }
     }
 

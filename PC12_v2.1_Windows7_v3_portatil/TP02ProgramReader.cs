@@ -103,19 +103,19 @@ namespace ModernPC12
             AddField(config, "Paridade", 350);
             parityCombo = ComboAt(350, 72, 92);
             parityCombo.Items.AddRange(new object[] { "Even", "Odd", "None" });
-            parityCombo.SelectedItem = "Even";
+            parityCombo.SelectedItem = "Odd";
             config.Controls.Add(parityCombo);
 
             AddField(config, "Bits", 458);
             dataBitsCombo = ComboAt(458, 72, 66);
             dataBitsCombo.Items.AddRange(new object[] { "7", "8" });
-            dataBitsCombo.SelectedItem = "7";
+            dataBitsCombo.SelectedItem = "8";
             config.Controls.Add(dataBitsCombo);
 
             AddField(config, "Stop", 540);
             stopBitsCombo = ComboAt(540, 72, 66);
             stopBitsCombo.Items.AddRange(new object[] { "2", "1" });
-            stopBitsCombo.SelectedItem = "2";
+            stopBitsCombo.SelectedItem = "1";
             config.Controls.Add(stopBitsCombo);
 
             AddField(config, "Estação", 622);
@@ -149,7 +149,7 @@ namespace ModernPC12
             rtsCheck.ForeColor = TextSecondary;
             config.Controls.Add(rtsCheck);
 
-            Label configNote = LabelAt("Padrão inicial: 19200 / 7 / EVEN / 2 / estação 01. O RBP pode ler até 100 passos por comando.", 8.4f, FontStyle.Regular, TextSecondary, 18, 112);
+            Label configNote = LabelAt("Padrão inicial: 19200 / 8 / ODD / 1 (8O1), estação 01. O RBP pode ler até 100 passos por comando.", 8.4f, FontStyle.Regular, TextSecondary, 18, 112);
             config.Controls.Add(configNote);
 
             Panel read = new Panel();

@@ -128,7 +128,7 @@ namespace ModernPC12
             test.Click += delegate { ReadStatus(); };
             config.Controls.Add(test);
 
-            Label note = LabelAt("Padrão TP02: 19200, 7E2, estação 01. Se não responder, use Monitor online > VARRER PARÂMETROS.", 8.3f, FontStyle.Regular, TextSecondary, 18, 108);
+            Label note = LabelAt("Padrão TP02: 19200, 8O1, estação 01. Se não responder, use Monitor online > VARRER PARÂMETROS.", 8.3f, FontStyle.Regular, TextSecondary, 18, 108);
             config.Controls.Add(note);
 
             Panel operations = new Panel();
@@ -224,9 +224,9 @@ namespace ModernPC12
                 PlcConnectionSettings s = PlcConnectionSettingsStore.Load(profile);
                 if (portCombo.SelectedItem != null) s.PortName = portCombo.SelectedItem.ToString();
                 s.BaudRate = ParseSelectedInt(baudCombo, 19200);
-                s.DataBits = ParseSelectedInt(dataBitsCombo, 7);
+                s.DataBits = ParseSelectedInt(dataBitsCombo, 8);
                 s.Parity = parityCombo.SelectedItem == null ? "Even" : parityCombo.SelectedItem.ToString();
-                s.StopBits = ParseSelectedInt(stopBitsCombo, 2);
+                s.StopBits = ParseSelectedInt(stopBitsCombo, 1);
                 s.UnitId = (int)stationBox.Value;
                 s.TimeoutMs = 2500;
                 PlcConnectionSettingsStore.Save(profile, s);
@@ -348,9 +348,9 @@ namespace ModernPC12
             {
                 port = new SerialPort(portCombo.SelectedItem.ToString());
                 port.BaudRate = ParseSelectedInt(baudCombo, 19200);
-                port.DataBits = ParseSelectedInt(dataBitsCombo, 7);
+                port.DataBits = ParseSelectedInt(dataBitsCombo, 8);
                 port.Parity = ParseParity();
-                port.StopBits = ParseSelectedInt(stopBitsCombo, 2) == 2 ? StopBits.Two : StopBits.One;
+                port.StopBits = ParseSelectedInt(stopBitsCombo, 1) == 2 ? StopBits.Two : StopBits.One;
                 port.Encoding = Encoding.ASCII;
                 port.ReadTimeout = 2500;
                 port.WriteTimeout = 1500;
@@ -639,9 +639,9 @@ namespace ModernPC12
         private Parity ParseParity()
         {
             string p = parityCombo.SelectedItem == null ? "Even" : parityCombo.SelectedItem.ToString();
-            if (p == "Odd") return Parity.Odd;
+            if (p == "Even") return Parity.Even;
             if (p == "None") return Parity.None;
-            return Parity.Even;
+            return Parity.Odd;
         }
 
         private static int ParseSelectedInt(ComboBox combo, int fallback)

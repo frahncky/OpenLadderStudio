@@ -43,10 +43,11 @@ namespace ModernPC12
             s.ProfileId = profile.Id;
             if (string.Equals(profile.DriverId, "weg.tp02.serial", StringComparison.OrdinalIgnoreCase))
             {
+                // Perfil que o PC12 original força ao abrir a porta: 19200 8O1.
                 s.BaudRate = 19200;
-                s.DataBits = 7;
-                s.Parity = "Even";
-                s.StopBits = 2;
+                s.DataBits = 8;
+                s.Parity = "Odd";
+                s.StopBits = 1;
             }
             else if (profile.Transport == PlcTransportKind.Tcp)
             {

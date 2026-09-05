@@ -184,19 +184,19 @@ namespace ModernPC12
             AddFieldLabel(settings, "Paridade", 366, 54);
             parityCombo = NewCombo(366, 76, 100);
             parityCombo.Items.AddRange(new object[] { "Even", "Odd", "None" });
-            parityCombo.SelectedItem = "Even";
+            parityCombo.SelectedItem = "Odd";
             settings.Controls.Add(parityCombo);
 
             AddFieldLabel(settings, "Bits", 480, 54);
             dataBitsCombo = NewCombo(480, 76, 72);
             dataBitsCombo.Items.AddRange(new object[] { "7", "8" });
-            dataBitsCombo.SelectedItem = "7";
+            dataBitsCombo.SelectedItem = "8";
             settings.Controls.Add(dataBitsCombo);
 
             AddFieldLabel(settings, "Stop", 566, 54);
             stopBitsCombo = NewCombo(566, 76, 72);
             stopBitsCombo.Items.AddRange(new object[] { "2", "1" });
-            stopBitsCombo.SelectedItem = "2";
+            stopBitsCombo.SelectedItem = "1";
             settings.Controls.Add(stopBitsCombo);
 
             AddFieldLabel(settings, "Estação", 652, 54);
@@ -232,7 +232,7 @@ namespace ModernPC12
             rtsCheck.ForeColor = TextSecondary;
             settings.Controls.Add(rtsCheck);
 
-            Label note = NewLabel("Padrão inicial: 19200 bps, 7 bits, paridade EVEN, 2 stop bits, estação 01. Ajuste conforme WS041/WS042 do seu TP02.", 8.6f, FontStyle.Regular, TextSecondary, 18, 130);
+            Label note = NewLabel("Padrão inicial: 19200 bps, 8 bits, paridade ODD, 1 stop bit (8O1), estação 01. É o perfil que o PC12 original força ao abrir a porta.", 8.6f, FontStyle.Regular, TextSecondary, 18, 130);
             settings.Controls.Add(note);
 
             Panel actions = new Panel();

@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.46] - 2026-09-04
+
+### Comunicacao WEG TP02
+- o perfil serial padrao passa de 19200 7E2 para **19200 8O1**, que e o que o PC12
+  original forca ao abrir a porta;
+- alterado na tela de Comunicacao, na leitura de programa por RBP, no perfil de conexao
+  persistido do controlador e na descricao do driver;
+- os perfis 7E2 continuam disponiveis como candidatos nas varreduras de deteccao.
+
 ## [0.45] - 2026-09-04
 
 ### Protocolo PG — preflight de status
