@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.47] - 2026-09-04
+
+### Pesquisa do protocolo TP02
+- novo capturador de trafego serial entre o PC12 original e o PLC, em executavel proprio
+  `OpenLadderTP02Capture.exe`, para rodar junto com o PC12;
+- funciona como ponte: abre a porta virtual em que o PC12 acredita estar o PLC e a porta
+  fisica do PLC, repassa os bytes e registra os dois sentidos com hora, sentido, hexadecimal
+  e ASCII;
+- separa quadros por silencio configuravel, valida a soma modulo 256 e anota CMD e LEN
+  quando o quadro segue o formato derivado do codigo do PC12;
+- nao transmite nada por conta propria: e estritamente um rele, sem risco de enviar comando
+  desconhecido ao equipamento;
+- captura exportavel em texto.
+
 ## [0.46] - 2026-09-04
 
 ### Comunicacao WEG TP02

@@ -41,6 +41,7 @@ jobs:
           if not exist OpenLadderMemoryMap.exe exit /b 1
           if not exist OpenLadderUpdater.exe exit /b 1
           if not exist OpenLadderTP02PgLab.exe exit /b 1
+          if not exist OpenLadderTP02Capture.exe exit /b 1
           if not exist TP02-PG-Tests.json exit /b 1
 
       - name: Preparar instalador
@@ -79,6 +80,7 @@ jobs:
             PC12_v2.1_Windows7_v3_portatil/OpenLadderModbus.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderMemoryMap.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderUpdater.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderTP02Capture.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderTP02PgLab.exe
             PC12_v2.1_Windows7_v3_portatil/TP02-PG-Tests.json
             PC12_v2.1_Windows7_v3_portatil/version.txt
