@@ -23,7 +23,7 @@ $badWords = New-Object 'System.Collections.Generic.HashSet[string]' ([System.Str
 
 function Has-Mojibake([string]$value) {
     if ($value.IndexOf([char]0xFFFD) -ge 0) { return $true }
-    if ($value.IndexOf([char]0x00C3) -ge 0) { return $true }
+    if ([regex]::IsMatch($value, '\u00C3(?=[\u0080-\u00BF\u0192])')) { return $true }
     if ([regex]::IsMatch($value, '\u00C2(?=[\u0080-\u00BF\u2000-\u206F])')) { return $true }
     if ([regex]::IsMatch($value, '\u00E2(?=[\u0080-\u00BF\u2000-\u206F])')) { return $true }
     return $false
