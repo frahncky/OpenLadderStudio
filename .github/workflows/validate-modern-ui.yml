@@ -120,8 +120,12 @@ jobs:
           $title = "OpenLadder Studio v$version"
 
           $aTilde = [char]0x00E3
-          $notes = "OpenLadder Studio v$version. Consulte CHANGELOG.md para os detalhes desta vers${aTilde}o."
-          if (Test-Path 'CHANGELOG.md') {
+          $notes = "OpenLadder Studio v$version. Consulte as notas da vers${aTilde}o para os detalhes."
+          $versionedNotes = "docs\releases\v$version.md"
+          if (Test-Path $versionedNotes) {
+            $notes = [System.IO.File]::ReadAllText((Resolve-Path $versionedNotes).Path, [System.Text.Encoding]::UTF8).Trim()
+          }
+          elseif (Test-Path 'CHANGELOG.md') {
             $changePath = (Resolve-Path 'CHANGELOG.md').Path
             $change = [System.IO.File]::ReadAllText($changePath, [System.Text.Encoding]::UTF8)
             $escaped = [Regex]::Escape($version)
