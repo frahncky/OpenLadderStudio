@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.63] - 2026-09-06
+
+### Formato de projeto
+- o codec do formato `.pladder` foi extraído para `OpenLadderStudio.Core`, sem dependência de WinForms ou de fabricante;
+- editor Ladder e reconstrução segura de IL do TP02 passam a usar a mesma implementação para gravar projetos;
+- mantida a abertura de projetos `PC12-LADDER|1` e a gravação em `PC12-LADDER|2`, incluindo ramificações paralelas;
+- arquivos corrompidos passam a indicar a linha e a coluna da célula inválida, em vez de serem aceitos parcialmente.
+
+### Engenharia de software
+- iniciada a estrutura física `src/OpenLadderStudio.Core` prevista no plano de arquitetura;
+- novo autoteste verifica ida e volta do formato, caracteres reservados, ramificações, migração da versão 1 e recusa de dados inválidos;
+- o build e o GitHub Actions passam a executar `OpenLadderCoreTest.exe` antes de publicar a versão.
+
 ## [0.62] - 2026-09-05
 
 ### Atualização

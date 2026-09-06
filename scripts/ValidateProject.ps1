@@ -12,12 +12,15 @@ $scanEngine = Join-Path $portable 'LadderSimulation.cs'
 $processModel = Join-Path $portable 'ProcessSimulation.cs'
 $simulatorUi = Join-Path $portable 'LadderSimulator.cs'
 $simulatorTest = Join-Path $portable 'SimulationSelfTest.cs'
+$coreRoot = Join-Path $repoRoot 'src\OpenLadderStudio.Core'
+$ladderProjectCodec = Join-Path $coreRoot 'LadderProject.cs'
+$ladderProjectTest = Join-Path $repoRoot 'tests\OpenLadderStudio.Core.Tests\LadderProjectCodecSelfTest.cs'
 
 $architectureValidation = Join-Path $PSScriptRoot 'ValidateArchitecture.ps1'
 if (-not (Test-Path $architectureValidation)) { throw "Validador arquitetural ausente: $architectureValidation" }
 & $architectureValidation
 
-$required = @($versionPath, $changeLogPath, $installer, $universalPrep, $uiPrep, $iconPrep, $scanEngine, $processModel, $simulatorUi, $simulatorTest)
+$required = @($versionPath, $changeLogPath, $installer, $universalPrep, $uiPrep, $iconPrep, $scanEngine, $processModel, $simulatorUi, $simulatorTest, $ladderProjectCodec, $ladderProjectTest)
 foreach ($path in $required) {
     if (-not (Test-Path $path)) { throw "Arquivo obrigatório ausente: $path" }
 }
@@ -63,10 +66,24 @@ foreach ($core in @($scanEngine, $processModel)) {
     }
 }
 
+# Todo fonte extraido para OpenLadderStudio.Core deve continuar independente da UI.
+foreach ($core in Get-ChildItem -Path $coreRoot -Filter '*.cs' -Recurse) {
+    $coreText = [System.IO.File]::ReadAllText($core.FullName)
+    if ($coreText.Contains('System.Windows.Forms') -or $coreText.Contains('System.Drawing')) {
+        throw "O modulo OpenLadderStudio.Core nao pode depender de UI: $($core.FullName)"
+    }
+}
+
 $buildScript = Join-Path $portable 'BUILD_INTERFACE_MODERNA.bat'
 if (-not (Test-Path $buildScript)) { throw "Arquivo obrigatório ausente: $buildScript" }
 
 $buildText = [System.IO.File]::ReadAllText($buildScript)
+if (-not $buildText.Contains('src\OpenLadderStudio.Core\LadderProject.cs')) {
+    throw 'O build principal deve compilar o codec .pladder extraido para OpenLadderStudio.Core.'
+}
+if (-not $buildText.Contains('OpenLadderCoreTest.exe')) {
+    throw 'O build principal deve compilar e executar o autoteste do formato .pladder.'
+}
 $produced = @()
 foreach ($hit in [Regex]::Matches($buildText, '/out:"([A-Za-z0-9_]+\.exe)"')) {
     $produced += $hit.Groups[1].Value

@@ -42,6 +42,7 @@ Contém os conceitos estáveis do produto:
 
 Arquivos atuais:
 
+- `src/OpenLadderStudio.Core/LadderProject.cs`;
 - `PLCPlatform.cs`;
 - `UniversalLadderAdapter.cs`;
 - `LadderSimulation.cs`;
@@ -64,7 +65,9 @@ Drivers devem implementar contratos definidos pelo núcleo.
 
 ### 5. Verificação
 
-`SimulationSelfTest.cs` gera `OpenLadderSimTest.exe`, o primeiro teste automatizado do projeto. Ele executa o motor de varredura contra a planta simulada e é rodado pelo build local e pelo GitHub Actions.
+`tests/OpenLadderStudio.Core.Tests/LadderProjectCodecSelfTest.cs` gera `OpenLadderCoreTest.exe` e verifica o formato `.pladder`, inclusive compatibilidade com a versão 1, ramificações e arquivos inválidos.
+
+`SimulationSelfTest.cs` gera `OpenLadderSimTest.exe` e executa o motor de varredura contra a planta simulada. Os dois autotestes são rodados pelo build local e pelo GitHub Actions.
 
 Novos testes de domínio devem seguir o mesmo padrão: console, sem dependência de WinForms no código sob teste e com código de saída diferente de zero em caso de falha.
 

@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using OpenLadderStudio.Core;
 
 namespace ModernPC12
 {
@@ -29,8 +30,8 @@ namespace ModernPC12
 
     internal sealed class TP02LadderBuildRung
     {
-        public readonly List<string> Conditions = new List<string>();
-        public string Output = string.Empty;
+        public readonly List<LadderProjectElement> Conditions = new List<LadderProjectElement>();
+        public LadderProjectElement Output;
     }
 
     internal sealed class TP02IlToLadderForm : Form
@@ -204,10 +205,12 @@ namespace ModernPC12
 
                 if (op == "STR" || op == "STR NOT")
                 {
-                    if (current != null && string.IsNullOrEmpty(current.Output))
+                    if (current != null && current.Output == null)
                         errors.Add("Passo " + ins.Step.ToString("0000") + ": novo STR antes de fechar o rung anterior com OUT.");
                     current = new TP02LadderBuildRung();
-                    current.Conditions.Add((op == "STR NOT" ? "NC:" : "NO:") + Encode(ins.Operand));
+                    current.Conditions.Add(NewElement(
+                        op == "STR NOT" ? LadderProjectElementKind.ContactNormallyClosed : LadderProjectElementKind.ContactNormallyOpen,
+                        ins.Operand));
                     rungs.Add(current);
                     continue;
                 }
@@ -224,7 +227,9 @@ namespace ModernPC12
                         errors.Add("Passo " + ins.Step.ToString("0000") + ": mais de 7 condições em série; o formato gráfico atual usa 7 colunas de condição.");
                         continue;
                     }
-                    current.Conditions.Add((op == "AND NOT" ? "NC:" : "NO:") + Encode(ins.Operand));
+                    current.Conditions.Add(NewElement(
+                        op == "AND NOT" ? LadderProjectElementKind.ContactNormallyClosed : LadderProjectElementKind.ContactNormallyOpen,
+                        ins.Operand));
                     continue;
                 }
 
@@ -235,12 +240,12 @@ namespace ModernPC12
                         errors.Add("Passo " + ins.Step.ToString("0000") + ": OUT sem rung iniciado por STR.");
                         continue;
                     }
-                    if (!string.IsNullOrEmpty(current.Output))
+                    if (current.Output != null)
                     {
                         errors.Add("Passo " + ins.Step.ToString("0000") + ": rung já possui saída.");
                         continue;
                     }
-                    current.Output = "COIL:" + Encode(ins.Operand);
+                    current.Output = NewElement(LadderProjectElementKind.Coil, ins.Operand);
                     current = null;
                     continue;
                 }
@@ -248,7 +253,7 @@ namespace ModernPC12
                 if (op == "END")
                 {
                     TP02LadderBuildRung end = new TP02LadderBuildRung();
-                    end.Output = "END";
+                    end.Output = NewElement(LadderProjectElementKind.End, "F-00");
                     rungs.Add(end);
                     current = null;
                     continue;
@@ -257,7 +262,7 @@ namespace ModernPC12
                 errors.Add("Passo " + ins.Step.ToString("0000") + ": operação ainda não suportada pela reconstrução segura: " + op + ".");
             }
 
-            if (current != null && string.IsNullOrEmpty(current.Output)) errors.Add("Último rung não foi fechado com OUT.");
+            if (current != null && current.Output == null) errors.Add("Último rung não foi fechado com OUT.");
 
             StringBuilder report = new StringBuilder();
             report.AppendLine("TP02 — IL VERIFICADA → LADDER");
@@ -293,24 +298,19 @@ namespace ModernPC12
 
         private static string BuildPladder(List<TP02LadderBuildRung> source)
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("PC12-LADDER|2");
-            int r;
-            for (r = 0; r < source.Count; r++)
+            LadderProjectDocument document = new LadderProjectDocument();
+            for (int rungIndex = 0; rungIndex < source.Count; rungIndex++)
             {
-                TP02LadderBuildRung rung = source[r];
-                sb.Append("RUNG");
-                int c;
-                for (c = 0; c < 8; c++)
-                {
-                    string main = "EMPTY";
-                    if (c < 7 && c < rung.Conditions.Count) main = rung.Conditions[c];
-                    if (c == 7 && !string.IsNullOrEmpty(rung.Output)) main = rung.Output;
-                    sb.Append('|').Append(main).Append("~EMPTY");
-                }
-                sb.AppendLine();
+                TP02LadderBuildRung sourceRung = source[rungIndex];
+                LadderProjectRung targetRung = new LadderProjectRung();
+                for (int column = 0; column < 7 && column < sourceRung.Conditions.Count; column++)
+                    targetRung.Series[column] = sourceRung.Conditions[column];
+
+                if (sourceRung.Output != null) targetRung.Series[7] = sourceRung.Output;
+                document.Rungs.Add(targetRung);
             }
-            return sb.ToString();
+
+            return LadderProjectCodec.Serialize(document);
         }
 
         private void SavePladder()
@@ -330,9 +330,12 @@ namespace ModernPC12
             statusLabel.Text = "Projeto salvo: " + dlg.FileName;
         }
 
-        private static string Encode(string value)
+        private static LadderProjectElement NewElement(LadderProjectElementKind kind, string address)
         {
-            return Uri.EscapeDataString(value == null ? string.Empty : value.Trim().ToUpperInvariant());
+            LadderProjectElement element = new LadderProjectElement();
+            element.Kind = kind;
+            element.Address = address == null ? string.Empty : address.Trim().ToUpperInvariant();
+            return element;
         }
 
         private Button ButtonAt(string text, int left, int top, int width, bool primary)

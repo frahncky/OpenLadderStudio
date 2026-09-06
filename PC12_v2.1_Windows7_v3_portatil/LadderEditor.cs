@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
+using OpenLadderStudio.Core;
 
 namespace ModernPC12
 {
@@ -814,117 +815,84 @@ namespace ModernPC12
 
         private string SerializeProject()
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("PC12-LADDER|2");
-            int r;
-            for (r = 0; r < rungs.Count; r++)
+            LadderProjectDocument document = new LadderProjectDocument();
+            for (int rungIndex = 0; rungIndex < rungs.Count; rungIndex++)
             {
-                sb.Append("RUNG");
-                int c;
-                for (c = 0; c < LadderRung.ColumnCount; c++)
+                LadderProjectRung target = new LadderProjectRung();
+                for (int column = 0; column < LadderRung.ColumnCount; column++)
                 {
-                    sb.Append('|').Append(EncodeElement(rungs[r].Elements[c])).Append('~').Append(EncodeElement(rungs[r].Parallel[c]));
+                    target.Series[column] = ToProjectElement(rungs[rungIndex].Elements[column]);
+                    target.Parallel[column] = ToProjectElement(rungs[rungIndex].Parallel[column]);
                 }
-                sb.AppendLine();
+                document.Rungs.Add(target);
             }
-            return sb.ToString();
+
+            return LadderProjectCodec.Serialize(document);
         }
 
-        private static string EncodeElement(LadderElement e)
+        private static LadderProjectElement ToProjectElement(LadderElement source)
         {
-            if (e.Type == LadderElementType.Empty) return "EMPTY";
-            if (e.Type == LadderElementType.ContactNO) return "NO:" + Escape(e.Address);
-            if (e.Type == LadderElementType.ContactNC) return "NC:" + Escape(e.Address);
-            if (e.Type == LadderElementType.Coil) return "COIL:" + Escape(e.Address);
-            if (e.Type == LadderElementType.Timer) return "TMR:" + Escape(e.Address) + ":" + Escape(e.Parameter) + ":" + Escape(e.Mode);
-            if (e.Type == LadderElementType.Counter) return "CNT:" + Escape(e.Address) + ":" + Escape(e.Parameter);
-            if (e.Type == LadderElementType.Set) return "SET:" + Escape(e.Address);
-            if (e.Type == LadderElementType.Reset) return "RST:" + Escape(e.Address);
-            if (e.Type == LadderElementType.EdgeUp) return "EUP";
-            if (e.Type == LadderElementType.EdgeDown) return "EDN";
-            if (e.Type == LadderElementType.Function) return "FUN:" + Escape(e.Address) + ":" + Escape(e.Parameter);
-            if (e.Type == LadderElementType.End) return "END";
-            return "EMPTY";
-        }
+            LadderProjectElement target = new LadderProjectElement();
+            if (source == null) return target;
 
-        private static string Escape(string value)
-        {
-            return Uri.EscapeDataString(value == null ? string.Empty : value);
-        }
+            if (source.Type == LadderElementType.ContactNO) target.Kind = LadderProjectElementKind.ContactNormallyOpen;
+            else if (source.Type == LadderElementType.ContactNC) target.Kind = LadderProjectElementKind.ContactNormallyClosed;
+            else if (source.Type == LadderElementType.Coil) target.Kind = LadderProjectElementKind.Coil;
+            else if (source.Type == LadderElementType.Timer) target.Kind = LadderProjectElementKind.Timer;
+            else if (source.Type == LadderElementType.Counter) target.Kind = LadderProjectElementKind.Counter;
+            else if (source.Type == LadderElementType.Set) target.Kind = LadderProjectElementKind.Set;
+            else if (source.Type == LadderElementType.Reset) target.Kind = LadderProjectElementKind.Reset;
+            else if (source.Type == LadderElementType.EdgeUp) target.Kind = LadderProjectElementKind.RisingEdge;
+            else if (source.Type == LadderElementType.EdgeDown) target.Kind = LadderProjectElementKind.FallingEdge;
+            else if (source.Type == LadderElementType.Function) target.Kind = LadderProjectElementKind.Function;
+            else if (source.Type == LadderElementType.End) target.Kind = LadderProjectElementKind.End;
 
-        private static string Unescape(string value)
-        {
-            return Uri.UnescapeDataString(value == null ? string.Empty : value);
+            target.Address = source.Address ?? string.Empty;
+            target.Parameter = source.Parameter ?? string.Empty;
+            target.Mode = source.Mode ?? string.Empty;
+            return target;
         }
 
         private void DeserializeProject(string data)
         {
-            string[] lines = data.Replace("\r", string.Empty).Split('\n');
-            if (lines.Length == 0) throw new InvalidDataException("Arquivo vazio.");
-            string header = lines[0].Trim();
-            if (header != "PC12-LADDER|1" && header != "PC12-LADDER|2") throw new InvalidDataException("Formato de projeto não reconhecido.");
-            bool legacy = header == "PC12-LADDER|1";
+            LadderProjectDocument document = LadderProjectCodec.Deserialize(data);
             List<LadderRung> loaded = new List<LadderRung>();
-            int i;
-            for (i = 1; i < lines.Length; i++)
+            for (int rungIndex = 0; rungIndex < document.Rungs.Count; rungIndex++)
             {
-                string line = lines[i].Trim();
-                if (line.Length == 0) continue;
-                string[] parts = line.Split('|');
-                if (parts.Length != LadderRung.ColumnCount + 1 || parts[0] != "RUNG") throw new InvalidDataException("Rung inválido na linha " + (i + 1).ToString() + ".");
+                LadderProjectRung source = document.Rungs[rungIndex];
                 LadderRung rung = new LadderRung();
-                int c;
-                for (c = 0; c < LadderRung.ColumnCount; c++)
+                for (int column = 0; column < LadderRung.ColumnCount; column++)
                 {
-                    if (legacy)
-                    {
-                        DecodeLegacy(parts[c + 1], rung.Elements[c]);
-                    }
-                    else
-                    {
-                        string[] lanes = parts[c + 1].Split('~');
-                        DecodeElement(lanes[0], rung.Elements[c]);
-                        if (lanes.Length > 1) DecodeElement(lanes[1], rung.Parallel[c]);
-                    }
+                    ApplyProjectElement(source.Series[column], rung.Elements[column]);
+                    ApplyProjectElement(source.Parallel[column], rung.Parallel[column]);
                 }
                 loaded.Add(rung);
             }
-            if (loaded.Count == 0) loaded.Add(new LadderRung());
+
             rungs.Clear();
             rungs.AddRange(loaded);
         }
 
-        private static void DecodeLegacy(string token, LadderElement e)
+        private static void ApplyProjectElement(LadderProjectElement source, LadderElement target)
         {
-            if (token == "EMPTY") return;
-            int colon = token.IndexOf(':');
-            if (colon <= 0) return;
-            string kind = token.Substring(0, colon);
-            string address = token.Substring(colon + 1);
-            if (kind == "NO") e.Type = LadderElementType.ContactNO;
-            else if (kind == "NC") e.Type = LadderElementType.ContactNC;
-            else if (kind == "COIL") e.Type = LadderElementType.Coil;
-            e.Address = address;
-        }
+            target.Clear();
+            if (source == null) return;
 
-        private static void DecodeElement(string token, LadderElement e)
-        {
-            e.Clear();
-            if (string.IsNullOrEmpty(token) || token == "EMPTY") return;
-            string[] p = token.Split(':');
-            string kind = p[0];
-            if (kind == "NO") { e.Type = LadderElementType.ContactNO; if (p.Length > 1) e.Address = Unescape(p[1]); }
-            else if (kind == "NC") { e.Type = LadderElementType.ContactNC; if (p.Length > 1) e.Address = Unescape(p[1]); }
-            else if (kind == "COIL") { e.Type = LadderElementType.Coil; if (p.Length > 1) e.Address = Unescape(p[1]); }
-            else if (kind == "TMR") { e.Type = LadderElementType.Timer; if (p.Length > 1) e.Address = Unescape(p[1]); if (p.Length > 2) e.Parameter = Unescape(p[2]); if (p.Length > 3) e.Mode = Unescape(p[3]); }
-            else if (kind == "CNT") { e.Type = LadderElementType.Counter; if (p.Length > 1) e.Address = Unescape(p[1]); if (p.Length > 2) e.Parameter = Unescape(p[2]); }
-            else if (kind == "SET") { e.Type = LadderElementType.Set; if (p.Length > 1) e.Address = Unescape(p[1]); }
-            else if (kind == "RST") { e.Type = LadderElementType.Reset; if (p.Length > 1) e.Address = Unescape(p[1]); }
-            else if (kind == "EUP") e.Type = LadderElementType.EdgeUp;
-            else if (kind == "EDN") e.Type = LadderElementType.EdgeDown;
-            else if (kind == "FUN") { e.Type = LadderElementType.Function; if (p.Length > 1) e.Address = Unescape(p[1]); if (p.Length > 2) e.Parameter = Unescape(p[2]); }
-            else if (kind == "END") { e.Type = LadderElementType.End; e.Address = "F-00"; }
-            else throw new InvalidDataException("Elemento desconhecido: " + kind);
+            if (source.Kind == LadderProjectElementKind.ContactNormallyOpen) target.Type = LadderElementType.ContactNO;
+            else if (source.Kind == LadderProjectElementKind.ContactNormallyClosed) target.Type = LadderElementType.ContactNC;
+            else if (source.Kind == LadderProjectElementKind.Coil) target.Type = LadderElementType.Coil;
+            else if (source.Kind == LadderProjectElementKind.Timer) target.Type = LadderElementType.Timer;
+            else if (source.Kind == LadderProjectElementKind.Counter) target.Type = LadderElementType.Counter;
+            else if (source.Kind == LadderProjectElementKind.Set) target.Type = LadderElementType.Set;
+            else if (source.Kind == LadderProjectElementKind.Reset) target.Type = LadderElementType.Reset;
+            else if (source.Kind == LadderProjectElementKind.RisingEdge) target.Type = LadderElementType.EdgeUp;
+            else if (source.Kind == LadderProjectElementKind.FallingEdge) target.Type = LadderElementType.EdgeDown;
+            else if (source.Kind == LadderProjectElementKind.Function) target.Type = LadderElementType.Function;
+            else if (source.Kind == LadderProjectElementKind.End) target.Type = LadderElementType.End;
+
+            target.Address = source.Address ?? string.Empty;
+            target.Parameter = source.Parameter ?? string.Empty;
+            target.Mode = source.Mode ?? string.Empty;
         }
 
         private void SaveUndoState()

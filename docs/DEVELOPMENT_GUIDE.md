@@ -19,7 +19,7 @@ src/
   OpenLadderStudio.UI/
 ```
 
-O primeiro codigo extraido deve ser sem dependencia de WinForms e mantido compativel com .NET Framework. A UI consome casos de uso; drivers implementam contratos do Core; o Core nao conhece UI ou protocolos concretos.
+O primeiro codigo extraido, o codec do formato `.pladder`, esta em `src/OpenLadderStudio.Core/LadderProject.cs`. Ele nao depende de WinForms e permanece compativel com .NET Framework. A UI consome casos de uso; drivers implementam contratos do Core; o Core nao conhece UI ou protocolos concretos.
 
 ## Fluxo de mudanca
 
@@ -27,12 +27,12 @@ O primeiro codigo extraido deve ser sem dependencia de WinForms e mantido compat
 2. Mantenha a UI limitada a eventos, exibicao e composicao de dependencias.
 3. Preserve leitura e escrita de PLC como capacidades separadas e explicitamente controladas.
 4. Execute `powershell -ExecutionPolicy Bypass -File scripts/ValidateProject.ps1`.
-5. Execute `OpenLadderSimTest.exe` quando a mudanca tocar o motor de varredura ou as plantas simuladas. O build ja faz isso, mas rodar antes evita um ciclo de CI.
+5. Execute `OpenLadderCoreTest.exe` quando a mudanca tocar o formato `.pladder` e `OpenLadderSimTest.exe` quando tocar o motor de varredura ou as plantas simuladas. O build ja executa os dois.
 6. Execute `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat` em uma maquina Windows com .NET Framework antes de publicar executaveis.
 
 ## Estrategia de migracao
 
-1. Extraia contratos e modelos puros para `OpenLadderStudio.Core`.
+1. Continue a extracao de contratos e modelos puros para `OpenLadderStudio.Core`; o codec `.pladder` ja foi migrado.
 2. Extraia casos de uso que hoje vivem em Forms para `OpenLadderStudio.Application`.
 3. Mova implementacoes Modbus e TP02 para drivers separados.
 4. Migre o build para projetos SDK ou .NET Framework antes de retirar a pasta portatil.
