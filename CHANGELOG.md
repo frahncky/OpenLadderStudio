@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.79] - 2026-09-06
+
+### Interface
+- refinados os temas claro e escuro com superfícies mais distintas, seleção azul e texto secundário mais legível;
+- corrigidas as cores fixas de menus, painéis, rodapé e desenho Ladder, incluindo o editor executado separadamente;
+- melhorado o contraste das cores de estado e do texto dos botões preenchidos;
+- grades sem estilo próprio recebem linhas alternadas, separadores horizontais e cabeçalhos na paleta do tema;
+- atualizado o guia de interface com as novas cores e regras de contraste.
+
 ## [0.78] - 2026-09-06
 
 ### Temas

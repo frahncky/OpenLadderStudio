@@ -30,6 +30,44 @@ $ui = [regex]::Replace($ui, '(?m)^(\s*)public static readonly Color ([A-Za-z]+) 
 })
 if ($themeFields -lt 15) { throw "V78: StudioTheme tinha $themeFields cores; esperado ao menos 15." }
 
+# O shell e a tabela de menus tambem mantinham campos locais fixos. Resolver
+# esses campos no fim da cadeia evita misturar paineis claros com editor escuro.
+$shellColors = @{
+    Shell = 'Shell'; Chrome = 'Chrome'; ChromeLight = 'ChromeLight'
+    Border = 'Border'; Accent = 'Accent'; AccentDark = 'AccentDark'
+    Workspace = 'Workspace'; Fore = 'Fore'; Muted = 'Muted'; Disabled = 'Disabled'
+    hover = 'NavHover'
+}
+$shellFields = 0
+$shell = [regex]::Replace($shell, '(?m)^(\s*)private readonly Color ([A-Za-z]+) = Color\.FromArgb\([0-9]+, [0-9]+, [0-9]+\);(\r?)$', {
+    param($m)
+    $name = $m.Groups[2].Value
+    if (-not $shellColors.ContainsKey($name)) { return $m.Value }
+    $script:shellFields++
+    return $m.Groups[1].Value + 'private Color ' + $name + ' { get { return OpenLadderPalette.' + $shellColors[$name] + '; } }' + $m.Groups[3].Value
+})
+if ($shellFields -lt 10) { throw "V78: apenas $shellFields campos do shell receberam a paleta." }
+$shell = $shell.Replace('return Color.FromArgb(43, 126, 84);', 'return OpenLadderPalette.NavActive;')
+# Superficies e estados residuais introduzidos pelos scripts anteriores.
+# Estas trocas ficam no fim para preservar as ancoras da cadeia historica.
+$surfaceColors = @{
+    'Color.FromArgb(255, 255, 255)' = 'OpenLadderPalette.Chrome'
+    'Color.FromArgb(245, 248, 252)' = 'OpenLadderPalette.Shell'
+    'Color.FromArgb(69, 190, 129)' = 'OpenLadderPalette.Ok'
+    'Color.FromArgb(73, 92, 113)' = 'OpenLadderPalette.Muted'
+    'Color.FromArgb(251, 191, 36)' = 'OpenLadderPalette.Warning'
+    'Color.FromArgb(30, 45, 58)' = 'OpenLadderPalette.Fore'
+    'Color.FromArgb(80, 92, 104)' = 'OpenLadderPalette.Muted'
+    'Color.FromArgb(215, 166, 71)' = 'OpenLadderPalette.Warning'
+}
+foreach ($literal in $surfaceColors.Keys) {
+    $shell = $shell.Replace($literal, $surfaceColors[$literal])
+}
+$shell = $shell.Replace('BackColor = Color.White;', 'BackColor = OpenLadderPalette.ChromeLight;')
+$shell = $shell.Replace('ActiveLinkColor = Color.White;', 'ActiveLinkColor = OpenLadderPalette.Accent;')
+$shell = $shell.Replace('new Rectangle(25, 21, 22, 22), Color.White)', 'new Rectangle(25, 21, 22, 22), OpenLadderPalette.OnAccent)')
+$ui = $ui.Replace('BackColor = Color.FromArgb(17, 23, 30);', 'BackColor = OpenLadderPalette.Workspace;')
+
 # ---------------------------------------------------------------------------
 # 2. Paleta semantica dos icones. A V51 calibrou para fundo escuro e a V68
 #    recalibrou para fundo claro; com os dois temas disponiveis as duas
@@ -153,6 +191,42 @@ $newStatus = 'if (statusText != null) statusText.Text = tool == LadderTool.Selec
              '                    ? "Mouse livre — clique para selecionar, duplo clique para editar."' + [Environment]::NewLine +
              '                    : "Clique no rung para inserir. Ctrl insere em sequência • botão direito ou Esc solta.";'
 $shell = $shell.Replace($oldStatus, $newStatus)
+
+# O canvas e redesenhado pela V57/V74; suas cores finais precisam passar pela
+# mesma paleta, inclusive na compilacao do editor como ferramenta separada.
+$ladderPath = Join-Path $root 'LadderEditor.build.cs'
+if (-not (Test-Path $ladderPath)) { throw 'V78: LadderEditor.build.cs nao encontrado.' }
+$ladder = [System.IO.File]::ReadAllText($ladderPath)
+$ladderColors = @{
+    'Color.White' = 'OpenLadderPalette.Canvas'
+    'Color.FromArgb(72, 200, 136)' = 'OpenLadderPalette.Ok'
+    'Color.FromArgb(224, 102, 102)' = 'OpenLadderPalette.Danger'
+    'Color.FromArgb(232, 237, 242)' = 'OpenLadderPalette.GridLine'
+    'Color.FromArgb(248, 250, 253)' = 'OpenLadderPalette.Chrome'
+    'Color.FromArgb(132, 145, 158)' = 'OpenLadderPalette.Faint'
+    'Color.FromArgb(32, 53, 70)' = 'OpenLadderPalette.Rail'
+    'Color.FromArgb(248, 251, 254)' = 'OpenLadderPalette.Chrome'
+    'Color.FromArgb(241, 244, 247)' = 'OpenLadderPalette.GridLine'
+    'Color.FromArgb(48, 65, 78)' = 'OpenLadderPalette.Wire'
+    'Color.FromArgb(225, 239, 252)' = 'OpenLadderPalette.SelectionFill'
+    'Color.FromArgb(245, 248, 250)' = 'OpenLadderPalette.Chrome'
+    'Color.FromArgb(47, 128, 237)' = 'OpenLadderPalette.SelectionEdge'
+    'Color.FromArgb(220, 226, 232)' = 'OpenLadderPalette.Border'
+    'Color.FromArgb(35, 96, 178)' = 'OpenLadderPalette.Accent'
+    'Color.FromArgb(112, 126, 140)' = 'OpenLadderPalette.Muted'
+    'Color.FromArgb(247, 250, 253)' = 'OpenLadderPalette.NavHover'
+    'Color.FromArgb(203, 213, 223)' = 'OpenLadderPalette.Border'
+    'Color.FromArgb(232, 243, 253)' = 'OpenLadderPalette.SelectionFill'
+    'Color.FromArgb(31, 48, 62)' = 'OpenLadderPalette.Fore'
+    'Color.FromArgb(25, 105, 145)' = 'OpenLadderPalette.Info'
+    'Color.FromArgb(248, 250, 252)' = 'OpenLadderPalette.ChromeLight'
+    'Color.FromArgb(86, 105, 120)' = 'OpenLadderPalette.Rail'
+    'Color.FromArgb(82, 98, 112)' = 'OpenLadderPalette.Muted'
+}
+foreach ($literal in $ladderColors.Keys) {
+    $ladder = $ladder.Replace($literal, $ladderColors[$literal])
+}
+[System.IO.File]::WriteAllText($ladderPath, $ladder, [System.Text.Encoding]::UTF8)
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
 [System.IO.File]::WriteAllText($uiPath, $ui, [System.Text.Encoding]::UTF8)
