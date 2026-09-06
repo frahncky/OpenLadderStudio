@@ -56,6 +56,37 @@ jobs:
           OpenLadderSimTest.exe
           if errorlevel 1 exit /b 1
 
+      - name: Testar inicialização da interface
+        shell: powershell
+        working-directory: PC12_v2.1_Windows7_v3_portatil
+        run: |
+          $logDir = Join-Path $env:APPDATA 'OpenLadder Studio\logs'
+          if (Test-Path $logDir) { Remove-Item $logDir -Recurse -Force }
+
+          $process = Start-Process -FilePath '.\OpenLadderStudio.exe' -PassThru
+          Start-Sleep -Seconds 5
+
+          $failureLogs = @()
+          if (Test-Path $logDir) {
+            $failureLogs = @(Get-ChildItem $logDir -Filter 'falhas-*.log' -File -ErrorAction SilentlyContinue)
+          }
+
+          if ($failureLogs.Count -gt 0) {
+            foreach ($log in $failureLogs) {
+              Write-Host "===== $($log.FullName) ====="
+              Get-Content $log.FullName
+            }
+            if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
+            throw 'OpenLadder Studio registrou exceção durante a inicialização da interface.'
+          }
+
+          if ($process.HasExited) {
+            throw "OpenLadder Studio encerrou inesperadamente durante o teste de inicialização. ExitCode=$($process.ExitCode)"
+          }
+
+          Stop-Process -Id $process.Id -Force
+          Write-Host 'Inicialização da interface validada sem exceções.'
+
       - name: Preparar instalador
         shell: powershell
         run: .\scripts\PrepareInstaller.ps1
