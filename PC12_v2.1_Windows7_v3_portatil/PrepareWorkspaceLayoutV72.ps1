@@ -227,7 +227,7 @@ $shell = $shell.Replace('"Sa\u00EDda"', '"Mensagens"')
 $shell = [Regex]::Replace($shell, '(?m)^\s*modeText\.Width = \d+;$', '            modeText.Width = 650;')
 $shell = [Regex]::Replace($shell,
     '(?m)^\s*modeText\.Text = model \+ .*?;$',
-    '                modeText.Text = "PLC: " + model + "    |    " + protocol + "    |    OFFLINE    |    MODO: EDIÇÃO    |    ZOOM: 100%";')
+    '                modeText.Text = "PLC: " + model + "    |    " + (currentProfile == null ? "-" : currentProfile.Protocol) + "    |    OFFLINE    |    MODO: EDIÇÃO    |    ZOOM: 100%";')
 
 # O titulo acompanha o projeto ativo. A guarda de nulidade da V70 continua valida.
 $projectMethod = @'
