@@ -4,12 +4,38 @@
 
 A interface deve parecer uma ferramenta de engenharia profissional: compacta, previsível, legível e com cor usada para significado, não como decoração excessiva.
 
-## Identidade
+## Paleta central
 
-- fundo principal: quase branco (`#F8FAFD`), com painéis em branco puro;
-- destaque de produto: azul OpenLadder (`#1C69D2`);
-- texto principal: azul-grafite escuro (`#1E2C3E`);
-- texto secundário: cinza-azulado neutro;
+Existe **uma única fonte de cor** no produto: `OpenLadderPalette`, em
+`PC12_v2.1_Windows7_v3_portatil/AppBranding.cs`. Esse arquivo entra em todos os
+executáveis, então shell, editor, simulador, monitor Modbus, gerenciador de
+controladores, atualizador e ferramentas TP02 leem exatamente as mesmas cores.
+
+Nenhuma tela deve declarar cor própria. Cor fixa em `Color.FromArgb(...)` só é
+aceitável para elementos de cena do sinóptico, que não seguem o tema.
+
+## Temas
+
+O produto tem dois temas, escolhidos em **Exibir → Tema**. A preferência fica em
+`%APPDATA%\OpenLadder Studio\tema.txt` e a troca completa vale na próxima
+abertura — muita tela fixa a cor no construtor, então repintar a quente deixaria
+a janela pela metade. O aplicativo oferece reiniciar na hora.
+
+| Papel | Escuro (padrão) | Claro |
+|---|---|---|
+| fundo da janela | `#1B1F26` | `#E9EEF4` |
+| painel/chrome | `#22272F` | `#F4F7FA` |
+| superfície elevada | `#2A303A` | `#FBFCFE` |
+| borda | `#39414D` | `#D2DBE5` |
+| texto principal | `#E6EAF0` | `#1E2C3E` |
+| texto secundário | `#A3ADBA` | `#5A6B80` |
+| destaque | `#4C8DF6` | `#1C69D2` |
+
+Nenhum dos dois usa preto puro ou branco puro em superfície grande: são as duas
+extremidades que mais cansam a vista em jornada longa.
+
+## Cor semântica
+
 - azul: arquivos, controlador e informação;
 - âmbar: abrir/atenção;
 - turquesa/ciano: salvar, monitor e conversão;
@@ -17,13 +43,11 @@ A interface deve parecer uma ferramenta de engenharia profissional: compacta, pr
 - vermelho: remoção/erro;
 - amarelo/dourado: energia/aviso.
 
-As cores semânticas dos ícones são calibradas para contraste mínimo de 4:1 sobre
-fundo branco; tons pastel próprios de fundo escuro não são usados na barra e na
-navegação. A cor de um ícone deve permanecer estável entre barra superior,
-navegação e abas.
-
-> O tema claro foi adotado na iteração V68. Guias e capturas anteriores que
-> descrevem "grafite escuro" e "verde OpenLadder" refletem o tema legado.
+Cada ícone tem **duas calibragens**, uma por tema, declaradas como par em
+`OpenLadderPalette.Duo(escuro, claro)`. A família de matiz é a mesma nos dois; o
+que muda é a luminosidade, para manter contraste mínimo de 4:1 contra a
+superfície do tema. A cor de um ícone deve permanecer estável entre barra
+superior, navegação e abas.
 
 ## Barra superior
 

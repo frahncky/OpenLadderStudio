@@ -2,6 +2,32 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.78] - 2026-09-06
+
+### Temas
+- o produto passa a ter tema **escuro** (novo padrão) e **claro**, escolhidos em **Exibir → Tema**, com a preferência gravada em `%APPDATA%\OpenLadder Studio\tema.txt`;
+- toda a cor passa a vir de uma paleta única, `OpenLadderPalette` em `AppBranding.cs`, compilada em todos os executáveis;
+- corrigida a mistura de temas entre telas: o gerenciador de controladores, o mapa de memória, o monitor Modbus e o histórico de tendências continuavam na paleta escura legada com destaque verde, enquanto o editor Ladder, o atualizador e as ferramentas TP02 usavam uma terceira paleta com cabeçalho azul-marinho;
+- campos de entrada, listas e grades que nasciam com a cor de sistema passam a seguir o tema;
+- ícones ganham calibragem por tema, mantendo a família de matiz e o contraste mínimo em cada fundo;
+- a moldura do simulador segue o tema; o sinóptico mantém fundo escuro nos dois, por convenção de sala de controle.
+
+### Editor Ladder
+- a ferramenta passa a ser de uso único: inserido o elemento, o mouse volta sozinho ao modo ponteiro, sem precisar clicar em **Selecionar**;
+- `Ctrl` pressionado no clique mantém a ferramenta ativa para inserções em sequência;
+- botão direito no diagrama e `Esc` soltam a ferramenta;
+- o cursor vira cruz enquanto uma ferramenta está armada;
+- inserção cancelada não consome a ferramenta.
+
+### Português
+- corrigida a corrupção de acentuação nos textos gerados no build: scripts de preparação sem BOM eram lidos como Windows-1252, e `•`/`—` chegavam à tela como `â€¢`/`â€"` no monitor Modbus, no aviso de nova versão e no painel do controlador;
+- corrigido o defeito funcional decorrente: a limpeza do indicador de alteração no nome do projeto procurava um marcador corrompido e nunca encontrava;
+- mensagens de erro do núcleo e o relatório do autoteste passam a sair acentuados.
+
+### Documentação
+- guia de interface reescrito em torno da paleta central e dos dois temas;
+- guia de desenvolvimento passa a registrar as âncoras textuais dos scripts `Prepare*.ps1` e a exigência de BOM.
+
 ## [0.70] - 2026-09-06
 
 ### Normalização PT-BR
