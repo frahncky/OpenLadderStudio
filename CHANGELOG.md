@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.64] - 2026-09-06
+
+### Português e codificação
+- revisão ampla dos textos visíveis do Studio, editor Ladder, atualizador, Monitor Modbus, mapa de memória e ferramentas TP02/PG;
+- corrigidos textos corrompidos por interpretação incorreta de UTF-8, incluindo sequências como `Ã`, `Â` e símbolos quebrados;
+- palavras exibidas sem acentuação passam por normalização no estágio final do build;
+- notas das releases passam a ler o `CHANGELOG.md` explicitamente como UTF-8.
+
+### Engenharia de software
+- adicionada normalização central de textos imediatamente antes da compilação;
+- nova auditoria de português bloqueia a publicação quando encontra texto de interface sem acento ou codificação corrompida;
+- identificadores técnicos internos e chaves de configuração são preservados pela normalização.
+
 ## [0.63] - 2026-09-06
 
 ### Formato de projeto
