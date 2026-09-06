@@ -2,6 +2,28 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.68] - 2026-09-06
+
+### Interface
+- nova interface industrial clara baseada no layout aprovado para o OpenLadder Studio;
+- barra superior reorganizada com ações de projeto, compilação, transferência, simulação, monitoramento e diagnóstico;
+- explorador de projeto à esquerda com programas, funções, blocos de função, variáveis e bibliotecas;
+- painel de propriedades integrado abaixo da árvore do projeto;
+- caixa de instruções à direita com busca e categorias para contatos, bobinas, temporizadores, contadores e demais grupos;
+- painel de mensagens integrado na parte inferior e barra de status clara;
+- editor Ladder existente preservado no centro, sem duplicar a antiga caixa lateral de elementos.
+
+### Integração
+- contatos, bobinas, bordas, temporizador, contador, SET, RESET, funções, END e apagar podem ser selecionados diretamente pela nova caixa de instruções;
+- recursos ainda não suportados pelo núcleo aparecem desabilitados ou identificados como em evolução, sem simular funcionalidade inexistente;
+- o comando de transferência para PLC físico continua protegido pelas capacidades declaradas pelo driver;
+- mantidas as funções existentes de comunicação, monitoramento, simulação, diagnóstico TP02 e atualização.
+
+### Engenharia de software
+- novo shell `StudioLayoutV68.cs` aplicado sobre a infraestrutura WinForms existente para preservar o núcleo funcional;
+- paleta V68 é aplicada depois da auditoria V51, garantindo abas, console e superfícies auxiliares coerentes com o tema claro;
+- o executável principal passa a iniciar por `StudioProgramV68`.
+
 ## [0.67] - 2026-09-06
 
 ### Ferramentas e navegação
