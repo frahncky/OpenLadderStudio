@@ -85,12 +85,14 @@ assets/branding/                   identidade visual e fonte vetorial do ícone
 docs/                              arquitetura, drivers, UI e pesquisa TP02
 installer/                         template do instalador Inno Setup
 scripts/                           validações e preparação de release
+src/OpenLadderStudio.Core/         núcleo independente de interface
+tests/OpenLadderStudio.Core.Tests/ autotestes do núcleo e do formato de projeto
 PC12_v2.1_Windows7_v3_portatil/   fontes atuais, ferramentas e compatibilidade legada
 CHANGELOG.md                       histórico de versões
 CONTRIBUTING.md                    regras de contribuição
 ```
 
-O diretório `PC12_v2.1_Windows7_v3_portatil` ainda contém uma mistura histórica de fontes e compatibilidade. Ele é tratado como dívida técnica controlada; a migração gradual para uma estrutura `src/` está descrita na documentação de arquitetura.
+O diretório `PC12_v2.1_Windows7_v3_portatil` ainda contém uma mistura histórica de fontes e compatibilidade. Ele é tratado como dívida técnica controlada. A migração gradual para `src/` começou pelo codec `.pladder` do núcleo e está descrita na documentação de arquitetura.
 
 ## Identidade e interface
 
@@ -109,7 +111,7 @@ cd PC12_v2.1_Windows7_v3_portatil
 BUILD_INTERFACE_MODERNA.bat
 ```
 
-O build compila também o autoteste `OpenLadderSimTest.exe` e o executa. Uma falha na verificação do motor de varredura ou da planta interrompe o build.
+O build compila e executa `OpenLadderCoreTest.exe` e `OpenLadderSimTest.exe`. Uma falha no formato de projeto, no motor de varredura ou na planta interrompe o build.
 
 Antes do build/release, a estrutura pode ser validada com:
 

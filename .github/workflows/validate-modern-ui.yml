@@ -44,12 +44,15 @@ jobs:
           if not exist OpenLadderTP02Capture.exe exit /b 1
           if not exist OpenLadderSimulator.exe exit /b 1
           if not exist OpenLadderSimTest.exe exit /b 1
+          if not exist OpenLadderCoreTest.exe exit /b 1
           if not exist TP02-PG-Tests.json exit /b 1
 
-      - name: Executar autoteste da simulação
+      - name: Executar autotestes do núcleo
         shell: cmd
         working-directory: PC12_v2.1_Windows7_v3_portatil
         run: |
+          OpenLadderCoreTest.exe
+          if errorlevel 1 exit /b 1
           OpenLadderSimTest.exe
           if errorlevel 1 exit /b 1
 
