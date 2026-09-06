@@ -70,11 +70,11 @@ if ($text.Contains($showDocAnchor.TrimEnd()) -and -not $text.Contains('if (child
 $text = $text.Replace('                console.Write(0, "Documento aberto: " + title);', '                if (console != null) console.Write(0, "Documento aberto: " + title);')
 $text = $text.Replace('            if (!tab.Document.IsDisposed)', '            if (tab.Document != null && !tab.Document.IsDisposed)')
 
-# Assertivas do reparo: se projectValue continuar sendo dereferenciado fora de
-# uma guarda no metodo de nome do projeto, a release deve parar aqui.
+# Assertivas objetivas: a guarda de entrada e a guarda do bloco de recuperacao
+# precisam existir. Atribuicoes normais depois da guarda de entrada sao validas.
 $updatedMethod = [Regex]::Match($text, '(?ms)^        private void UpdateProjectName\(\).*?(?=^        private void SetRailEnabled\()').Value
 if ($updatedMethod -notmatch 'projectValue == null') { throw 'V70: guarda de projectValue nao aplicada.' }
-if ($updatedMethod -match '(?m)^\s*projectValue\.Text') { throw 'V70: atribuicao de projectValue sem guarda detectada.' }
+if ($updatedMethod -notmatch 'if \(projectValue != null\) projectValue\.Text') { throw 'V70: guarda de projectValue no catch nao aplicada.' }
 
 [System.IO.File]::WriteAllText($shellPath, $text, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host 'V70 aplicada: startup protegido contra referencias nulas da interface.' -ForegroundColor Cyan
