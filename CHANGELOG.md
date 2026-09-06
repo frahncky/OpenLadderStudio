@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.65] - 2026-09-06
+
+### Interface e linguagem
+- padronizados os textos visíveis para português consistente, usando “linha” no lugar de “rung”, “on-line/off-line” e “taxa de transmissão”;
+- traduzidos os rótulos Modbus de leitura, identificação e parâmetros seriais, preservando nomes de protocolos e comandos técnicos;
+- o antigo rótulo “TP02 BRIDGE LAB” passa a ser exibido como “LABORATÓRIO TP02”;
+- referências de interface a “download” passam a usar “transferência” quando tratam do envio ou recebimento de programa.
+
+### Engenharia de software
+- a auditoria de português passa a bloquear também linguagem híbrida recorrente na interface;
+- a normalização por palavra inteira corrige termos dentro de frases compostas sem alterar chaves técnicas internas;
+- compilação, autotestes e geração do instalador continuam condicionados à aprovação da auditoria de linguagem.
+
 ## [0.64] - 2026-09-06
 
 ### Português e codificação
