@@ -266,4 +266,5 @@ $replacement = @'
 $text = $text.Substring(0, $start) + $replacement + $text.Substring($end)
 [System.IO.File]::WriteAllText($outputPath, $text, [System.Text.Encoding]::UTF8)
 
+& (Join-Path (Get-Location) 'NormalizePortugueseV63.ps1')
 & (Join-Path (Get-Location) 'AuditPortugueseV63.ps1')
