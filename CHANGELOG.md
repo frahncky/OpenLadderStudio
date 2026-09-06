@@ -2,6 +2,24 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.67] - 2026-09-06
+
+### Ferramentas e navegação
+- o menu **Ferramentas** passa a exibir apenas funções de uso direto: simulação do projeto e verificação de compatibilidade com o controlador;
+- recursos de engenharia reversa do WEG TP02 passam para **Diagnóstico avançado TP02**;
+- o diagnóstico avançado fica restrito a teste de comunicação PG, monitor MMI em leitura, captura serial, decodificador RBP e análise PC12/TP02;
+- **Calibração de opcodes** e **IL para Ladder** deixam de aparecer na interface normal por ainda serem recursos internos/incompletos;
+- ferramentas externas específicas do TP02 só podem ser abertas quando um perfil TP02 está ativo.
+
+### Comunicação TP02
+- o comando **Conectar** deixa de abrir diretamente o laboratório de engenharia reversa;
+- uma central separa claramente programação PG de MMI/Computer Link;
+- o comando **Monitor** abre o TP02 em modo somente leitura, ocultando RUN/STOP e escritas no fluxo operacional comum.
+
+### Instalação
+- os executáveis técnicos continuam instalados, mas deixam de criar atalhos independentes no menu do Windows;
+- o grupo de programas fica centrado no OpenLadder Studio.
+
 ## [0.66] - 2026-09-06
 
 ### Biblioteca de processos simulados
@@ -20,6 +38,7 @@ Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquiv
 - autoteste ampliado para cobrir as seis plantas e o comportamento sob falha injetada;
 - `ValidateProject.ps1` passa a exigir `SimulatedPlants.cs` e a bloquear dependência de WinForms nele;
 - textos visíveis da simulação já escritos no padrão de linguagem do projeto, sem depender da normalização do build.
+
 ## [0.65] - 2026-09-06
 
 ### Interface e linguagem
