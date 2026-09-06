@@ -9,9 +9,9 @@ using System.Windows.Forms;
 namespace ModernPC12
 {
     /// <summary>
-    /// Link PG do WEG TP02 baseado na resposta real observada no PLC fisico.
-    /// A v0.34 considera a resposta valida ao CON-ICB como confirmacao do Link PG.
-    /// Nenhum comando que altera o PLC e enviado nesta tela.
+    /// Link PG do WEG TP02 baseado na resposta real observada no PLC físico.
+    /// A v0.34 considera a resposta válida ao CON-ICB como confirmação do Link PG.
+    /// Nenhum comando que altera o PLC é enviado nesta tela.
     /// </summary>
     internal sealed class TP02PgLinkV34Form : Form
     {

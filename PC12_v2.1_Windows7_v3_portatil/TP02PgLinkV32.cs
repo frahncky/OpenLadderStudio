@@ -10,7 +10,7 @@ namespace ModernPC12
 {
     /// <summary>
     /// Diagnostico de Link PG do WEG TP02 reproduzindo a sequencia inicial do PC12 2.1.
-    /// Esta versao e somente leitura/handshake: nao envia comandos de escrita, RUN, STOP ou download.
+    /// Esta versão é somente leitura/handshake: não envia comandos de escrita, RUN, STOP ou download.
     /// </summary>
     internal sealed class TP02PgLinkV32Form : Form
     {

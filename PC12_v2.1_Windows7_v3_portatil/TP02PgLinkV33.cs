@@ -9,8 +9,8 @@ using System.Windows.Forms;
 namespace ModernPC12
 {
     /// <summary>
-    /// Link PG do WEG TP02 reproduzindo a sequencia inicial do PC12 2.1.
-    /// A v0.33 separa eco serial e quadro util antes da validacao do checksum.
+    /// Link PG do WEG TP02 reproduzindo a sequência inicial do PC12 2.1.
+    /// A v0.33 separa eco serial e quadro útil antes da validação do checksum.
     /// Esta tela continua somente leitura/handshake.
     /// </summary>
     internal sealed class TP02PgLinkV33Form : Form

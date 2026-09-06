@@ -2,13 +2,13 @@
 
 ## Limites atuais
 
-O produto ainda e compilado diretamente pelo `csc.exe` do .NET Framework a partir de `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat`. Esse script lista cada arquivo de fonte de forma explicita e produz varios executaveis Windows Forms.
+O produto ainda é compilado diretamente pelo `csc.exe` do .NET Framework a partir de `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat`. Esse script lista cada arquivo de fonte de forma explícita e produz vários executáveis Windows Forms.
 
-Por isso, a pasta portatil e uma fronteira de compatibilidade: fontes existentes nao devem ser movidas ou renomeadas sem atualizar e validar todas as invocacoes do compilador. Arquivos `*.build.cs` sao temporarios e gerados durante o build.
+Por isso, a pasta portátil é uma fronteira de compatibilidade: fontes existentes não devem ser movidas ou renomeadas sem atualizar e validar todas as invocações do compilador. Arquivos `*.build.cs` são temporários e gerados durante o build.
 
 ## Estrutura de destino
 
-O catalogo em `.github/architecture/modules.json` e a fonte de verdade para ownership e dependencias permitidas. A evolucao deve convergir para:
+O catálogo em `.github/architecture/modules.json` é a fonte de verdade para ownership e dependências permitidas. A evolução deve convergir para:
 
 ```text
 src/
@@ -19,22 +19,22 @@ src/
   OpenLadderStudio.UI/
 ```
 
-O primeiro codigo extraido, o codec do formato `.pladder`, esta em `src/OpenLadderStudio.Core/LadderProject.cs`. Ele nao depende de WinForms e permanece compativel com .NET Framework. A UI consome casos de uso; drivers implementam contratos do Core; o Core nao conhece UI ou protocolos concretos.
+O primeiro código extraído, o codec do formato `.pladder`, está em `src/OpenLadderStudio.Core/LadderProject.cs`. Ele não depende de WinForms e permanece compatível com .NET Framework. A UI consome casos de uso; drivers implementam contratos do Core; o Core não conhece UI ou protocolos concretos.
 
-## Fluxo de mudanca
+## Fluxo de mudança
 
-1. Classifique a mudanca no catalogo de modulos antes de criar o arquivo.
-2. Mantenha a UI limitada a eventos, exibicao e composicao de dependencias.
+1. Classifique a mudança no catálogo de módulos antes de criar o arquivo.
+2. Mantenha a UI limitada a eventos, exibição e composição de dependências.
 3. Preserve leitura e escrita de PLC como capacidades separadas e explicitamente controladas.
 4. Execute `powershell -ExecutionPolicy Bypass -File scripts/ValidateProject.ps1`.
-5. Execute `OpenLadderCoreTest.exe` quando a mudanca tocar o formato `.pladder` e `OpenLadderSimTest.exe` quando tocar o motor de varredura ou as plantas simuladas. O build ja executa os dois.
-6. Execute `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat` em uma maquina Windows com .NET Framework antes de publicar executaveis.
+5. Execute `OpenLadderCoreTest.exe` quando a mudança tocar o formato `.pladder` e `OpenLadderSimTest.exe` quando tocar o motor de varredura ou as plantas simuladas. O build já executa os dois.
+6. Execute `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat` em uma máquina Windows com .NET Framework antes de publicar executáveis.
 
-## Estrategia de migracao
+## Estratégia de migração
 
-1. Continue a extracao de contratos e modelos puros para `OpenLadderStudio.Core`; o codec `.pladder` ja foi migrado.
+1. Continue a extração de contratos e modelos puros para `OpenLadderStudio.Core`; o codec `.pladder` já foi migrado.
 2. Extraia casos de uso que hoje vivem em Forms para `OpenLadderStudio.Application`.
-3. Mova implementacoes Modbus e TP02 para drivers separados.
-4. Migre o build para projetos SDK ou .NET Framework antes de retirar a pasta portatil.
+3. Mova implementações Modbus e TP02 para drivers separados.
+4. Migre o build para projetos SDK ou .NET Framework antes de retirar a pasta portátil.
 
-Cada etapa deve manter os launchers existentes funcionais e preservar a capacidade de fallback para o executavel legado.
+Cada etapa deve manter os launchers existentes funcionais e preservar a capacidade de fallback para o executável legado.

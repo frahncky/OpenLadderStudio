@@ -6,18 +6,24 @@ A interface deve parecer uma ferramenta de engenharia profissional: compacta, pr
 
 ## Identidade
 
-- fundo principal: grafite escuro;
-- destaque de produto: verde OpenLadder;
-- texto principal: cinza muito claro;
-- texto secundário: cinza neutro;
+- fundo principal: quase branco (`#F8FAFD`), com painéis em branco puro;
+- destaque de produto: azul OpenLadder (`#1C69D2`);
+- texto principal: azul-grafite escuro (`#1E2C3E`);
+- texto secundário: cinza-azulado neutro;
 - azul: arquivos, controlador e informação;
 - âmbar: abrir/atenção;
 - turquesa/ciano: salvar, monitor e conversão;
 - violeta: histórico/desfazer/configuração;
 - vermelho: remoção/erro;
-- amarelo: energia/aviso.
+- amarelo/dourado: energia/aviso.
 
-A cor de um ícone deve permanecer estável entre barra superior, navegação e abas.
+As cores semânticas dos ícones são calibradas para contraste mínimo de 4:1 sobre
+fundo branco; tons pastel próprios de fundo escuro não são usados na barra e na
+navegação. A cor de um ícone deve permanecer estável entre barra superior,
+navegação e abas.
+
+> O tema claro foi adotado na iteração V68. Guias e capturas anteriores que
+> descrevem "grafite escuro" e "verde OpenLadder" refletem o tema legado.
 
 ## Barra superior
 
@@ -112,10 +118,11 @@ Controles de ação devem:
 
 O ícone oficial combina:
 
-- fundo grafite;
-- trilhos Ladder verdes;
-- rung em branco;
-- bloco PLC em azul;
+- fundo azul-grafite arredondado, com leve gradiente vertical;
+- escada Ladder (dois trilhos e três degraus) em branco;
+- um "O" em âmbar como ponto focal da marca;
+- um "L" branco integrado à direita;
+- um único ponto de estado em verde;
 - ausência de texto, para manter legibilidade em 16x16.
 
 O arquivo `.ico` deve ser gerado em múltiplas resoluções pelo script `GenerateOpenLadderIcon.ps1`.

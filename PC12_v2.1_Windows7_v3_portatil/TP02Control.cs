@@ -10,7 +10,7 @@ namespace ModernPC12
 {
     /// <summary>
     /// Controle operacional do WEG TP02 pelo protocolo ASCII Computer Link.
-    /// Operacoes destrutivas de memoria/programa (CLR/WBP/ROM) nao fazem parte desta tela.
+    /// Operações destrutivas de memória/programa (CLR/WBP/ROM) não fazem parte desta tela.
     /// </summary>
     internal sealed class TP02ControlForm : Form
     {

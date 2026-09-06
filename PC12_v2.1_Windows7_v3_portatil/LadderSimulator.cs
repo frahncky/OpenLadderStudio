@@ -440,8 +440,8 @@ namespace ModernPC12
             statusLabel.ForeColor = SimulatorTheme.Muted;
             statusLabel.Text = "Pronto.";
 
-            // Ancoragem resolve do ultimo filho para o primeiro: o painel Fill precisa
-            // ficar a frente para ocupar apenas o espaco que sobra das barras.
+            // Ancoragem resolve do último filho para o primeiro: o painel Fill precisa
+            // ficar à frente para ocupar apenas o espaço que sobra das barras.
             Controls.Add(body);
             body.BringToFront();
             Controls.Add(statusLabel);

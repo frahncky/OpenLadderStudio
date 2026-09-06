@@ -5,6 +5,10 @@ $cp1252 = [System.Text.Encoding]::GetEncoding(1252)
 $stringPattern = '@"(?:[^"]|"")*"|"(?:\\.|[^"\\])*"'
 $wordPattern = '(?<![A-Za-z])([A-Za-z]+)(?![A-Za-z])'
 
+# Esta normalizacao atua SO em literais de string. Comentarios ficam intactos de
+# proposito: varios scripts Prepare*.ps1 usam trechos de comentario em portugues
+# como ancora textual, e acentua-los quebraria essas ancoras no build seguinte.
+
 function Decode-U([string]$value) {
     return [regex]::Replace($value, '\\u([0-9A-Fa-f]{4})', {
         param($m)
@@ -73,7 +77,18 @@ $rawMap = @{
     'reconstrucao'='reconstru\u00E7\u00E3o'; 'decodificacao'='decodifica\u00E7\u00E3o'; 'inferencia'='infer\u00EAncia'; 'excecao'='exce\u00E7\u00E3o';
     'restricao'='restri\u00E7\u00E3o'; 'restricoes'='restri\u00E7\u00F5es'; 'atencao'='aten\u00E7\u00E3o';
     'serao'='ser\u00E3o'; 'sera'='ser\u00E1'; 'sao'='s\u00E3o'; 'apos'='ap\u00F3s'; 'ate'='at\u00E9'; 'alem'='al\u00E9m'; 'tambem'='tamb\u00E9m';
-    'devera'='dever\u00E1'; 'podera'='poder\u00E1'
+    'devera'='dever\u00E1'; 'podera'='poder\u00E1';
+    'codigo'='c\u00F3digo'; 'codigos'='c\u00F3digos'; 'havera'='haver\u00E1'; 'mantem'='mant\u00E9m'; 'obtem'='obt\u00E9m';
+    'contem'='cont\u00E9m'; 'porem'='por\u00E9m'; 'nivel'='n\u00EDvel'; 'niveis'='n\u00EDveis'; 'voce'='voc\u00EA';
+    'estara'='estar\u00E1'; 'ficara'='ficar\u00E1'; 'sintese'='s\u00EDntese'; 'automatico'='autom\u00E1tico';
+    'automatica'='autom\u00E1tica'; 'generico'='gen\u00E9rico'; 'generica'='gen\u00E9rica'; 'numero'='n\u00FAmero'; 'numeros'='n\u00FAmeros';
+    'maximo'='m\u00E1ximo'; 'minimo'='m\u00EDnimo'; 'logica'='l\u00F3gica'; 'logico'='l\u00F3gico'; 'multiplos'='m\u00FAltiplos';
+    'multiplo'='m\u00FAltiplo'; 'explicito'='expl\u00EDcito'; 'implicito'='impl\u00EDcito';
+    'indice'='\u00EDndice'; 'indices'='\u00EDndices'; 'util'='\u00FAtil'; 'uteis'='\u00FAteis'; 'confirmacao'='confirma\u00E7\u00E3o';
+    'senao'='sen\u00E3o'; 'entao'='ent\u00E3o'; 'correcao'='corre\u00E7\u00E3o'; 'correcoes'='corre\u00E7\u00F5es'; 'alcanca'='alcan\u00E7a';
+    'formulario'='formul\u00E1rio'; 'formularios'='formul\u00E1rios'; 'obrigatorio'='obrigat\u00F3rio'; 'obrigatoria'='obrigat\u00F3ria';
+    'especifico'='espec\u00EDfico'; 'especifica'='espec\u00EDfica'; 'dominio'='dom\u00EDnio'; 'sinoptico'='sin\u00F3ptico';
+    'previa'='pr\u00E9via'; 'previo'='pr\u00E9vio'; 'minima'='m\u00EDnima'; 'maxima'='m\u00E1xima'
 }
 
 $map = @{}
