@@ -50,6 +50,14 @@ Source: "..\PC12_v2.1_Windows7_v3_portatil\version.txt"; DestDir: "{app}"; Flags
 [InstallDelete]
 Type: files; Name: "{app}\OpenLadderTP02PgLink.exe"
 Type: files; Name: "{group}\Link PG TP02 - diagnóstico.lnk"
+Type: files; Name: "{group}\Gerenciar controladores.lnk"
+Type: files; Name: "{group}\Monitor Modbus.lnk"
+Type: files; Name: "{group}\Mapa de memória.lnk"
+Type: files; Name: "{group}\Simulação de processo.lnk"
+Type: files; Name: "{group}\Laboratório PG TP02.lnk"
+Type: files; Name: "{group}\Captura serial PC12\TP02.lnk"
+Type: files; Name: "{group}\Captura serial PC12/TP02.lnk"
+Type: files; Name: "{group}\Verificar atualizações.lnk"
 
 [Dirs]
 Name: "{userdocs}\OpenLadder Studio\Projetos"
@@ -59,13 +67,6 @@ Name: "{userdocs}\OpenLadder Studio\Backups"
 
 [Icons]
 Name: "{group}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
-Name: "{group}\Gerenciar controladores"; Filename: "{app}\OpenLadderDeviceManager.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
-Name: "{group}\Monitor Modbus"; Filename: "{app}\OpenLadderModbus.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
-Name: "{group}\Mapa de memória"; Filename: "{app}\OpenLadderMemoryMap.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
-Name: "{group}\Simulação de processo"; Filename: "{app}\OpenLadderSimulator.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
-Name: "{group}\Laboratório PG TP02"; Filename: "{app}\OpenLadderTP02PgLab.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
-Name: "{group}\Captura serial PC12/TP02"; Filename: "{app}\OpenLadderTP02Capture.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
-Name: "{group}\Verificar atualizações"; Filename: "{app}\OpenLadderUpdater.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
 Name: "{autodesktop}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"; Tasks: desktopicon
 
 [Run]
