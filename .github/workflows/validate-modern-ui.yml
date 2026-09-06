@@ -119,9 +119,11 @@ jobs:
           $sha = 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
           $title = "OpenLadder Studio v$version"
 
-          $notes = "OpenLadder Studio v$version. Consulte CHANGELOG.md para os detalhes desta versão."
+          $aTilde = [char]0x00E3
+          $notes = "OpenLadder Studio v$version. Consulte CHANGELOG.md para os detalhes desta vers${aTilde}o."
           if (Test-Path 'CHANGELOG.md') {
-            $change = Get-Content 'CHANGELOG.md' -Raw
+            $changePath = (Resolve-Path 'CHANGELOG.md').Path
+            $change = [System.IO.File]::ReadAllText($changePath, [System.Text.Encoding]::UTF8)
             $escaped = [Regex]::Escape($version)
             $match = [Regex]::Match($change, "(?ms)^## \[$escaped\][^\r\n]*\r?\n(.*?)(?=^## \[|\z)")
             if ($match.Success -and -not [string]::IsNullOrWhiteSpace($match.Groups[1].Value)) {
