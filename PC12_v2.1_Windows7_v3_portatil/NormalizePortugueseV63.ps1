@@ -14,7 +14,7 @@ function Decode-U([string]$value) {
 
 function Mojibake-Count([string]$value) {
     $count = 0
-    $count += ([regex]::Matches($value, '\u00C3')).Count
+    $count += ([regex]::Matches($value, '\u00C3(?=[\u0080-\u00BF\u0192])')).Count
     $count += ([regex]::Matches($value, '\uFFFD')).Count
     $count += ([regex]::Matches($value, '\u00C2(?=[\u0080-\u00BF\u2000-\u206F])')).Count
     $count += ([regex]::Matches($value, '\u00E2(?=[\u0080-\u00BF\u2000-\u206F])')).Count
@@ -89,8 +89,6 @@ function Preserve-Case([string]$source, [string]$target) {
 
 function Normalize-Literal([string]$literal) {
     $literal = Repair-Mojibake $literal
-
-    # Chaves internas simples em minusculas (ex.: "area", "version") nao sao texto de interface.
     if ($literal -cmatch '^@?"[a-z][a-z0-9_.-]*"$') { return $literal }
 
     $literal = [regex]::Replace($literal, $wordPattern, {
@@ -118,18 +116,17 @@ $changedStrings = 0
 $files = Get-ChildItem -Path $root -Filter '*.cs' -File | Sort-Object Name
 foreach ($file in $files) {
     $text = [System.IO.File]::ReadAllText($file.FullName)
-    $localCount = 0
     $newText = [regex]::Replace($text, $stringPattern, {
         param($m)
         $fixed = Normalize-Literal $m.Value
-        if ($fixed -cne $m.Value) { $script:changedStrings++; $localCount++ }
+        if ($fixed -cne $m.Value) { $script:changedStrings++ }
         return $fixed
     }, [System.Text.RegularExpressions.RegexOptions]::Singleline)
 
-    if ($localCount -gt 0) {
+    if ($newText -cne $text) {
         [System.IO.File]::WriteAllText($file.FullName, $newText, $utf8)
         $changedFiles++
-        Write-Host ('PT-BR normalizado: {0} ({1} string(s))' -f $file.Name, $localCount)
+        Write-Host ('PT-BR normalizado: {0}' -f $file.Name)
     }
 }
 
