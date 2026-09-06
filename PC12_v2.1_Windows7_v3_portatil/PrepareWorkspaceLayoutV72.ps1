@@ -33,6 +33,14 @@ $nav = @'
             body.BackColor = StudioTheme.NavBg;
             body.AutoScroll = true;
 
+            Panel projectCard = BuildSidebarProjectCard();
+            projectCard.Dock = DockStyle.Top;
+            projectCard.Height = 158;
+
+            Panel propertiesCard = BuildSidebarPropertiesCard();
+            propertiesCard.Dock = DockStyle.Top;
+            propertiesCard.Height = 214;
+
             List<Control> items = new List<Control>();
             items.Add(new NavSection("Projeto"));
             items.Add(SideAction("Configuração do PLC", StudioIcon.Chip, delegate { ShowDeviceManager(); }));
@@ -42,9 +50,9 @@ $nav = @'
             items.Add(SideAction("Simulador", StudioIcon.Grid, delegate { ShowSimulator(); }));
             items.Add(SideAction("Monitor on-line", StudioIcon.Monitor, delegate { ShowMonitor(); }));
             items.Add(new NavSection("Projeto atual"));
-            items.Add(BuildSidebarProjectCard());
+            items.Add(projectCard);
             items.Add(new NavSection("Seleção"));
-            items.Add(BuildSidebarPropertiesCard());
+            items.Add(propertiesCard);
             items.Add(new NavSection("Sistema"));
             items.Add(SideAction("Atualizações", StudioIcon.Refresh, delegate { ShowUpdater(); }));
 
@@ -56,11 +64,13 @@ $nav = @'
         }
 
 '@
-$shell = Replace-Section $shell '        private Panel BuildNav()' '        private Panel BuildSidebarGroup' $nav 'painel Projeto'
+# As etapas V53+ mantem BuildElementLibrary como primeira rotina logo apos o bloco
+# estrutural do painel lateral; usar essa ancora evita depender de helpers removidos.
+$shell = Replace-Section $shell '        private Panel BuildNav()' '        private Panel BuildElementLibrary()' $nav 'painel Projeto'
 
 # -----------------------------------------------------------------------------
-# Biblioteca Ladder vira uma paleta independente, a direita, com busca e todos
-# os comandos reais ja suportados pelo editor.
+# Biblioteca Ladder vira uma paleta independente, a direita, com todos os
+# comandos reais ja suportados pelo editor.
 # -----------------------------------------------------------------------------
 $inspector = @'
         private Panel BuildInspector()
@@ -81,10 +91,9 @@ $inspector = @'
 $shell = Replace-Section $shell '        private Panel BuildInspector()' '        private Panel BuildStatusBar()' $inspector 'paleta de instrucoes'
 
 # Nomenclatura visual conforme o conceito aprovado.
-$shell = $shell.Replace('ELEMENTOS LADDER', 'INSTRUÇÕES')
-$shell = $shell.Replace('Buscar elemento...', 'Buscar instrução...')
-$shell = $shell.Replace('elementSearch.Text == "Buscar elemento..."', 'elementSearch.Text == "Buscar instrução..."')
-$shell = $shell.Replace('elementSearch.Text = "Buscar elemento..."', 'elementSearch.Text = "Buscar instrução..."')
+$shell = $shell.Replace('"COMPONENTES"', '"INSTRUÇÕES"')
+$shell = $shell.Replace('"ELEMENTOS"', '"INSTRUÇÕES"')
+$shell = $shell.Replace('"ELEMENTOS LADDER"', '"INSTRUÇÕES"')
 
 # Mensagens permanecem visiveis no workspace principal, como no mockup aprovado.
 $shell = $shell.Replace('miConsole.Checked = false;', 'miConsole.Checked = true;')
@@ -128,7 +137,7 @@ $shell = $shell.Replace('wrap.Height = 150;', 'wrap.Height = 132;')
 # Guardrails: a nova estrutura deve existir antes de o build seguir.
 if ($shell -notmatch 'nav\.Width = 248;') { throw 'V72: painel Projeto nao aplicado.' }
 if ($shell -notmatch 'p\.Width = 286;') { throw 'V72: paleta de instrucoes nao aplicada.' }
-if ($shell -notmatch 'BuildElementLibrary\(\)') { throw 'V72: biblioteca Ladder nao encontrada.' }
+if ($shell -notmatch 'Panel library = BuildElementLibrary\(\);') { throw 'V72: biblioteca Ladder nao movida para a direita.' }
 if ($shell -notmatch 'OpenLadder Studio - Projeto1') { throw 'V72: titulo de projeto nao aplicado.' }
 
 [System.IO.File]::WriteAllText($shellPath, $shell, (New-Object System.Text.UTF8Encoding($false)))
