@@ -15,18 +15,19 @@ namespace ModernPC12
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new TP02ProgramReaderForm());
         }
     }
 
     internal sealed class TP02ProgramReaderForm : Form
     {
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
-        private readonly Color Success = Color.FromArgb(27, 132, 86);
+        private Color Navy { get { return OpenLadderPalette.Fore; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
 
         private ComboBox portCombo;
         private ComboBox baudCombo;
@@ -62,7 +63,7 @@ namespace ModernPC12
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 72;
-            header.BackColor = Color.White;
+            header.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(header);
 
             Label title = LabelAt("LEITOR DE PROGRAMA TP02 — RBP", 15.0f, FontStyle.Bold, Navy, 22, 13);
@@ -82,7 +83,7 @@ namespace ModernPC12
             Panel config = new Panel();
             config.Dock = DockStyle.Top;
             config.Height = 150;
-            config.BackColor = Color.White;
+            config.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(config);
 
             config.Controls.Add(LabelAt("Configuração serial", 12.0f, FontStyle.Bold, TextPrimary, 18, 14));
@@ -197,8 +198,8 @@ namespace ModernPC12
             outputBox.WordWrap = false;
             outputBox.ScrollBars = ScrollBars.Both;
             outputBox.Font = new Font("Consolas", 9.4f);
-            outputBox.BackColor = Color.FromArgb(20, 28, 36);
-            outputBox.ForeColor = Color.FromArgb(220, 233, 245);
+            outputBox.BackColor = OpenLadderPalette.Canvas;
+            outputBox.ForeColor = OpenLadderPalette.Fore;
             Controls.Add(outputBox);
             outputBox.BringToFront();
             DockOrder.Apply(this, outputBox, read, config, header);
@@ -485,14 +486,14 @@ namespace ModernPC12
             if (primary)
             {
                 b.BackColor = Accent;
-                b.ForeColor = Color.White;
+                b.ForeColor = OpenLadderPalette.OnAccent;
                 b.FlatAppearance.BorderSize = 0;
             }
             else
             {
-                b.BackColor = Color.White;
+                b.BackColor = OpenLadderPalette.Chrome;
                 b.ForeColor = Navy;
-                b.FlatAppearance.BorderColor = Color.FromArgb(195, 207, 220);
+                b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
             }
             return b;
         }

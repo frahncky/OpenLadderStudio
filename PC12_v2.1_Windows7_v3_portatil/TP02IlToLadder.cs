@@ -16,6 +16,7 @@ namespace ModernPC12
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new TP02IlToLadderForm());
         }
     }
@@ -36,13 +37,13 @@ namespace ModernPC12
 
     internal sealed class TP02IlToLadderForm : Form
     {
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
-        private readonly Color Success = Color.FromArgb(27, 132, 86);
-        private readonly Color Warning = Color.FromArgb(190, 112, 20);
+        private Color Navy { get { return OpenLadderPalette.Fore; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
+        private Color Warning { get { return OpenLadderPalette.Warning; } }
 
         private readonly List<TP02IlInstruction> instructions = new List<TP02IlInstruction>();
         private readonly List<TP02LadderBuildRung> rungs = new List<TP02LadderBuildRung>();
@@ -69,7 +70,7 @@ namespace ModernPC12
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 74;
-            header.BackColor = Color.White;
+            header.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(header);
 
             header.Controls.Add(NewLabel("RECONSTRUÇÃO SEGURA — IL → LADDER", 15.0f, FontStyle.Bold, Navy, 22, 12));
@@ -112,8 +113,8 @@ namespace ModernPC12
             previewBox.WordWrap = false;
             previewBox.ScrollBars = ScrollBars.Both;
             previewBox.Font = new Font("Consolas", 9.4f);
-            previewBox.BackColor = Color.FromArgb(20, 28, 36);
-            previewBox.ForeColor = Color.FromArgb(220, 233, 245);
+            previewBox.BackColor = OpenLadderPalette.Canvas;
+            previewBox.ForeColor = OpenLadderPalette.Fore;
             Controls.Add(previewBox);
             previewBox.BringToFront();
             DockOrder.Apply(this, previewBox, bar, header);
@@ -350,14 +351,14 @@ namespace ModernPC12
             if (primary)
             {
                 b.BackColor = Accent;
-                b.ForeColor = Color.White;
+                b.ForeColor = OpenLadderPalette.OnAccent;
                 b.FlatAppearance.BorderSize = 0;
             }
             else
             {
-                b.BackColor = Color.White;
+                b.BackColor = OpenLadderPalette.Chrome;
                 b.ForeColor = Navy;
-                b.FlatAppearance.BorderColor = Color.FromArgb(194, 205, 216);
+                b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
             }
             return b;
         }

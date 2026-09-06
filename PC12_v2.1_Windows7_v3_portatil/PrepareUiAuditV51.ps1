@@ -9,7 +9,7 @@ foreach ($p in @($uiPath, $shellPath, $ladderPath)) {
     if (-not (Test-Path $p)) { throw "Arquivo de build nao encontrado: $p" }
 }
 
-function LF([string]$text) { return $text.Replace("`r`n", "`n") }
+function LF([string]$text) { return $text }
 function Replace-Required([string]$text, [string]$needle, [string]$replacement, [string]$label) {
     if (-not $text.Contains($needle)) { throw "Ancora nao encontrada ($label)." }
     return $text.Replace($needle, $replacement)
@@ -162,8 +162,8 @@ $helper = @'
             b.Size = new Size(208, 34);
             b.TextAlign = ContentAlignment.MiddleLeft;
             b.Padding = new Padding(10, 0, 0, 0);
-            b.NormalColor = Navy;
-            b.HoverColor = NavyLight;
+            b.NormalColor = SideBg;
+            b.HoverColor = SideHover;
             b.ForeColor = accent;
             b.Font = new Font("Segoe UI Semibold", 8.6f, FontStyle.Bold);
             b.Click += action;

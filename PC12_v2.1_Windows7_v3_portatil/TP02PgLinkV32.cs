@@ -30,14 +30,14 @@ namespace ModernPC12
             }
         }
 
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color Danger = Color.FromArgb(183, 54, 54);
-        private readonly Color Success = Color.FromArgb(27, 132, 86);
-        private readonly Color Warning = Color.FromArgb(190, 120, 20);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
+        private Color Navy { get { return OpenLadderPalette.Fore; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Danger { get { return OpenLadderPalette.Danger; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
+        private Color Warning { get { return OpenLadderPalette.Warning; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
 
         private ComboBox portCombo;
         private Label stateLabel;
@@ -76,7 +76,7 @@ namespace ModernPC12
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 82;
-            header.BackColor = Color.White;
+            header.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(header);
 
             Label title = LabelAt("LINK PG - WEG TP02", 15.5f, FontStyle.Bold, Navy, 22, 11);
@@ -96,7 +96,7 @@ namespace ModernPC12
             Panel config = new Panel();
             config.Dock = DockStyle.Top;
             config.Height = 180;
-            config.BackColor = Color.White;
+            config.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(config);
 
             config.Controls.Add(LabelAt("Comunicação PG", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
@@ -156,8 +156,8 @@ namespace ModernPC12
             logBox.ScrollBars = ScrollBars.Both;
             logBox.ReadOnly = true;
             logBox.WordWrap = false;
-            logBox.BackColor = Color.FromArgb(20, 28, 36);
-            logBox.ForeColor = Color.FromArgb(218, 232, 245);
+            logBox.BackColor = OpenLadderPalette.Canvas;
+            logBox.ForeColor = OpenLadderPalette.Fore;
             logBox.Font = new Font("Consolas", 9.2f);
             Controls.Add(logBox);
 
@@ -493,9 +493,9 @@ namespace ModernPC12
             b.Location = new Point(left, top);
             b.Size = new Size(width, 34);
             b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderColor = Color.FromArgb(194, 205, 216);
-            b.BackColor = primary ? Accent : Color.White;
-            b.ForeColor = primary ? Color.White : Navy;
+            b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
+            b.BackColor = primary ? Accent : OpenLadderPalette.Chrome;
+            b.ForeColor = primary ? OpenLadderPalette.OnAccent : Navy;
             b.Font = new Font("Segoe UI Semibold", 8.3f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
             return b;

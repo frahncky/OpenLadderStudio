@@ -19,6 +19,7 @@ namespace ModernPC12
             StudioDiagnostics.Install();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new PC12UpdaterForm());
         }
     }
@@ -29,13 +30,13 @@ namespace ModernPC12
         private const string SetupAssetName = "OpenLadder-Studio-Setup.exe";
         private const string HashAssetName = "OpenLadder-Studio-Setup.exe.sha256";
 
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
-        private readonly Color Success = Color.FromArgb(27, 132, 86);
-        private readonly Color Warning = Color.FromArgb(190, 112, 20);
+        private Color Navy { get { return OpenLadderPalette.Fore; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
+        private Color Warning { get { return OpenLadderPalette.Warning; } }
 
         private Label currentLabel;
         private Label availableLabel;
@@ -69,12 +70,12 @@ namespace ModernPC12
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 56;
-            header.BackColor = Color.White;
+            header.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(header);
             header.Controls.Add(NewLabel("OPENLADDER STUDIO", 14.0f, FontStyle.Bold, Navy, 20, 16));
 
             Panel card = new Panel();
-            card.BackColor = Color.White;
+            card.BackColor = OpenLadderPalette.Chrome;
             card.BorderStyle = BorderStyle.FixedSingle;
             card.Location = new Point(20, 76);
             card.Size = new Size(580, 190);
@@ -324,14 +325,14 @@ namespace ModernPC12
             if (primary)
             {
                 b.BackColor = Accent;
-                b.ForeColor = Color.White;
+                b.ForeColor = OpenLadderPalette.OnAccent;
                 b.FlatAppearance.BorderSize = 0;
             }
             else
             {
-                b.BackColor = Color.White;
+                b.BackColor = OpenLadderPalette.Chrome;
                 b.ForeColor = Navy;
-                b.FlatAppearance.BorderColor = Color.FromArgb(195, 207, 220);
+                b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
             }
             return b;
         }

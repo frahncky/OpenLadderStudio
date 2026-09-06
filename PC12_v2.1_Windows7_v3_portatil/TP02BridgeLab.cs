@@ -18,17 +18,18 @@ namespace ModernPC12
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new TP02BridgeForm());
         }
     }
 
     internal sealed class TP02BridgeForm : Form
     {
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
+        private Color Navy { get { return OpenLadderPalette.Fore; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
         private TextBox reportBox;
         private TextBox logBox;
         private ComboBox portCombo;
@@ -69,7 +70,7 @@ namespace ModernPC12
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 70;
-            header.BackColor = Color.White;
+            header.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(header);
 
             Label title = new Label();
@@ -94,7 +95,7 @@ namespace ModernPC12
             safety.Dock = DockStyle.Right;
             safety.Width = 520;
             safety.Padding = new Padding(0, 0, 24, 0);
-            safety.ForeColor = Color.FromArgb(27, 132, 86);
+            safety.ForeColor = OpenLadderPalette.Ok;
             safety.Font = new Font("Segoe UI Semibold", 8.6f, FontStyle.Bold);
             header.Controls.Add(safety);
 
@@ -151,7 +152,7 @@ namespace ModernPC12
             reportBox.ReadOnly = true;
             reportBox.WordWrap = false;
             reportBox.Font = new Font("Consolas", 9.2f);
-            reportBox.BackColor = Color.White;
+            reportBox.BackColor = OpenLadderPalette.Chrome;
             reportBox.ForeColor = TextPrimary;
             parent.Controls.Add(reportBox);
             DockOrder.Apply(parent, reportBox, commands);
@@ -162,7 +163,7 @@ namespace ModernPC12
             Panel settings = new Panel();
             settings.Dock = DockStyle.Top;
             settings.Height = 164;
-            settings.BackColor = Color.White;
+            settings.BackColor = OpenLadderPalette.Chrome;
             parent.Controls.Add(settings);
 
             Label title = NewLabel("Configuração serial", 14.0f, FontStyle.Bold, Navy, 18, 14);
@@ -306,8 +307,8 @@ namespace ModernPC12
             logBox.ReadOnly = true;
             logBox.WordWrap = false;
             logBox.Font = new Font("Consolas", 9.2f);
-            logBox.BackColor = Color.FromArgb(20, 28, 36);
-            logBox.ForeColor = Color.FromArgb(218, 232, 245);
+            logBox.BackColor = OpenLadderPalette.Canvas;
+            logBox.ForeColor = OpenLadderPalette.Fore;
             parent.Controls.Add(logBox);
             DockOrder.Apply(parent, logBox, actions, settings);
 
@@ -320,8 +321,8 @@ namespace ModernPC12
             b.Location = new Point(left, top);
             b.Size = new Size(width, 34);
             b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderColor = Color.FromArgb(194, 205, 216);
-            b.BackColor = Color.White;
+            b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
+            b.BackColor = OpenLadderPalette.Chrome;
             b.ForeColor = Navy;
             b.Font = new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
@@ -332,7 +333,7 @@ namespace ModernPC12
         {
             Button b = ActionButton(text, left, top, width);
             b.BackColor = Accent;
-            b.ForeColor = Color.White;
+            b.ForeColor = OpenLadderPalette.OnAccent;
             b.FlatAppearance.BorderSize = 0;
             return b;
         }

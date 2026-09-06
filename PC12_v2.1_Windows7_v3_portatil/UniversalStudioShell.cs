@@ -14,6 +14,7 @@ namespace ModernPC12
             StudioDiagnostics.Install();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new UniversalStudioForm());
         }
     }

@@ -15,21 +15,22 @@ namespace ModernPC12
             StudioDiagnostics.Install();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new ModbusMonitorForm());
         }
     }
 
     internal sealed class ModbusMonitorForm : Form
     {
-        private readonly Color Shell = Color.FromArgb(29, 31, 34);
-        private readonly Color Chrome = Color.FromArgb(37, 39, 43);
-        private readonly Color PanelColor = Color.FromArgb(47, 50, 55);
-        private readonly Color Border = Color.FromArgb(61, 64, 69);
-        private readonly Color Accent = Color.FromArgb(45, 170, 107);
-        private readonly Color Fore = Color.FromArgb(226, 230, 234);
-        private readonly Color Muted = Color.FromArgb(150, 157, 164);
-        private readonly Color ErrorColor = Color.FromArgb(220, 105, 105);
-        private readonly Color WarningColor = Color.FromArgb(215, 166, 71);
+        private Color Shell { get { return OpenLadderPalette.Shell; } }
+        private Color Chrome { get { return OpenLadderPalette.Chrome; } }
+        private Color PanelColor { get { return OpenLadderPalette.ChromeLight; } }
+        private Color Border { get { return OpenLadderPalette.Border; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Fore { get { return OpenLadderPalette.Fore; } }
+        private Color Muted { get { return OpenLadderPalette.Muted; } }
+        private Color ErrorColor { get { return OpenLadderPalette.Danger; } }
+        private Color WarningColor { get { return OpenLadderPalette.Warning; } }
 
         private PlcDeviceProfile activeProfile;
         private List<PlcMemoryArea> memoryAreas = new List<PlcMemoryArea>();
@@ -218,7 +219,7 @@ namespace ModernPC12
             rawBox.Multiline = true;
             rawBox.ReadOnly = true;
             rawBox.ScrollBars = ScrollBars.Vertical;
-            rawBox.BackColor = Color.FromArgb(24, 26, 29);
+            rawBox.BackColor = OpenLadderPalette.Canvas;
             rawBox.ForeColor = Fore;
             rawBox.BorderStyle = BorderStyle.FixedSingle;
             rawBox.Font = new Font("Consolas", 9.0f);
@@ -242,8 +243,8 @@ namespace ModernPC12
             resultGrid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 8.5f, FontStyle.Bold);
             resultGrid.DefaultCellStyle.BackColor = Shell;
             resultGrid.DefaultCellStyle.ForeColor = Fore;
-            resultGrid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(51, 82, 69);
-            resultGrid.DefaultCellStyle.SelectionForeColor = Color.White;
+            resultGrid.DefaultCellStyle.SelectionBackColor = OpenLadderPalette.SelectionFill;
+            resultGrid.DefaultCellStyle.SelectionForeColor = OpenLadderPalette.Fore;
             resultGrid.GridColor = Border;
             resultGrid.Columns.Add("index", "Índice");
             resultGrid.Columns.Add("address", "Endereço");
@@ -635,7 +636,7 @@ namespace ModernPC12
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderColor = back;
             b.BackColor = back;
-            b.ForeColor = Color.White;
+            b.ForeColor = back == Accent ? OpenLadderPalette.OnAccent : OpenLadderPalette.Fore;
             b.Font = new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
             return b;

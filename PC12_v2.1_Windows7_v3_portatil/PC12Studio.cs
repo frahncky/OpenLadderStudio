@@ -13,19 +13,21 @@ namespace ModernPC12
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new UnifiedStudioForm());
         }
     }
 
     internal sealed class UnifiedStudioForm : Form
     {
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color NavyLight = Color.FromArgb(27, 55, 86);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
-        private readonly Color Success = Color.FromArgb(27, 132, 86);
+        private Color SideBg { get { return OpenLadderPalette.NavBg; } }
+        private Color SideHover { get { return OpenLadderPalette.NavHover; } }
+        private Color Surface { get { return OpenLadderPalette.Chrome; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
 
         private readonly string baseDir;
         private readonly string legacyPath;
@@ -71,14 +73,14 @@ namespace ModernPC12
             Panel top = new Panel();
             top.Dock = DockStyle.Top;
             top.Height = 58;
-            top.BackColor = Color.White;
+            top.BackColor = Surface;
             Controls.Add(top);
 
             Label brand = new Label();
             brand.Text = "PC12 STUDIO";
             brand.AutoSize = true;
             brand.Font = new Font("Segoe UI Semibold", 13.5f, FontStyle.Bold);
-            brand.ForeColor = Navy;
+            brand.ForeColor = TextPrimary;
             brand.Location = new Point(22, 11);
             top.Controls.Add(brand);
 
@@ -104,7 +106,7 @@ namespace ModernPC12
             Panel footer = new Panel();
             footer.Dock = DockStyle.Bottom;
             footer.Height = 30;
-            footer.BackColor = Color.White;
+            footer.BackColor = Surface;
             Controls.Add(footer);
 
             footerStatus = new Label();
@@ -133,14 +135,14 @@ namespace ModernPC12
             Panel side = new Panel();
             side.Dock = DockStyle.Left;
             side.Width = 216;
-            side.BackColor = Navy;
+            side.BackColor = SideBg;
             shell.Controls.Add(side);
 
             Label section = new Label();
             section.Text = "AMBIENTE TP02";
             section.AutoSize = true;
             section.Font = new Font("Segoe UI Semibold", 8.7f, FontStyle.Bold);
-            section.ForeColor = Color.FromArgb(160, 184, 207);
+            section.ForeColor = TextSecondary;
             section.Location = new Point(20, 22);
             side.Controls.Add(section);
 
@@ -148,7 +150,7 @@ namespace ModernPC12
             product.Text = "PC12 Studio";
             product.AutoSize = true;
             product.Font = new Font("Segoe UI Semibold", 18.0f, FontStyle.Bold);
-            product.ForeColor = Color.White;
+            product.ForeColor = OpenLadderPalette.Fore;
             product.Location = new Point(18, 43);
             side.Controls.Add(product);
 
@@ -156,7 +158,7 @@ namespace ModernPC12
             productSub.Text = "Ladder + Bridge + RBP + calibração";
             productSub.AutoSize = true;
             productSub.Font = new Font("Segoe UI", 8.2f);
-            productSub.ForeColor = Color.FromArgb(175, 195, 215);
+            productSub.ForeColor = TextSecondary;
             productSub.Location = new Point(20, 78);
             side.Controls.Add(productSub);
 
@@ -172,14 +174,14 @@ namespace ModernPC12
             Panel sideBottom = new Panel();
             sideBottom.Dock = DockStyle.Bottom;
             sideBottom.Height = 72;
-            sideBottom.BackColor = NavyLight;
+            sideBottom.BackColor = SideHover;
             side.Controls.Add(sideBottom);
 
             Label sideStatus = new Label();
             sideStatus.AutoSize = false;
             sideStatus.Size = new Size(184, 48);
             sideStatus.Location = new Point(18, 12);
-            sideStatus.ForeColor = Color.White;
+            sideStatus.ForeColor = OpenLadderPalette.Fore;
             sideStatus.Font = new Font("Segoe UI", 8.3f);
             sideStatus.Text = File.Exists(legacyPath) ? "● PC12 legado encontrado\r\n● Studio pronto para uso" : "● PC12 legado não encontrado\r\n● Studio moderno disponível";
             sideBottom.Controls.Add(sideStatus);
@@ -226,9 +228,9 @@ namespace ModernPC12
             b.TextAlign = ContentAlignment.MiddleLeft;
             b.Padding = new Padding(14, 0, 0, 0);
             b.Font = new Font("Segoe UI Semibold", 9.2f, FontStyle.Bold);
-            b.NormalColor = Navy;
-            b.HoverColor = NavyLight;
-            b.ForeColor = Color.FromArgb(228, 236, 245);
+            b.NormalColor = SideBg;
+            b.HoverColor = SideHover;
+            b.ForeColor = OpenLadderPalette.Fore;
             b.Click += handler;
             parent.Controls.Add(b);
             return b;
@@ -240,11 +242,11 @@ namespace ModernPC12
             int i;
             for (i = 0; i < all.Length; i++)
             {
-                all[i].NormalColor = Navy;
-                all[i].BackColor = Navy;
+                all[i].NormalColor = SideBg;
+                all[i].BackColor = SideBg;
             }
-            active.NormalColor = NavyLight;
-            active.BackColor = NavyLight;
+            active.NormalColor = SideHover;
+            active.BackColor = SideHover;
         }
 
         private void PreparePage(string title, string subtitle, StudioNavButton active)
@@ -405,7 +407,7 @@ namespace ModernPC12
 
             Panel card = NewCard(18, 18, 820, 360);
             host.Controls.Add(card);
-            Label title = NewLabel("PC12 Studio TP02", 18.0f, FontStyle.Bold, Navy, 22, 20);
+            Label title = NewLabel("PC12 Studio TP02", 18.0f, FontStyle.Bold, TextPrimary, 22, 20);
             card.Controls.Add(title);
             Label text = NewLabel("Versão de desenvolvimento 0.6\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nO Studio possui leitura RBP, decodificação off-line e calibração automática. A calibração agrupa amostras da mesma instrução com operandos diferentes para inferir a máscara do operando e compara instruções diferentes com o mesmo operando para isolar bits candidatos do opcode.\r\n\r\nNenhum padrão é considerado comprovado só por uma comparação. Comandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados nas ferramentas modernas.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
             text.MaximumSize = new Size(760, 0);
@@ -442,7 +444,7 @@ namespace ModernPC12
             Panel p = new Panel();
             p.Location = new Point(left, top);
             p.Size = new Size(width, height);
-            p.BackColor = Color.White;
+            p.BackColor = Surface;
             p.BorderStyle = BorderStyle.FixedSingle;
             return p;
         }
@@ -471,7 +473,7 @@ namespace ModernPC12
         {
             Button b = NewButton(text, left, top, width);
             b.BackColor = Accent;
-            b.ForeColor = Color.White;
+            b.ForeColor = OpenLadderPalette.OnAccent;
             b.FlatAppearance.BorderSize = 0;
             return b;
         }
@@ -479,9 +481,9 @@ namespace ModernPC12
         private Button SecondaryButton(string text, int left, int top, int width)
         {
             Button b = NewButton(text, left, top, width);
-            b.BackColor = Color.White;
-            b.ForeColor = Navy;
-            b.FlatAppearance.BorderColor = Color.FromArgb(195, 207, 220);
+            b.BackColor = Surface;
+            b.ForeColor = TextPrimary;
+            b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
             return b;
         }
 
@@ -510,7 +512,7 @@ namespace ModernPC12
 
     internal sealed class StudioNavButton : Button
     {
-        public Color NormalColor = Color.White;
+        public Color NormalColor = OpenLadderPalette.Chrome;
         public Color HoverColor = Color.Gainsboro;
 
         public StudioNavButton()

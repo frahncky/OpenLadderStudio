@@ -153,13 +153,13 @@ namespace ModernPC12
 
     internal sealed class ModbusTrendForm : Form
     {
-        private readonly Color Shell = Color.FromArgb(29, 31, 34);
-        private readonly Color Chrome = Color.FromArgb(37, 39, 43);
-        private readonly Color PanelColor = Color.FromArgb(47, 50, 55);
-        private readonly Color Border = Color.FromArgb(61, 64, 69);
-        private readonly Color Accent = Color.FromArgb(45, 170, 107);
-        private readonly Color Fore = Color.FromArgb(226, 230, 234);
-        private readonly Color Muted = Color.FromArgb(150, 157, 164);
+        private Color Shell { get { return OpenLadderPalette.Shell; } }
+        private Color Chrome { get { return OpenLadderPalette.Chrome; } }
+        private Color PanelColor { get { return OpenLadderPalette.ChromeLight; } }
+        private Color Border { get { return OpenLadderPalette.Border; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Fore { get { return OpenLadderPalette.Fore; } }
+        private Color Muted { get { return OpenLadderPalette.Muted; } }
 
         private readonly ModbusTrendHistory history;
         private ComboBox signalCombo;
@@ -374,7 +374,7 @@ namespace ModernPC12
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderColor = back == Accent ? Accent : Border;
             b.BackColor = back;
-            b.ForeColor = Color.White;
+            b.ForeColor = back == Accent ? OpenLadderPalette.OnAccent : OpenLadderPalette.Fore;
             b.Font = new Font("Segoe UI Semibold", 8.2f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
             return b;
@@ -383,11 +383,11 @@ namespace ModernPC12
 
     internal sealed class ModbusTrendCanvas : Control
     {
-        private readonly Color GridColor = Color.FromArgb(56, 59, 64);
-        private readonly Color AxisColor = Color.FromArgb(120, 126, 132);
-        private readonly Color TextColor = Color.FromArgb(188, 194, 200);
-        private readonly Color TrendColor = Color.FromArgb(45, 170, 107);
-        private readonly Color EmptyColor = Color.FromArgb(120, 126, 132);
+        private Color GridColor { get { return OpenLadderPalette.GridLine; } }
+        private Color AxisColor { get { return OpenLadderPalette.Faint; } }
+        private Color TextColor { get { return OpenLadderPalette.Muted; } }
+        private Color TrendColor { get { return OpenLadderPalette.Accent; } }
+        private Color EmptyColor { get { return OpenLadderPalette.Faint; } }
 
         public ModbusTrendSignal Signal;
 
