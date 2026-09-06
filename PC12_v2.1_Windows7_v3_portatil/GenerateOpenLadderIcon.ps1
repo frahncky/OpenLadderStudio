@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 function New-RoundedRectPath([float]$x, [float]$y, [float]$w, [float]$h, [float]$r) {

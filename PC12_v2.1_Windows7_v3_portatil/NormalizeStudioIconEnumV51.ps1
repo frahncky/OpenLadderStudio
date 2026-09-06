@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $root = Get-Location
 $path = Join-Path $root 'StudioUi.build.cs'
 $auditPath = Join-Path $root 'PrepareUiAuditV51.ps1'

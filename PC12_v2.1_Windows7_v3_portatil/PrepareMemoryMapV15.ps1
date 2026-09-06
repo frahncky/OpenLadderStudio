@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $sourcePath = Join-Path (Get-Location) 'PLCMemoryMapManager.cs'
 $outputPath = Join-Path (Get-Location) 'PLCMemoryMapManagerV15.build.cs'
 $text = [System.IO.File]::ReadAllText($sourcePath)

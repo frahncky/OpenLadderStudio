@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $sourcePath = Join-Path (Get-Location) 'ModbusMonitorV14.cs'
 $outputPath = Join-Path (Get-Location) 'ModbusMonitorV15.build.cs'
 $text = [System.IO.File]::ReadAllText($sourcePath)
