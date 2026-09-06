@@ -21,6 +21,10 @@ $badWords = New-Object 'System.Collections.Generic.HashSet[string]' ([System.Str
     'restricao','restricoes','atencao','serao','sera','sao','apos','ate','alem','tambem','devera','podera'
 ) | ForEach-Object { [void]$badWords.Add($_) }
 
+function Is-SimpleInternalKey([string]$value) {
+    return $value -cmatch '^@?"[a-z][a-z0-9_.-]*"$'
+}
+
 function Has-Mojibake([string]$value) {
     if ($value.IndexOf([char]0xFFFD) -ge 0) { return $true }
     if ([regex]::IsMatch($value, '\u00C3(?=[\u0080-\u00BF\u0192])')) { return $true }
@@ -30,10 +34,32 @@ function Has-Mojibake([string]$value) {
 }
 
 function Has-UnaccentedWord([string]$value) {
-    if ($value -cmatch '^@?"[a-z][a-z0-9_.-]*"$') { return $false }
+    if (Is-SimpleInternalKey $value) { return $false }
     $tokens = [regex]::Matches($value, '(?<![A-Za-z])[A-Za-z]+(?![A-Za-z])')
     foreach ($token in $tokens) {
         if ($badWords.Contains($token.Value)) { return $true }
+    }
+    return $false
+}
+
+function Has-UiLanguageIssue([string]$value) {
+    if (Is-SimpleInternalKey $value) { return $false }
+    $patterns = @(
+        '(?i)(?<![A-Za-z])(online|offline)(?![A-Za-z])',
+        '(?i)\bbaud rate\b',
+        '(?i)\bdata bits\b',
+        '(?i)\bstop bits\b',
+        '(?i)\bRead Coils\b',
+        '(?i)\bRead Discrete Inputs\b',
+        '(?i)\bRead Holding Registers\b',
+        '(?i)\bRead Input Registers\b',
+        '(?i)(?<![A-Za-z])rungs?(?![A-Za-z])',
+        '(?i)\bdownload (?:de |do )?programa(?: Ladder)?\b',
+        '(?i)\bdownload Ladder\b',
+        '(?i)\bstatus do PLC\b'
+    )
+    foreach ($rx in $patterns) {
+        if ([regex]::IsMatch($value, $rx)) { return $true }
     }
     return $false
 }
@@ -45,7 +71,7 @@ foreach ($file in $files) {
     $matches = [regex]::Matches($text, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
     foreach ($m in $matches) {
         $value = $m.Value
-        if ((Has-Mojibake $value) -or (Has-UnaccentedWord $value)) {
+        if ((Has-Mojibake $value) -or (Has-UnaccentedWord $value) -or (Has-UiLanguageIssue $value)) {
             $line = 1 + ([regex]::Matches($text.Substring(0, $m.Index), "`n")).Count
             $compact = ($value -replace "`r|`n", ' ')
             if ($compact.Length -gt 240) { $compact = $compact.Substring(0, 237) + '...' }
