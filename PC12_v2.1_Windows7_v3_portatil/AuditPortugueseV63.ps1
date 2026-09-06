@@ -1,6 +1,62 @@
 $ErrorActionPreference = 'Stop'
 $root = Get-Location
 
+# A normalizacao de textos visiveis nao pode alterar identificadores de API,
+# URLs ou caminhos tecnicos. Versoes anteriores chegaram a transformar
+# browser_download_url em browser_transferência_url, /releases/download/ em
+# /releases/transferência/ e portatil em portátil dentro de uma URL.
+# Reparamos esses tokens antes da auditoria e bloqueamos qualquer regressao.
+$technicalRepairs = [ordered]@{
+    'browser_transferência_url' = 'browser_download_url'
+    'browser_transferencia_url' = 'browser_download_url'
+    '/releases/transferência/' = '/releases/download/'
+    '/releases/transferencia/' = '/releases/download/'
+    'PC12_v2.1_Windows7_v3_portátil' = 'PC12_v2.1_Windows7_v3_portatil'
+}
+
+$repairCount = 0
+$sourceFiles = Get-ChildItem -Path $root -Filter '*.cs' -File | Sort-Object Name
+foreach ($file in $sourceFiles) {
+    $text = [System.IO.File]::ReadAllText($file.FullName)
+    $fixed = $text
+    foreach ($key in $technicalRepairs.Keys) {
+        $fixed = $fixed.Replace($key, $technicalRepairs[$key])
+    }
+    if ($fixed -cne $text) {
+        [System.IO.File]::WriteAllText($file.FullName, $fixed, (New-Object System.Text.UTF8Encoding($false)))
+        $repairCount++
+        Write-Host ('Token tecnico restaurado: {0}' -f $file.Name) -ForegroundColor Cyan
+    }
+}
+
+$updaterBuild = Join-Path $root 'PC12Updater.build.cs'
+if (Test-Path $updaterBuild) {
+    $updaterText = [System.IO.File]::ReadAllText($updaterBuild)
+    $requiredTechnicalTokens = @(
+        'browser_download_url',
+        '/releases/download/',
+        'PC12_v2.1_Windows7_v3_portatil/version.txt'
+    )
+    foreach ($token in $requiredTechnicalTokens) {
+        if (-not $updaterText.Contains($token)) {
+            throw "Updater sem token tecnico obrigatorio apos normalizacao: $token"
+        }
+    }
+
+    $forbiddenTechnicalTokens = @(
+        'browser_transferência_url',
+        'browser_transferencia_url',
+        '/releases/transferência/',
+        '/releases/transferencia/',
+        'PC12_v2.1_Windows7_v3_portátil'
+    )
+    foreach ($token in $forbiddenTechnicalTokens) {
+        if ($updaterText.Contains($token)) {
+            throw "Updater contem token tecnico corrompido pela normalizacao: $token"
+        }
+    }
+}
+
 $pattern = '@"(?:[^"]|"")*"|"(?:\\.|[^"\\])*"'
 $badWords = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
 @(
@@ -25,6 +81,13 @@ function Is-SimpleInternalKey([string]$value) {
     return $value -cmatch '^@?"[a-z][a-z0-9_.-]*"$'
 }
 
+function Is-TechnicalLiteral([string]$value) {
+    if ($value -match 'https?://') { return $true }
+    if ($value -match '(?i)browser_download_url|tag_name') { return $true }
+    if ($value -match '(?i)OpenLadder-Studio-Setup\.exe(?:\.sha256)?') { return $true }
+    return $false
+}
+
 function Has-Mojibake([string]$value) {
     if ($value.IndexOf([char]0xFFFD) -ge 0) { return $true }
     if ([regex]::IsMatch($value, '\u00C3(?=[\u0080-\u00BF\u0192])')) { return $true }
@@ -34,7 +97,7 @@ function Has-Mojibake([string]$value) {
 }
 
 function Has-UnaccentedWord([string]$value) {
-    if (Is-SimpleInternalKey $value) { return $false }
+    if ((Is-SimpleInternalKey $value) -or (Is-TechnicalLiteral $value)) { return $false }
     $tokens = [regex]::Matches($value, '(?<![A-Za-z])[A-Za-z]+(?![A-Za-z])')
     foreach ($token in $tokens) {
         if ($badWords.Contains($token.Value)) { return $true }
@@ -43,7 +106,7 @@ function Has-UnaccentedWord([string]$value) {
 }
 
 function Has-UiLanguageIssue([string]$value) {
-    if (Is-SimpleInternalKey $value) { return $false }
+    if ((Is-SimpleInternalKey $value) -or (Is-TechnicalLiteral $value)) { return $false }
     $patterns = @(
         '(?i)(?<![A-Za-z])(online|offline)(?![A-Za-z])',
         '(?i)\bbaud rate\b',
@@ -88,4 +151,4 @@ if ($findings.Count -gt 0) {
     throw 'A auditoria de portugues encontrou textos que precisam de revisao.'
 }
 
-Write-Host 'Auditoria PT-BR concluida sem textos suspeitos.'
+Write-Host ('Auditoria PT-BR concluida sem textos suspeitos. Tokens tecnicos reparados em {0} arquivo(s).' -f $repairCount)
