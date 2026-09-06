@@ -84,10 +84,6 @@ $uiReplacementRaw = @(
     @('Monitor online', 'Monitor on-line'),
     @('Monitoramento online', 'Monitoramento on-line'),
     @('monitoramento online', 'monitoramento on-line'),
-    @('OFFLINE', 'OFF-LINE'),
-    @('Offline', 'Off-line'),
-    @('ONLINE', 'ON-LINE'),
-    @('Online', 'On-line'),
     @('Baud rate', 'Taxa de transmiss\u00E3o'),
     @('Data bits', 'Bits de dados'),
     @('Stop bits', 'Bits de parada'),
@@ -134,12 +130,25 @@ function Preserve-Case([string]$source, [string]$target) {
     return $target
 }
 
+function Replace-Term([string]$text, [string]$pattern, [string]$target) {
+    return [regex]::Replace($text, $pattern, {
+        param($m)
+        return Preserve-Case $m.Value $target
+    }, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+}
+
 function Normalize-Literal([string]$literal) {
     $literal = Repair-Mojibake $literal
     if ($literal -cmatch '^@?"[a-z][a-z0-9_.-]*"$') { return $literal }
 
     foreach ($pair in $uiReplacements) { $literal = $literal.Replace($pair[0], $pair[1]) }
-    $literal = [regex]::Replace($literal, '(?<![A-Za-z])Rung(?=\s)', 'Linha', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+
+    $literal = Replace-Term $literal '(?<![A-Za-z])rungs(?![A-Za-z])' 'linhas'
+    $literal = Replace-Term $literal '(?<![A-Za-z])rung(?![A-Za-z])' 'linha'
+    $literal = Replace-Term $literal '(?<![A-Za-z])online(?![A-Za-z])' 'on-line'
+    $literal = Replace-Term $literal '(?<![A-Za-z])offline(?![A-Za-z])' 'off-line'
+    $literal = Replace-Term $literal '(?<![A-Za-z])baud rate(?![A-Za-z])' (Decode-U 'taxa de transmiss\u00E3o')
+    $literal = Replace-Term $literal '(?<![A-Za-z])download(?![A-Za-z])' (Decode-U 'transfer\u00EAncia')
 
     $literal = [regex]::Replace($literal, $wordPattern, {
         param($m)
