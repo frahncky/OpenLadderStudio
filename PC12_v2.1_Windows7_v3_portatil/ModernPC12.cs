@@ -15,21 +15,23 @@ namespace ModernPC12
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new MainForm());
         }
     }
 
     internal sealed class MainForm : Form
     {
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color NavyLight = Color.FromArgb(27, 55, 86);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color AccentHover = Color.FromArgb(0, 102, 170);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
-        private readonly Color Success = Color.FromArgb(27, 132, 86);
-        private readonly Color Warning = Color.FromArgb(190, 112, 20);
+        private Color SideBg { get { return OpenLadderPalette.NavBg; } }
+        private Color SideHover { get { return OpenLadderPalette.NavHover; } }
+        private Color Surface { get { return OpenLadderPalette.Chrome; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color AccentHover { get { return OpenLadderPalette.AccentDark; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
+        private Color Warning { get { return OpenLadderPalette.Warning; } }
 
         private readonly string baseDir;
         private readonly string pc12Path;
@@ -78,7 +80,7 @@ namespace ModernPC12
             Panel topBar = new Panel();
             topBar.Dock = DockStyle.Top;
             topBar.Height = 54;
-            topBar.BackColor = Color.White;
+            topBar.BackColor = Surface;
             topBar.MouseDown += DragWindow;
             Controls.Add(topBar);
 
@@ -86,7 +88,7 @@ namespace ModernPC12
             brand.AutoSize = true;
             brand.Text = "PC12  MODERN";
             brand.Font = new Font("Segoe UI Semibold", 12.5f, FontStyle.Bold);
-            brand.ForeColor = Navy;
+            brand.ForeColor = TextPrimary;
             brand.Location = new Point(24, 16);
             brand.MouseDown += DragWindow;
             topBar.Controls.Add(brand);
@@ -127,14 +129,14 @@ namespace ModernPC12
             Panel sidebar = new Panel();
             sidebar.Dock = DockStyle.Left;
             sidebar.Width = 224;
-            sidebar.BackColor = Navy;
+            sidebar.BackColor = SideBg;
             shell.Controls.Add(sidebar);
 
             Label product = new Label();
             product.Text = "PLC WORKSPACE";
             product.AutoSize = true;
             product.Font = new Font("Segoe UI Semibold", 9.0f, FontStyle.Bold);
-            product.ForeColor = Color.FromArgb(164, 185, 207);
+            product.ForeColor = TextSecondary;
             product.Location = new Point(24, 28);
             sidebar.Controls.Add(product);
 
@@ -142,7 +144,7 @@ namespace ModernPC12
             productTitle.Text = "TP02 / PC12";
             productTitle.AutoSize = true;
             productTitle.Font = new Font("Segoe UI Semibold", 18.0f, FontStyle.Bold);
-            productTitle.ForeColor = Color.White;
+            productTitle.ForeColor = OpenLadderPalette.Fore;
             productTitle.Location = new Point(22, 50);
             sidebar.Controls.Add(productTitle);
 
@@ -150,7 +152,7 @@ namespace ModernPC12
             productSub.Text = "Central de programação e suporte";
             productSub.AutoSize = true;
             productSub.Font = new Font("Segoe UI", 8.4f);
-            productSub.ForeColor = Color.FromArgb(171, 191, 212);
+            productSub.ForeColor = TextSecondary;
             productSub.Location = new Point(24, 86);
             sidebar.Controls.Add(productSub);
 
@@ -173,7 +175,7 @@ namespace ModernPC12
             Panel sideStatus = new Panel();
             sideStatus.Height = 72;
             sideStatus.Dock = DockStyle.Bottom;
-            sideStatus.BackColor = NavyLight;
+            sideStatus.BackColor = SideHover;
             sidebar.Controls.Add(sideStatus);
 
             statusDot = new Label();
@@ -189,7 +191,7 @@ namespace ModernPC12
             statusLabel.AutoSize = false;
             statusLabel.Size = new Size(170, 38);
             statusLabel.Font = new Font("Segoe UI", 8.3f);
-            statusLabel.ForeColor = Color.White;
+            statusLabel.ForeColor = OpenLadderPalette.Fore;
             statusLabel.Location = new Point(43, 17);
             sideStatus.Controls.Add(statusLabel);
 
@@ -230,9 +232,9 @@ namespace ModernPC12
             b.TextAlign = ContentAlignment.MiddleLeft;
             b.Padding = new Padding(14, 0, 0, 0);
             b.Font = new Font("Segoe UI Semibold", 9.4f, FontStyle.Bold);
-            b.NormalColor = Navy;
-            b.HoverColor = NavyLight;
-            b.ForeColor = Color.FromArgb(225, 235, 245);
+            b.NormalColor = SideBg;
+            b.HoverColor = SideHover;
+            b.ForeColor = OpenLadderPalette.Fore;
             return b;
         }
 
@@ -242,11 +244,11 @@ namespace ModernPC12
             int i;
             for (i = 0; i < all.Length; i++)
             {
-                all[i].NormalColor = Navy;
-                all[i].ForeColor = Color.FromArgb(225, 235, 245);
+                all[i].NormalColor = SideBg;
+                all[i].ForeColor = OpenLadderPalette.Fore;
             }
-            active.NormalColor = NavyLight;
-            active.ForeColor = Color.White;
+            active.NormalColor = SideHover;
+            active.ForeColor = OpenLadderPalette.Fore;
         }
 
         private void ClearWorkspace(string title, ModernButton active)
@@ -441,7 +443,7 @@ namespace ModernPC12
             pill.Text = "  " + text;
             pill.TextAlign = ContentAlignment.MiddleLeft;
             pill.Font = new Font("Segoe UI", 8.2f, FontStyle.Bold);
-            pill.BackColor = ok ? Color.FromArgb(230, 245, 238) : Color.FromArgb(252, 239, 226);
+            pill.BackColor = ok ? OpenLadderPalette.SelectionFill : OpenLadderPalette.ChromeLight;
             pill.ForeColor = ok ? Success : Warning;
             parent.Controls.Add(pill);
         }
@@ -451,8 +453,8 @@ namespace ModernPC12
             CardPanel p = new CardPanel();
             p.Location = new Point(left, top);
             p.Size = new Size(width, height);
-            p.BackColor = Color.White;
-            p.BorderColor = Color.FromArgb(224, 231, 238);
+            p.BackColor = Surface;
+            p.BorderColor = OpenLadderPalette.Border;
             return p;
         }
 
@@ -476,7 +478,7 @@ namespace ModernPC12
             b.Font = new Font("Segoe UI Semibold", 8.6f, FontStyle.Bold);
             b.NormalColor = Accent;
             b.HoverColor = AccentHover;
-            b.ForeColor = Color.White;
+            b.ForeColor = OpenLadderPalette.OnAccent;
             return b;
         }
 
@@ -487,9 +489,9 @@ namespace ModernPC12
             b.Location = new Point(left, top);
             b.Size = new Size(width, 38);
             b.Font = new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold);
-            b.NormalColor = Color.FromArgb(235, 240, 245);
-            b.HoverColor = Color.FromArgb(220, 229, 238);
-            b.ForeColor = Navy;
+            b.NormalColor = OpenLadderPalette.ChromeLight;
+            b.HoverColor = OpenLadderPalette.NavHover;
+            b.ForeColor = TextPrimary;
             return b;
         }
 
@@ -660,7 +662,7 @@ namespace ModernPC12
             FlatStyle = FlatStyle.Flat;
             FlatAppearance.BorderSize = 0;
             Cursor = Cursors.Hand;
-            normalColor = Color.White;
+            normalColor = OpenLadderPalette.Chrome;
             hoverColor = Color.Gainsboro;
             BackColor = normalColor;
             UseVisualStyleBackColor = false;
@@ -676,13 +678,13 @@ namespace ModernPC12
             Text = text;
             FlatStyle = FlatStyle.Flat;
             FlatAppearance.BorderSize = 0;
-            BackColor = Color.White;
-            ForeColor = Color.FromArgb(68, 79, 91);
+            BackColor = OpenLadderPalette.Chrome;
+            ForeColor = OpenLadderPalette.Fore;
             Font = new Font("Segoe UI", 11.0f, FontStyle.Regular);
             Cursor = Cursors.Hand;
             UseVisualStyleBackColor = false;
-            MouseEnter += delegate { BackColor = Color.FromArgb(235, 240, 245); };
-            MouseLeave += delegate { BackColor = Color.White; };
+            MouseEnter += delegate { BackColor = OpenLadderPalette.NavHover; };
+            MouseLeave += delegate { BackColor = OpenLadderPalette.Chrome; };
         }
     }
 
@@ -692,7 +694,7 @@ namespace ModernPC12
 
         public CardPanel()
         {
-            BorderColor = Color.FromArgb(225, 230, 236);
+            BorderColor = OpenLadderPalette.Border;
             DoubleBuffered = true;
         }
 

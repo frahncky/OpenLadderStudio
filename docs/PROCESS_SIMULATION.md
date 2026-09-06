@@ -133,7 +133,7 @@ Somam-se a isso o atraso de transporte inerente (a caixa leva o tempo real de pe
 
 A planta descreve o próprio sinóptico em `BuildScene`, usando primitivas semânticas: retângulo, elipse, linha, texto, correia, nível e sinaleiro. As coordenadas são de uma tela virtual de 1000 × 320, e as cores são **papéis** (`SimTone.Active`, `SimTone.Danger`, `SimTone.Cargo`), não valores RGB.
 
-A interface escala a cena com proporção preservada e resolve os papéis na paleta escura do simulador (o sinóptico mantém fundo escuro, padrão de sala de controle, mesmo com o shell principal em tema claro). O domínio continua sem depender de WinForms, e uma planta nova custa uma dezena de linhas de desenho em vez de um controle gráfico próprio.
+A interface escala a cena com proporção preservada e resolve os papéis na paleta da cena. A moldura da janela do simulador segue o tema escolhido no shell, mas o sinóptico em si mantém fundo escuro nos dois temas: fundo escuro é a convenção de sala de controle e não deve depender da preferência visual da interface. O domínio continua sem depender de WinForms, e uma planta nova custa uma dezena de linhas de desenho em vez de um controle gráfico próprio.
 
 ## Como usar
 

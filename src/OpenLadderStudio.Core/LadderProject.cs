@@ -82,7 +82,7 @@ namespace OpenLadderStudio.Core
             for (int rungIndex = 0; rungIndex < document.Rungs.Count; rungIndex++)
             {
                 LadderProjectRung rung = document.Rungs[rungIndex];
-                if (rung == null) throw new InvalidDataException("Rung nulo na posicao " + (rungIndex + 1).ToString() + ".");
+                if (rung == null) throw new InvalidDataException("Rung nulo na posição " + (rungIndex + 1).ToString() + ".");
 
                 text.Append("RUNG");
                 for (int column = 0; column < LadderProjectRung.ColumnCount; column++)
@@ -108,7 +108,7 @@ namespace OpenLadderStudio.Core
 
             if (header == LegacyHeader) legacy = true;
             else if (header == CurrentHeader) legacy = false;
-            else throw new InvalidDataException("Formato de projeto nao reconhecido.");
+            else throw new InvalidDataException("Formato de projeto não reconhecido.");
 
             LadderProjectDocument document = new LadderProjectDocument();
 
@@ -119,7 +119,7 @@ namespace OpenLadderStudio.Core
 
                 string[] parts = line.Split('|');
                 if (parts.Length != LadderProjectRung.ColumnCount + 1 || parts[0] != "RUNG")
-                    throw new InvalidDataException("Rung invalido na linha " + (lineIndex + 1).ToString() + ".");
+                    throw new InvalidDataException("Rung inválido na linha " + (lineIndex + 1).ToString() + ".");
 
                 LadderProjectRung rung = new LadderProjectRung();
                 for (int column = 0; column < LadderProjectRung.ColumnCount; column++)
@@ -133,7 +133,7 @@ namespace OpenLadderStudio.Core
 
                     string[] lanes = cell.Split('~');
                     if (lanes.Length < 1 || lanes.Length > 2)
-                        throw InvalidCell(lineIndex + 1, column + 1, "quantidade de ramificacoes invalida");
+                        throw InvalidCell(lineIndex + 1, column + 1, "quantidade de ramificações inválida");
 
                     rung.Series[column] = DecodeElement(lanes[0], lineIndex + 1, column + 1);
                     if (lanes.Length == 2)
@@ -161,7 +161,7 @@ namespace OpenLadderStudio.Core
             if (element.Kind == LadderProjectElementKind.FallingEdge) return "EDN";
             if (element.Kind == LadderProjectElementKind.Function) return "FUN:" + Escape(element.Address) + ":" + Escape(element.Parameter);
             if (element.Kind == LadderProjectElementKind.End) return "END";
-            throw new InvalidDataException("Tipo de elemento Ladder nao suportado.");
+            throw new InvalidDataException("Tipo de elemento Ladder não suportado.");
         }
 
         private static LadderProjectElement DecodeLegacyElement(string token, int line, int column)
@@ -271,7 +271,7 @@ namespace OpenLadderStudio.Core
         private static void RequireFieldCount(string[] fields, int minimum, int maximum, int line, int column)
         {
             if (fields.Length < minimum || fields.Length > maximum)
-                throw InvalidCell(line, column, "quantidade de campos invalida para " + fields[0]);
+                throw InvalidCell(line, column, "quantidade de campos inválida para " + fields[0]);
         }
 
         private static string Escape(string value)
@@ -287,13 +287,13 @@ namespace OpenLadderStudio.Core
             }
             catch (UriFormatException)
             {
-                throw InvalidCell(line, column, "sequencia de escape invalida");
+                throw InvalidCell(line, column, "sequência de escape inválida");
             }
         }
 
         private static InvalidDataException InvalidCell(int line, int column, string reason)
         {
-            return new InvalidDataException("Celula invalida na linha " + line.ToString() + ", coluna " + column.ToString() + ": " + reason + ".");
+            return new InvalidDataException("Célula inválida na linha " + line.ToString() + ", coluna " + column.ToString() + ": " + reason + ".");
         }
     }
 }

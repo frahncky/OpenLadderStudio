@@ -17,6 +17,7 @@ namespace ModernPC12
             StudioDiagnostics.Install();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new LadderEditorForm());
         }
     }
@@ -101,12 +102,17 @@ namespace ModernPC12
 
     internal sealed class LadderEditorForm : Form
     {
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color NavyLight = Color.FromArgb(27, 55, 86);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color CanvasColor = Color.FromArgb(246, 248, 251);
-        private readonly Color TextPrimary = Color.FromArgb(35, 47, 60);
-        private readonly Color TextSecondary = Color.FromArgb(95, 108, 122);
+        // O antigo "Navy" acumulava dois papeis opostos: fundo escuro da caixa de
+        // ferramentas e cor de texto sobre fundo claro. Com tema trocavel isso nao se
+        // sustenta, entao cada papel virou um nome proprio ligado a paleta central.
+        private Color SideBg { get { return OpenLadderPalette.NavBg; } }
+        private Color SideHover { get { return OpenLadderPalette.NavHover; } }
+        private Color SurfaceColor { get { return OpenLadderPalette.Chrome; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color CanvasColor { get { return OpenLadderPalette.Shell; } }
+        private Color GridSurface { get { return OpenLadderPalette.Canvas; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
 
         private readonly List<LadderRung> rungs = new List<LadderRung>();
         private readonly Stack<string> undoStack = new Stack<string>();
@@ -117,6 +123,7 @@ namespace ModernPC12
         private LadderTool activeTool = LadderTool.Select;
         private string currentFile = string.Empty;
         private bool dirty;
+        private int changeStamp;
 
         public LadderEditorForm()
         {
@@ -140,13 +147,13 @@ namespace ModernPC12
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 64;
-            header.BackColor = Color.White;
+            header.BackColor = SurfaceColor;
 
             Label brand = new Label();
             brand.Text = "PC12 LADDER STUDIO";
             brand.AutoSize = true;
             brand.Font = new Font("Segoe UI Semibold", 13.0f, FontStyle.Bold);
-            brand.ForeColor = Navy;
+            brand.ForeColor = TextPrimary;
             brand.Location = new Point(22, 14);
             header.Controls.Add(brand);
 
@@ -170,7 +177,7 @@ namespace ModernPC12
             Panel commandBar = new Panel();
             commandBar.Dock = DockStyle.Top;
             commandBar.Height = 58;
-            commandBar.BackColor = Color.FromArgb(237, 242, 247);
+            commandBar.BackColor = CanvasColor;
 
             int x = 16;
             AddCommandButton(commandBar, "NOVO", x, 76, delegate { NewProject(true); }); x += 82;
@@ -185,7 +192,7 @@ namespace ModernPC12
             Panel bottom = new Panel();
             bottom.Dock = DockStyle.Bottom;
             bottom.Height = 34;
-            bottom.BackColor = Color.White;
+            bottom.BackColor = SurfaceColor;
             bottom.Padding = new Padding(18, 0, 18, 0);
 
             statusLabel = new Label();
@@ -199,7 +206,7 @@ namespace ModernPC12
             toolLabel.Dock = DockStyle.Right;
             toolLabel.Width = 310;
             toolLabel.TextAlign = ContentAlignment.MiddleRight;
-            toolLabel.ForeColor = Navy;
+            toolLabel.ForeColor = TextPrimary;
             toolLabel.Font = new Font("Segoe UI Semibold", 8.8f, FontStyle.Bold);
             bottom.Controls.Add(toolLabel);
 
@@ -219,14 +226,14 @@ namespace ModernPC12
             Panel toolbox = new Panel();
             toolbox.Dock = DockStyle.Left;
             toolbox.Width = 238;
-            toolbox.BackColor = Navy;
+            toolbox.BackColor = SideBg;
             toolbox.AutoScroll = true;
 
             Label toolsTitle = new Label();
             toolsTitle.Text = "ELEMENTOS TP02";
             toolsTitle.AutoSize = true;
             toolsTitle.Font = new Font("Segoe UI Semibold", 9.0f, FontStyle.Bold);
-            toolsTitle.ForeColor = Color.FromArgb(166, 188, 210);
+            toolsTitle.ForeColor = TextSecondary;
             toolsTitle.Location = new Point(18, 18);
             toolbox.Controls.Add(toolsTitle);
 
@@ -251,7 +258,7 @@ namespace ModernPC12
             help.Text = "TP02: X/Y/C/SC para lógica\r\nTMR/CNT: V0001 a V0256\r\nDuplo clique: editar parâmetro\r\nCtrl+Z: desfazer • Del: apagar";
             help.AutoSize = true;
             help.Font = new Font("Segoe UI", 8.2f);
-            help.ForeColor = Color.FromArgb(190, 210, 229);
+            help.ForeColor = TextSecondary;
             help.Location = new Point(18, t);
             toolbox.Controls.Add(help);
 
@@ -264,17 +271,18 @@ namespace ModernPC12
 
             Panel editorCard = new Panel();
             editorCard.Dock = DockStyle.Fill;
-            editorCard.BackColor = Color.White;
+            editorCard.BackColor = OpenLadderPalette.Border;
             editorCard.Padding = new Padding(1);
             editorHost.Controls.Add(editorCard);
 
             canvas = new LadderCanvas();
             canvas.Dock = DockStyle.Fill;
-            canvas.BackColor = Color.White;
+            canvas.BackColor = GridSurface;
             canvas.Rungs = rungs;
             canvas.SelectionChanged += CanvasSelectionChanged;
             canvas.ElementAction += CanvasElementAction;
             canvas.ElementDoubleClick += CanvasElementDoubleClick;
+            canvas.ToolReleased += delegate { SetActiveTool(LadderTool.Select); };
             editorCard.Controls.Add(canvas);
 
             SetActiveTool(LadderTool.Select);
@@ -286,9 +294,9 @@ namespace ModernPC12
             b.Text = text;
             b.Location = new Point(left, 11);
             b.Size = new Size(width, 36);
-            b.NormalColor = Color.White;
-            b.HoverColor = Color.FromArgb(222, 231, 240);
-            b.ForeColor = Navy;
+            b.NormalColor = SurfaceColor;
+            b.HoverColor = SideHover;
+            b.ForeColor = TextPrimary;
             b.Font = new Font("Segoe UI Semibold", 8.1f, FontStyle.Bold);
             b.Click += action;
             parent.Controls.Add(b);
@@ -303,9 +311,9 @@ namespace ModernPC12
             b.Size = new Size(208, 34);
             b.TextAlign = ContentAlignment.MiddleLeft;
             b.Padding = new Padding(10, 0, 0, 0);
-            b.NormalColor = Navy;
-            b.HoverColor = NavyLight;
-            b.ForeColor = Color.White;
+            b.NormalColor = SideBg;
+            b.HoverColor = SideHover;
+            b.ForeColor = OpenLadderPalette.Fore;
             b.Font = new Font("Segoe UI Semibold", 8.6f, FontStyle.Bold);
             b.Click += delegate { SetActiveTool(tool); };
             parent.Controls.Add(b);
@@ -316,7 +324,10 @@ namespace ModernPC12
             activeTool = tool;
             string label = ToolName(tool);
             toolLabel.Text = "Ferramenta: " + label;
-            statusLabel.Text = "Clique em uma posição do rung para aplicar: " + label + ".";
+            if (canvas != null) canvas.Cursor = tool == LadderTool.Select ? Cursors.Default : Cursors.Cross;
+            statusLabel.Text = tool == LadderTool.Select
+                ? "Mouse livre — clique para selecionar, duplo clique para editar."
+                : "Clique no rung para inserir " + label + ". Ctrl insere em sequência • botão direito ou Esc solta.";
         }
 
         private static string ToolName(LadderTool tool)
@@ -360,6 +371,21 @@ namespace ModernPC12
             int c = canvas.SelectedColumn;
             if (r < 0 || c < 0 || activeTool == LadderTool.Select) return;
 
+            int stamp = changeStamp;
+            ApplyActiveTool(r, c);
+
+            // Ferramenta de uso unico: assim que o elemento entra, o mouse volta a ser
+            // ponteiro. Antes a ferramenta ficava presa e so soltava clicando em
+            // "Selecionar", o que obrigava um desvio de mao a cada insercao.
+            // Segurar Ctrl mantem a ferramenta, para inserir varios em sequencia.
+            // Se nada foi inserido (endereco cancelado, celula invalida) a ferramenta
+            // continua armada: o clique nao chegou a produzir efeito.
+            if (changeStamp != stamp && (Control.ModifierKeys & Keys.Control) != Keys.Control)
+                SetActiveTool(LadderTool.Select);
+        }
+
+        private void ApplyActiveTool(int r, int c)
+        {
             if (activeTool == LadderTool.ParallelNO || activeTool == LadderTool.ParallelNC)
             {
                 AddParallelContact(r, c, activeTool == LadderTool.ParallelNC);
@@ -941,6 +967,7 @@ namespace ModernPC12
         private void MarkChanged(string message)
         {
             dirty = true;
+            changeStamp++;
             canvas.Invalidate();
             UpdateProjectLabel();
             statusLabel.Text = message;
@@ -1021,6 +1048,7 @@ namespace ModernPC12
         public event EventHandler SelectionChanged;
         public event EventHandler ElementAction;
         public event EventHandler ElementDoubleClick;
+        public event EventHandler ToolReleased;
 
         private const int TopMargin = 24;
         private const int RungHeight = 116;
@@ -1054,7 +1082,7 @@ namespace ModernPC12
             int usable = rightRail - LeftRail;
             int cellWidth = usable / LadderRung.ColumnCount;
 
-            using (Pen railPen = new Pen(Color.FromArgb(47, 64, 80), 3.0f))
+            using (Pen railPen = new Pen(OpenLadderPalette.Rail, 3.0f))
             {
                 int bottom = TopMargin + Math.Max(1, Rungs.Count) * RungHeight;
                 g.DrawLine(railPen, LeftRail, TopMargin - 8, LeftRail, bottom - 12);
@@ -1067,9 +1095,9 @@ namespace ModernPC12
                 int rungTop = TopMargin + r * RungHeight;
                 int y = rungTop + 40;
                 int branchY = y + 42;
-                using (Pen wirePen = new Pen(Color.FromArgb(52, 66, 80), 2.0f)) g.DrawLine(wirePen, LeftRail, y, rightRail, y);
+                using (Pen wirePen = new Pen(OpenLadderPalette.Wire, 2.0f)) g.DrawLine(wirePen, LeftRail, y, rightRail, y);
                 using (Font rungFont = new Font("Segoe UI Semibold", 8.0f, FontStyle.Bold))
-                using (Brush rungBrush = new SolidBrush(Color.FromArgb(112, 126, 140))) g.DrawString((r + 1).ToString("000"), rungFont, rungBrush, 7, y - 9);
+                using (Brush rungBrush = new SolidBrush(OpenLadderPalette.Faint)) g.DrawString((r + 1).ToString("000"), rungFont, rungBrush, 7, y - 9);
 
                 int c;
                 for (c = 0; c < LadderRung.ColumnCount; c++)
@@ -1084,7 +1112,7 @@ namespace ModernPC12
                     {
                         int x1 = cellLeft + 9;
                         int x2 = cellLeft + cellWidth - 9;
-                        using (Pen bp = new Pen(Color.FromArgb(52, 66, 80), 1.8f))
+                        using (Pen bp = new Pen(OpenLadderPalette.Wire, 1.8f))
                         {
                             g.DrawLine(bp, x1, y, x1, branchY);
                             g.DrawLine(bp, x1, branchY, x2, branchY);
@@ -1101,15 +1129,15 @@ namespace ModernPC12
 
         private static void DrawSelection(Graphics g, Rectangle cell)
         {
-            using (Brush sel = new SolidBrush(Color.FromArgb(226, 240, 252))) g.FillRectangle(sel, cell);
-            using (Pen selPen = new Pen(Color.FromArgb(0, 122, 204), 1.0f)) g.DrawRectangle(selPen, cell);
+            using (Brush sel = new SolidBrush(OpenLadderPalette.SelectionFill)) g.FillRectangle(sel, cell);
+            using (Pen selPen = new Pen(OpenLadderPalette.SelectionEdge, 1.0f)) g.DrawRectangle(selPen, cell);
         }
 
         private static void DrawElement(Graphics g, LadderElement element, Rectangle cell, int y, bool branch)
         {
             if (element.Type == LadderElementType.Empty) return;
             int cx = cell.Left + cell.Width / 2;
-            using (Pen p = new Pen(Color.FromArgb(29, 43, 56), 2.2f))
+            using (Pen p = new Pen(OpenLadderPalette.Fore, 2.2f))
             {
                 if (element.Type == LadderElementType.ContactNO || element.Type == LadderElementType.ContactNC)
                 {
@@ -1125,7 +1153,7 @@ namespace ModernPC12
                 else
                 {
                     Rectangle block = new Rectangle(cx - 34, y - 20, 68, 40);
-                    using (Brush fill = new SolidBrush(Color.FromArgb(247, 250, 253))) g.FillRectangle(fill, block);
+                    using (Brush fill = new SolidBrush(OpenLadderPalette.ChromeLight)) g.FillRectangle(fill, block);
                     g.DrawRectangle(p, block);
                 }
             }
@@ -1143,7 +1171,7 @@ namespace ModernPC12
             else if (element.Type == LadderElementType.End) top = "END F-00";
 
             using (Font f = new Font("Consolas", branch ? 7.6f : 8.4f, FontStyle.Bold))
-            using (Brush b = new SolidBrush(Color.FromArgb(0, 102, 170)))
+            using (Brush b = new SolidBrush(OpenLadderPalette.Accent))
             {
                 if (element.Type == LadderElementType.ContactNO || element.Type == LadderElementType.ContactNC || element.Type == LadderElementType.Coil)
                 {
@@ -1158,7 +1186,7 @@ namespace ModernPC12
                     if (!string.IsNullOrEmpty(bottom))
                     {
                         using (Font f2 = new Font("Consolas", 7.2f, FontStyle.Regular))
-                        using (Brush b2 = new SolidBrush(Color.FromArgb(77, 91, 105)))
+                        using (Brush b2 = new SolidBrush(OpenLadderPalette.Muted))
                         {
                             string text = bottom.Length > 14 ? bottom.Substring(0, 14) : bottom;
                             SizeF s2 = g.MeasureString(text, f2);
@@ -1171,6 +1199,13 @@ namespace ModernPC12
 
         private void CanvasMouseDown(object sender, MouseEventArgs e)
         {
+            if (e.Button == MouseButtons.Right)
+            {
+                // Botao direito nunca insere: ele devolve o mouse ao modo ponteiro.
+                if (ToolReleased != null) ToolReleased(this, EventArgs.Empty);
+                return;
+            }
+
             SelectFromPoint(e.Location);
             if (ElementAction != null) ElementAction(this, EventArgs.Empty);
         }
@@ -1207,7 +1242,7 @@ namespace ModernPC12
 
     internal sealed class FlatActionButton : Button
     {
-        public Color NormalColor = Color.White;
+        public Color NormalColor = OpenLadderPalette.Chrome;
         public Color HoverColor = Color.Gainsboro;
 
         public FlatActionButton()
@@ -1242,14 +1277,14 @@ namespace ModernPC12
             ShowInTaskbar = false;
             ClientSize = new Size(440, 160);
             Font = new Font("Segoe UI", 9.0f);
-            BackColor = Color.White;
+            BackColor = OpenLadderPalette.Chrome;
 
             Label label = new Label();
             label.Text = prompt;
             label.AutoSize = false;
             label.Size = new Size(400, 42);
             label.Location = new Point(20, 18);
-            label.ForeColor = Color.FromArgb(45, 58, 72);
+            label.ForeColor = OpenLadderPalette.Fore;
             Controls.Add(label);
 
             input = new TextBox();
@@ -1290,7 +1325,7 @@ namespace ModernPC12
             ShowInTaskbar = false;
             ClientSize = new Size(470, showReset ? 242 : 210);
             Font = new Font("Segoe UI", 9.0f);
-            BackColor = Color.White;
+            BackColor = OpenLadderPalette.Chrome;
 
             AddLabel(label1, 18);
             first = AddText(value1, 48);
@@ -1315,7 +1350,7 @@ namespace ModernPC12
 
         private void AddLabel(string text, int top)
         {
-            Label l = new Label(); l.Text = text; l.AutoSize = true; l.Location = new Point(20, top); l.ForeColor = Color.FromArgb(45, 58, 72); Controls.Add(l);
+            Label l = new Label(); l.Text = text; l.AutoSize = true; l.Location = new Point(20, top); l.ForeColor = OpenLadderPalette.Fore; Controls.Add(l);
         }
 
         private TextBox AddText(string text, int top)
@@ -1345,13 +1380,13 @@ namespace ModernPC12
             ShowInTaskbar = false;
             ClientSize = new Size(500, 226);
             Font = new Font("Segoe UI", 9.0f);
-            BackColor = Color.White;
+            BackColor = OpenLadderPalette.Chrome;
 
             Label l1 = new Label(); l1.Text = "Código da função (ex.: F-16W):"; l1.AutoSize = true; l1.Location = new Point(20, 20); Controls.Add(l1);
             code = new TextBox(); code.Text = initialCode; code.CharacterCasing = CharacterCasing.Upper; code.Font = new Font("Consolas", 10.5f, FontStyle.Bold); code.Location = new Point(20, 48); code.Size = new Size(180, 26); Controls.Add(code);
             Label l2 = new Label(); l2.Text = "Parâmetros (conforme manual da função):"; l2.AutoSize = true; l2.Location = new Point(20, 90); Controls.Add(l2);
             parameters = new TextBox(); parameters.Text = initialParameters; parameters.Font = new Font("Consolas", 10.0f); parameters.Location = new Point(20, 118); parameters.Size = new Size(460, 26); Controls.Add(parameters);
-            Label note = new Label(); note.Text = "SET F-23, RESET F-24, F-05, F-06 e END F-00 já possuem botões próprios."; note.AutoSize = true; note.ForeColor = Color.FromArgb(95, 108, 122); note.Location = new Point(20, 151); Controls.Add(note);
+            Label note = new Label(); note.Text = "SET F-23, RESET F-24, F-05, F-06 e END F-00 já possuem botões próprios."; note.AutoSize = true; note.ForeColor = OpenLadderPalette.Muted; note.Location = new Point(20, 151); Controls.Add(note);
 
             Button ok = new Button(); ok.Text = "OK"; ok.Location = new Point(314, 178); ok.Size = new Size(78, 30); ok.Click += delegate { result = new string[] { code.Text, parameters.Text }; DialogResult = DialogResult.OK; Close(); }; Controls.Add(ok);
             Button cancel = new Button(); cancel.Text = "Cancelar"; cancel.Location = new Point(402, 178); cancel.Size = new Size(78, 30); cancel.DialogResult = DialogResult.Cancel; Controls.Add(cancel);

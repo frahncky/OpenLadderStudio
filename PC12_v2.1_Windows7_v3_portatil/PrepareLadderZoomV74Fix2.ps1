@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $root = Get-Location
 $ladderPath = Join-Path $root 'LadderEditor.build.cs'

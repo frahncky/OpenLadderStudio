@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $sourcePath = Join-Path (Get-Location) 'TP02PgLinkV37.cs'
 $outputPath = Join-Path (Get-Location) 'TP02PgLinkV38.build.cs'
 $text = [System.IO.File]::ReadAllText($sourcePath)

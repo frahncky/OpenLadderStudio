@@ -24,11 +24,11 @@ namespace ModernPC12
     /// </summary>
     internal sealed class TP02SerialCaptureForm : Form
     {
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color Navy = Color.FromArgb(24, 42, 66);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(96, 110, 124);
-        private readonly Color Accent = Color.FromArgb(45, 170, 107);
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color SideBg { get { return OpenLadderPalette.NavBg; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
 
         private ComboBox pcPortCombo;
         private ComboBox plcPortCombo;
@@ -71,26 +71,26 @@ namespace ModernPC12
             logBox.ReadOnly = true;
             logBox.WordWrap = false;
             logBox.Font = new Font("Consolas", 9.2f);
-            logBox.BackColor = Color.FromArgb(20, 28, 36);
-            logBox.ForeColor = Color.FromArgb(218, 232, 245);
+            logBox.BackColor = OpenLadderPalette.Canvas;
+            logBox.ForeColor = OpenLadderPalette.Fore;
             Controls.Add(logBox);
             logBox.BringToFront();
 
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 78;
-            header.BackColor = Navy;
+            header.BackColor = SideBg;
             Controls.Add(header);
 
-            Label title = Text14("Captura serial PC12 / TP02", 15.0f, FontStyle.Bold, Color.White, 22, 14);
+            Label title = Text14("Captura serial PC12 / TP02", 15.0f, FontStyle.Bold, OpenLadderPalette.Fore, 22, 14);
             header.Controls.Add(title);
             header.Controls.Add(Text14("Ponte passiva: repassa os bytes entre o PC12 e o PLC e registra os dois sentidos.",
-                9.0f, FontStyle.Regular, Color.FromArgb(178, 198, 218), 24, 44));
+                9.0f, FontStyle.Regular, OpenLadderPalette.Muted, 24, 44));
 
             Panel setup = new Panel();
             setup.Dock = DockStyle.Top;
             setup.Height = 176;
-            setup.BackColor = Color.White;
+            setup.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(setup);
 
             setup.Controls.Add(Text14("Porta usada pelo PC12 (par virtual)", 8.4f, FontStyle.Regular, TextSecondary, 18, 14));
@@ -420,9 +420,9 @@ namespace ModernPC12
             b.Size = new Size(width, 32);
             b.FlatStyle = FlatStyle.Flat;
             b.Font = new Font("Segoe UI Semibold", 8.3f, FontStyle.Bold);
-            b.BackColor = primary ? Accent : Color.FromArgb(232, 237, 242);
-            b.ForeColor = primary ? Color.White : TextPrimary;
-            b.FlatAppearance.BorderColor = Color.FromArgb(198, 208, 218);
+            b.BackColor = primary ? Accent : OpenLadderPalette.ChromeLight;
+            b.ForeColor = primary ? OpenLadderPalette.OnAccent : TextPrimary;
+            b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
             return b;
         }
     }

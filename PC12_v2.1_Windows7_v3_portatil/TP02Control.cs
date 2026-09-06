@@ -14,13 +14,13 @@ namespace ModernPC12
     /// </summary>
     internal sealed class TP02ControlForm : Form
     {
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color Danger = Color.FromArgb(183, 54, 54);
-        private readonly Color Success = Color.FromArgb(27, 132, 86);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
+        private Color Navy { get { return OpenLadderPalette.Fore; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Danger { get { return OpenLadderPalette.Danger; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
 
         private ComboBox portCombo;
         private ComboBox baudCombo;
@@ -58,7 +58,7 @@ namespace ModernPC12
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 72;
-            header.BackColor = Color.White;
+            header.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(header);
 
             Label title = LabelAt("CONTROLE ON-LINE - WEG TP02", 15.0f, FontStyle.Bold, Navy, 22, 12);
@@ -78,7 +78,7 @@ namespace ModernPC12
             Panel config = new Panel();
             config.Dock = DockStyle.Top;
             config.Height = 142;
-            config.BackColor = Color.White;
+            config.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(config);
 
             config.Controls.Add(LabelAt("Conexão serial", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
@@ -196,8 +196,8 @@ namespace ModernPC12
             logBox.ReadOnly = true;
             logBox.WordWrap = false;
             logBox.Font = new Font("Consolas", 9.2f);
-            logBox.BackColor = Color.FromArgb(20, 28, 36);
-            logBox.ForeColor = Color.FromArgb(218, 232, 245);
+            logBox.BackColor = OpenLadderPalette.Canvas;
+            logBox.ForeColor = OpenLadderPalette.Fore;
             Controls.Add(logBox);
             DockOrder.Apply(this, logBox, operations, config, header);
         }
@@ -496,7 +496,7 @@ namespace ModernPC12
             if (cmd < 0 || cmd + 3 >= clean.Length) return;
             char state = clean[cmd + 3];
             if (state == '1') SetState("●  RUN", Success);
-            else if (state == '0') SetState("●  STOP / PROGRAM", Color.FromArgb(190, 120, 20));
+            else if (state == '0') SetState("●  STOP / PROGRAM", OpenLadderPalette.Warning);
             else if (state == '2') SetState("●  ERRO NO PLC", Danger);
             else SetState("●  COMUNICANDO", Success);
         }
@@ -666,9 +666,9 @@ namespace ModernPC12
             b.Location = new Point(left, top);
             b.Size = new Size(width, 34);
             b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderColor = Color.FromArgb(194, 205, 216);
-            b.BackColor = primary ? Accent : Color.White;
-            b.ForeColor = primary ? Color.White : Navy;
+            b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
+            b.BackColor = primary ? Accent : OpenLadderPalette.Chrome;
+            b.ForeColor = primary ? OpenLadderPalette.OnAccent : Navy;
             b.Font = new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
             if (primary) b.FlatAppearance.BorderSize = 0;

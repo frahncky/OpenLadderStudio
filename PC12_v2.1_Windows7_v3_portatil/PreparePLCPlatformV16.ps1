@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $sourcePath = Join-Path (Get-Location) 'PLCPlatform.cs'
 $outputPath = Join-Path (Get-Location) 'PLCPlatform.build.cs'
 $text = [System.IO.File]::ReadAllText($sourcePath)

@@ -107,7 +107,9 @@ O diretório `PC12_v2.1_Windows7_v3_portatil` ainda contém uma mistura históri
 
 ## Identidade e interface
 
-A interface usa tema claro, azul OpenLadder como cor de destaque e cores semânticas por função (azul para arquivos e controlador, âmbar para abrir, turquesa para salvar e monitorar, violeta para histórico e configuração, vermelho para remoção). O ícone oficial combina uma escada Ladder branca, um "O" em âmbar e um ponto de estado verde sobre fundo azul-grafite arredondado, sem texto, para permanecer legível em tamanhos pequenos.
+A interface tem dois temas — **escuro** (padrão) e **claro** —, escolhidos em **Exibir → Tema**. Nenhum dos dois usa preto puro ou branco puro em superfície grande. Todas as janelas, inclusive editor, simulador, monitor Modbus e ferramentas TP02, leem a mesma paleta central, então o produto não mistura temas entre telas.
+
+O destaque é o azul OpenLadder e as cores seguem função (azul para arquivos e controlador, âmbar para abrir, turquesa para salvar e monitorar, violeta para histórico e configuração, vermelho para remoção), com uma calibragem por tema para manter contraste. O ícone oficial combina uma escada Ladder branca, um "O" em âmbar e um ponto de estado verde sobre fundo azul-grafite arredondado, sem texto, para permanecer legível em tamanhos pequenos.
 
 O `.ico` é gerado em múltiplas resoluções: 16, 24, 32, 48, 64, 128 e 256 px.
 

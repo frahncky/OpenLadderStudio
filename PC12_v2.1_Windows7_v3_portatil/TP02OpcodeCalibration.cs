@@ -16,6 +16,7 @@ namespace ModernPC12
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new TP02OpcodeCalibrationForm());
         }
     }
@@ -31,13 +32,13 @@ namespace ModernPC12
 
     internal sealed class TP02OpcodeCalibrationForm : Form
     {
-        private readonly Color Navy = Color.FromArgb(18, 39, 63);
-        private readonly Color Accent = Color.FromArgb(0, 122, 204);
-        private readonly Color Canvas = Color.FromArgb(244, 247, 250);
-        private readonly Color TextPrimary = Color.FromArgb(34, 45, 57);
-        private readonly Color TextSecondary = Color.FromArgb(94, 108, 124);
-        private readonly Color Success = Color.FromArgb(27, 132, 86);
-        private readonly Color Warning = Color.FromArgb(190, 112, 20);
+        private Color Navy { get { return OpenLadderPalette.Fore; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Canvas { get { return OpenLadderPalette.Shell; } }
+        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
+        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
+        private Color Warning { get { return OpenLadderPalette.Warning; } }
 
         private readonly List<TP02CalibrationSample> samples = new List<TP02CalibrationSample>();
         private DataGridView grid;
@@ -66,7 +67,7 @@ namespace ModernPC12
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
             header.Height = 74;
-            header.BackColor = Color.White;
+            header.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(header);
 
             header.Controls.Add(NewLabel("CALIBRAÇÃO AUTOMÁTICA DE OPCODES TP02", 15.0f, FontStyle.Bold, Navy, 22, 12));
@@ -158,7 +159,7 @@ namespace ModernPC12
             grid.RowHeadersVisible = false;
             grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             grid.MultiSelect = false;
-            grid.BackgroundColor = Color.White;
+            grid.BackgroundColor = OpenLadderPalette.Chrome;
             grid.BorderStyle = BorderStyle.None;
             grid.AutoGenerateColumns = false;
             AddColumn("Arquivo", "File", 300);
@@ -176,8 +177,8 @@ namespace ModernPC12
             reportBox.WordWrap = false;
             reportBox.ScrollBars = ScrollBars.Both;
             reportBox.Font = new Font("Consolas", 9.2f);
-            reportBox.BackColor = Color.FromArgb(20, 28, 36);
-            reportBox.ForeColor = Color.FromArgb(220, 233, 245);
+            reportBox.BackColor = OpenLadderPalette.Canvas;
+            reportBox.ForeColor = OpenLadderPalette.Fore;
             split.Panel2.Controls.Add(reportBox);
 
         }
@@ -439,14 +440,14 @@ namespace ModernPC12
             if (primary)
             {
                 b.BackColor = Accent;
-                b.ForeColor = Color.White;
+                b.ForeColor = OpenLadderPalette.OnAccent;
                 b.FlatAppearance.BorderSize = 0;
             }
             else
             {
-                b.BackColor = Color.White;
+                b.BackColor = OpenLadderPalette.Chrome;
                 b.ForeColor = Navy;
-                b.FlatAppearance.BorderColor = Color.FromArgb(194, 205, 216);
+                b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
             }
             return b;
         }

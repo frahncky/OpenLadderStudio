@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 function Add-BrandingInstall([string]$path) {
     if (-not (Test-Path $path)) { throw "Arquivo não encontrado: $path" }

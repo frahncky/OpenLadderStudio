@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $root = Get-Location
 $shellPath = Join-Path $root 'UniversalStudioShell.build.cs'
 if (-not (Test-Path $shellPath)) { throw 'V70: UniversalStudioShell.build.cs nao encontrado.' }

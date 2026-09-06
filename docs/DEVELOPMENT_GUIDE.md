@@ -6,6 +6,29 @@ O produto ainda é compilado diretamente pelo `csc.exe` do .NET Framework a part
 
 Por isso, a pasta portátil é uma fronteira de compatibilidade: fontes existentes não devem ser movidas ou renomeadas sem atualizar e validar todas as invocações do compilador. Arquivos `*.build.cs` são temporários e gerados durante o build.
 
+## Scripts `Prepare*.ps1`
+
+Antes de compilar, o build executa uma sequência de scripts que reescrevem os fontes em `*.build.cs`. Duas regras não negociáveis:
+
+**Âncoras textuais.** Cada script localiza o ponto de alteração por um trecho literal do código — inclusive comentários em português. Alterar um desses trechos no fonte quebra o build com `... não encontrado`. Antes de reescrever um comentário ou uma declaração na pasta portátil, procure o texto em `Prepare*.ps1`.
+
+**Codificação com BOM.** Um script `.ps1` que contenha qualquer caractere fora do ASCII **precisa** ser salvo em UTF-8 **com BOM**. O build o invoca pelo Windows PowerShell 5.1, que lê arquivo sem BOM como Windows-1252: sem o BOM, `•` vira `â€¢` e `—` vira `â€"` dentro das strings geradas. O dano é silencioso — compila e só aparece na tela do usuário — e já produziu um defeito funcional, uma busca por `IndexOf("  •")` que nunca casava.
+
+Para conferir os dois pontos antes de publicar:
+
+```powershell
+Get-ChildItem PC12_v2.1_Windows7_v3_portatil -Filter *.ps1 | Where-Object {
+    $b = [System.IO.File]::ReadAllBytes($_.FullName)
+    ($b | Where-Object { $_ -gt 127 }) -and -not ($b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF)
+}
+```
+
+A saída deve ser vazia.
+
+## Cores
+
+Nenhuma tela declara cor própria. A paleta única do produto é `OpenLadderPalette`, em `AppBranding.cs`, que entra em todos os executáveis. Regras e valores dos temas estão em [`UI_GUIDELINES.md`](UI_GUIDELINES.md).
+
 ## Estrutura de destino
 
 O catálogo em `.github/architecture/modules.json` é a fonte de verdade para ownership e dependências permitidas. A evolução deve convergir para:

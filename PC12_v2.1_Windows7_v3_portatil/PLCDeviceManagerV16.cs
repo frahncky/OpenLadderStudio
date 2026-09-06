@@ -13,20 +13,21 @@ namespace ModernPC12
             StudioDiagnostics.Install();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new PlcDeviceManagerForm());
         }
     }
 
     internal sealed class PlcDeviceManagerForm : Form
     {
-        private readonly Color Shell = Color.FromArgb(29, 31, 34);
-        private readonly Color Chrome = Color.FromArgb(37, 39, 43);
-        private readonly Color PanelColor = Color.FromArgb(47, 50, 55);
-        private readonly Color Border = Color.FromArgb(61, 64, 69);
-        private readonly Color Accent = Color.FromArgb(45, 170, 107);
-        private readonly Color Fore = Color.FromArgb(226, 230, 234);
-        private readonly Color Muted = Color.FromArgb(150, 157, 164);
-        private readonly Color Warning = Color.FromArgb(215, 166, 71);
+        private Color Shell { get { return OpenLadderPalette.Shell; } }
+        private Color Chrome { get { return OpenLadderPalette.Chrome; } }
+        private Color PanelColor { get { return OpenLadderPalette.ChromeLight; } }
+        private Color Border { get { return OpenLadderPalette.Border; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Fore { get { return OpenLadderPalette.Fore; } }
+        private Color Muted { get { return OpenLadderPalette.Muted; } }
+        private Color Warning { get { return OpenLadderPalette.Warning; } }
 
         private DataGridView grid;
         private Label modelValue;
@@ -148,8 +149,8 @@ namespace ModernPC12
             grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 8.5f, FontStyle.Bold);
             grid.DefaultCellStyle.BackColor = Shell;
             grid.DefaultCellStyle.ForeColor = Fore;
-            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(51, 82, 69);
-            grid.DefaultCellStyle.SelectionForeColor = Color.White;
+            grid.DefaultCellStyle.SelectionBackColor = OpenLadderPalette.SelectionFill;
+            grid.DefaultCellStyle.SelectionForeColor = OpenLadderPalette.Fore;
             grid.GridColor = Border;
             grid.Columns.Add("manufacturer", "Fabricante");
             grid.Columns.Add("family", "Família");
@@ -249,7 +250,7 @@ namespace ModernPC12
         {
             int row = grid.Rows.Add(profile.Manufacturer, profile.Family, profile.Model, custom ? "Personalizado" : "Nativo", SupportText(profile.SupportLevel));
             grid.Rows[row].Tag = profile;
-            if (custom) grid.Rows[row].DefaultCellStyle.ForeColor = Color.FromArgb(190, 230, 210);
+            if (custom) grid.Rows[row].DefaultCellStyle.ForeColor = OpenLadderPalette.Accent;
             return row;
         }
 
@@ -366,7 +367,7 @@ namespace ModernPC12
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderColor = back == Accent ? Accent : Border;
             b.BackColor = back;
-            b.ForeColor = Color.White;
+            b.ForeColor = back == Accent ? OpenLadderPalette.OnAccent : OpenLadderPalette.Fore;
             b.Font = new Font("Segoe UI Semibold", 8.2f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
             return b;
@@ -408,13 +409,13 @@ namespace ModernPC12
 
     internal sealed class PlcProfileEditorForm : Form
     {
-        private readonly Color Shell = Color.FromArgb(29, 31, 34);
-        private readonly Color Chrome = Color.FromArgb(37, 39, 43);
-        private readonly Color PanelColor = Color.FromArgb(47, 50, 55);
-        private readonly Color Border = Color.FromArgb(61, 64, 69);
-        private readonly Color Accent = Color.FromArgb(45, 170, 107);
-        private readonly Color Fore = Color.FromArgb(226, 230, 234);
-        private readonly Color Muted = Color.FromArgb(150, 157, 164);
+        private Color Shell { get { return OpenLadderPalette.Shell; } }
+        private Color Chrome { get { return OpenLadderPalette.Chrome; } }
+        private Color PanelColor { get { return OpenLadderPalette.ChromeLight; } }
+        private Color Border { get { return OpenLadderPalette.Border; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Fore { get { return OpenLadderPalette.Fore; } }
+        private Color Muted { get { return OpenLadderPalette.Muted; } }
 
         private readonly PlcDeviceProfile original;
         private TextBox manufacturerBox;
@@ -598,7 +599,7 @@ namespace ModernPC12
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderColor = back == Accent ? Accent : Border;
             b.BackColor = back;
-            b.ForeColor = Color.White;
+            b.ForeColor = back == Accent ? OpenLadderPalette.OnAccent : OpenLadderPalette.Fore;
             b.Font = new Font("Segoe UI Semibold", 8.3f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
             return b;

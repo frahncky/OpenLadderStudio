@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $updaterPath = Join-Path (Get-Location) 'PC12Updater.build.cs'
 $shellPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'

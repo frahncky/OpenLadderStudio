@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $path = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
 $versionPath = Join-Path (Get-Location) 'version.txt'

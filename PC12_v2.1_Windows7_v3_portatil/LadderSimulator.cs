@@ -17,22 +17,25 @@ namespace ModernPC12
             StudioDiagnostics.Install();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new LadderSimulatorForm());
         }
     }
 
     internal static class SimulatorTheme
     {
-        public static readonly Color Shell = Color.FromArgb(29, 31, 34);
-        public static readonly Color Chrome = Color.FromArgb(37, 39, 43);
-        public static readonly Color Panel = Color.FromArgb(47, 50, 55);
-        public static readonly Color Border = Color.FromArgb(61, 64, 69);
-        public static readonly Color Accent = Color.FromArgb(45, 170, 107);
-        public static readonly Color Fore = Color.FromArgb(226, 230, 234);
-        public static readonly Color Muted = Color.FromArgb(150, 157, 164);
-        public static readonly Color Error = Color.FromArgb(220, 105, 105);
-        public static readonly Color Warning = Color.FromArgb(215, 166, 71);
-        public static readonly Color Info = Color.FromArgb(91, 170, 245);
+        public static Color Shell { get { return OpenLadderPalette.Shell; } }
+        public static Color Chrome { get { return OpenLadderPalette.Chrome; } }
+        public static Color Panel { get { return OpenLadderPalette.ChromeLight; } }
+        public static Color Border { get { return OpenLadderPalette.Border; } }
+        public static Color Accent { get { return OpenLadderPalette.Accent; } }
+        public static Color Fore { get { return OpenLadderPalette.Fore; } }
+        public static Color Muted { get { return OpenLadderPalette.Muted; } }
+        public static Color Error { get { return OpenLadderPalette.Danger; } }
+        public static Color Warning { get { return OpenLadderPalette.Warning; } }
+        public static Color Info { get { return OpenLadderPalette.Info; } }
+
+        // Cores da cena: o sinoptico mantem fundo escuro nos dois temas.
         public static readonly Color Metal = Color.FromArgb(86, 91, 98);
         public static readonly Color Cargo = Color.FromArgb(198, 148, 84);
         public static readonly Color Dark = Color.FromArgb(22, 24, 27);
@@ -270,8 +273,8 @@ namespace ModernPC12
                 for (int i = 0; i < rungs.Count && x + cell < Width; i++)
                 {
                     Rectangle box = new Rectangle(x, 4, cell - 4, 16);
-                    Color colour = !rungs[i].Reached ? Color.FromArgb(60, 63, 68)
-                        : rungs[i].LastPower ? SimulatorTheme.Accent : Color.FromArgb(78, 82, 88);
+                    Color colour = !rungs[i].Reached ? OpenLadderPalette.Disabled
+                        : rungs[i].LastPower ? SimulatorTheme.Accent : OpenLadderPalette.Faint;
 
                     using (SolidBrush brush = new SolidBrush(colour))
                         g.FillRectangle(brush, box);
@@ -417,7 +420,7 @@ namespace ModernPC12
             banner.Height = 30;
             banner.TextAlign = ContentAlignment.MiddleLeft;
             banner.Padding = new Padding(12, 0, 0, 0);
-            banner.BackColor = Color.FromArgb(58, 48, 28);
+            banner.BackColor = OpenLadderPalette.Duo(58, 48, 28, 253, 243, 219);
             banner.ForeColor = SimulatorTheme.Warning;
             banner.Text = "SIMULAÇÃO — PLC virtual do OpenLadder Studio. Nenhuma saída física é acionada e nenhum equipamento é comandado.";
 

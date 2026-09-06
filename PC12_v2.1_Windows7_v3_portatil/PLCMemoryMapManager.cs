@@ -13,19 +13,20 @@ namespace ModernPC12
             StudioDiagnostics.Install();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            AppBranding.Install();
             Application.Run(new PlcMemoryMapManagerForm());
         }
     }
 
     internal sealed class PlcMemoryMapManagerForm : Form
     {
-        private readonly Color Shell = Color.FromArgb(29, 31, 34);
-        private readonly Color Chrome = Color.FromArgb(37, 39, 43);
-        private readonly Color PanelColor = Color.FromArgb(47, 50, 55);
-        private readonly Color Border = Color.FromArgb(61, 64, 69);
-        private readonly Color Accent = Color.FromArgb(45, 170, 107);
-        private readonly Color Fore = Color.FromArgb(226, 230, 234);
-        private readonly Color Muted = Color.FromArgb(150, 157, 164);
+        private Color Shell { get { return OpenLadderPalette.Shell; } }
+        private Color Chrome { get { return OpenLadderPalette.Chrome; } }
+        private Color PanelColor { get { return OpenLadderPalette.ChromeLight; } }
+        private Color Border { get { return OpenLadderPalette.Border; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Fore { get { return OpenLadderPalette.Fore; } }
+        private Color Muted { get { return OpenLadderPalette.Muted; } }
 
         private PlcDeviceProfile profile;
         private DataGridView grid;
@@ -118,8 +119,8 @@ namespace ModernPC12
             grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 8.5f, FontStyle.Bold);
             grid.DefaultCellStyle.BackColor = Shell;
             grid.DefaultCellStyle.ForeColor = Fore;
-            grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(51, 82, 69);
-            grid.DefaultCellStyle.SelectionForeColor = Color.White;
+            grid.DefaultCellStyle.SelectionBackColor = OpenLadderPalette.SelectionFill;
+            grid.DefaultCellStyle.SelectionForeColor = OpenLadderPalette.Fore;
             grid.GridColor = Border;
 
             grid.Columns.Add("name", "Nome da área");
@@ -196,7 +197,7 @@ namespace ModernPC12
             catch (Exception ex)
             {
                 statusLabel.Text = "Erro: " + ex.Message;
-                statusLabel.ForeColor = Color.FromArgb(220, 105, 105);
+                statusLabel.ForeColor = OpenLadderPalette.Danger;
             }
         }
 
@@ -224,7 +225,7 @@ namespace ModernPC12
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderColor = back == Accent ? Accent : Border;
             b.BackColor = back;
-            b.ForeColor = Color.White;
+            b.ForeColor = back == Accent ? OpenLadderPalette.OnAccent : OpenLadderPalette.Fore;
             b.Font = new Font("Segoe UI Semibold", 8.2f, FontStyle.Bold);
             b.Cursor = Cursors.Hand;
             return b;
