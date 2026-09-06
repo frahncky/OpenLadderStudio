@@ -10,3 +10,9 @@ a.Length = ParseNumber(Cell(row, "length", "1"), 1, 65536, "Tamanho");
 '@.TrimEnd())
 
 [System.IO.File]::WriteAllText($outputPath, $text, [System.Text.Encoding]::UTF8)
+
+# A auditoria visual V51 roda imediatamente antes deste passo no BUILD_INTERFACE_MODERNA.bat.
+# Aplicamos a composicao V68 depois dela para que o tema aprovado seja a ultima camada de UI.
+$v68 = Join-Path (Get-Location) 'PrepareVisualStudioV68.ps1'
+if (-not (Test-Path $v68)) { throw 'PrepareVisualStudioV68.ps1 nao encontrado.' }
+& $v68
