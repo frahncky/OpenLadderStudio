@@ -79,6 +79,53 @@ $rawMap = @{
 $map = @{}
 foreach ($key in $rawMap.Keys) { $map[$key] = Decode-U $rawMap[$key] }
 
+$uiReplacementRaw = @(
+    @('TP02 BRIDGE LAB', 'LABORAT\u00D3RIO TP02'),
+    @('Monitor online', 'Monitor on-line'),
+    @('Monitoramento online', 'Monitoramento on-line'),
+    @('monitoramento online', 'monitoramento on-line'),
+    @('OFFLINE', 'OFF-LINE'),
+    @('Offline', 'Off-line'),
+    @('ONLINE', 'ON-LINE'),
+    @('Online', 'On-line'),
+    @('Baud rate', 'Taxa de transmiss\u00E3o'),
+    @('Data bits', 'Bits de dados'),
+    @('Stop bits', 'Bits de parada'),
+    @('Unit ID', 'ID da unidade'),
+    @('Timeout (ms)', 'Tempo limite (ms)'),
+    @('01 - Read Coils', '01 - Ler bobinas'),
+    @('02 - Read Discrete Inputs', '02 - Ler entradas discretas'),
+    @('03 - Read Holding Registers', '03 - Ler registradores de reten\u00E7\u00E3o'),
+    @('04 - Read Input Registers', '04 - Ler registradores de entrada'),
+    @('Coils / FC01', 'Bobinas / FC01'),
+    @('Discrete Inputs / FC02', 'Entradas discretas / FC02'),
+    @('Holding Registers / FC03', 'Registradores de reten\u00E7\u00E3o / FC03'),
+    @('Input Registers / FC04', 'Registradores de entrada / FC04'),
+    @('O programa n\u00E3o possui rungs.', 'O programa n\u00E3o possui linhas Ladder.'),
+    @('Programa sem END: todos os rungs ser\u00E3o executados em cada varredura.', 'Programa sem END: todas as linhas Ladder ser\u00E3o executadas em cada varredura.'),
+    @('Energiza\u00E7\u00E3o dos rungs', 'Energiza\u00E7\u00E3o das linhas Ladder'),
+    @('\u00DAltimo rung n\u00E3o foi fechado com OUT.', 'A \u00FAltima linha n\u00E3o foi fechada com OUT.'),
+    @('RUN/STOP/escrita/download/apagamento', 'RUN/STOP, escrita, transfer\u00EAncia de programa e apagamento'),
+    @('download de programa Ladder', 'transfer\u00EAncia do programa Ladder'),
+    @('download do programa Ladder', 'transfer\u00EAncia do programa Ladder'),
+    @('download Ladder', 'transfer\u00EAncia do programa Ladder'),
+    @('status do PLC', 'estado do PLC'),
+    @('Status do PLC', 'Estado do PLC')
+)
+$uiReplacements = @()
+foreach ($pair in $uiReplacementRaw) { $uiReplacements += ,@((Decode-U $pair[0]), (Decode-U $pair[1])) }
+
+$grammarRaw = @(
+    @(' e confirmado', ' \u00E9 confirmado'),
+    @(' e transmitido', ' \u00E9 transmitido'),
+    @(' e enviado', ' \u00E9 enviado'),
+    @(' este e o dado', ' este \u00E9 o dado'),
+    @(' etapa e decodificar', ' etapa \u00E9 decodificar'),
+    @(' link e confirmado', ' link \u00E9 confirmado')
+)
+$grammarReplacements = @()
+foreach ($pair in $grammarRaw) { $grammarReplacements += ,@($pair[0], (Decode-U $pair[1])) }
+
 function Preserve-Case([string]$source, [string]$target) {
     if ($source -ceq $source.ToUpperInvariant()) { return $target.ToUpperInvariant() }
     if ($source.Length -gt 0 -and $source.Substring(0,1) -ceq $source.Substring(0,1).ToUpperInvariant()) {
@@ -87,53 +134,12 @@ function Preserve-Case([string]$source, [string]$target) {
     return $target
 }
 
-function Apply-UiLanguage([string]$literal) {
-    $replacements = @(
-        @('Monitor online', 'Monitor on-line'),
-        @('Monitoramento online', 'Monitoramento on-line'),
-        @('monitoramento online', 'monitoramento on-line'),
-        @('OFFLINE', 'OFF-LINE'),
-        @('Offline', 'Off-line'),
-        @('ONLINE', 'ON-LINE'),
-        @('Online', 'On-line'),
-        @('Baud rate', 'Taxa de transmiss\u00E3o'),
-        @('Data bits', 'Bits de dados'),
-        @('Stop bits', 'Bits de parada'),
-        @('Unit ID', 'ID da unidade'),
-        @('Timeout (ms)', 'Tempo limite (ms)'),
-        @('01 - Read Coils', '01 - Ler bobinas'),
-        @('02 - Read Discrete Inputs', '02 - Ler entradas discretas'),
-        @('03 - Read Holding Registers', '03 - Ler registradores de reten\u00E7\u00E3o'),
-        @('04 - Read Input Registers', '04 - Ler registradores de entrada'),
-        @('Coils / FC01', 'Bobinas / FC01'),
-        @('Discrete Inputs / FC02', 'Entradas discretas / FC02'),
-        @('Holding Registers / FC03', 'Registradores de reten\u00E7\u00E3o / FC03'),
-        @('Input Registers / FC04', 'Registradores de entrada / FC04'),
-        @('O programa n\u00E3o possui rungs.', 'O programa n\u00E3o possui linhas Ladder.'),
-        @('Programa sem END: todos os rungs ser\u00E3o executados em cada varredura.', 'Programa sem END: todas as linhas Ladder ser\u00E3o executadas em cada varredura.'),
-        @('Energiza\u00E7\u00E3o dos rungs', 'Energiza\u00E7\u00E3o das linhas Ladder'),
-        @('\u00DAltimo rung n\u00E3o foi fechado com OUT.', 'A \u00FAltima linha n\u00E3o foi fechada com OUT.'),
-        @('RUN/STOP/escrita/download/apagamento', 'RUN/STOP, escrita, transfer\u00EAncia de programa e apagamento'),
-        @('download de programa Ladder', 'transfer\u00EAncia do programa Ladder'),
-        @('download do programa Ladder', 'transfer\u00EAncia do programa Ladder'),
-        @('download Ladder', 'transfer\u00EAncia do programa Ladder'),
-        @('status do PLC', 'estado do PLC'),
-        @('Status do PLC', 'Estado do PLC')
-    )
-    foreach ($pair in $replacements) {
-        $literal = $literal.Replace((Decode-U $pair[0]), (Decode-U $pair[1]))
-    }
-
-    $literal = [regex]::Replace($literal, '(?<![A-Za-z])Rung(?=\s)', 'Linha', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    return $literal
-}
-
 function Normalize-Literal([string]$literal) {
     $literal = Repair-Mojibake $literal
-
     if ($literal -cmatch '^@?"[a-z][a-z0-9_.-]*"$') { return $literal }
 
-    $literal = Apply-UiLanguage $literal
+    foreach ($pair in $uiReplacements) { $literal = $literal.Replace($pair[0], $pair[1]) }
+    $literal = [regex]::Replace($literal, '(?<![A-Za-z])Rung(?=\s)', 'Linha', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
     $literal = [regex]::Replace($literal, $wordPattern, {
         param($m)
@@ -143,15 +149,7 @@ function Normalize-Literal([string]$literal) {
         return Preserve-Case $word $map[$key]
     })
 
-    $phraseMap = @(
-        @(' e confirmado', ' \u00E9 confirmado'),
-        @(' e transmitido', ' \u00E9 transmitido'),
-        @(' e enviado', ' \u00E9 enviado'),
-        @(' este e o dado', ' este \u00E9 o dado'),
-        @(' etapa e decodificar', ' etapa \u00E9 decodificar'),
-        @(' link e confirmado', ' link \u00E9 confirmado')
-    )
-    foreach ($pair in $phraseMap) { $literal = $literal.Replace($pair[0], (Decode-U $pair[1])) }
+    foreach ($pair in $grammarReplacements) { $literal = $literal.Replace($pair[0], $pair[1]) }
     return $literal
 }
 
