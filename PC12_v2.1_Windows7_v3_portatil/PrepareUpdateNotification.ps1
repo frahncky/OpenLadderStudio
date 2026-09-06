@@ -118,3 +118,4 @@ $shell = Invoke-ReplaceText $shell '        private void RefreshProfileUi()' $me
 & (Join-Path $root 'PrepareFunctionalMenuV67.ps1')
 & (Join-Path $root 'PrepareVisualStudioLightV68.ps1')
 & (Join-Path $root 'PrepareStartupStabilityV70.ps1')
+& (Join-Path $root 'PrepareWorkspaceLayoutV72.ps1')
