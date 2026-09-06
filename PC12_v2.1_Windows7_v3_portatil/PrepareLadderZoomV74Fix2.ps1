@@ -276,13 +276,35 @@ $zoomMenu = @'
 '@
 $shell = Required $shell $projectMenuAnchor $zoomMenu.TrimEnd() 'menu Exibir zoom'
 
-$keyOld = @'
-            if (IsLadderActive())
+# Substitui o bloco completo de atalhos, sem depender da implementacao produzida
+# por V51/V56. O escopo Ladder e calculado diretamente pelas abas atuais.
+$keyboard = @'
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.N))
             {
-                if (keyData == (Keys.Control | Keys.Z))
-'@
-$keyNew = @'
-            if (IsLadderActive())
+                InvokeLadder("NewProject", new object[] { true });
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.O))
+            {
+                InvokeLadder("OpenProject", null);
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.S))
+            {
+                InvokeLadder("SaveProject", new object[] { false });
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.Shift | Keys.S))
+            {
+                InvokeLadder("SaveProject", new object[] { true });
+                return true;
+            }
+
+            bool ladderActive = tabStrip != null && tabStrip.Selected != null
+                && string.Equals(tabStrip.Selected.Key, "LD", StringComparison.OrdinalIgnoreCase);
+            if (ladderActive)
             {
                 if (keyData == (Keys.Control | Keys.Add) || keyData == (Keys.Control | Keys.Oemplus) || keyData == (Keys.Control | Keys.Shift | Keys.Oemplus))
                 {
@@ -300,11 +322,43 @@ $keyNew = @'
                     return true;
                 }
                 if (keyData == (Keys.Control | Keys.Z))
+                {
+                    InvokeLadder("Undo", null);
+                    return true;
+                }
+                if (keyData == (Keys.Control | Keys.Y))
+                {
+                    InvokeLadder("Redo", null);
+                    return true;
+                }
+                if (keyData == Keys.Delete)
+                {
+                    InvokeLadder("DeleteSelectedElement", null);
+                    return true;
+                }
+                if (keyData == Keys.Escape)
+                {
+                    V72SelectLadderTool(LadderTool.Select);
+                    return true;
+                }
+            }
+
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
 '@
-$shell = Required $shell $keyOld.TrimEnd() $keyNew.TrimEnd() 'atalhos globais'
+$keyboardStart = '        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)'
+$menuStart = '        private MenuStrip BuildMenu()'
+if ($shell.Contains($keyboardStart)) {
+    $shell = Section $shell $keyboardStart $menuStart $keyboard 'atalhos globais V74'
+}
+else {
+    $shell = Required $shell $menuStart ($keyboard + $menuStart) 'insercao dos atalhos globais V74'
+}
 
 if ($shell -notmatch 'V74AddZoomControls\(bar\)') { throw 'V74: grupo de zoom ausente.' }
 if ($shell -notmatch 'ZOOM: " \+ zoom\.ToString\(\)') { throw 'V74: status dinamico ausente.' }
 if ($shell -notmatch 'Diminuir zoom') { throw 'V74: menu de zoom ausente.' }
+if ($shell -notmatch 'Keys\.Control \| Keys\.D0') { throw 'V74: atalhos de zoom ausentes.' }
 [System.IO.File]::WriteAllText($shellPath, $shell, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host 'V74 aplicada: zoom real 50%-200%, hit-testing escalado, atalhos e status dinamico.' -ForegroundColor Cyan
