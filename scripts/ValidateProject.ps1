@@ -32,8 +32,11 @@ if ($version -notmatch '^\d+\.\d+(\.\d+)?$') { throw "version.txt inválido: $ve
 $changeLogText = [System.IO.File]::ReadAllText($changeLogPath)
 $escapedVersion = [Regex]::Escape($version)
 $changeLogEntry = [Regex]::Match($changeLogText, "(?ms)^## \[$escapedVersion\][^\r\n]*\r?\n(.*?)(?=^## \[|\z)")
-if (-not $changeLogEntry.Success -or [string]::IsNullOrWhiteSpace($changeLogEntry.Groups[1].Value)) {
-    throw "O CHANGELOG não possui notas para a versão $version."
+$releaseNotesPath = Join-Path $repoRoot ("docs\releases\v{0}.md" -f $version)
+$hasChangeLogNotes = $changeLogEntry.Success -and -not [string]::IsNullOrWhiteSpace($changeLogEntry.Groups[1].Value)
+$hasVersionedNotes = (Test-Path $releaseNotesPath) -and -not [string]::IsNullOrWhiteSpace([System.IO.File]::ReadAllText($releaseNotesPath))
+if (-not $hasChangeLogNotes -and -not $hasVersionedNotes) {
+    throw "Não há notas de release para a versão $version em CHANGELOG.md nem em docs/releases/v$version.md."
 }
 
 $installerText = [System.IO.File]::ReadAllText($installer)
@@ -59,7 +62,6 @@ foreach ($size in @('16', '24', '32', '48', '64', '128', '256')) {
     if (-not $iconText.Contains($size)) { throw "Tamanho $size ausente do pipeline de ícone." }
 }
 
-# O nucleo da simulacao pertence ao dominio e nao pode depender de WinForms.
 foreach ($core in @($scanEngine, $processModel, $plantLibrary)) {
     $coreText = [System.IO.File]::ReadAllText($core)
     if ($coreText.Contains('System.Windows.Forms')) {
@@ -67,7 +69,6 @@ foreach ($core in @($scanEngine, $processModel, $plantLibrary)) {
     }
 }
 
-# Todo fonte extraido para OpenLadderStudio.Core deve continuar independente da UI.
 foreach ($core in Get-ChildItem -Path $coreRoot -Filter '*.cs' -Recurse) {
     $coreText = [System.IO.File]::ReadAllText($core.FullName)
     if ($coreText.Contains('System.Windows.Forms') -or $coreText.Contains('System.Drawing')) {
