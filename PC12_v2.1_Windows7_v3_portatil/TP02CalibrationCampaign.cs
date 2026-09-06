@@ -82,7 +82,7 @@ namespace ModernPC12
             header.Controls.Add(NewLabel("Organiza os testes controlados, associa os dumps RBP e gera regras candidatas de opcode.", 8.8f, FontStyle.Regular, TextSecondary, 24, 43));
 
             Label safe = new Label();
-            safe.Text = "OFFLINE • SOMENTE ANÁLISE";
+            safe.Text = "OFF-LINE • SOMENTE ANÁLISE";
             safe.Dock = DockStyle.Right;
             safe.Width = 260;
             safe.TextAlign = ContentAlignment.MiddleCenter;

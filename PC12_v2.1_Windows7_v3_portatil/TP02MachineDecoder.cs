@@ -99,7 +99,7 @@ namespace ModernPC12
             header.Controls.Add(sub);
 
             Label safe = new Label();
-            safe.Text = "OFFLINE • NÃO ENVIA COMANDOS AO PLC";
+            safe.Text = "OFF-LINE • NÃO ENVIA COMANDOS AO PLC";
             safe.Dock = DockStyle.Right;
             safe.Width = 330;
             safe.TextAlign = ContentAlignment.MiddleCenter;

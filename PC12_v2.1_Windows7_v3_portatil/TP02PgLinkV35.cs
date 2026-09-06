@@ -89,10 +89,10 @@ namespace ModernPC12
             Controls.Add(header);
 
             header.Controls.Add(LabelAt("LINK PG - WEG TP02", 15.5f, FontStyle.Bold, Navy, 22, 11));
-            header.Controls.Add(LabelAt("v0.35 - auto-deteccao segura + captura pos-handshake", 9.0f, FontStyle.Regular, TextSecondary, 24, 44));
+            header.Controls.Add(LabelAt("v0.35 - auto-detecção segura + captura pos-handshake", 9.0f, FontStyle.Regular, TextSecondary, 24, 44));
 
             stateLabel = new Label();
-            stateLabel.Text = "●  NAO TESTADO";
+            stateLabel.Text = "●  NÃO TESTADO";
             stateLabel.Dock = DockStyle.Right;
             stateLabel.Width = 330;
             stateLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -106,7 +106,7 @@ namespace ModernPC12
             config.BackColor = Color.White;
             Controls.Add(config);
 
-            config.Controls.Add(LabelAt("Comunicacao PG", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
+            config.Controls.Add(LabelAt("Comunicação PG", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
             AddFieldLabel(config, "Porta COM", 18, 45);
 
             portCombo = new ComboBox();
@@ -138,7 +138,7 @@ namespace ModernPC12
             config.Controls.Add(LabelAt("HELLO PC12: 43 4F 4E 2D 49 43 42 0D = CON-ICB<CR>", 8.5f, FontStyle.Bold, Navy, 18, 108));
 
             Label observed = new Label();
-            observed.Text = "Quadro conhecido: C0 01 09 35 (soma FF). A v0.35 tambem aceita outro quadro PG valido apos remover o eco exato do HELLO.";
+            observed.Text = "Quadro conhecido: C0 01 09 35 (soma FF). A v0.35 também aceita outro quadro PG válido após remover o eco exato do HELLO.";
             observed.AutoSize = false;
             observed.Location = new Point(18, 132);
             observed.Size = new Size(1110, 28);
@@ -147,7 +147,7 @@ namespace ModernPC12
             config.Controls.Add(observed);
 
             Label safety = new Label();
-            safety.Text = "MODO SEGURO: somente CON-ICB<CR> e enviado. A varredura altera apenas paridade e sinais DTR/RTS da porta serial. RUN, STOP, escrita, download e apagamento continuam bloqueados.";
+            safety.Text = "MODO SEGURO: somente CON-ICB<CR> é enviado. A varredura altera apenas paridade e sinais DTR/RTS da porta serial. RUN, STOP, escrita, transferência e apagamento continuam bloqueados.";
             safety.AutoSize = false;
             safety.Location = new Point(18, 164);
             safety.Size = new Size(1110, 38);
@@ -161,9 +161,9 @@ namespace ModernPC12
             info.BackColor = Canvas;
             Controls.Add(info);
 
-            info.Controls.Add(LabelAt("Diagnostico v0.35", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
+            info.Controls.Add(LabelAt("Diagnóstico v0.35", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
             Label explanation = new Label();
-            explanation.Text = "1. Testa primeiro 8O1 com DTR/RTS on.  2. Se falhar, repete os perfis seguros da v0.34 e inclui 8E1.  3. Registra RX bruto e remove somente o eco exato.  4. Ao detectar quadro PG valido, salva o perfil.  5. Mantem a porta aberta e escuta por 5 s sem transmitir mais nada.";
+            explanation.Text = "1. Testa primeiro 8O1 com DTR/RTS on.  2. Se falhar, repete os perfis seguros da v0.34 e inclui 8E1.  3. Registra RX bruto e remove somente o eco exato.  4. Ao detectar quadro PG válido, salva o perfil.  5. Mantém a porta aberta e escuta por 5 s sem transmitir mais nada.";
             explanation.AutoSize = false;
             explanation.Location = new Point(18, 40);
             explanation.Size = new Size(1110, 56);
@@ -231,8 +231,8 @@ namespace ModernPC12
             profileLabel.ForeColor = Warning;
             SetState("●  PROCURANDO LINK PG...", Warning);
 
-            Log("INFO", "A v0.35 voltou a varrer os perfis da v0.34; nao depende mais de 8O1 fixo.");
-            Log("INFO", "Somente CON-ICB<CR> sera transmitido em cada tentativa.");
+            Log("INFO", "A v0.35 voltou a varrer os perfis da v0.34; não depende mais de 8O1 fixo.");
+            Log("INFO", "Somente CON-ICB<CR> será transmitido em cada tentativa.");
 
             Thread worker = new Thread(new ThreadStart(delegate { TestWorker(portName); }));
             worker.IsBackground = true;
@@ -301,7 +301,7 @@ namespace ModernPC12
                         {
                             byte[] frame = exactKnown ? KnownResponse : parsed.Frame;
                             LogSafe("PG FRAME", ToHex(frame));
-                            LogSafe("PG CHECKSUM", "soma modulo 256 = 0x" + TP02PgFrameParserV33.Sum8(frame).ToString("X2", CultureInfo.InvariantCulture));
+                            LogSafe("PG CHECKSUM", "soma módulo 256 = 0x" + TP02PgFrameParserV33.Sum8(frame).ToString("X2", CultureInfo.InvariantCulture));
                             LogSafe("PG LINK", exactKnown ? "ESTABLISHED - C0 01 09 35 confirmado." : "ESTABLISHED - quadro PG checksum FF confirmado.");
                             SaveDetected(portName, p);
                             SetDetectingProfileSafe("CONFIRMADO: " + p.Name, Success);
@@ -322,7 +322,7 @@ namespace ModernPC12
                             return;
                         }
 
-                        LogSafe("PG DIAG", "bytes recebidos, mas sem quadro PG valido neste perfil/tentativa.");
+                        LogSafe("PG DIAG", "bytes recebidos, mas sem quadro PG válido neste perfil/tentativa.");
                         Thread.Sleep(120);
                     }
                 }
@@ -350,7 +350,7 @@ namespace ModernPC12
             int bursts = 0;
             DateTime start = DateTime.UtcNow;
             DateTime deadline = start.AddMilliseconds(PostLinkCaptureMs);
-            LogSafe("PG CAPTURE", "escuta passiva iniciada; nenhum byte adicional sera transmitido.");
+            LogSafe("PG CAPTURE", "escuta passiva iniciada; nenhum byte adicional será transmitido.");
 
             while (DateTime.UtcNow < deadline && !cancelRequested)
             {
@@ -369,7 +369,7 @@ namespace ModernPC12
             }
 
             if (bursts == 0)
-                LogSafe("PG CAPTURE", "nenhum byte adicional em " + PostLinkCaptureMs.ToString(CultureInfo.InvariantCulture) + " ms; o PLC provavelmente aguarda o proximo TX do PC12.");
+                LogSafe("PG CAPTURE", "nenhum byte adicional em " + PostLinkCaptureMs.ToString(CultureInfo.InvariantCulture) + " ms; o PLC provavelmente aguarda o próximo TX do PC12.");
             else
                 LogSafe("PG CAPTURE", bursts.ToString(CultureInfo.InvariantCulture) + " burst(s) posterior(es) registrado(s).");
             return bursts;
@@ -419,12 +419,12 @@ namespace ModernPC12
                 if (postBursts > 0)
                     Log("RESULTADO", "Ha dados posteriores ao handshake no log.");
                 else
-                    Log("RESULTADO", "Nao houve RX espontaneo apos o handshake; o proximo TX do PC12 ainda precisa ser capturado.");
+                    Log("RESULTADO", "Não houve RX espontâneo após o handshake; o próximo TX do PC12 ainda precisa ser capturado.");
                 Log("RESULTADO", "Nenhum comando posterior ao HELLO foi transmitido.");
             }
             else if (sawAnyByte)
             {
-                SetState("●  PG RESPONDEU · AINDA NAO VALIDADO", Warning);
+                SetState("●  PG RESPONDEU · AINDA NÃO VALIDADO", Warning);
                 profileLabel.Text = "Bytes recebidos; revisar log";
                 profileLabel.ForeColor = Warning;
                 Log("RESULTADO", "O TP02 devolveu bytes, mas nenhum quadro PG checksum FF foi isolado. Envie uma foto do log desta tela.");
@@ -436,7 +436,7 @@ namespace ModernPC12
                 profileLabel.Text = "Nenhum perfil respondeu";
                 profileLabel.ForeColor = Danger;
                 Log("RESULTADO", "Nenhum byte retornou ao CON-ICB em nenhum perfil 19200/8 bits testado.");
-                Log("RESULTADO", "Confirme a COM e feche o PC12 original antes de testar, pois duas aplicacoes nao podem usar a mesma porta simultaneamente.");
+                Log("RESULTADO", "Confirme a COM e feche o PC12 original antes de testar, pois duas aplicações não podem usar a mesma porta simultaneamente.");
                 if (!string.IsNullOrEmpty(error)) Log("DETALHE", error);
             }
         }

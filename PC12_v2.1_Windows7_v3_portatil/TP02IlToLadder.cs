@@ -76,7 +76,7 @@ namespace ModernPC12
             header.Controls.Add(NewLabel("Converte somente IL verificada e um subconjunto estrutural comprovável para o formato .pladder do Studio.", 8.8f, FontStyle.Regular, TextSecondary, 24, 43));
 
             Label safe = new Label();
-            safe.Text = "OFFLINE • NÃO ESCREVE NO PLC";
+            safe.Text = "OFF-LINE • NÃO ESCREVE NO PLC";
             safe.Dock = DockStyle.Right;
             safe.Width = 285;
             safe.TextAlign = ContentAlignment.MiddleCenter;
@@ -206,7 +206,7 @@ namespace ModernPC12
                 if (op == "STR" || op == "STR NOT")
                 {
                     if (current != null && current.Output == null)
-                        errors.Add("Passo " + ins.Step.ToString("0000") + ": novo STR antes de fechar o rung anterior com OUT.");
+                        errors.Add("Passo " + ins.Step.ToString("0000") + ": novo STR antes de fechar o linha anterior com OUT.");
                     current = new TP02LadderBuildRung();
                     current.Conditions.Add(NewElement(
                         op == "STR NOT" ? LadderProjectElementKind.ContactNormallyClosed : LadderProjectElementKind.ContactNormallyOpen,
@@ -237,12 +237,12 @@ namespace ModernPC12
                 {
                     if (current == null)
                     {
-                        errors.Add("Passo " + ins.Step.ToString("0000") + ": OUT sem rung iniciado por STR.");
+                        errors.Add("Passo " + ins.Step.ToString("0000") + ": OUT sem linha iniciado por STR.");
                         continue;
                     }
                     if (current.Output != null)
                     {
-                        errors.Add("Passo " + ins.Step.ToString("0000") + ": rung já possui saída.");
+                        errors.Add("Passo " + ins.Step.ToString("0000") + ": linha já possui saída.");
                         continue;
                     }
                     current.Output = NewElement(LadderProjectElementKind.Coil, ins.Operand);
@@ -262,14 +262,14 @@ namespace ModernPC12
                 errors.Add("Passo " + ins.Step.ToString("0000") + ": operação ainda não suportada pela reconstrução segura: " + op + ".");
             }
 
-            if (current != null && current.Output == null) errors.Add("Último rung não foi fechado com OUT.");
+            if (current != null && current.Output == null) errors.Add("A última linha não foi fechada com OUT.");
 
             StringBuilder report = new StringBuilder();
             report.AppendLine("TP02 — IL VERIFICADA → LADDER");
             report.AppendLine(new string('=', 84));
             report.AppendLine("Arquivo: " + currentIlPath);
             report.AppendLine("Instruções reconhecidas: " + instructions.Count.ToString());
-            report.AppendLine("Rungs candidatos: " + rungs.Count.ToString());
+            report.AppendLine("Linhas candidatos: " + rungs.Count.ToString());
             report.AppendLine("Erros/bloqueios: " + errors.Count.ToString());
             report.AppendLine();
 

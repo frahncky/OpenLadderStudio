@@ -195,7 +195,7 @@ namespace ModernPC12
                         if (e.Cancelled || e.Error != null)
                         {
                             statusLabel.ForeColor = Warning;
-                            statusLabel.Text = "Falha no download.";
+                            statusLabel.Text = "Falha na transferência.";
                             checkButton.Enabled = true;
                             return;
                         }

@@ -259,7 +259,7 @@ namespace ModernPC12
                 {
                     Append("RX", Escape(response));
                     Append("ERRO", "Resposta incompleta: " + response.Length.ToString(CultureInfo.InvariantCulture)
-                        + " byte(s) sem <CR>. Chegou sinal, então cabo e porta estão vivos; verifique baud rate, "
+                        + " byte(s) sem <CR>. Chegou sinal, então cabo e porta estão vivos; verifique taxa de transmissão, "
                         + "paridade e bits contra WS041/WS042 do PLC.");
                 }
                 else

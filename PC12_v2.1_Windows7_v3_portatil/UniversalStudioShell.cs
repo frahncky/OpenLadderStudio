@@ -196,8 +196,8 @@ namespace ModernPC12
             ToolStripMenuItem editar = MenuItem("Editar");
             editar.DropDownItems.Add(DropItem("Desfazer", delegate { InvokeLadder("Undo", null); }));
             editar.DropDownItems.Add(new ToolStripSeparator());
-            editar.DropDownItems.Add(DropItem("Adicionar rung", delegate { InvokeLadder("AddRung", null); }));
-            editar.DropDownItems.Add(DropItem("Excluir rung", delegate { InvokeLadder("DeleteSelectedRung", null); }));
+            editar.DropDownItems.Add(DropItem("Adicionar linha", delegate { InvokeLadder("AddRung", null); }));
+            editar.DropDownItems.Add(DropItem("Excluir linha", delegate { InvokeLadder("DeleteSelectedRung", null); }));
             editar.DropDownItems.Add(DropItem("Validar programa", delegate { InvokeLadder("ValidateProject", new object[] { true }); }));
 
             miNav = DropItem("Painel de navegação", delegate { TogglePanel(0); });
@@ -216,7 +216,7 @@ namespace ModernPC12
             plc.DropDownItems.Add(DropItem("Selecionar controlador...", delegate { ShowDeviceManager(); }));
             plc.DropDownItems.Add(new ToolStripSeparator());
             plc.DropDownItems.Add(DropItem("Comunicação", delegate { ShowCommunication(); }));
-            plc.DropDownItems.Add(DropItem("Monitor online", delegate { ShowMonitor(); }));
+            plc.DropDownItems.Add(DropItem("Monitor on-line", delegate { ShowMonitor(); }));
             plc.DropDownItems.Add(DropItem("Ler programa", delegate { ShowReader(); }));
 
             ToolStripMenuItem ferramentas = MenuItem("Ferramentas");
@@ -295,7 +295,7 @@ namespace ModernPC12
             AddToolButton(bar, "Salvar", StudioIcon.Save, false, delegate { InvokeLadder("SaveProject", new object[] { false }); });
             AddToolSeparator(bar);
             AddToolButton(bar, "Desfazer", StudioIcon.Undo, false, delegate { InvokeLadder("Undo", null); });
-            AddToolButton(bar, "Rung", StudioIcon.Plus, false, delegate { InvokeLadder("AddRung", null); });
+            AddToolButton(bar, "Linha", StudioIcon.Plus, false, delegate { InvokeLadder("AddRung", null); });
             AddToolButton(bar, "Validar", StudioIcon.Check, false, delegate { InvokeLadder("ValidateProject", new object[] { true }); });
             AddToolSeparator(bar);
             AddToolButton(bar, "Controlador", StudioIcon.Chip, true, delegate { ShowDeviceManager(); });
@@ -358,7 +358,7 @@ namespace ModernPC12
             items.Add(NavItem("Selecionar controlador", StudioIcon.Chip, "DEV", delegate { ShowDeviceManager(); }));
             items.Add(new NavSection("Comunicação"));
             items.Add(NavItem("Comunicação", StudioIcon.Plug, "PLC", delegate { ShowCommunication(); }));
-            items.Add(NavItem("Monitor online", StudioIcon.Monitor, "MON", delegate { ShowMonitor(); }));
+            items.Add(NavItem("Monitor on-line", StudioIcon.Monitor, "MON", delegate { ShowMonitor(); }));
             items.Add(NavItem("Ler programa (RBP)", StudioIcon.Download, "RBP", delegate { ShowReader(); }));
             items.Add(new NavSection("Análise TP02"));
             items.Add(NavItem("Decodificador", StudioIcon.Bolt, "DEC", delegate { ShowDecoder(); }));
@@ -477,7 +477,7 @@ namespace ModernPC12
             status.Location = new Point(16, 398);
             p.Controls.Add(status);
 
-            connectionValue = InspectorLabel("●  OFFLINE", 9.2f, true, Color.FromArgb(168, 174, 181));
+            connectionValue = InspectorLabel("●  OFF-LINE", 9.2f, true, Color.FromArgb(168, 174, 181));
             connectionValue.Location = new Point(16, 422);
             p.Controls.Add(connectionValue);
 
@@ -540,7 +540,7 @@ namespace ModernPC12
             {
                 string model = currentProfile == null ? "SEM PLC" : currentProfile.Model;
                 string protocol = currentProfile == null ? "-" : currentProfile.Protocol;
-                modeText.Text = model + "    |    " + protocol + "    |    OFFLINE    |    v0.12";
+                modeText.Text = model + "    |    " + protocol + "    |    OFF-LINE    |    v0.12";
             }
 
             UpdateRailCapabilities();

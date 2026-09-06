@@ -76,10 +76,10 @@ namespace ModernPC12
             Controls.Add(header);
 
             header.Controls.Add(LabelAt("LINK PG - WEG TP02", 15.5f, FontStyle.Bold, Navy, 22, 11));
-            header.Controls.Add(LabelAt("Handshake PC12 validado no PLC fisico", 9.0f, FontStyle.Regular, TextSecondary, 24, 44));
+            header.Controls.Add(LabelAt("Handshake PC12 validado no PLC físico", 9.0f, FontStyle.Regular, TextSecondary, 24, 44));
 
             stateLabel = new Label();
-            stateLabel.Text = "●  NAO TESTADO";
+            stateLabel.Text = "●  NÃO TESTADO";
             stateLabel.Dock = DockStyle.Right;
             stateLabel.Width = 300;
             stateLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -93,7 +93,7 @@ namespace ModernPC12
             config.BackColor = Color.White;
             Controls.Add(config);
 
-            config.Controls.Add(LabelAt("Comunicacao PG", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
+            config.Controls.Add(LabelAt("Comunicação PG", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
             AddFieldLabel(config, "Porta COM", 18, 45);
 
             portCombo = new ComboBox();
@@ -121,7 +121,7 @@ namespace ModernPC12
             config.Controls.Add(LabelAt("Hello PC12: 43 4F 4E 2D 49 43 42 0D = CON-ICB<CR>", 8.5f, FontStyle.Bold, Navy, 18, 108));
 
             Label observed = new Label();
-            observed.Text = "Resposta observada no PLC: C0 01 09 35. Soma modulo 256 = FF, portanto quadro PG valido.";
+            observed.Text = "Resposta observada no PLC: C0 01 09 35. Soma módulo 256 = FF, portanto quadro PG válido.";
             observed.AutoSize = false;
             observed.Location = new Point(18, 132);
             observed.Size = new Size(1080, 24);
@@ -130,7 +130,7 @@ namespace ModernPC12
             config.Controls.Add(observed);
 
             Label safety = new Label();
-            safety.Text = "A v0.34 NAO envia automaticamente F0 00 0F. RUN, STOP, escrita, download e apagamento permanecem bloqueados ate a proxima etapa do protocolo PG ser confirmada.";
+            safety.Text = "A v0.34 NÃO envia automaticamente F0 00 0F. RUN, STOP, escrita, transferência e apagamento permanecem bloqueados até a próxima etapa do protocolo PG ser confirmada.";
             safety.AutoSize = false;
             safety.Location = new Point(18, 158);
             safety.Size = new Size(1080, 28);
@@ -144,7 +144,7 @@ namespace ModernPC12
             info.BackColor = Canvas;
             Controls.Add(info);
 
-            info.Controls.Add(LabelAt("Validacao v0.34", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
+            info.Controls.Add(LabelAt("Validação v0.34", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
             Label explanation = new Label();
             explanation.Text = "1. Abre 19200/8N1 primeiro.  2. Envia somente CON-ICB<CR>.  3. Registra RX bruto.  4. Remove apenas eco exato do hello.  5. Confirma o Link quando um quadro contiguo >=4 bytes fecha soma FF.";
             explanation.AutoSize = false;
@@ -211,9 +211,9 @@ namespace ModernPC12
             testButton.Enabled = false;
             logBox.Clear();
             SetState("●  TESTANDO LINK PG...", Warning);
-            Log("INFO", "Cabo, COM e modo PG ja foram confirmados no PLC fisico.");
-            Log("INFO", "A v0.34 valida a resposta ao CON-ICB e nao envia F0 00 0F automaticamente.");
-            Log("INFO", "Nenhum comando que altera o PLC sera enviado.");
+            Log("INFO", "Cabo, COM e modo PG ja foram confirmados no PLC físico.");
+            Log("INFO", "A v0.34 valida a resposta ao CON-ICB e não envia F0 00 0F automaticamente.");
+            Log("INFO", "Nenhum comando que altera o PLC será enviado.");
 
             Thread worker = new Thread(new ThreadStart(delegate { TestWorker(portName); }));
             worker.IsBackground = true;
@@ -249,7 +249,7 @@ namespace ModernPC12
                 {
                     LogSafe("SUCESSO", "LINK PG confirmado com " + profile.Name + ".");
                     LogSafe("PG FRAME", ToHex(usefulFrame));
-                    LogSafe("CHECKSUM", "soma modulo 256 = 0xFF");
+                    LogSafe("CHECKSUM", "soma módulo 256 = 0xFF");
                     if (usefulFrame.Length >= 4)
                     {
                         LogSafe("DECODE", "byte0=0x" + usefulFrame[0].ToString("X2", CultureInfo.InvariantCulture)
@@ -313,7 +313,7 @@ namespace ModernPC12
                         return true;
                     }
 
-                    LogSafe("CHECKSUM", "Resposta recebida, mas ainda nao forma quadro PG valido com soma FF.");
+                    LogSafe("CHECKSUM", "Resposta recebida, mas ainda não forma quadro PG válido com soma FF.");
                     Thread.Sleep(100);
                 }
 
@@ -377,8 +377,8 @@ namespace ModernPC12
                 profileLabel.Text = "LINK confirmado: " + profile;
                 profileLabel.ForeColor = Success;
                 SetState("●  LINK PG CONFIRMADO", Success);
-                Log("RESULTADO", "O TP02 respondeu ao hello do PC12 com quadro PG de checksum valido.");
-                Log("RESULTADO", "A proxima etapa e decodificar o significado dos bytes do quadro e a sequencia posterior do PC12.");
+                Log("RESULTADO", "O TP02 respondeu ao hello do PC12 com quadro PG de checksum válido.");
+                Log("RESULTADO", "A próxima etapa é decodificar o significado dos bytes do quadro e a sequência posterior do PC12.");
                 Log("RESULTADO", "RUN/STOP/escrita continuam bloqueados.");
             }
             else if (sawAnyByte)

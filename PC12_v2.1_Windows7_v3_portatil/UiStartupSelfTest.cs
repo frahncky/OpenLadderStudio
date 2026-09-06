@@ -14,9 +14,9 @@ namespace ModernPC12
                 Application.SetCompatibleTextRenderingDefault(false);
                 using (UniversalStudioForm form = new UniversalStudioForm())
                 {
-                    if (form.IsDisposed) throw new InvalidOperationException("A janela principal foi descartada durante a inicializacao.");
+                    if (form.IsDisposed) throw new InvalidOperationException("A janela principal foi descartada durante a inicialização.");
                     IntPtr handle = form.Handle;
-                    if (handle == IntPtr.Zero) throw new InvalidOperationException("A janela principal nao criou um handle valido.");
+                    if (handle == IntPtr.Zero) throw new InvalidOperationException("A janela principal não criou um handle válido.");
                 }
                 Console.WriteLine("UI startup smoke test: OK");
                 return 0;

@@ -212,7 +212,7 @@ namespace ModernPC12
 
                 if (response[0] != unitId)
                 {
-                    result.Error = "Unit ID diferente do solicitado.";
+                    result.Error = "ID da unidade diferente do solicitado.";
                     return result;
                 }
 

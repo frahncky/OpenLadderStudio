@@ -41,7 +41,7 @@ namespace ModernPC12
             if (ReadProgram) items.Add("leitura de programa");
             if (UploadProgram) items.Add("upload");
             if (DownloadProgram) items.Add("download");
-            if (OnlineEdit) items.Add("edição online");
+            if (OnlineEdit) items.Add("edição on-line");
             return items.Count == 0 ? "sem recursos ativos" : string.Join(", ", items.ToArray());
         }
     }
@@ -306,7 +306,7 @@ namespace ModernPC12
             list.Add(new PlannedVendorDriver("schneider.modicon", "Schneider Modicon", "Perfil de fabricante planejado. Comunicação Modbus poderá reutilizar a camada genérica quando aplicável."));
             list.Add(new PlannedVendorDriver("mitsubishi.melsec", "Mitsubishi MELSEC", "Driver planejado para famílias FX/Q/iQ-F. Programação depende do protocolo e compilador específicos."));
             list.Add(new PlannedVendorDriver("omron.fins", "Omron FINS", "Driver planejado para famílias Omron compatíveis. Requer implementação e validação FINS."));
-            list.Add(new PlannedVendorDriver("delta.dvp", "Delta DVP", "Perfil planejado. Alguns modelos poderão usar Modbus para monitoramento, mas download Ladder é específico."));
+            list.Add(new PlannedVendorDriver("delta.dvp", "Delta DVP", "Perfil planejado. Alguns modelos poderão usar Modbus para monitoramento, mas transferência do programa Ladder é específico."));
             list.Add(new PlannedVendorDriver("teco.sg2.programming", "TECO SG2 (porta de programação)", "Driver planejado para a porta de programação usada pelo SG2 Client. O protocolo é proprietário e exige pesquisa e validação em hardware, como foi feito no TP02/RBP."));
             list.Add(new PlannedVendorDriver("rockwell.cip", "Allen-Bradley / Rockwell", "Driver planejado. Requer camada EtherNet/IP/CIP e compilação específica do controlador."));
             return list;
@@ -319,8 +319,8 @@ namespace ModernPC12
             list.Add(Profile("weg.tp02.60mr", "WEG", "TP02", "TP02-60MR", "TP02 ASCII", PlcTransportKind.Serial, "weg.tp02.serial", PlcSupportLevel.Implemented, "Primeiro controlador suportado pelo OpenLadder Studio."));
             list.Add(Profile("generic.modbus.rtu", "Genérico", "Modbus", "Modbus RTU", "Modbus RTU", PlcTransportKind.Serial, "generic.modbus.rtu", PlcSupportLevel.Experimental, "Base multi-fabricante para equipamentos que exponham mapa Modbus RTU."));
             list.Add(Profile("generic.modbus.tcp", "Genérico", "Modbus", "Modbus TCP", "Modbus TCP", PlcTransportKind.Tcp, "generic.modbus.tcp", PlcSupportLevel.Experimental, "Base multi-fabricante para equipamentos que exponham mapa Modbus TCP."));
-            list.Add(Profile("weg.tpw03", "WEG", "TPW-03", "TPW-03 com cartão RS-485", "Modbus RTU", PlcTransportKind.Serial, "generic.modbus.rtu", PlcSupportLevel.Experimental, "A comunicação Modbus-RTU depende do cartão opcional RS-485/RS-232. Monitoramento em leitura; leitura e download de programa Ladder não implementados."));
-            list.Add(Profile("teco.sg2.20v", "TECO", "SG2", "SG2-20V com RS-485", "Modbus RTU", PlcTransportKind.Serial, "generic.modbus.rtu", PlcSupportLevel.Experimental, "SG2-20VR-D, SG2-20VT-D e variantes 12D trazem RS-485 Modbus-RTU integrado. Confirme baud rate, paridade e mapa de endereços no manual do equipamento antes de monitorar."));
+            list.Add(Profile("weg.tpw03", "WEG", "TPW-03", "TPW-03 com cartão RS-485", "Modbus RTU", PlcTransportKind.Serial, "generic.modbus.rtu", PlcSupportLevel.Experimental, "A comunicação Modbus-RTU depende do cartão opcional RS-485/RS-232. Monitoramento em leitura; leitura e transferência do programa Ladder não implementados."));
+            list.Add(Profile("teco.sg2.20v", "TECO", "SG2", "SG2-20V com RS-485", "Modbus RTU", PlcTransportKind.Serial, "generic.modbus.rtu", PlcSupportLevel.Experimental, "SG2-20VR-D, SG2-20VT-D e variantes 12D trazem RS-485 Modbus-RTU integrado. Confirme taxa de transmissão, paridade e mapa de endereços no manual do equipamento antes de monitorar."));
             list.Add(Profile("teco.sg2.10hr", "TECO", "SG2", "SG2-10HR-A", "Porta de programação proprietária", PlcTransportKind.VendorSpecific, "teco.sg2.programming", PlcSupportLevel.Planned, "Este modelo não expõe Modbus: a folha de dados do SG2-10HR-A marca comunicação como N/A. Resta a porta de programação do SG2 Client, cujo protocolo é proprietário e ainda não foi implementado."));
             list.Add(Profile("schneider.m221", "Schneider Electric", "Modicon", "M221", "Modbus / fabricante", PlcTransportKind.Tcp, "schneider.modicon", PlcSupportLevel.Planned, "Perfil de dispositivo reservado para implementação futura."));
             list.Add(Profile("delta.dvp", "Delta", "DVP", "DVP Series", "Modbus / fabricante", PlcTransportKind.Serial, "delta.dvp", PlcSupportLevel.Planned, "Perfil de dispositivo reservado para implementação futura."));

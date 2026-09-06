@@ -125,7 +125,7 @@ namespace ModernPC12
             config.Controls.Add(LabelAt("Hello PC12: 43 4F 4E 2D 49 43 42 0D = CON-ICB<CR> · Probe: F0 00 0F", 8.5f, FontStyle.Bold, Navy, 18, 108));
 
             Label safety = new Label();
-            safety.Text = "TESTE SOMENTE DE LINK. RUN, STOP, escrita, download e apagamento continuam bloqueados.\r\nA v0.33 não considera o burst inteiro como quadro: remove apenas eco exato e valida o quadro PG isolado.";
+            safety.Text = "TESTE SOMENTE DE LINK. RUN, STOP, escrita, transferência e apagamento continuam bloqueados.\r\nA v0.33 não considera o burst inteiro como quadro: remove apenas eco exato e valida o quadro PG isolado.";
             safety.AutoSize = false;
             safety.Location = new Point(18, 132);
             safety.Size = new Size(1080, 44);

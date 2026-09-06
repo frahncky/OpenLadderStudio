@@ -93,7 +93,7 @@ namespace ModernPC12
             header.BackColor = Color.White;
             Controls.Add(header);
 
-            Label title = LabelAt("CONTROLE ONLINE - WEG TP02", 15.0f, FontStyle.Bold, Navy, 22, 11);
+            Label title = LabelAt("CONTROLE ON-LINE - WEG TP02", 15.0f, FontStyle.Bold, Navy, 22, 11);
             header.Controls.Add(title);
             Label sub = LabelAt("Computer Link na porta MMI: leitura, escrita e RUN/STOP", 8.8f, FontStyle.Regular, TextSecondary, 24, 42);
             header.Controls.Add(sub);

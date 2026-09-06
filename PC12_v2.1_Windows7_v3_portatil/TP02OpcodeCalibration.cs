@@ -73,7 +73,7 @@ namespace ModernPC12
             header.Controls.Add(NewLabel("Aprende máscaras de opcode e de operando comparando dumps RBP controlados.", 8.8f, FontStyle.Regular, TextSecondary, 24, 43));
 
             Label safe = new Label();
-            safe.Text = "OFFLINE • NÃO ESCREVE NO PLC";
+            safe.Text = "OFF-LINE • NÃO ESCREVE NO PLC";
             safe.Dock = DockStyle.Right;
             safe.Width = 280;
             safe.TextAlign = ContentAlignment.MiddleCenter;

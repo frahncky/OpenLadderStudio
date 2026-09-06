@@ -166,8 +166,6 @@ function Normalize-Literal([string]$literal) {
 
     foreach ($pair in $uiReplacements) { $literal = $literal.Replace($pair[0], $pair[1]) }
 
-    $literal = Replace-Term $literal '(?<![A-Za-z])rungs(?![A-Za-z])' 'linhas'
-    $literal = Replace-Term $literal '(?<![A-Za-z])rung(?![A-Za-z])' 'linha'
     $literal = Replace-Term $literal '(?<![A-Za-z])online(?![A-Za-z])' 'on-line'
     $literal = Replace-Term $literal '(?<![A-Za-z])offline(?![A-Za-z])' 'off-line'
     $literal = Replace-Term $literal '(?<![A-Za-z])baud rate(?![A-Za-z])' (Decode-U 'taxa de transmiss\u00E3o')

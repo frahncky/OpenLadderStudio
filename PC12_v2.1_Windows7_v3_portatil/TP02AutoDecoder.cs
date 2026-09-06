@@ -99,7 +99,7 @@ namespace ModernPC12
             header.Controls.Add(NewLabel("Aplica regras de opcode sem promover hipóteses a fatos. CONFIRMED é aceito; CANDIDATE é apenas sugestão.", 8.8f, FontStyle.Regular, TextSecondary, 24, 43));
 
             Label safe = new Label();
-            safe.Text = "OFFLINE • NÃO ESCREVE NO PLC";
+            safe.Text = "OFF-LINE • NÃO ESCREVE NO PLC";
             safe.Dock = DockStyle.Right;
             safe.Width = 290;
             safe.TextAlign = ContentAlignment.MiddleCenter;

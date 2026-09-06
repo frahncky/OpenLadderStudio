@@ -73,7 +73,7 @@ namespace ModernPC12
             Controls.Add(header);
 
             Label title = new Label();
-            title.Text = "TP02 BRIDGE LAB";
+            title.Text = "LABORATÓRIO TP02";
             title.AutoSize = true;
             title.Font = new Font("Segoe UI Semibold", 15.0f, FontStyle.Bold);
             title.ForeColor = Navy;
@@ -397,7 +397,7 @@ namespace ModernPC12
             string basePath = Path.Combine(Path.GetDirectoryName(dlg.FileName), Path.GetFileNameWithoutExtension(dlg.FileName));
             string[] suffixes = new string[] { ".PLC", ".sys1", ".sys2", ".cnt", ".reg1", ".reg2", ".reg3", ".sym", ".file", ".cmt", ".typ" };
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("TP02 BRIDGE LAB - RELATÓRIO DE PROJETO PC12");
+            sb.AppendLine("LABORATÓRIO TP02 - RELATÓRIO DE PROJETO PC12");
             sb.AppendLine(new string('=', 70));
             sb.AppendLine("Projeto-base: " + basePath);
             sb.AppendLine("Data: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -456,7 +456,7 @@ namespace ModernPC12
             byte[] left = File.ReadAllBytes(a.FileName);
             byte[] right = File.ReadAllBytes(b.FileName);
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("TP02 BRIDGE LAB - COMPARAÇÃO BINÁRIA");
+            sb.AppendLine("LABORATÓRIO TP02 - COMPARAÇÃO BINÁRIA");
             sb.AppendLine(new string('=', 70));
             sb.AppendLine("A: " + a.FileName + " (" + left.Length.ToString() + " bytes)");
             sb.AppendLine("B: " + b.FileName + " (" + right.Length.ToString() + " bytes)");
@@ -560,7 +560,7 @@ namespace ModernPC12
                 {
                     Log("RX", EscapeFrame(response) + "   " + ToHex(response));
                     Log("ERRO", "Resposta incompleta: " + response.Length.ToString(CultureInfo.InvariantCulture)
-                        + " byte(s) sem <CR>. Chegou sinal, então cabo e porta estão vivos; isso aponta para baud rate, "
+                        + " byte(s) sem <CR>. Chegou sinal, então cabo e porta estão vivos; isso aponta para taxa de transmissão, "
                         + "paridade ou bits divergentes do que está configurado no PLC (WS041/WS042).");
                 }
                 else
@@ -908,7 +908,7 @@ namespace ModernPC12
         /// <summary>
         /// Le ate o CR final ou ate esgotar o prazo, devolvendo tambem o que chegou
         /// incompleto. Um quadro parcial distingue "nada respondeu" de "respondeu com
-        /// parametros seriais errados", que exigem correcoes diferentes.
+        /// parâmetros seriais errados", que exigem correcoes diferentes.
         /// </summary>
         private static string ReadUntilCarriageReturn(SerialPort port, int timeoutMs, out bool complete)
         {

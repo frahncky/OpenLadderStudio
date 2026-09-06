@@ -79,10 +79,10 @@ namespace ModernPC12
             Controls.Add(header);
 
             header.Controls.Add(LabelAt("LINK PG - WEG TP02", 15.5f, FontStyle.Bold, Navy, 22, 11));
-            header.Controls.Add(LabelAt("v0.37 - segundo estagio PG controlado", 9.0f, FontStyle.Regular, TextSecondary, 24, 44));
+            header.Controls.Add(LabelAt("v0.37 - segundo estágio PG controlado", 9.0f, FontStyle.Regular, TextSecondary, 24, 44));
 
             stateLabel = new Label();
-            stateLabel.Text = "●  NAO TESTADO";
+            stateLabel.Text = "●  NÃO TESTADO";
             stateLabel.Dock = DockStyle.Right;
             stateLabel.Width = 350;
             stateLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -96,7 +96,7 @@ namespace ModernPC12
             config.BackColor = Color.White;
             Controls.Add(config);
 
-            config.Controls.Add(LabelAt("Comunicacao PG validada fisicamente", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
+            config.Controls.Add(LabelAt("Comunicação PG validada fisicamente", 11.0f, FontStyle.Bold, TextPrimary, 18, 12));
             AddFieldLabel(config, "Porta COM", 18, 45);
 
             portCombo = new ComboBox();
@@ -126,11 +126,11 @@ namespace ModernPC12
             config.Controls.Add(clear);
 
             config.Controls.Add(LabelAt("1º TX: 43 4F 4E 2D 49 43 42 0D = CON-ICB<CR>", 8.5f, FontStyle.Bold, Navy, 18, 108));
-            config.Controls.Add(LabelAt("RX exigido antes de avancar: C0 01 09 35 · soma modulo 256 = FF", 8.5f, FontStyle.Bold, Success, 18, 132));
-            config.Controls.Add(LabelAt("2º TX: F0 00 0F · soma modulo 256 = FF · enviado UMA unica vez apos o handshake exato", 8.5f, FontStyle.Bold, Navy, 18, 156));
+            config.Controls.Add(LabelAt("RX exigido antes de avancar: C0 01 09 35 · soma módulo 256 = FF", 8.5f, FontStyle.Bold, Success, 18, 132));
+            config.Controls.Add(LabelAt("2º TX: F0 00 0F · soma módulo 256 = FF · enviado UMA única vez após o handshake exato", 8.5f, FontStyle.Bold, Navy, 18, 156));
 
             Label safety = new Label();
-            safety.Text = "MODO SEGURO: se C0 01 09 35 nao for confirmado, F0 00 0F NAO e enviado. Depois de F0 00 0F, a ferramenta somente escuta e registra bytes. RUN, STOP, escrita, download e apagamento continuam bloqueados.";
+            safety.Text = "MODO SEGURO: se C0 01 09 35 não for confirmado, F0 00 0F NÃO é enviado. Depois de F0 00 0F, a ferramenta somente escuta e registra bytes. RUN, STOP, escrita, transferência e apagamento continuam bloqueados.";
             safety.AutoSize = false;
             safety.Location = new Point(18, 184);
             safety.Size = new Size(1110, 38);
@@ -144,9 +144,9 @@ namespace ModernPC12
             info.BackColor = Canvas;
             Controls.Add(info);
 
-            info.Controls.Add(LabelAt("Diagnostico v0.37", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
+            info.Controls.Add(LabelAt("Diagnóstico v0.37", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
             Label explanation = new Label();
-            explanation.Text = "1. Abre COM em 19200/8O1 com DTR/RTS on.  2. Confirma o HELLO conhecido.  3. Somente apos C0 01 09 35 envia F0 00 0F uma vez.  4. Registra RX bruto, remove apenas eco exato de F0 00 0F e calcula a soma.  5. Mantem escuta passiva por mais 5 s sem qualquer novo TX.";
+            explanation.Text = "1. Abre COM em 19200/8O1 com DTR/RTS on.  2. Confirma o HELLO conhecido.  3. Somente após C0 01 09 35 envia F0 00 0F uma vez.  4. Registra RX bruto, remove apenas eco exato de F0 00 0F e calcula a soma.  5. Mantem escuta passiva por mais 5 s sem qualquer novo TX.";
             explanation.AutoSize = false;
             explanation.Location = new Point(18, 40);
             explanation.Size = new Size(1110, 58);
@@ -184,8 +184,8 @@ namespace ModernPC12
             SetState("●  CONFIRMANDO LINK PG...", Warning);
 
             Log("INFO", "Perfil fisicamente confirmado: 19200 8O1 · DTR/RTS on.");
-            Log("INFO", "F0 00 0F so sera enviado se C0 01 09 35 for recebido nesta execucao.");
-            Log("INFO", "Depois do segundo quadro nenhum outro TX sera realizado.");
+            Log("INFO", "F0 00 0F so será enviado se C0 01 09 35 for recebido nesta execução.");
+            Log("INFO", "Depois do segundo quadro nenhum outro TX será realizado.");
 
             Thread worker = new Thread(new ThreadStart(delegate { TestWorker(portName); }));
             worker.IsBackground = true;
@@ -237,15 +237,15 @@ namespace ModernPC12
                     int knownIndex = IndexOfSequence(parsed.WithoutEcho, KnownHelloResponse);
                     if (knownIndex < 0)
                     {
-                        LogSafe("PG BLOQUEIO", "C0 01 09 35 nao foi localizado; F0 00 0F permanece bloqueado.");
+                        LogSafe("PG BLOQUEIO", "C0 01 09 35 não foi localizado; F0 00 0F permanece bloqueado.");
                         Thread.Sleep(120);
                         continue;
                     }
 
                     handshakeConfirmed = true;
                     LogSafe("PG FRAME", ToHex(KnownHelloResponse));
-                    LogSafe("PG CHECKSUM", "HELLO RX soma modulo 256 = 0x" + Sum8(KnownHelloResponse).ToString("X2", CultureInfo.InvariantCulture));
-                    LogSafe("PG LINK", "ESTABLISHED - C0 01 09 35 confirmado nesta execucao.");
+                    LogSafe("PG CHECKSUM", "HELLO RX soma módulo 256 = 0x" + Sum8(KnownHelloResponse).ToString("X2", CultureInfo.InvariantCulture));
+                    LogSafe("PG LINK", "ESTABLISHED - C0 01 09 35 confirmado nesta execução.");
                     SaveProfile(portName);
                     SetState("●  LINK CONFIRMADO · ENVIANDO ETAPA 2...", Success);
 
@@ -267,7 +267,7 @@ namespace ModernPC12
                     if (stage2Raw.Length == 0)
                     {
                         LogSafe("PG STAGE2 RX", "[]");
-                        LogSafe("PG DIAG", "nenhum byte retornou imediatamente apos F0 00 0F.");
+                        LogSafe("PG DIAG", "nenhum byte retornou imediatamente após F0 00 0F.");
                     }
                     else
                     {
@@ -278,7 +278,7 @@ namespace ModernPC12
                         LogSafe("PG STAGE2 ECO", "quantidade=" + echoCount.ToString(CultureInfo.InvariantCulture));
                         LogSafe("PG STAGE2 SEM ECO", ToHex(withoutEcho) + "  soma=0x" + Sum8(withoutEcho).ToString("X2", CultureInfo.InvariantCulture));
                         if (withoutEcho.Length > 0 && Sum8(withoutEcho) == 0xFF)
-                            LogSafe("PG STAGE2 FRAME?", "o bloco sem eco fecha soma FF; manter interpretacao em aberto ate comparar com o PC12.");
+                            LogSafe("PG STAGE2 FRAME?", "o bloco sem eco fecha soma FF; manter interpretacao em aberto até comparar com o PC12.");
                         else if (withoutEcho.Length > 0)
                             LogSafe("PG STAGE2 FRAME?", "RX registrado sem assumir enquadramento; pode conter um ou mais quadros/bytes de estado.");
                     }
@@ -311,7 +311,7 @@ namespace ModernPC12
             int bursts = 0;
             DateTime start = DateTime.UtcNow;
             DateTime deadline = start.AddMilliseconds(PostStage2CaptureMs);
-            LogSafe("PG CAPTURE", "escuta passiva pos-F0 iniciada; nenhum novo byte sera transmitido.");
+            LogSafe("PG CAPTURE", "escuta passiva pos-F0 iniciada; nenhum novo byte será transmitido.");
 
             while (DateTime.UtcNow < deadline && !cancelRequested)
             {
@@ -348,29 +348,29 @@ namespace ModernPC12
 
             if (!handshakeConfirmed)
             {
-                SetState("●  HANDSHAKE NAO CONFIRMADO", Danger);
-                Log("RESULTADO", "C0 01 09 35 nao foi confirmado nesta execucao; F0 00 0F NAO foi enviado.");
+                SetState("●  HANDSHAKE NÃO CONFIRMADO", Danger);
+                Log("RESULTADO", "C0 01 09 35 não foi confirmado nesta execução; F0 00 0F NÃO foi enviado.");
                 if (!string.IsNullOrEmpty(error)) Log("DETALHE", error);
                 return;
             }
 
             if (!stage2Sent)
             {
-                SetState("●  LINK OK · ETAPA 2 NAO ENVIADA", Warning);
-                Log("RESULTADO", "Link PG confirmado, mas a etapa 2 nao chegou a ser transmitida.");
+                SetState("●  LINK OK · ETAPA 2 NÃO ENVIADA", Warning);
+                Log("RESULTADO", "Link PG confirmado, mas a etapa 2 não chegou a ser transmitida.");
                 if (!string.IsNullOrEmpty(error)) Log("DETALHE", error);
                 return;
             }
 
-            SetState("●  ETAPA 2 PG CONCLUIDA", Success);
+            SetState("●  ETAPA 2 PG CONCLUÍDA", Success);
             Log("RESULTADO", "HELLO confirmado e F0 00 0F transmitido exatamente uma vez.");
             if (stage2Received)
-                Log("RESULTADO", "Ha RX posterior a F0 00 0F no log; este e o dado principal para a proxima decodificacao.");
+                Log("RESULTADO", "Ha RX posterior a F0 00 0F no log; este é o dado principal para a próxima decodificação.");
             else
-                Log("RESULTADO", "Nao houve RX imediato apos F0 00 0F.");
+                Log("RESULTADO", "Não houve RX imediato após F0 00 0F.");
             if (postBursts > 0)
-                Log("RESULTADO", "Tambem houve " + postBursts.ToString(CultureInfo.InvariantCulture) + " burst(s) durante a escuta passiva posterior.");
-            Log("RESULTADO", "Nenhum terceiro comando foi transmitido. RUN/STOP/escrita/download/apagamento continuam bloqueados.");
+                Log("RESULTADO", "Também houve " + postBursts.ToString(CultureInfo.InvariantCulture) + " burst(s) durante a escuta passiva posterior.");
+            Log("RESULTADO", "Nenhum terceiro comando foi transmitido. RUN/STOP, escrita, transferência de programa e apagamento continuam bloqueados.");
             if (!string.IsNullOrEmpty(error)) Log("DETALHE", error);
         }
 

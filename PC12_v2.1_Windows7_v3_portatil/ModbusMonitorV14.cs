@@ -152,18 +152,18 @@ namespace ModernPC12
             AddDivider(left, y); y += 18;
             AddCaption(left, "LEITURA", y); y += 24;
 
-            AddSmallLabel(left, "Unit ID", 16, y);
+            AddSmallLabel(left, "ID da unidade", 16, y);
             unitBox = NewNumeric(left, 16, y + 18, 104, 1, 247, 1);
-            AddSmallLabel(left, "Timeout (ms)", 136, y);
+            AddSmallLabel(left, "Tempo limite (ms)", 136, y);
             timeoutBox = NewNumeric(left, 136, y + 18, 206, 100, 60000, 1000);
             y += 60;
 
             AddSmallLabel(left, "Função", 16, y);
             functionCombo = NewCombo(left, 16, y + 18, 326);
-            functionCombo.Items.Add("01 - Read Coils");
-            functionCombo.Items.Add("02 - Read Discrete Inputs");
-            functionCombo.Items.Add("03 - Read Holding Registers");
-            functionCombo.Items.Add("04 - Read Input Registers");
+            functionCombo.Items.Add("01 - Ler bobinas");
+            functionCombo.Items.Add("02 - Ler entradas discretas");
+            functionCombo.Items.Add("03 - Ler registradores de retenção");
+            functionCombo.Items.Add("04 - Ler registradores de entrada");
             functionCombo.SelectedIndex = 2;
             functionCombo.SelectedIndexChanged += delegate { UpdateQuantityLimit(); };
             y += 64;
@@ -264,18 +264,18 @@ namespace ModernPC12
             refresh.Click += delegate { RefreshPorts(); };
             parent.Controls.Add(refresh);
 
-            AddSmallLabel(parent, "Baud rate", 16, 62);
+            AddSmallLabel(parent, "Taxa de transmissão", 16, 62);
             baudCombo = NewCombo(parent, 16, 80, 148);
             baudCombo.Items.AddRange(new object[] { "1200", "2400", "4800", "9600", "19200", "38400", "57600", "115200" });
 
-            AddSmallLabel(parent, "Data bits", 180, 62);
+            AddSmallLabel(parent, "Bits de dados", 180, 62);
             dataBitsBox = NewNumeric(parent, 180, 80, 162, 5, 8, 8);
 
             AddSmallLabel(parent, "Paridade", 16, 122);
             parityCombo = NewCombo(parent, 16, 140, 148);
             parityCombo.Items.AddRange(new object[] { "None", "Even", "Odd" });
 
-            AddSmallLabel(parent, "Stop bits", 180, 122);
+            AddSmallLabel(parent, "Bits de parada", 180, 122);
             stopCombo = NewCombo(parent, 180, 140, 162);
             stopCombo.Items.AddRange(new object[] { "1", "2" });
         }
@@ -435,10 +435,10 @@ namespace ModernPC12
 
         private string AreaKindText(PlcMemoryAreaKind kind)
         {
-            if (kind == PlcMemoryAreaKind.Coil) return "Coils / FC01";
-            if (kind == PlcMemoryAreaKind.DiscreteInput) return "Discrete Inputs / FC02";
-            if (kind == PlcMemoryAreaKind.HoldingRegister) return "Holding Registers / FC03";
-            if (kind == PlcMemoryAreaKind.InputRegister) return "Input Registers / FC04";
+            if (kind == PlcMemoryAreaKind.Coil) return "Bobinas / FC01";
+            if (kind == PlcMemoryAreaKind.DiscreteInput) return "Entradas discretas / FC02";
+            if (kind == PlcMemoryAreaKind.HoldingRegister) return "Registradores de retenção / FC03";
+            if (kind == PlcMemoryAreaKind.InputRegister) return "Registradores de entrada / FC04";
             return "Específica do fabricante";
         }
 

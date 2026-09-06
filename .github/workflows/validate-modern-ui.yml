@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: openladder-studio-${{ github.ref }}
@@ -63,29 +63,35 @@ jobs:
           $logDir = Join-Path $env:APPDATA 'OpenLadder Studio\logs'
           if (Test-Path $logDir) { Remove-Item $logDir -Recurse -Force }
 
-          $process = Start-Process -FilePath '.\OpenLadderStudio.exe' -PassThru
-          Start-Sleep -Seconds 5
+          $process = $null
+          try {
+            $process = Start-Process -FilePath '.\OpenLadderStudio.exe' -PassThru
+            Start-Sleep -Seconds 5
 
-          $failureLogs = @()
-          if (Test-Path $logDir) {
-            $failureLogs = @(Get-ChildItem $logDir -Filter 'falhas-*.log' -File -ErrorAction SilentlyContinue)
-          }
-
-          if ($failureLogs.Count -gt 0) {
-            foreach ($log in $failureLogs) {
-              Write-Host "===== $($log.FullName) ====="
-              Get-Content $log.FullName
+            $failureLogs = @()
+            if (Test-Path $logDir) {
+              $failureLogs = @(Get-ChildItem $logDir -Filter 'falhas-*.log' -File -ErrorAction SilentlyContinue)
             }
-            if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
-            throw 'OpenLadder Studio registrou exceção durante a inicialização da interface.'
-          }
 
-          if ($process.HasExited) {
-            throw "OpenLadder Studio encerrou inesperadamente durante o teste de inicialização. ExitCode=$($process.ExitCode)"
-          }
+            if ($failureLogs.Count -gt 0) {
+              foreach ($log in $failureLogs) {
+                Write-Host "===== $($log.FullName) ====="
+                Get-Content $log.FullName
+              }
+              throw 'OpenLadder Studio registrou exceção durante a inicialização da interface.'
+            }
 
-          Stop-Process -Id $process.Id -Force
-          Write-Host 'Inicialização da interface validada sem exceções.'
+            if ($process.HasExited) {
+              throw "OpenLadder Studio encerrou inesperadamente durante o teste de inicialização. ExitCode=$($process.ExitCode)"
+            }
+
+            Write-Host 'Inicialização da interface validada sem exceções.'
+          }
+          finally {
+            if ($null -ne $process -and -not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
 
       - name: Preparar instalador
         shell: powershell
@@ -123,6 +129,7 @@ jobs:
             PC12_v2.1_Windows7_v3_portatil/OpenLadderModbus.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderMemoryMap.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderUpdater.exe
+            PC12_v2.1_Windows7_v3_portatil/OpenLadderTP02PgLink.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderTP02Capture.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderTP02PgLab.exe
             PC12_v2.1_Windows7_v3_portatil/OpenLadderSimulator.exe
@@ -137,8 +144,23 @@ jobs:
             installer/output/OpenLadder-Studio-Setup.exe
             installer/output/OpenLadder-Studio-Setup.exe.sha256
 
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Baixar instalador
+        uses: actions/download-artifact@v4
+        with:
+          name: OpenLadder-Studio-Setup
+          path: installer/output
+
       - name: Publicar Release para atualização automática
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}

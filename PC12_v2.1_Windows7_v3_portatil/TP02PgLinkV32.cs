@@ -127,7 +127,7 @@ namespace ModernPC12
             config.Controls.Add(frame);
 
             Label safety = new Label();
-            safety.Text = "TESTE SOMENTE DE LINK. Esta versão não envia RUN, STOP, escrita de registradores/bobinas nem download de programa.\r\nDepois do hello, somente o quadro de identificação F0 00 0F é transmitido; ambos foram extraídos do PC12 original.";
+            safety.Text = "TESTE SOMENTE DE LINK. Esta versão não envia RUN, STOP, escrita de registradores/bobinas nem transferência de programa.\r\nDepois do hello, somente o quadro de identificação F0 00 0F é transmitido; ambos foram extraídos do PC12 original.";
             safety.AutoSize = false;
             safety.Location = new Point(18, 132);
             safety.Size = new Size(1060, 44);

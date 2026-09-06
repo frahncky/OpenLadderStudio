@@ -272,14 +272,14 @@ namespace ModernPC12
 
             Panel card1 = NewCard(18, 18, 330, 194);
             host.Controls.Add(card1);
-            AddCardText(card1, "Editor Ladder", "Crie e edite rungs com contatos, bobinas, temporizadores, contadores, SET/RESET, bordas e funções especiais.");
+            AddCardText(card1, "Editor Ladder", "Crie e edite linhas com contatos, bobinas, temporizadores, contadores, SET/RESET, bordas e funções especiais.");
             Button openLadder = PrimaryButton("ABRIR LADDER", 20, 132, 142);
             openLadder.Click += delegate { ShowLadder(); };
             card1.Controls.Add(openLadder);
 
             Panel card2 = NewCard(366, 18, 330, 194);
             host.Controls.Add(card2);
-            AddCardText(card2, "TP02 Bridge", "Teste a porta serial, leia o status do PLC e analise os arquivos nativos do PC12 sem enviar comandos de escrita.");
+            AddCardText(card2, "TP02 Bridge", "Teste a porta serial, leia o estado do PLC e analise os arquivos nativos do PC12 sem enviar comandos de escrita.");
             Button openBridge = PrimaryButton("ABRIR BRIDGE", 20, 132, 142);
             openBridge.Click += delegate { ShowBridge(); };
             card2.Controls.Add(openBridge);
@@ -349,10 +349,10 @@ namespace ModernPC12
 
         private void ShowDecoder()
         {
-            PreparePage("Decodificação RBP", "Laboratório offline para mapear palavras de máquina para instruções Boolean/IL com evidência controlada.", navDecoder);
+            PreparePage("Decodificação RBP", "Laboratório off-line para mapear palavras de máquina para instruções Boolean/IL com evidência controlada.", navDecoder);
             if (decoderForm == null || decoderForm.IsDisposed) decoderForm = new TP02MachineDecoderForm();
             EmbedForm(decoderForm);
-            footerStatus.Text = "Decodificador offline ativo — nenhum acesso ao PLC.";
+            footerStatus.Text = "Decodificador off-line ativo — nenhum acesso ao PLC.";
         }
 
         private void ShowCalibration()
@@ -360,7 +360,7 @@ namespace ModernPC12
             PreparePage("Calibração de opcodes", "Inferência automática de campos de opcode e operando a partir de dumps RBP controlados.", navCalibration);
             if (calibrationForm == null || calibrationForm.IsDisposed) calibrationForm = new TP02OpcodeCalibrationForm();
             EmbedForm(calibrationForm);
-            footerStatus.Text = "Calibração offline ativa — use apenas dumps RBP já coletados.";
+            footerStatus.Text = "Calibração off-line ativa — use apenas dumps RBP já coletados.";
         }
 
         private void EmbedForm(Form child)
@@ -407,7 +407,7 @@ namespace ModernPC12
             host.Controls.Add(card);
             Label title = NewLabel("PC12 Studio TP02", 18.0f, FontStyle.Bold, Navy, 22, 20);
             card.Controls.Add(title);
-            Label text = NewLabel("Versão de desenvolvimento 0.6\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nO Studio possui leitura RBP, decodificação offline e calibração automática. A calibração agrupa amostras da mesma instrução com operandos diferentes para inferir a máscara do operando e compara instruções diferentes com o mesmo operando para isolar bits candidatos do opcode.\r\n\r\nNenhum padrão é considerado comprovado só por uma comparação. Comandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados nas ferramentas modernas.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
+            Label text = NewLabel("Versão de desenvolvimento 0.6\r\n\r\nObjetivo: manter compatibilidade com Windows 7 SP1 e versões posteriores, modernizar o editor Ladder, reproduzir com segurança o formato de projeto do PC12 e implementar comunicação direta com o WEG TP02.\r\n\r\nO Studio possui leitura RBP, decodificação off-line e calibração automática. A calibração agrupa amostras da mesma instrução com operandos diferentes para inferir a máscara do operando e compara instruções diferentes com o mesmo operando para isolar bits candidatos do opcode.\r\n\r\nNenhum padrão é considerado comprovado só por uma comparação. Comandos que possam alterar RUN/STOP, programa ou memória do PLC permanecem desabilitados nas ferramentas modernas.", 9.3f, FontStyle.Regular, TextSecondary, 24, 64);
             text.MaximumSize = new Size(760, 0);
             card.Controls.Add(text);
             footerStatus.Text = "PC12 Studio TP02 v0.6.";

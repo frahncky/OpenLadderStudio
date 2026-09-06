@@ -140,7 +140,7 @@ namespace ModernPC12
 
             text += "Driver: " + driver.DisplayName + ". Recursos atuais: " + driver.Capabilities.Summary() + ".\r\n";
             if (string.Equals(profile.DriverId, "weg.tp02.serial", StringComparison.OrdinalIgnoreCase))
-                text += "A leitura do TP02 está implementada, mas a geração e o download do programa Ladder ainda dependem da validação do compilador de destino.";
+                text += "A leitura do TP02 está implementada, mas a geração e a transferência do programa Ladder ainda dependem da validação do compilador de destino.";
             else if (string.Equals(profile.DriverId, "generic.modbus.rtu", StringComparison.OrdinalIgnoreCase) || string.Equals(profile.DriverId, "generic.modbus.tcp", StringComparison.OrdinalIgnoreCase))
                 text += "Modbus genérico suporta monitoramento, não compilação Ladder. Para programar o PLC será necessário um compilador específico da família do fabricante.";
             else

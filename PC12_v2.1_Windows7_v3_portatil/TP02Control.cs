@@ -61,7 +61,7 @@ namespace ModernPC12
             header.BackColor = Color.White;
             Controls.Add(header);
 
-            Label title = LabelAt("CONTROLE ONLINE - WEG TP02", 15.0f, FontStyle.Bold, Navy, 22, 12);
+            Label title = LabelAt("CONTROLE ON-LINE - WEG TP02", 15.0f, FontStyle.Bold, Navy, 22, 12);
             header.Controls.Add(title);
             Label sub = LabelAt("Ler, escrever e comandar RUN/STOP pelo protocolo TP02 ASCII", 8.8f, FontStyle.Regular, TextSecondary, 24, 43);
             header.Controls.Add(sub);
@@ -128,7 +128,7 @@ namespace ModernPC12
             test.Click += delegate { ReadStatus(); };
             config.Controls.Add(test);
 
-            Label note = LabelAt("Padrão TP02: 19200, 8O1, estação 01. Se não responder, use Monitor online > VARRER PARÂMETROS.", 8.3f, FontStyle.Regular, TextSecondary, 18, 108);
+            Label note = LabelAt("Padrão TP02: 19200, 8O1, estação 01. Se não responder, use Monitor on-line > VARRER PARÂMETROS.", 8.3f, FontStyle.Regular, TextSecondary, 18, 108);
             config.Controls.Add(note);
 
             Panel operations = new Panel();
@@ -177,7 +177,7 @@ namespace ModernPC12
             operations.Controls.Add(writeWord);
 
             Label safety = new Label();
-            safety.Text = "ATENÇÃO: SCS, WRV, RUN e STOP alteram o PLC real. Confirme que a máquina está em condição segura.\r\nCLR, WBP, ROM e comandos de apagamento/download permanecem desabilitados nesta tela.";
+            safety.Text = "ATENÇÃO: SCS, WRV, RUN e STOP alteram o PLC real. Confirme que a máquina está em condição segura.\r\nCLR, WBP, ROM e comandos de apagamento/transferência permanecem desabilitados nesta tela.";
             safety.AutoSize = false;
             safety.Location = new Point(520, 110);
             safety.Size = new Size(650, 76);
