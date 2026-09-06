@@ -120,4 +120,4 @@ $shell = Invoke-ReplaceText $shell '        private void RefreshProfileUi()' $me
 & (Join-Path $root 'PrepareStartupStabilityV70.ps1')
 & (Join-Path $root 'PrepareWorkspaceLayoutV72.ps1')
 & (Join-Path $root 'PrepareWorkspacePolishV73.ps1')
-& (Join-Path $root 'PrepareLadderZoomV74Fix2.ps1')
+& (Join-Path $root 'PrepareLadderZoomV74Fix3.ps1')
