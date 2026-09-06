@@ -84,7 +84,7 @@ $shell = Replace-Required $shell $oldMenu $newMenu 'menu principal'
 $shell = $shell.Replace('AddToolButton(bar, "Validar", StudioIcon.Check, false, delegate { InvokeLadder("ValidateProject", new object[] { true }); });', 'AddToolButton(bar, "Compilar", StudioIcon.Check, false, delegate { InvokeLadder("ValidateProject", new object[] { true }); });')
 $shell = $shell.Replace('AddToolButton(bar, "Comunicação", StudioIcon.Plug, false, delegate { ShowCommunication(); });', 'AddToolButton(bar, "Transferir", StudioIcon.Download, false, delegate { ShowCommunication(); });')
 $oldMonitor = 'AddToolButton(bar, "Monitor", StudioIcon.Monitor, false, delegate { ShowMonitor(); });'
-$newMonitor = $oldMonitor + "`r`n            AddToolButton(bar, \"Simulador\", StudioIcon.Bolt, false, delegate { ShowSimulator(); });"
+$newMonitor = $oldMonitor + [Environment]::NewLine + '            AddToolButton(bar, "Simulador", StudioIcon.Bolt, false, delegate { ShowSimulator(); });'
 if ($shell.Contains($oldMonitor) -and -not $shell.Contains('"Simulador", StudioIcon.Bolt')) { $shell = $shell.Replace($oldMonitor, $newMonitor) }
 
 # Barra mais alta e respirada.
