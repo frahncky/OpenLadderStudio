@@ -88,43 +88,42 @@ function Preserve-Case([string]$source, [string]$target) {
 }
 
 function Apply-UiLanguage([string]$literal) {
-    $replacements = [ordered]@{
-        'Monitor online' = 'Monitor on-line';
-        'Monitoramento online' = 'Monitoramento on-line';
-        'monitoramento online' = 'monitoramento on-line';
-        'Offline' = 'Off-line';
-        'ONLINE' = 'ON-LINE';
-        'OFFLINE' = 'OFF-LINE';
-        'Online' = 'On-line';
-        'Baud rate' = 'Taxa de transmiss\u00E3o';
-        'Data bits' = 'Bits de dados';
-        'Stop bits' = 'Bits de parada';
-        'Unit ID' = 'ID da unidade';
-        'Timeout (ms)' = 'Tempo limite (ms)';
-        '01 - Read Coils' = '01 - Ler bobinas';
-        '02 - Read Discrete Inputs' = '02 - Ler entradas discretas';
-        '03 - Read Holding Registers' = '03 - Ler registradores de reten\u00E7\u00E3o';
-        '04 - Read Input Registers' = '04 - Ler registradores de entrada';
-        'Coils / FC01' = 'Bobinas / FC01';
-        'Discrete Inputs / FC02' = 'Entradas discretas / FC02';
-        'Holding Registers / FC03' = 'Registradores de reten\u00E7\u00E3o / FC03';
-        'Input Registers / FC04' = 'Registradores de entrada / FC04';
-        'O programa n\u00E3o possui rungs.' = 'O programa n\u00E3o possui linhas Ladder.';
-        'Programa sem END: todos os rungs ser\u00E3o executados em cada varredura.' = 'Programa sem END: todas as linhas Ladder ser\u00E3o executadas em cada varredura.';
-        'Energiza\u00E7\u00E3o dos rungs' = 'Energiza\u00E7\u00E3o das linhas Ladder';
-        '\u00DAltimo rung n\u00E3o foi fechado com OUT.' = 'A \u00FAltima linha n\u00E3o foi fechada com OUT.';
-        'RUN/STOP/escrita/download/apagamento' = 'RUN/STOP, escrita, transfer\u00EAncia de programa e apagamento';
-        'download de programa Ladder' = 'transfer\u00EAncia do programa Ladder';
-        'download do programa Ladder' = 'transfer\u00EAncia do programa Ladder';
-        'download Ladder' = 'transfer\u00EAncia do programa Ladder';
-        'status do PLC' = 'estado do PLC';
-        'Status do PLC' = 'Estado do PLC'
-    }
-    foreach ($key in $replacements.Keys) {
-        $literal = $literal.Replace((Decode-U $key), (Decode-U $replacements[$key]))
+    $replacements = @(
+        @('Monitor online', 'Monitor on-line'),
+        @('Monitoramento online', 'Monitoramento on-line'),
+        @('monitoramento online', 'monitoramento on-line'),
+        @('OFFLINE', 'OFF-LINE'),
+        @('Offline', 'Off-line'),
+        @('ONLINE', 'ON-LINE'),
+        @('Online', 'On-line'),
+        @('Baud rate', 'Taxa de transmiss\u00E3o'),
+        @('Data bits', 'Bits de dados'),
+        @('Stop bits', 'Bits de parada'),
+        @('Unit ID', 'ID da unidade'),
+        @('Timeout (ms)', 'Tempo limite (ms)'),
+        @('01 - Read Coils', '01 - Ler bobinas'),
+        @('02 - Read Discrete Inputs', '02 - Ler entradas discretas'),
+        @('03 - Read Holding Registers', '03 - Ler registradores de reten\u00E7\u00E3o'),
+        @('04 - Read Input Registers', '04 - Ler registradores de entrada'),
+        @('Coils / FC01', 'Bobinas / FC01'),
+        @('Discrete Inputs / FC02', 'Entradas discretas / FC02'),
+        @('Holding Registers / FC03', 'Registradores de reten\u00E7\u00E3o / FC03'),
+        @('Input Registers / FC04', 'Registradores de entrada / FC04'),
+        @('O programa n\u00E3o possui rungs.', 'O programa n\u00E3o possui linhas Ladder.'),
+        @('Programa sem END: todos os rungs ser\u00E3o executados em cada varredura.', 'Programa sem END: todas as linhas Ladder ser\u00E3o executadas em cada varredura.'),
+        @('Energiza\u00E7\u00E3o dos rungs', 'Energiza\u00E7\u00E3o das linhas Ladder'),
+        @('\u00DAltimo rung n\u00E3o foi fechado com OUT.', 'A \u00FAltima linha n\u00E3o foi fechada com OUT.'),
+        @('RUN/STOP/escrita/download/apagamento', 'RUN/STOP, escrita, transfer\u00EAncia de programa e apagamento'),
+        @('download de programa Ladder', 'transfer\u00EAncia do programa Ladder'),
+        @('download do programa Ladder', 'transfer\u00EAncia do programa Ladder'),
+        @('download Ladder', 'transfer\u00EAncia do programa Ladder'),
+        @('status do PLC', 'estado do PLC'),
+        @('Status do PLC', 'Estado do PLC')
+    )
+    foreach ($pair in $replacements) {
+        $literal = $literal.Replace((Decode-U $pair[0]), (Decode-U $pair[1]))
     }
 
-    # Prefixos de diagnostico exibidos ao usuario.
     $literal = [regex]::Replace($literal, '(?<![A-Za-z])Rung(?=\s)', 'Linha', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
     return $literal
 }
@@ -132,7 +131,6 @@ function Apply-UiLanguage([string]$literal) {
 function Normalize-Literal([string]$literal) {
     $literal = Repair-Mojibake $literal
 
-    # Chaves internas simples em minusculas (ex.: "area", "version") nao sao texto de interface.
     if ($literal -cmatch '^@?"[a-z][a-z0-9_.-]*"$') { return $literal }
 
     $literal = Apply-UiLanguage $literal
@@ -145,15 +143,15 @@ function Normalize-Literal([string]$literal) {
         return Preserve-Case $word $map[$key]
     })
 
-    $phraseMap = @{
-        ' e confirmado' = ' \u00E9 confirmado';
-        ' e transmitido' = ' \u00E9 transmitido';
-        ' e enviado' = ' \u00E9 enviado';
-        ' este e o dado' = ' este \u00E9 o dado';
-        ' etapa e decodificar' = ' etapa \u00E9 decodificar';
-        ' link e confirmado' = ' link \u00E9 confirmado'
-    }
-    foreach ($p in $phraseMap.Keys) { $literal = $literal.Replace($p, (Decode-U $phraseMap[$p])) }
+    $phraseMap = @(
+        @(' e confirmado', ' \u00E9 confirmado'),
+        @(' e transmitido', ' \u00E9 transmitido'),
+        @(' e enviado', ' \u00E9 enviado'),
+        @(' este e o dado', ' este \u00E9 o dado'),
+        @(' etapa e decodificar', ' etapa \u00E9 decodificar'),
+        @(' link e confirmado', ' link \u00E9 confirmado')
+    )
+    foreach ($pair in $phraseMap) { $literal = $literal.Replace($pair[0], (Decode-U $pair[1])) }
     return $literal
 }
 
@@ -162,7 +160,7 @@ $changedStrings = 0
 $files = Get-ChildItem -Path $root -Filter '*.cs' -File | Sort-Object Name
 foreach ($file in $files) {
     $text = [System.IO.File]::ReadAllText($file.FullName)
-    $localCount = 0
+    $script:localCount = 0
     $newText = [regex]::Replace($text, $stringPattern, {
         param($m)
         $fixed = Normalize-Literal $m.Value
@@ -170,10 +168,10 @@ foreach ($file in $files) {
         return $fixed
     }, [System.Text.RegularExpressions.RegexOptions]::Singleline)
 
-    if ($localCount -gt 0) {
+    if ($script:localCount -gt 0) {
         [System.IO.File]::WriteAllText($file.FullName, $newText, $utf8)
         $changedFiles++
-        Write-Host ('PT-BR normalizado: {0} ({1} string(s))' -f $file.Name, $localCount)
+        Write-Host ('PT-BR normalizado: {0} ({1} string(s))' -f $file.Name, $script:localCount)
     }
 }
 
