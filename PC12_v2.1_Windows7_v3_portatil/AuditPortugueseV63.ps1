@@ -3,7 +3,7 @@ $root = Get-Location
 
 $pattern = '@"(?:[^"]|"")*"|"(?:\\.|[^"\\])*"'
 $suspicious = '(?i)(?<![\p{L}])(nao|versao|versoes|atualizacao|atualizacoes|configuracao|configuracoes|conexao|conexoes|simulacao|programacao|comunicacao|comunicacoes|informacao|informacoes|selecao|operacao|operacoes|opcao|opcoes|parametro|parametros|posicao|posicoes|edicao|alteracao|alteracoes|execucao|validacao|verificacao|disponivel|possivel|compativel|invalido|invalida|necessario|necessaria|necessarios|necessarias|memoria|diagnostico|historico|padrao|padroes|ultima|ultimo|proxima|proximo|propria|proprio|usuario|usuarios|endereco|enderecos|funcao|funcoes|acao|acoes|situacao|solucao|aplicacao|aplicacoes|comando|comandos)(?![\p{L}])'
-$mojibake = 'Ã.|Â.|â€|ï¿½|�'
+$mojibake = '\u00C3.|\u00C2.|\uFFFD|\u00E2\u20AC'
 
 $findings = New-Object System.Collections.Generic.List[string]
 $files = Get-ChildItem -Path $root -Filter '*.cs' -File | Sort-Object Name
@@ -25,8 +25,8 @@ if ($findings.Count -gt 0) {
     Write-Host ''
     Write-Host '=== AUDITORIA PT-BR: textos suspeitos ===' -ForegroundColor Yellow
     $findings | Sort-Object -Unique | ForEach-Object { Write-Host $_ }
-    Write-Host ('Total: {0} ocorrência(s).' -f $findings.Count) -ForegroundColor Yellow
-    throw 'A auditoria de português encontrou textos que precisam de revisão.'
+    Write-Host ('Total: {0} ocorrencia(s).' -f $findings.Count) -ForegroundColor Yellow
+    throw 'A auditoria de portugues encontrou textos que precisam de revisao.'
 }
 
-Write-Host 'Auditoria PT-BR concluída sem textos suspeitos.'
+Write-Host 'Auditoria PT-BR concluida sem textos suspeitos.'
