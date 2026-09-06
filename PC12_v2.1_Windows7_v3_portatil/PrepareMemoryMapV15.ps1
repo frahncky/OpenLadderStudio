@@ -16,4 +16,3 @@ a.Length = ParseNumber(Cell(row, "length", "1"), 1, 65536, "Tamanho");
 $v68 = Join-Path (Get-Location) 'PrepareVisualStudioV68.ps1'
 if (-not (Test-Path $v68)) { throw 'PrepareVisualStudioV68.ps1 nao encontrado.' }
 & $v68
-if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) { throw 'Falha ao aplicar a interface V68.' }
