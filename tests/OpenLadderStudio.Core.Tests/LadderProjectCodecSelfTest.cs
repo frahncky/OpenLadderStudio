@@ -22,17 +22,17 @@ namespace OpenLadderStudio.Core.Tests
             Console.WriteLine();
             if (failures == 0)
             {
-                Console.WriteLine("Todas as verificacoes passaram.");
+                Console.WriteLine("Todas as verificações passaram.");
                 return 0;
             }
 
-            Console.WriteLine(failures.ToString(CultureInfo.InvariantCulture) + " verificacao(oes) falharam.");
+            Console.WriteLine(failures.ToString(CultureInfo.InvariantCulture) + " verificação(ões) falharam.");
             return 1;
         }
 
         private static void TestVersionTwoRoundTrip()
         {
-            Section("Formato atual e ramificacoes");
+            Section("Formato atual e ramificações");
 
             LadderProjectDocument source = new LadderProjectDocument();
             LadderProjectRung first = new LadderProjectRung();
@@ -56,11 +56,11 @@ namespace OpenLadderStudio.Core.Tests
             string encoded = LadderProjectCodec.Serialize(source);
             LadderProjectDocument restored = LadderProjectCodec.Deserialize(encoded);
 
-            Check("cabecalho atual gravado", encoded.StartsWith(LadderProjectCodec.CurrentHeader + Environment.NewLine, StringComparison.Ordinal));
+            Check("cabeçalho atual gravado", encoded.StartsWith(LadderProjectCodec.CurrentHeader + Environment.NewLine, StringComparison.Ordinal));
             Check("caracteres reservados escapados", encoded.IndexOf("Sinal%20com%20espaco%20%2F%20acao", StringComparison.Ordinal) >= 0);
             Check("quantidade de rungs preservada", restored.Rungs.Count == source.Rungs.Count);
             Check("todos os elementos preservados", DocumentsEqual(source, restored));
-            Check("ramificacao paralela preservada", restored.Rungs[0].Parallel[0].Kind == LadderProjectElementKind.ContactNormallyClosed);
+            Check("ramificação paralela preservada", restored.Rungs[0].Parallel[0].Kind == LadderProjectElementKind.ContactNormallyClosed);
         }
 
         private static void TestLegacyImport()
@@ -77,8 +77,8 @@ namespace OpenLadderStudio.Core.Tests
             Check("contato NA legado convertido", document.Rungs[0].Series[0].Kind == LadderProjectElementKind.ContactNormallyOpen);
             Check("contato NF legado convertido", document.Rungs[0].Series[1].Kind == LadderProjectElementKind.ContactNormallyClosed);
             Check("bobina legada convertida", document.Rungs[0].Series[7].Kind == LadderProjectElementKind.Coil);
-            Check("ramificacoes legadas permanecem vazias", document.Rungs[0].Parallel[0].Kind == LadderProjectElementKind.Empty);
-            Check("nova gravacao migra para versao 2", LadderProjectCodec.Serialize(document).StartsWith(LadderProjectCodec.CurrentHeader, StringComparison.Ordinal));
+            Check("ramificações legadas permanecem vazias", document.Rungs[0].Parallel[0].Kind == LadderProjectElementKind.Empty);
+            Check("nova gravação migra para versão 2", LadderProjectCodec.Serialize(document).StartsWith(LadderProjectCodec.CurrentHeader, StringComparison.Ordinal));
         }
 
         private static void TestEmptyDocumentFallback()
@@ -93,9 +93,9 @@ namespace OpenLadderStudio.Core.Tests
         {
             Section("Recusa de arquivos corrompidos");
 
-            Check("cabecalho desconhecido recusado", ThrowsInvalidData(delegate { LadderProjectCodec.Deserialize("OUTRO|9\n"); }));
+            Check("cabeçalho desconhecido recusado", ThrowsInvalidData(delegate { LadderProjectCodec.Deserialize("OUTRO|9\n"); }));
             Check("rung com colunas faltando recusado", ThrowsInvalidData(delegate { LadderProjectCodec.Deserialize(LadderProjectCodec.CurrentHeader + "\nRUNG|EMPTY\n"); }));
-            Check("terceira ramificacao recusada", ThrowsInvalidData(delegate
+            Check("terceira ramificação recusada", ThrowsInvalidData(delegate
             {
                 LadderProjectCodec.Deserialize(LadderProjectCodec.CurrentHeader + "\nRUNG|EMPTY~EMPTY~EMPTY|EMPTY|EMPTY|EMPTY|EMPTY|EMPTY|EMPTY|EMPTY\n");
             }));
