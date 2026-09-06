@@ -56,7 +56,7 @@ $nav = @'
         }
 
 '@
-$shell = Replace-Section $shell '        private Panel BuildNav()' '        private Panel BuildSidebarGroup' $nav 'painel Projeto')
+$shell = Replace-Section $shell '        private Panel BuildNav()' '        private Panel BuildSidebarGroup' $nav 'painel Projeto'
 
 # -----------------------------------------------------------------------------
 # Biblioteca Ladder vira uma paleta independente, a direita, com busca e todos
@@ -78,7 +78,7 @@ $inspector = @'
         }
 
 '@
-$shell = Replace-Section $shell '        private Panel BuildInspector()' '        private Panel BuildStatusBar()' $inspector 'paleta de instrucoes')
+$shell = Replace-Section $shell '        private Panel BuildInspector()' '        private Panel BuildStatusBar()' $inspector 'paleta de instrucoes'
 
 # Nomenclatura visual conforme o conceito aprovado.
 $shell = $shell.Replace('ELEMENTOS LADDER', 'INSTRUÇÕES')
@@ -119,7 +119,7 @@ $projectMethod = @'
         }
 
 '@
-$shell = Replace-Section $shell '        private void UpdateProjectName()' '        private void SetRailEnabled' $projectMethod 'titulo do projeto')
+$shell = Replace-Section $shell '        private void UpdateProjectName()' '        private void SetRailEnabled' $projectMethod 'titulo do projeto'
 
 # Ajustes de densidade: mais area para o canvas sem perder os tres paineis.
 $shell = $shell.Replace('consolePanel.Height = 150;', 'consolePanel.Height = 132;')
