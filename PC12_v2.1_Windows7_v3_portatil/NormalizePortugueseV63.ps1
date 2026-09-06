@@ -102,11 +102,14 @@ $uiReplacementRaw = @(
     @('Energiza\u00E7\u00E3o dos rungs', 'Energiza\u00E7\u00E3o das linhas Ladder'),
     @('\u00DAltimo rung n\u00E3o foi fechado com OUT.', 'A \u00FAltima linha n\u00E3o foi fechada com OUT.'),
     @('RUN/STOP/escrita/download/apagamento', 'RUN/STOP, escrita, transfer\u00EAncia de programa e apagamento'),
+    @('o download de programa Ladder', 'a transfer\u00EAncia do programa Ladder'),
+    @('o download do programa Ladder', 'a transfer\u00EAncia do programa Ladder'),
     @('download de programa Ladder', 'transfer\u00EAncia do programa Ladder'),
     @('download do programa Ladder', 'transfer\u00EAncia do programa Ladder'),
     @('download Ladder', 'transfer\u00EAncia do programa Ladder'),
     @('status do PLC', 'estado do PLC'),
-    @('Status do PLC', 'Estado do PLC')
+    @('Status do PLC', 'Estado do PLC'),
+    @('Falha no download.', 'Falha na transfer\u00EAncia.')
 )
 $uiReplacements = @()
 foreach ($pair in $uiReplacementRaw) { $uiReplacements += ,@((Decode-U $pair[0]), (Decode-U $pair[1])) }
@@ -137,9 +140,29 @@ function Replace-Term([string]$text, [string]$pattern, [string]$target) {
     }, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 }
 
+# Literais que nao sao texto de interface: URL, identificador de API em
+# snake_case, padrao de expressao regular e caminho tecnico. Traduzir qualquer
+# um deles quebra o produto em silencio. Foi assim que browser_download_url
+# virou browser_transferencia_url e o atualizador das versoes 0.66 a 0.68
+# deixou de encontrar o instalador publicado na release.
+#
+# Se um literal precisar misturar URL e texto de interface, separe os dois: a
+# parte de texto volta a ser normalizada e a parte tecnica continua intacta.
+function Is-TechnicalLiteral([string]$literal) {
+    if ($literal -match '://') { return $true }
+    if ($literal -match '[A-Za-z0-9]+_[A-Za-z0-9]') { return $true }
+    if ($literal -match '\\\\[sdwSDW]') { return $true }
+    if ($literal -match '\[\^') { return $true }
+    if ($literal -match '\(\?') { return $true }
+    return $false
+}
+
 function Normalize-Literal([string]$literal) {
+    # O reparo de mojibake vale para todo literal: e correcao de codificacao,
+    # nao traducao. A traducao para de agir a partir daqui.
     $literal = Repair-Mojibake $literal
     if ($literal -cmatch '^@?"[a-z][a-z0-9_.-]*"$') { return $literal }
+    if (Is-TechnicalLiteral $literal) { return $literal }
 
     foreach ($pair in $uiReplacements) { $literal = $literal.Replace($pair[0], $pair[1]) }
 

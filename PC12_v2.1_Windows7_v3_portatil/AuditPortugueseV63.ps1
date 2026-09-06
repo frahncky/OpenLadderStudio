@@ -67,14 +67,29 @@ foreach ($token in $requiredTechnicalTokens) {
     }
 }
 
+# O caminho da pasta portatil aparece com e sem barra final; so e corrupcao
+# quando 'port' nao e seguido de 'atil' terminando o token.
 $forbiddenPatterns = @(
     'browser_(?!download_url)[^"''\s\\]*?_url',
     '(?i)github\.com/frahncky/OpenLadderStudio/releases/(?!download/)[^/"''\\]+/',
-    '(?i)PC12_v2\.1_Windows7_v3_port(?!atil/)[^/"''\\]*'
+    '(?i)PC12_v2\.1_Windows7_v3_port(?!atil(?![A-Za-z]))[^/"''\\]*'
 )
 foreach ($rx in $forbiddenPatterns) {
     if ([regex]::IsMatch($updaterText, $rx)) {
         throw "Updater contem token tecnico corrompido: $rx"
+    }
+}
+
+# A corrupcao nao e exclusiva do updater: qualquer URL ou identificador de API
+# traduzido quebra o produto em silencio. Desde que o normalizador passou a
+# pular literais tecnicos isso nao deve mais acontecer, e esta varredura existe
+# para que uma regressao apareca no build em vez de chegar ao usuario.
+foreach ($file in $sourceFiles) {
+    $sourceText = [System.IO.File]::ReadAllText($file.FullName)
+    foreach ($rx in $forbiddenPatterns) {
+        if ([regex]::IsMatch($sourceText, $rx)) {
+            throw ('{0} contem token tecnico corrompido: {1}' -f $file.Name, $rx)
+        }
     }
 }
 

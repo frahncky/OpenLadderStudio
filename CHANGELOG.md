@@ -2,6 +2,18 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.70] - 2026-09-06
+
+### Normalização PT-BR
+- a normalização passa a pular literais que não são texto de interface: URLs, identificadores de API em snake_case, padrões de expressão regular e caminhos técnicos;
+- a corrupção de token técnico passa a ser evitada na origem; o reparo no build permanece apenas como rede de segurança;
+- a varredura de tokens corrompidos passa a cobrir todos os fontes, não só o atualizador;
+- corrigida a concordância de "download" traduzido: "Falha no download." gerava "Falha no transferência.".
+
+### Atualização automática
+- removida a ponte de compatibilidade das notas da v0.69: no corpo da release as aspas voltam escapadas, então a expressão regular do cliente antigo nunca casa;
+- documentado que as versões 0.66, 0.67 e 0.68 exigem uma instalação manual, por terem sido publicadas com o atualizador corrompido.
+
 ## [0.67] - 2026-09-06
 
 ### Ferramentas e navegação
