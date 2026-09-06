@@ -35,10 +35,9 @@ foreach ($item in $copies) {
 }
 
 # Compatibilidade do atualizador com Windows 7.
-# A API de releases continua sendo o caminho principal. Se o WebClient não conseguir
-# consultar api.github.com, tenta o version.txt bruto e constrói URLs previsíveis da release.
-# Se ambos falharem, oferece abertura da página de releases no navegador em vez de apenas
-# mostrar "Falha de conexão" sem alternativa.
+# A API de releases informa a versão disponível. Os URLs dos dois assets são montados
+# diretamente pelo padrão estável da release, evitando depender da ordem dos campos do
+# JSON retornado pelo GitHub (causa do falso "Pacote de atualização incompleto").
 $updaterBuild = Join-Path $root 'PC12Updater.build.cs'
 $updaterText = [System.IO.File]::ReadAllText($updaterBuild)
 
@@ -85,8 +84,6 @@ $checkReplacement = @'
                 {
                     string json = wc.DownloadString(RepoApi);
                     latestVersion = Extract(json, "\\\"tag_name\\\"\\s*:\\s*\\\"v?([^\\\"]+)\\\"");
-                    setupUrl = ExtractAssetUrl(json, SetupAssetName);
-                    hashUrl = ExtractAssetUrl(json, HashAssetName);
                 }
             }
             catch (Exception ex)
@@ -103,11 +100,6 @@ $checkReplacement = @'
                     {
                         latestVersion = (wc.DownloadString(RawVersionUrl) ?? string.Empty).Trim().TrimStart('v', 'V');
                     }
-                    if (!Regex.IsMatch(latestVersion, "^\\d+(?:\\.\\d+){1,2}$"))
-                        throw new InvalidDataException("Versão remota inválida.");
-
-                    setupUrl = "https://github.com/frahncky/OpenLadderStudio/releases/download/v" + latestVersion + "/" + SetupAssetName;
-                    hashUrl = "https://github.com/frahncky/OpenLadderStudio/releases/download/v" + latestVersion + "/" + HashAssetName;
                     statusLabel.Text = "Conectado em modo de compatibilidade.";
                 }
                 catch (Exception fallbackEx)
@@ -128,20 +120,20 @@ $checkReplacement = @'
 
             try
             {
-                if (string.IsNullOrEmpty(latestVersion)) throw new InvalidDataException("Versão inválida.");
+                latestVersion = (latestVersion ?? string.Empty).Trim().TrimStart('v', 'V');
+                if (!Regex.IsMatch(latestVersion, "^\\d+(?:\\.\\d+){1,2}$"))
+                    throw new InvalidDataException("Versão remota inválida.");
+
+                # URLs previsíveis e independentes do formato/ordem do JSON da API.
+                setupUrl = "https://github.com/frahncky/OpenLadderStudio/releases/download/v" + latestVersion + "/" + SetupAssetName;
+                hashUrl = "https://github.com/frahncky/OpenLadderStudio/releases/download/v" + latestVersion + "/" + HashAssetName;
+
                 availableLabel.Text = "v" + latestVersion;
 
                 if (CompareVersions(latestVersion, currentVersion) <= 0)
                 {
                     statusLabel.ForeColor = Success;
                     statusLabel.Text = "Versão atualizada.";
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(setupUrl) || string.IsNullOrEmpty(hashUrl))
-                {
-                    statusLabel.ForeColor = Warning;
-                    statusLabel.Text = "Pacote de atualização incompleto.";
                     return;
                 }
 
@@ -152,8 +144,12 @@ $checkReplacement = @'
             }
             catch (Exception ex)
             {
+                setupUrl = string.Empty;
+                hashUrl = string.Empty;
                 statusLabel.ForeColor = Warning;
                 statusLabel.Text = "Falha: " + ex.Message;
+                updateButton.Text = "ABRIR RELEASE";
+                updateButton.Enabled = true;
             }
             finally
             {
@@ -180,6 +176,8 @@ $checkReplacement = @'
         }
 
 '@
+# Corrige comentário C# inserido no here-string antes de gravar o código gerado.
+$checkReplacement = $checkReplacement.Replace('                # URLs previsíveis e independentes do formato/ordem do JSON da API.', '                // URLs previsíveis e independentes do formato/ordem do JSON da API.')
 $updaterText = Replace-Section $updaterText '        private void CheckForUpdates()' '        private void DownloadAndInstall()' $checkReplacement 'CheckForUpdates'
 
 $oldTls = @'
