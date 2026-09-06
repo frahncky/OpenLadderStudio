@@ -85,9 +85,15 @@ namespace ModernPC12
                         break;
 
                     case StudioIcon.Save:
-                        g.DrawRectangle(p, x + w * 0.14f, y + h * 0.14f, w * 0.72f, h * 0.72f);
-                        g.DrawRectangle(p, x + w * 0.32f, y + h * 0.14f, w * 0.36f, h * 0.26f);
-                        g.DrawRectangle(p, x + w * 0.28f, y + h * 0.56f, w * 0.44f, h * 0.30f);
+                        // Disquete: corpo com canto superior direito chanfrado,
+                        // obturador no topo e etiqueta na base.
+                        g.DrawPolygon(p, new PointF[] {
+                            new PointF(x + w * 0.18f, y + h * 0.16f), new PointF(x + w * 0.66f, y + h * 0.16f),
+                            new PointF(x + w * 0.84f, y + h * 0.34f), new PointF(x + w * 0.84f, y + h * 0.84f),
+                            new PointF(x + w * 0.18f, y + h * 0.84f) });
+                        g.DrawRectangle(p, x + w * 0.34f, y + h * 0.52f, w * 0.32f, h * 0.32f);
+                        g.DrawLine(p, x + w * 0.36f, y + h * 0.16f, x + w * 0.36f, y + h * 0.34f);
+                        g.DrawLine(p, x + w * 0.58f, y + h * 0.16f, x + w * 0.58f, y + h * 0.34f);
                         break;
 
                     case StudioIcon.Undo:
@@ -149,15 +155,22 @@ namespace ModernPC12
                         break;
 
                     case StudioIcon.Gear:
-                        g.DrawEllipse(p, x + w * 0.30f, y + h * 0.30f, w * 0.40f, h * 0.40f);
-                        for (int i = 0; i < 8; i++)
+                    {
+                        // Engrenagem real: contorno de 16 pontos alternando raio
+                        // externo/interno (dentes) e furo central.
+                        PointF[] teeth = new PointF[16];
+                        for (int i = 0; i < 16; i++)
                         {
-                            double a = Math.PI * i / 4.0;
-                            g.DrawLine(p,
-                                (float)(cx + Math.Cos(a) * w * 0.30f), (float)(cy + Math.Sin(a) * h * 0.30f),
-                                (float)(cx + Math.Cos(a) * w * 0.46f), (float)(cy + Math.Sin(a) * h * 0.46f));
+                            double a = Math.PI * i / 8.0 - Math.PI / 2.0;
+                            float rad = (i % 2 == 0) ? 0.46f : 0.34f;
+                            teeth[i] = new PointF(
+                                (float)(cx + Math.Cos(a) * w * rad),
+                                (float)(cy + Math.Sin(a) * h * rad));
                         }
+                        g.DrawPolygon(p, teeth);
+                        g.DrawEllipse(p, cx - w * 0.12f, cy - h * 0.12f, w * 0.24f, h * 0.24f);
                         break;
+                    }
 
                     case StudioIcon.Ladder:
                         g.DrawLine(p, x + w * 0.14f, y + h * 0.10f, x + w * 0.14f, y + h * 0.90f);
