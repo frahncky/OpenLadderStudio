@@ -30,6 +30,7 @@ function Has-Mojibake([string]$value) {
 }
 
 function Has-UnaccentedWord([string]$value) {
+    if ($value -cmatch '^@?"[a-z][a-z0-9_.-]*"$') { return $false }
     $tokens = [regex]::Matches($value, '(?<![A-Za-z])[A-Za-z]+(?![A-Za-z])')
     foreach ($token in $tokens) {
         if ($badWords.Contains($token.Value)) { return $true }
