@@ -276,19 +276,45 @@ namespace OpenLadderStudio.Core
 
         private static string Escape(string value)
         {
-            return Uri.EscapeDataString(value == null ? string.Empty : value);
+            // O til (~) e um separador estrutural da versao 2, mas
+            // Uri.EscapeDataString o considera um caractere nao reservado.
+            // Escape-o explicitamente para que o arquivo gerado possa ser lido
+            // sem criar uma terceira ramificacao na celula.
+            return Uri.EscapeDataString(value == null ? string.Empty : value).Replace("~", "%7E");
         }
 
         private static string Unescape(string value, int line, int column)
         {
+            string encoded = value == null ? string.Empty : value;
+
+            for (int index = 0; index < encoded.Length; index++)
+            {
+                if (encoded[index] != '%') continue;
+                if (index + 2 >= encoded.Length ||
+                    !IsHexDigit(encoded[index + 1]) ||
+                    !IsHexDigit(encoded[index + 2]))
+                {
+                    throw InvalidCell(line, column, "sequencia de escape invalida");
+                }
+
+                index += 2;
+            }
+
             try
             {
-                return Uri.UnescapeDataString(value == null ? string.Empty : value);
+                return Uri.UnescapeDataString(encoded);
             }
             catch (UriFormatException)
             {
                 throw InvalidCell(line, column, "sequencia de escape invalida");
             }
+        }
+
+        private static bool IsHexDigit(char value)
+        {
+            return (value >= '0' && value <= '9') ||
+                   (value >= 'A' && value <= 'F') ||
+                   (value >= 'a' && value <= 'f');
         }
 
         private static InvalidDataException InvalidCell(int line, int column, string reason)

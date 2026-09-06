@@ -4,8 +4,11 @@ cd /d "%~dp0"
 
 set "CSC="
 if exist "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" set "CSC=%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe"
-if not defined CSC if exist "%WINDIR%\Microsoft.NET\Framework\v3.5\csc.exe" set "CSC=%WINDIR%\Microsoft.NET\Framework\v3.5\csc.exe"
-if not defined CSC exit /b 1
+if not defined CSC (
+  echo ERRO: .NET Framework 4.0 ou superior nao foi encontrado.
+  echo Instale o .NET Framework 4.x antes de compilar o OpenLadder Studio.
+  exit /b 1
+)
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0GenerateOpenLadderIcon.ps1"
 if errorlevel 1 goto :erro

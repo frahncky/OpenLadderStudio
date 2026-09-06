@@ -2,7 +2,7 @@
 
 ## Limites atuais
 
-O produto ainda e compilado diretamente pelo `csc.exe` do .NET Framework a partir de `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat`. Esse script lista cada arquivo de fonte de forma explicita e produz varios executaveis Windows Forms.
+O produto ainda e compilado diretamente pelo `csc.exe` do .NET Framework 4.x a partir de `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat`. Esse script lista cada arquivo de fonte de forma explicita e produz varios executaveis Windows Forms. O fallback para o compilador 3.5 nao e suportado porque o codigo usa APIs introduzidas no .NET 4.
 
 Por isso, a pasta portatil e uma fronteira de compatibilidade: fontes existentes nao devem ser movidas ou renomeadas sem atualizar e validar todas as invocacoes do compilador. Arquivos `*.build.cs` sao temporarios e gerados durante o build.
 
@@ -19,7 +19,7 @@ src/
   OpenLadderStudio.UI/
 ```
 
-O primeiro codigo extraido, o codec do formato `.pladder`, esta em `src/OpenLadderStudio.Core/LadderProject.cs`. Ele nao depende de WinForms e permanece compativel com .NET Framework. A UI consome casos de uso; drivers implementam contratos do Core; o Core nao conhece UI ou protocolos concretos.
+O primeiro codigo extraido, o codec do formato `.pladder`, esta em `src/OpenLadderStudio.Core/LadderProject.cs`. Ele nao depende de WinForms e permanece compativel com .NET Framework 4.x. O contrato do arquivo esta em `docs/PLADDER_FORMAT.md`, com fixtures de regressao em `tests/OpenLadderStudio.Core.Tests/Fixtures`. A UI consome casos de uso; drivers implementam contratos do Core; o Core nao conhece UI ou protocolos concretos.
 
 ## Fluxo de mudanca
 
@@ -28,7 +28,7 @@ O primeiro codigo extraido, o codec do formato `.pladder`, esta em `src/OpenLadd
 3. Preserve leitura e escrita de PLC como capacidades separadas e explicitamente controladas.
 4. Execute `powershell -ExecutionPolicy Bypass -File scripts/ValidateProject.ps1`.
 5. Execute `OpenLadderCoreTest.exe` quando a mudanca tocar o formato `.pladder` e `OpenLadderSimTest.exe` quando tocar o motor de varredura ou as plantas simuladas. O build ja executa os dois.
-6. Execute `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat` em uma maquina Windows com .NET Framework antes de publicar executaveis.
+6. Execute `PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat` em uma maquina Windows com .NET Framework 4.0 ou superior antes de publicar executaveis.
 
 ## Estrategia de migracao
 

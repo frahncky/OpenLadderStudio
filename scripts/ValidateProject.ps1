@@ -16,12 +16,21 @@ $simulatorTest = Join-Path $portable 'SimulationSelfTest.cs'
 $coreRoot = Join-Path $repoRoot 'src\OpenLadderStudio.Core'
 $ladderProjectCodec = Join-Path $coreRoot 'LadderProject.cs'
 $ladderProjectTest = Join-Path $repoRoot 'tests\OpenLadderStudio.Core.Tests\LadderProjectCodecSelfTest.cs'
+$pladderSpec = Join-Path $repoRoot 'docs\PLADDER_FORMAT.md'
+$pladderFixtureRoot = Join-Path $repoRoot 'tests\OpenLadderStudio.Core.Tests\Fixtures'
+$pladderFixtures = @(
+    (Join-Path $pladderFixtureRoot 'valid-v1-basic.pladder'),
+    (Join-Path $pladderFixtureRoot 'valid-v2-branched.pladder'),
+    (Join-Path $pladderFixtureRoot 'valid-v2-escaped.pladder'),
+    (Join-Path $pladderFixtureRoot 'invalid-v2-malformed-escape.pladder'),
+    (Join-Path $pladderFixtureRoot 'invalid-v2-unescaped-tilde.pladder')
+)
 
 $architectureValidation = Join-Path $PSScriptRoot 'ValidateArchitecture.ps1'
 if (-not (Test-Path $architectureValidation)) { throw "Validador arquitetural ausente: $architectureValidation" }
 & $architectureValidation
 
-$required = @($versionPath, $changeLogPath, $installer, $universalPrep, $uiPrep, $iconPrep, $scanEngine, $processModel, $plantLibrary, $simulatorUi, $simulatorTest, $ladderProjectCodec, $ladderProjectTest)
+$required = @($versionPath, $changeLogPath, $installer, $universalPrep, $uiPrep, $iconPrep, $scanEngine, $processModel, $plantLibrary, $simulatorUi, $simulatorTest, $ladderProjectCodec, $ladderProjectTest, $pladderSpec) + $pladderFixtures
 foreach ($path in $required) {
     if (-not (Test-Path $path)) { throw "Arquivo obrigatório ausente: $path" }
 }
@@ -84,6 +93,12 @@ if (-not $buildText.Contains('src\OpenLadderStudio.Core\LadderProject.cs')) {
 }
 if (-not $buildText.Contains('OpenLadderCoreTest.exe')) {
     throw 'O build principal deve compilar e executar o autoteste do formato .pladder.'
+}
+if (-not $buildText.Contains('Framework\v4.0.30319\csc.exe')) {
+    throw 'O build principal deve exigir o compilador do .NET Framework 4.x.'
+}
+if ($buildText.Contains('Framework\v3.5\csc.exe')) {
+    throw 'O fallback para .NET Framework 3.5 e invalido: o codigo requer .NET Framework 4.x.'
 }
 $produced = @()
 foreach ($hit in [Regex]::Matches($buildText, '/out:"([A-Za-z0-9_]+\.exe)"')) {

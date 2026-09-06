@@ -66,7 +66,7 @@ Drivers devem implementar contratos definidos pelo núcleo.
 
 ### 5. Verificação
 
-`tests/OpenLadderStudio.Core.Tests/LadderProjectCodecSelfTest.cs` gera `OpenLadderCoreTest.exe` e verifica o formato `.pladder`, inclusive compatibilidade com a versão 1, ramificações e arquivos inválidos.
+`tests/OpenLadderStudio.Core.Tests/LadderProjectCodecSelfTest.cs` gera `OpenLadderCoreTest.exe` e verifica o formato `.pladder`, inclusive compatibilidade com a versão 1, ramificações, delimitadores escapados e arquivos inválidos. Os casos de compatibilidade permanentes ficam em `tests/OpenLadderStudio.Core.Tests/Fixtures`, conforme `docs/PLADDER_FORMAT.md`.
 
 `SimulationSelfTest.cs` gera `OpenLadderSimTest.exe` e executa o motor de varredura contra a planta simulada. Os dois autotestes são rodados pelo build local e pelo GitHub Actions.
 

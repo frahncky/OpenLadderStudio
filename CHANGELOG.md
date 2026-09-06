@@ -2,6 +2,18 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.68] - 2026-09-06
+
+### Formato de projeto
+- corrigido o escape do caractere `~` nos campos do `.pladder` v2, evitando que um valor seja interpretado como uma ramificação adicional e impeça a reabertura do projeto;
+- sequências percentuais incompletas ou não hexadecimais passam a ser recusadas com indicação da linha e da coluna;
+- publicada a especificação dos formatos v1 e v2, incluindo gramática, codificação, compatibilidade e exemplos.
+
+### Testes e compatibilidade
+- autoteste ampliado para cobrir `~`, `|`, `:`, `%`, quebras de linha, ramificações e escapes inválidos;
+- adicionadas fixtures permanentes de projetos válidos e corrompidos nas versões 1 e 2;
+- o build passa a exigir explicitamente o .NET Framework 4.x, removendo o fallback incompatível para o compilador 3.5.
+
 ## [0.67] - 2026-09-06
 
 ### Ferramentas e navegação

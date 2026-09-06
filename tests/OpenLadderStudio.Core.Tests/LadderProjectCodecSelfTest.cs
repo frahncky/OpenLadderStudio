@@ -16,6 +16,7 @@ namespace OpenLadderStudio.Core.Tests
 
             TestVersionTwoRoundTrip();
             TestLegacyImport();
+            TestCompatibilityFixtures();
             TestEmptyDocumentFallback();
             TestInvalidDocuments();
 
@@ -48,8 +49,9 @@ namespace OpenLadderStudio.Core.Tests
             source.Rungs.Add(first);
 
             LadderProjectRung second = new LadderProjectRung();
-            second.Series[0] = Element(LadderProjectElementKind.ContactNormallyOpen, "Sinal com espaco / acao", string.Empty, string.Empty);
-            second.Series[6] = Element(LadderProjectElementKind.Function, "F-10W", "D0001:valor", string.Empty);
+            second.Series[0] = Element(LadderProjectElementKind.ContactNormallyOpen, "Sinal ~ A | B : C % / a\u00e7\u00e3o", string.Empty, string.Empty);
+            second.Series[1] = Element(LadderProjectElementKind.Timer, "V0003", "linha 1\r\nlinha 2", "modo:manual|~%");
+            second.Series[6] = Element(LadderProjectElementKind.Function, "F-10W", "D0001:valor|alternativo~100%", string.Empty);
             second.Series[7] = Element(LadderProjectElementKind.End, "F-00", string.Empty, string.Empty);
             source.Rungs.Add(second);
 
@@ -57,7 +59,10 @@ namespace OpenLadderStudio.Core.Tests
             LadderProjectDocument restored = LadderProjectCodec.Deserialize(encoded);
 
             Check("cabecalho atual gravado", encoded.StartsWith(LadderProjectCodec.CurrentHeader + Environment.NewLine, StringComparison.Ordinal));
-            Check("caracteres reservados escapados", encoded.IndexOf("Sinal%20com%20espaco%20%2F%20acao", StringComparison.Ordinal) >= 0);
+            Check("separador de ramificacao escapado", encoded.IndexOf("Sinal%20%7E%20A", StringComparison.Ordinal) >= 0);
+            Check("separadores de campo e coluna escapados", encoded.IndexOf("%7C%20B%20%3A%20C%20%25%20%2F", StringComparison.Ordinal) >= 0);
+            Check("texto Unicode escapado em UTF-8", encoded.IndexOf("a%C3%A7%C3%A3o", StringComparison.Ordinal) >= 0);
+            Check("quebra de linha escapada", encoded.IndexOf("linha%201%0D%0Alinha%202", StringComparison.Ordinal) >= 0);
             Check("quantidade de rungs preservada", restored.Rungs.Count == source.Rungs.Count);
             Check("todos os elementos preservados", DocumentsEqual(source, restored));
             Check("ramificacao paralela preservada", restored.Rungs[0].Parallel[0].Kind == LadderProjectElementKind.ContactNormallyClosed);
@@ -79,6 +84,30 @@ namespace OpenLadderStudio.Core.Tests
             Check("bobina legada convertida", document.Rungs[0].Series[7].Kind == LadderProjectElementKind.Coil);
             Check("ramificacoes legadas permanecem vazias", document.Rungs[0].Parallel[0].Kind == LadderProjectElementKind.Empty);
             Check("nova gravacao migra para versao 2", LadderProjectCodec.Serialize(document).StartsWith(LadderProjectCodec.CurrentHeader, StringComparison.Ordinal));
+        }
+
+        private static void TestCompatibilityFixtures()
+        {
+            Section("Fixtures de compatibilidade");
+
+            LadderProjectDocument legacy = LadderProjectCodec.Deserialize(LoadFixture("valid-v1-basic.pladder"));
+            Check("fixture v1 aberta", legacy.Rungs.Count == 1 && legacy.Rungs[0].Series[7].Kind == LadderProjectElementKind.Coil);
+
+            LadderProjectDocument branched = LadderProjectCodec.Deserialize(LoadFixture("valid-v2-branched.pladder"));
+            Check("fixture v2 com ramificacao aberta", branched.Rungs[0].Parallel[0].Kind == LadderProjectElementKind.ContactNormallyClosed);
+
+            LadderProjectDocument escaped = LadderProjectCodec.Deserialize(LoadFixture("valid-v2-escaped.pladder"));
+            Check("fixture v2 decodifica separadores", escaped.Rungs[0].Series[0].Address == "Sinal~A|B:C%/acao");
+            Check("fixture v2 decodifica quebra de linha", escaped.Rungs[0].Series[1].Parameter == "linha 1\r\nlinha 2");
+
+            Check("fixture com escape malformado recusada", ThrowsInvalidData(delegate
+            {
+                LadderProjectCodec.Deserialize(LoadFixture("invalid-v2-malformed-escape.pladder"));
+            }));
+            Check("fixture com til nao escapado recusada", ThrowsInvalidData(delegate
+            {
+                LadderProjectCodec.Deserialize(LoadFixture("invalid-v2-unescaped-tilde.pladder"));
+            }));
         }
 
         private static void TestEmptyDocumentFallback()
@@ -103,6 +132,36 @@ namespace OpenLadderStudio.Core.Tests
             {
                 LadderProjectCodec.Deserialize(LadderProjectCodec.CurrentHeader + "\nRUNG|XYZ:X0001~EMPTY|EMPTY|EMPTY|EMPTY|EMPTY|EMPTY|EMPTY|EMPTY\n");
             }));
+            Check("percentual isolado recusado", ThrowsInvalidData(delegate
+            {
+                LadderProjectCodec.Deserialize(VersionTwoRow("NO:X%~EMPTY"));
+            }));
+            Check("escape hexadecimal curto recusado", ThrowsInvalidData(delegate
+            {
+                LadderProjectCodec.Deserialize(VersionTwoRow("NO:X%2~EMPTY"));
+            }));
+            Check("escape nao hexadecimal recusado", ThrowsInvalidData(delegate
+            {
+                LadderProjectCodec.Deserialize(VersionTwoRow("NO:X%2G~EMPTY"));
+            }));
+            Check("percentual corretamente escapado aceito", !ThrowsInvalidData(delegate
+            {
+                LadderProjectCodec.Deserialize(VersionTwoRow("NO:X%25~EMPTY"));
+            }));
+        }
+
+        private static string VersionTwoRow(string firstCell)
+        {
+            return LadderProjectCodec.CurrentHeader + "\nRUNG|" + firstCell +
+                   "|EMPTY~EMPTY|EMPTY~EMPTY|EMPTY~EMPTY|EMPTY~EMPTY|EMPTY~EMPTY|EMPTY~EMPTY|EMPTY~EMPTY\n";
+        }
+
+        private static string LoadFixture(string fileName)
+        {
+            string relative = Path.Combine("..", "tests", "OpenLadderStudio.Core.Tests", "Fixtures", fileName);
+            string path = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relative));
+            if (!File.Exists(path)) throw new InvalidDataException("Fixture ausente: " + path);
+            return File.ReadAllText(path);
         }
 
         private static LadderProjectElement Element(LadderProjectElementKind kind, string address, string parameter, string mode)

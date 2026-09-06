@@ -115,6 +115,8 @@ As regras visuais estão em [`docs/UI_GUIDELINES.md`](docs/UI_GUIDELINES.md).
 
 ## Build
 
+Requisito: Windows 7 SP1 ou mais recente com .NET Framework 4.0 ou superior. O código atual usa APIs do .NET 4 e não oferece fallback para o .NET Framework 3.5.
+
 No Windows:
 
 ```bat
@@ -123,6 +125,8 @@ BUILD_INTERFACE_MODERNA.bat
 ```
 
 O build compila e executa `OpenLadderCoreTest.exe` e `OpenLadderSimTest.exe`. Uma falha no formato de projeto, no motor de varredura ou na planta interrompe o build.
+
+A especificação e as fixtures de compatibilidade do formato de projeto estão em [`docs/PLADDER_FORMAT.md`](docs/PLADDER_FORMAT.md) e `tests/OpenLadderStudio.Core.Tests/Fixtures/`.
 
 Antes do build/release, a estrutura pode ser validada com:
 
