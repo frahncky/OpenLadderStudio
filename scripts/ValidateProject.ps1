@@ -10,6 +10,7 @@ $uiPrep = Join-Path $portable 'PrepareStudioUiV20.ps1'
 $iconPrep = Join-Path $portable 'GenerateOpenLadderIcon.ps1'
 $scanEngine = Join-Path $portable 'LadderSimulation.cs'
 $processModel = Join-Path $portable 'ProcessSimulation.cs'
+$plantLibrary = Join-Path $portable 'SimulatedPlants.cs'
 $simulatorUi = Join-Path $portable 'LadderSimulator.cs'
 $simulatorTest = Join-Path $portable 'SimulationSelfTest.cs'
 $coreRoot = Join-Path $repoRoot 'src\OpenLadderStudio.Core'
@@ -20,7 +21,7 @@ $architectureValidation = Join-Path $PSScriptRoot 'ValidateArchitecture.ps1'
 if (-not (Test-Path $architectureValidation)) { throw "Validador arquitetural ausente: $architectureValidation" }
 & $architectureValidation
 
-$required = @($versionPath, $changeLogPath, $installer, $universalPrep, $uiPrep, $iconPrep, $scanEngine, $processModel, $simulatorUi, $simulatorTest, $ladderProjectCodec, $ladderProjectTest)
+$required = @($versionPath, $changeLogPath, $installer, $universalPrep, $uiPrep, $iconPrep, $scanEngine, $processModel, $plantLibrary, $simulatorUi, $simulatorTest, $ladderProjectCodec, $ladderProjectTest)
 foreach ($path in $required) {
     if (-not (Test-Path $path)) { throw "Arquivo obrigatório ausente: $path" }
 }
@@ -59,7 +60,7 @@ foreach ($size in @('16', '24', '32', '48', '64', '128', '256')) {
 }
 
 # O nucleo da simulacao pertence ao dominio e nao pode depender de WinForms.
-foreach ($core in @($scanEngine, $processModel)) {
+foreach ($core in @($scanEngine, $processModel, $plantLibrary)) {
     $coreText = [System.IO.File]::ReadAllText($core)
     if ($coreText.Contains('System.Windows.Forms')) {
         throw "O nucleo da simulacao nao pode depender de WinForms: $core"

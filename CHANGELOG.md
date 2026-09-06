@@ -2,6 +2,24 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.66] - 2026-09-06
+
+### Biblioteca de processos simulados
+- cinco plantas novas: silo com enchimento e descarga, partida estrela-triângulo, cruzamento semafórico, elevador de carga de dois níveis e prensa com comando bimanual;
+- cada planta traz física própria, falhas injetáveis, sinóptico e programa Ladder de exemplo comentado rung a rung;
+- seleção de planta na janela de simulação, refazendo tabela de I/O, botoeiras, falhas e programa;
+- modelo de cena no domínio: a planta descreve o próprio sinóptico em primitivas semânticas e a interface resolve escala e cores;
+- contadores de falha que tornam visível a lógica malfeita: curto entre fases, conflito entre verdes, transbordo, colisão no fim de curso e descida com a cortina de luz interrompida.
+
+### Editor Ladder
+- contatos passam a aceitar `V0001`–`V0256`, que leem o bit de conclusão de TMR/CNT;
+- `RESET` passa a aceitar `V0001`–`V0256`, zerando o acumulado do bloco;
+- sem isso um temporizador podia ser inserido mas nunca usado, e nenhuma sequência temporizada era expressável.
+
+### Engenharia de software
+- autoteste ampliado para cobrir as seis plantas e o comportamento sob falha injetada;
+- `ValidateProject.ps1` passa a exigir `SimulatedPlants.cs` e a bloquear dependência de WinForms nele;
+- textos visíveis da simulação já escritos no padrão de linguagem do projeto, sem depender da normalização do build.
 ## [0.65] - 2026-09-06
 
 ### Interface e linguagem

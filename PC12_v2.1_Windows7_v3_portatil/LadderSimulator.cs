@@ -35,6 +35,30 @@ namespace ModernPC12
         public static readonly Color Info = Color.FromArgb(91, 170, 245);
         public static readonly Color Metal = Color.FromArgb(86, 91, 98);
         public static readonly Color Cargo = Color.FromArgb(198, 148, 84);
+        public static readonly Color Dark = Color.FromArgb(22, 24, 27);
+
+        public static Color For(SimTone tone)
+        {
+            switch (tone)
+            {
+                case SimTone.Structure: return Metal;
+                case SimTone.Active: return Accent;
+                case SimTone.Info: return Info;
+                case SimTone.Warning: return Warning;
+                case SimTone.Danger: return Error;
+                case SimTone.Cargo: return Cargo;
+                case SimTone.Muted: return Muted;
+                case SimTone.Dark: return Dark;
+            }
+            return Fore;
+        }
+
+        /// <summary>Cor de texto legível sobre um preenchimento do tom indicado.</summary>
+        public static Color OnFill(SimTone tone)
+        {
+            if (tone == SimTone.Active || tone == SimTone.Warning || tone == SimTone.Info || tone == SimTone.Cargo) return Shell;
+            return Fore;
+        }
     }
 
     internal sealed class BufferedListView : ListView
@@ -47,48 +71,29 @@ namespace ModernPC12
     }
 
     /// <summary>
-    /// Sinóptico da esteira. Desenha a planta a partir do estado físico e das saídas do PLC virtual.
+    /// Sinóptico genérico: desenha a cena descrita pela planta, sem conhecer processo algum.
+    /// A cena vem em coordenadas próprias e é escalada com proporção preservada.
     /// </summary>
-    internal sealed class ConveyorSynoptic : Control
+    internal sealed class ProcessSynoptic : Control
     {
-        private ConveyorProcess plant;
+        private const double BaseFontSize = 13.0;
+
+        private readonly SimScene scene = new SimScene();
+        private ISimulatedProcess plant;
         private PlcProcessImage image;
-        private double beltPhase;
 
-        private SimBitRef motorBit;
-        private SimBitRef lampBit;
-        private SimBitRef entryBit;
-        private SimBitRef exitBit;
-        private SimBitRef feedbackBit;
-        private SimBitRef pusherBit;
-
-        public ConveyorSynoptic()
+        public ProcessSynoptic()
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
             BackColor = SimulatorTheme.Shell;
             Font = new Font("Segoe UI", 8.25f);
-
-            SimAddress.TryParseBit(ConveyorProcess.MotorOutput, out motorBit);
-            SimAddress.TryParseBit(ConveyorProcess.LampOutput, out lampBit);
-            SimAddress.TryParseBit(ConveyorProcess.EntrySensorInput, out entryBit);
-            SimAddress.TryParseBit(ConveyorProcess.ExitSensorInput, out exitBit);
-            SimAddress.TryParseBit(ConveyorProcess.PusherFeedbackInput, out feedbackBit);
-            SimAddress.TryParseBit(ConveyorProcess.PusherOutput, out pusherBit);
         }
 
-        public void Bind(ConveyorProcess process, PlcProcessImage processImage)
+        public void Bind(ISimulatedProcess process, PlcProcessImage processImage)
         {
             plant = process;
             image = processImage;
             Invalidate();
-        }
-
-        /// <summary>Avança a animação da correia proporcionalmente à velocidade real simulada.</summary>
-        public void Advance(double dtSeconds)
-        {
-            if (plant == null) return;
-            beltPhase += plant.BeltSpeed * dtSeconds * 120.0;
-            if (beltPhase > 10000.0) beltPhase = 0.0;
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -98,185 +103,134 @@ namespace ModernPC12
             g.Clear(BackColor);
             if (plant == null || image == null) return;
 
-            int left = 56;
-            int right = Math.Max(left + 80, Width - 56);
-            int beltY = Height - 62;
-            int beltHeight = 12;
-            double scale = (right - left) / ConveyorProcess.BeltLength;
+            scene.Clear();
+            plant.BuildScene(scene, image);
 
-            DrawFrame(g, left, right, beltY, beltHeight);
-            DrawBelt(g, left, right, beltY, beltHeight);
-            DrawSensor(g, left, beltY, scale, ConveyorProcess.EntrySensorPosition, "S1  " + ConveyorProcess.EntrySensorInput, image.GetBit(entryBit));
-            DrawSensor(g, left, beltY, scale, ConveyorProcess.ExitSensorPosition, "S2  " + ConveyorProcess.ExitSensorInput, image.GetBit(exitBit));
-            DrawBoxes(g, left, beltY, scale);
-            DrawPusher(g, left, beltY, scale);
-            DrawMotor(g, left, beltY);
-            DrawLamp(g, right);
-            DrawLegend(g, left);
-        }
+            float scale = (float)Math.Min(Width / SimScene.Width, Height / SimScene.Height);
+            if (scale <= 0.0f) return;
+            float offsetX = (float)((Width - (SimScene.Width * scale)) / 2.0);
+            float offsetY = (float)((Height - (SimScene.Height * scale)) / 2.0);
 
-        private void DrawFrame(Graphics g, int left, int right, int beltY, int beltHeight)
-        {
-            using (Pen pen = new Pen(SimulatorTheme.Border, 1.0f))
+            float fontSize = Math.Max(6.0f, (float)(BaseFontSize * scale * 0.75));
+            using (Font text = new Font("Segoe UI", fontSize))
+            using (Font strong = new Font("Segoe UI", fontSize, FontStyle.Bold))
             {
-                g.DrawLine(pen, left - 18, beltY + beltHeight + 22, right + 18, beltY + beltHeight + 22);
-                g.DrawLine(pen, left - 6, beltY + beltHeight, left - 6, beltY + beltHeight + 22);
-                g.DrawLine(pen, right + 6, beltY + beltHeight, right + 6, beltY + beltHeight + 22);
+                IList<SimShape> shapes = scene.Shapes;
+                for (int i = 0; i < shapes.Count; i++) Draw(g, shapes[i], scale, offsetX, offsetY, text, strong);
             }
         }
 
-        private void DrawBelt(Graphics g, int left, int right, int beltY, int beltHeight)
+        private void Draw(Graphics g, SimShape shape, float scale, float ox, float oy, Font text, Font strong)
         {
-            Rectangle belt = new Rectangle(left, beltY, right - left, beltHeight);
-            using (SolidBrush brush = new SolidBrush(SimulatorTheme.Metal))
-                g.FillRectangle(brush, belt);
+            float x = ox + (float)(shape.X * scale);
+            float y = oy + (float)(shape.Y * scale);
+            float w = (float)(shape.W * scale);
+            float h = (float)(shape.H * scale);
 
-            // Estrias que se deslocam com a velocidade real da correia.
-            int offset = (int)(beltPhase % 18.0);
-            using (Pen pen = new Pen(Color.FromArgb(120, 30, 33, 37), 2.0f))
-                for (int x = left - 18 + offset; x < right; x += 18)
-                {
-                    if (x < left) continue;
-                    g.DrawLine(pen, x, beltY + 1, x, beltY + beltHeight - 1);
-                }
-
-            using (Pen pen = new Pen(SimulatorTheme.Border, 1.0f))
-                g.DrawRectangle(pen, belt);
-
-            using (SolidBrush brush = new SolidBrush(SimulatorTheme.Metal))
+            switch (shape.Kind)
             {
-                g.FillEllipse(brush, left - 12, beltY - 2, 16, 16);
-                g.FillEllipse(brush, right - 4, beltY - 2, 16, 16);
+                case SimShapeKind.Rectangle:
+                    FillAndOutline(g, new RectangleF(x, y, w, h), shape.Fill, shape.Stroke);
+                    if (shape.Text.Length > 0) DrawCentred(g, shape.Text, strong, SimulatorTheme.OnFill(shape.Fill), new RectangleF(x, y, w, h));
+                    break;
+
+                case SimShapeKind.Ellipse:
+                    using (SolidBrush brush = new SolidBrush(SimulatorTheme.For(shape.Fill)))
+                        g.FillEllipse(brush, x, y, w, h);
+                    using (Pen pen = new Pen(SimulatorTheme.For(shape.Stroke), 1.0f))
+                        g.DrawEllipse(pen, x, y, w, h);
+                    break;
+
+                case SimShapeKind.Line:
+                    using (Pen pen = new Pen(SimulatorTheme.For(shape.Stroke), Math.Max(1.0f, scale * 1.6f)))
+                    {
+                        if (shape.Dashed) pen.DashStyle = DashStyle.Dot;
+                        g.DrawLine(pen, x, y, ox + (float)(shape.W * scale), oy + (float)(shape.H * scale));
+                    }
+                    break;
+
+                case SimShapeKind.Text:
+                    DrawAligned(g, shape, shape.Bold ? strong : text, x, y);
+                    break;
+
+                case SimShapeKind.Belt:
+                    DrawBelt(g, shape, x, y, w, h, scale);
+                    break;
+
+                case SimShapeKind.Level:
+                    DrawLevel(g, shape, x, y, w, h);
+                    break;
+
+                case SimShapeKind.Lamp:
+                    using (SolidBrush brush = new SolidBrush(shape.On ? SimulatorTheme.For(shape.Fill) : Color.FromArgb(64, 68, 74)))
+                        g.FillEllipse(brush, x, y, w, h);
+                    using (Pen pen = new Pen(SimulatorTheme.Border, 1.0f))
+                        g.DrawEllipse(pen, x, y, w, h);
+                    break;
             }
         }
 
-        private void DrawBoxes(Graphics g, int left, int beltY, double scale)
+        private static void FillAndOutline(Graphics g, RectangleF bounds, SimTone fill, SimTone stroke)
         {
-            int boxWidth = Math.Max(8, (int)(ConveyorProcess.BoxLength * scale));
-            int boxHeight = 22;
-            IList<ConveyorBox> boxes = plant.Boxes;
-
-            for (int i = 0; i < boxes.Count; i++)
-            {
-                int centre = left + (int)(boxes[i].Position * scale);
-                Rectangle box = new Rectangle(centre - (boxWidth / 2), beltY - boxHeight, boxWidth, boxHeight);
-                using (SolidBrush brush = new SolidBrush(SimulatorTheme.Cargo))
-                    g.FillRectangle(brush, box);
-                using (Pen pen = new Pen(Color.FromArgb(230, 180, 110), 1.0f))
-                    g.DrawRectangle(pen, box);
-                using (Pen pen = new Pen(Color.FromArgb(150, 120, 70), 1.0f))
-                    g.DrawLine(pen, box.Left + 2, box.Top + (boxHeight / 2), box.Right - 2, box.Top + (boxHeight / 2));
-            }
+            using (SolidBrush brush = new SolidBrush(SimulatorTheme.For(fill)))
+                g.FillRectangle(brush, bounds);
+            using (Pen pen = new Pen(SimulatorTheme.For(stroke), 1.0f))
+                g.DrawRectangle(pen, bounds.X, bounds.Y, bounds.Width, bounds.Height);
         }
 
-        private void DrawSensor(Graphics g, int left, int beltY, double scale, double position, string label, bool active)
+        private static void DrawCentred(Graphics g, string value, Font font, Color colour, RectangleF bounds)
         {
-            int x = left + (int)(position * scale);
-            Color colour = active ? SimulatorTheme.Accent : SimulatorTheme.Muted;
-
-            using (Pen pen = new Pen(Color.FromArgb(active ? 150 : 60, colour), 1.0f))
-            {
-                pen.DashStyle = DashStyle.Dot;
-                g.DrawLine(pen, x, beltY - 34, x, beltY);
-            }
-
             using (SolidBrush brush = new SolidBrush(colour))
-                g.FillRectangle(brush, x - 4, beltY - 42, 8, 8);
-
-            using (SolidBrush brush = new SolidBrush(active ? SimulatorTheme.Fore : SimulatorTheme.Muted))
-            using (StringFormat format = new StringFormat())
-            {
-                format.Alignment = StringAlignment.Center;
-                g.DrawString(label, Font, brush, x, beltY + 18, format);
-            }
-        }
-
-        private void DrawPusher(Graphics g, int left, int beltY, double scale)
-        {
-            int x = left + (int)(ConveyorProcess.PusherPosition * scale);
-            int plateWidth = Math.Max(12, (int)(ConveyorProcess.PusherPlateWidth * scale));
-            // O curso leva a placa do repouso ate a altura da caixa sobre a correia.
-            int home = beltY - 88;
-            int travel = 62;
-            int y = home + (int)(plant.PusherStroke * travel);
-
-            using (Pen pen = new Pen(SimulatorTheme.Border, 2.0f))
-                g.DrawLine(pen, x, home - 10, x, y);
-
-            Rectangle plate = new Rectangle(x - (plateWidth / 2), y, plateWidth, 10);
-            bool commanded = image.GetBit(pusherBit);
-            using (SolidBrush brush = new SolidBrush(commanded ? SimulatorTheme.Info : SimulatorTheme.Metal))
-                g.FillRectangle(brush, plate);
-            using (Pen pen = new Pen(SimulatorTheme.Border, 1.0f))
-                g.DrawRectangle(pen, plate);
-
-            bool feedback = image.GetBit(feedbackBit);
-            int markerX = x + (plateWidth / 2) + 10;
-            using (SolidBrush brush = new SolidBrush(feedback ? SimulatorTheme.Accent : SimulatorTheme.Muted))
-                g.FillRectangle(brush, markerX, home + travel, 8, 8);
-            using (SolidBrush brush = new SolidBrush(feedback ? SimulatorTheme.Fore : SimulatorTheme.Muted))
-                g.DrawString(ConveyorProcess.PusherFeedbackInput, Font, brush, markerX + 12, home + travel - 4);
-
-            using (SolidBrush brush = new SolidBrush(SimulatorTheme.Muted))
-            using (StringFormat format = new StringFormat())
-            {
-                format.Alignment = StringAlignment.Center;
-                g.DrawString("Desviador  " + ConveyorProcess.PusherOutput, Font, brush, x, home - 28, format);
-                g.DrawString("desviadas: " + plant.DivertedCount.ToString(CultureInfo.InvariantCulture), Font, brush, x, beltY + 34, format);
-            }
-        }
-
-        private void DrawMotor(Graphics g, int left, int beltY)
-        {
-            bool running = image.GetBit(motorBit);
-            Rectangle body = new Rectangle(left - 46, beltY - 6, 26, 26);
-
-            using (SolidBrush brush = new SolidBrush(running ? SimulatorTheme.Accent : SimulatorTheme.Metal))
-                g.FillRectangle(brush, body);
-            using (Pen pen = new Pen(SimulatorTheme.Border, 1.0f))
-                g.DrawRectangle(pen, body);
-
-            using (SolidBrush brush = new SolidBrush(running ? SimulatorTheme.Shell : SimulatorTheme.Fore))
             using (StringFormat format = new StringFormat())
             {
                 format.Alignment = StringAlignment.Center;
                 format.LineAlignment = StringAlignment.Center;
-                g.DrawString("M", new Font("Segoe UI", 9.0f, FontStyle.Bold), brush, body, format);
+                g.DrawString(value, font, brush, bounds, format);
             }
-
-            using (SolidBrush brush = new SolidBrush(SimulatorTheme.Muted))
-                g.DrawString(ConveyorProcess.MotorOutput, Font, brush, left - 50, beltY + 24);
         }
 
-        private void DrawLamp(Graphics g, int right)
+        private static void DrawAligned(Graphics g, SimShape shape, Font font, float x, float y)
         {
-            bool on = image.GetBit(lampBit);
-            Rectangle lamp = new Rectangle(right - 16, 14, 16, 16);
-
-            using (SolidBrush brush = new SolidBrush(on ? SimulatorTheme.Warning : Color.FromArgb(70, 74, 80)))
-                g.FillEllipse(brush, lamp);
-            using (Pen pen = new Pen(SimulatorTheme.Border, 1.0f))
-                g.DrawEllipse(pen, lamp);
-
-            using (SolidBrush brush = new SolidBrush(SimulatorTheme.Muted))
+            using (SolidBrush brush = new SolidBrush(SimulatorTheme.For(shape.Fill)))
             using (StringFormat format = new StringFormat())
             {
-                format.Alignment = StringAlignment.Far;
-                g.DrawString("Sinaleiro  " + ConveyorProcess.LampOutput, Font, brush, right - 22, 16, format);
+                if (shape.Align == SimTextAlign.Center) format.Alignment = StringAlignment.Center;
+                else if (shape.Align == SimTextAlign.Right) format.Alignment = StringAlignment.Far;
+                g.DrawString(shape.Text, font, brush, x, y, format);
             }
         }
 
-        private void DrawLegend(Graphics g, int left)
+        private static void DrawBelt(Graphics g, SimShape shape, float x, float y, float w, float h, float scale)
         {
-            string text = "Correia " + plant.BeltSpeed.ToString("0.000", CultureInfo.InvariantCulture) + " m/s" +
-                          "   ·   curso do desviador " + (plant.PusherStroke * 100.0).ToString("0", CultureInfo.InvariantCulture) + " %" +
-                          "   ·   perdidas " + plant.LostCount.ToString(CultureInfo.InvariantCulture);
-            using (SolidBrush brush = new SolidBrush(SimulatorTheme.Muted))
-                g.DrawString(text, Font, brush, left - 46, 16);
+            RectangleF belt = new RectangleF(x, y, w, h);
+            using (SolidBrush brush = new SolidBrush(SimulatorTheme.Metal))
+                g.FillRectangle(brush, belt);
 
-            if (plant.OverloadTripped)
-                using (SolidBrush brush = new SolidBrush(SimulatorTheme.Error))
-                    g.DrawString("RELÉ TÉRMICO ATUADO", new Font("Segoe UI", 8.25f, FontStyle.Bold), brush, left - 46, 34);
+            float step = Math.Max(6.0f, 18.0f * scale);
+            float offset = (float)(shape.Value % 18.0) * scale;
+            using (Pen pen = new Pen(Color.FromArgb(120, 30, 33, 37), Math.Max(1.0f, scale * 2.0f)))
+                for (float sx = x - step + offset; sx < x + w; sx += step)
+                {
+                    if (sx < x) continue;
+                    g.DrawLine(pen, sx, y + 1.0f, sx, y + h - 1.0f);
+                }
+
+            using (Pen pen = new Pen(SimulatorTheme.Border, 1.0f))
+                g.DrawRectangle(pen, belt.X, belt.Y, belt.Width, belt.Height);
+        }
+
+        private static void DrawLevel(Graphics g, SimShape shape, float x, float y, float w, float h)
+        {
+            using (SolidBrush brush = new SolidBrush(SimulatorTheme.Dark))
+                g.FillRectangle(brush, x, y, w, h);
+
+            float filled = (float)(h * shape.Value);
+            if (filled > 0.5f)
+                using (SolidBrush brush = new SolidBrush(SimulatorTheme.For(shape.Fill)))
+                    g.FillRectangle(brush, x, y + h - filled, w, filled);
+
+            using (Pen pen = new Pen(SimulatorTheme.For(shape.Stroke), 1.5f))
+                g.DrawRectangle(pen, x, y, w, h);
         }
     }
 
@@ -335,23 +289,26 @@ namespace ModernPC12
         private const int MaxStepsPerTick = 60;
 
         private readonly LadderScanEngine engine = new LadderScanEngine();
-        private readonly ConveyorProcess plant = new ConveyorProcess();
+        private readonly IList<ISimulatedProcess> plants = SimulatedProcessCatalog.Create();
         private readonly Stopwatch clock = new Stopwatch();
         private readonly Timer ticker = new Timer();
         private readonly List<SimBitRef> watched = new List<SimBitRef>();
         private readonly List<string> watchedNames = new List<string>();
 
-        private ConveyorSynoptic synoptic;
+        private ISimulatedProcess plant;
+        private ProcessSynoptic synoptic;
         private RungStrip rungStrip;
         private BufferedListView ioList;
         private TextBox processBox;
         private TextBox scanBox;
         private TextBox programBox;
-        private Label bannerLabel;
         private Label statusLabel;
         private Button runButton;
         private Button stopButton;
         private ComboBox speedCombo;
+        private ComboBox plantCombo;
+        private Panel fieldPanel;
+        private Panel faultPanel;
 
         private bool usingSample;
         private double accumulator;
@@ -365,17 +322,18 @@ namespace ModernPC12
         {
             Text = "Simulação de processo - OpenLadder Studio";
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(1120, 720);
-            MinimumSize = new Size(940, 640);
+            ClientSize = new Size(1180, 760);
+            MinimumSize = new Size(980, 660);
             BackColor = SimulatorTheme.Shell;
             ForeColor = SimulatorTheme.Fore;
             Font = new Font("Segoe UI", 9.0f);
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
 
+            plant = FindPlant(SimulatedProcessCatalog.DefaultId);
+
             BuildLayout();
-            BindFieldInputs();
-            LoadSampleProgram();
+            SelectPlant(plant);
 
             ticker.Interval = 30;
             ticker.Tick += OnTick;
@@ -390,10 +348,27 @@ namespace ModernPC12
             Apply(program);
         }
 
-        private void LoadSampleProgram()
+        private ISimulatedProcess FindPlant(string id)
         {
+            for (int i = 0; i < plants.Count; i++)
+                if (plants[i].Id == id) return plants[i];
+            return plants[0];
+        }
+
+        private void SelectPlant(ISimulatedProcess selected)
+        {
+            bool wasRunning = ticker.Enabled;
+            if (wasRunning) Stop();
+
+            plant = selected;
+            synoptic.Bind(plant, engine.Image);
+            BindFieldInputs();
+            PopulateFieldPanel();
+            PopulateFaultPanel();
+
             usingSample = true;
-            Apply(SimulationSamples.BuildConveyorProgram());
+            Apply(plant.BuildSampleProgram());
+            statusLabel.Text = "Planta selecionada: " + plant.DisplayName + ".";
         }
 
         private void Apply(UniversalLadderProgram program)
@@ -402,7 +377,6 @@ namespace ModernPC12
             rungStrip.Bind(engine);
             ResetRun();
             programBox.Text = engine.DescribeProgram() + "\r\n\r\n" + DescribePlant();
-            statusLabel.Text = "Programa carregado: " + engine.ProgramName;
         }
 
         /// <summary>
@@ -426,7 +400,7 @@ namespace ModernPC12
             if (usingSample)
             {
                 text.Append("\r\nLógica do exemplo:\r\n");
-                text.Append(SimulationSamples.DescribeConveyorProgram());
+                text.Append(plant.DescribeSampleProgram());
             }
             else
             {
@@ -438,14 +412,14 @@ namespace ModernPC12
 
         private void BuildLayout()
         {
-            bannerLabel = new Label();
-            bannerLabel.Dock = DockStyle.Top;
-            bannerLabel.Height = 30;
-            bannerLabel.TextAlign = ContentAlignment.MiddleLeft;
-            bannerLabel.Padding = new Padding(12, 0, 0, 0);
-            bannerLabel.BackColor = Color.FromArgb(58, 48, 28);
-            bannerLabel.ForeColor = SimulatorTheme.Warning;
-            bannerLabel.Text = "SIMULAÇÃO — PLC virtual do OpenLadder Studio. Nenhuma saída física é acionada e nenhum equipamento é comandado.";
+            Label banner = new Label();
+            banner.Dock = DockStyle.Top;
+            banner.Height = 30;
+            banner.TextAlign = ContentAlignment.MiddleLeft;
+            banner.Padding = new Padding(12, 0, 0, 0);
+            banner.BackColor = Color.FromArgb(58, 48, 28);
+            banner.ForeColor = SimulatorTheme.Warning;
+            banner.Text = "SIMULAÇÃO — PLC virtual do OpenLadder Studio. Nenhuma saída física é acionada e nenhum equipamento é comandado.";
 
             Panel toolbar = BuildToolbar();
             Panel left = BuildLeftPanel();
@@ -454,7 +428,6 @@ namespace ModernPC12
             Panel body = new Panel();
             body.Dock = DockStyle.Fill;
             body.BackColor = SimulatorTheme.Shell;
-            body.Padding = new Padding(0);
             body.Controls.Add(right);
             body.Controls.Add(left);
 
@@ -473,7 +446,7 @@ namespace ModernPC12
             body.BringToFront();
             Controls.Add(statusLabel);
             Controls.Add(toolbar);
-            Controls.Add(bannerLabel);
+            Controls.Add(banner);
         }
 
         private Panel BuildToolbar()
@@ -500,22 +473,21 @@ namespace ModernPC12
             resetButton.Click += delegate { ResetRun(); };
             bar.Controls.Add(resetButton);
 
-            Label speedLabel = new Label();
-            speedLabel.Text = "Velocidade:";
-            speedLabel.AutoSize = true;
-            speedLabel.ForeColor = SimulatorTheme.Muted;
-            speedLabel.Location = new Point(410, 18);
-            bar.Controls.Add(speedLabel);
+            bar.Controls.Add(BarLabel("Planta:", 410));
+            plantCombo = BarCombo(462, 250);
+            for (int i = 0; i < plants.Count; i++) plantCombo.Items.Add(plants[i].DisplayName);
+            plantCombo.SelectedIndex = IndexOf(plant);
+            plantCombo.SelectedIndexChanged += delegate
+            {
+                if (plantCombo.SelectedIndex >= 0 && plantCombo.SelectedIndex < plants.Count)
+                    SelectPlant(plants[plantCombo.SelectedIndex]);
+            };
+            bar.Controls.Add(plantCombo);
 
-            speedCombo = new ComboBox();
-            speedCombo.DropDownStyle = ComboBoxStyle.DropDownList;
+            bar.Controls.Add(BarLabel("Velocidade:", 736));
+            speedCombo = BarCombo(818, 140);
             speedCombo.Items.AddRange(new object[] { "1x (tempo real)", "2x", "5x" });
             speedCombo.SelectedIndex = 0;
-            speedCombo.Location = new Point(488, 14);
-            speedCombo.Size = new Size(140, 24);
-            speedCombo.FlatStyle = FlatStyle.Flat;
-            speedCombo.BackColor = SimulatorTheme.Panel;
-            speedCombo.ForeColor = SimulatorTheme.Fore;
             speedCombo.SelectedIndexChanged += delegate
             {
                 if (speedCombo.SelectedIndex == 1) speedFactor = 2.0;
@@ -525,6 +497,35 @@ namespace ModernPC12
             bar.Controls.Add(speedCombo);
 
             return bar;
+        }
+
+        private int IndexOf(ISimulatedProcess target)
+        {
+            for (int i = 0; i < plants.Count; i++)
+                if (plants[i] == target) return i;
+            return 0;
+        }
+
+        private Label BarLabel(string text, int x)
+        {
+            Label label = new Label();
+            label.Text = text;
+            label.AutoSize = true;
+            label.ForeColor = SimulatorTheme.Muted;
+            label.Location = new Point(x, 18);
+            return label;
+        }
+
+        private ComboBox BarCombo(int x, int width)
+        {
+            ComboBox combo = new ComboBox();
+            combo.DropDownStyle = ComboBoxStyle.DropDownList;
+            combo.Location = new Point(x, 14);
+            combo.Size = new Size(width, 24);
+            combo.FlatStyle = FlatStyle.Flat;
+            combo.BackColor = SimulatorTheme.Panel;
+            combo.ForeColor = SimulatorTheme.Fore;
+            return combo;
         }
 
         private Button ActionButton(string text, int x, Color accent)
@@ -546,13 +547,21 @@ namespace ModernPC12
         {
             Panel panel = new Panel();
             panel.Dock = DockStyle.Left;
-            panel.Width = 396;
+            panel.Width = 400;
             panel.BackColor = SimulatorTheme.Shell;
             panel.Padding = new Padding(12, 12, 6, 12);
 
-            Panel faults = BuildFaultPanel();
+            faultPanel = new Panel();
+            faultPanel.Dock = DockStyle.Bottom;
+            faultPanel.Height = 116;
+            faultPanel.BackColor = SimulatorTheme.Shell;
+
+            fieldPanel = new Panel();
+            fieldPanel.Dock = DockStyle.Bottom;
+            fieldPanel.Height = 112;
+            fieldPanel.BackColor = SimulatorTheme.Shell;
+
             Panel buttons = BuildForcePanel();
-            Panel field = BuildFieldPanel();
 
             ioList = new BufferedListView();
             ioList.Dock = DockStyle.Fill;
@@ -565,24 +574,21 @@ namespace ModernPC12
             ioList.ForeColor = SimulatorTheme.Fore;
             ioList.Font = new Font("Consolas", 9.0f);
             ioList.Columns.Add("Endereço", 78);
-            ioList.Columns.Add("Ponto", 178);
+            ioList.Columns.Add("Ponto", 182);
             ioList.Columns.Add("Valor", 52);
             ioList.Columns.Add("Forçado", 66);
 
             panel.Controls.Add(ioList);
             panel.Controls.Add(buttons);
-            panel.Controls.Add(field);
-            panel.Controls.Add(faults);
+            panel.Controls.Add(fieldPanel);
+            panel.Controls.Add(faultPanel);
             panel.Controls.Add(SectionLabel("Tabela de I/O e forçamento"));
             return panel;
         }
 
-        private Panel BuildFieldPanel()
+        private void PopulateFieldPanel()
         {
-            Panel panel = new Panel();
-            panel.Dock = DockStyle.Bottom;
-            panel.Height = 84;
-            panel.BackColor = SimulatorTheme.Shell;
+            fieldPanel.Controls.Clear();
 
             Label caption = new Label();
             caption.Text = "BOTOEIRAS DE CAMPO (mantêm enquanto pressionadas)";
@@ -590,9 +596,10 @@ namespace ModernPC12
             caption.ForeColor = SimulatorTheme.Muted;
             caption.Font = new Font("Segoe UI", 8.0f, FontStyle.Bold);
             caption.Location = new Point(0, 6);
-            panel.Controls.Add(caption);
+            fieldPanel.Controls.Add(caption);
 
             int x = 0;
+            int y = 28;
             IList<SimulatedIoPoint> points = plant.Points;
             for (int i = 0; i < points.Count; i++)
             {
@@ -603,19 +610,18 @@ namespace ModernPC12
                 if (!SimAddress.TryParseBit(point.Address, out bit)) continue;
 
                 Button button = MomentaryButton(point.Name + "  " + point.Address, bit);
-                button.Location = new Point(x, 28);
-                panel.Controls.Add(button);
+                if (x + button.Width > fieldPanel.Width - 12) { x = 0; y += button.Height + 6; }
+                button.Location = new Point(x, y);
+                fieldPanel.Controls.Add(button);
                 x += button.Width + 8;
             }
-
-            return panel;
         }
 
         private Button MomentaryButton(string text, SimBitRef bit)
         {
             Button button = new Button();
             button.Text = text;
-            button.Size = new Size(178, 30);
+            button.Size = new Size(186, 30);
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderColor = SimulatorTheme.Border;
             button.BackColor = SimulatorTheme.Panel;
@@ -685,12 +691,9 @@ namespace ModernPC12
             return button;
         }
 
-        private Panel BuildFaultPanel()
+        private void PopulateFaultPanel()
         {
-            Panel panel = new Panel();
-            panel.Dock = DockStyle.Bottom;
-            panel.Height = 108;
-            panel.BackColor = SimulatorTheme.Shell;
+            faultPanel.Controls.Clear();
 
             Label caption = new Label();
             caption.Text = "FALHAS INJETÁVEIS NA PLANTA";
@@ -698,7 +701,7 @@ namespace ModernPC12
             caption.ForeColor = SimulatorTheme.Muted;
             caption.Font = new Font("Segoe UI", 8.0f, FontStyle.Bold);
             caption.Location = new Point(0, 6);
-            panel.Controls.Add(caption);
+            faultPanel.Controls.Add(caption);
 
             IList<SimulatedFault> faults = plant.Faults;
             for (int i = 0; i < faults.Count; i++)
@@ -707,6 +710,7 @@ namespace ModernPC12
                 CheckBox check = new CheckBox();
                 check.Text = fault.Name;
                 check.AutoSize = true;
+                check.Checked = fault.Active;
                 check.ForeColor = SimulatorTheme.Fore;
                 check.Location = new Point(2, 28 + (i * 24));
                 check.CheckedChanged += delegate
@@ -714,10 +718,8 @@ namespace ModernPC12
                     fault.Active = check.Checked;
                     statusLabel.Text = (check.Checked ? "Falha injetada: " : "Falha removida: ") + fault.Name + ". " + fault.Description;
                 };
-                panel.Controls.Add(check);
+                faultPanel.Controls.Add(check);
             }
-
-            return panel;
         }
 
         private Panel BuildRightPanel()
@@ -735,10 +737,6 @@ namespace ModernPC12
             programPanel.Controls.Add(programBox);
             programPanel.Controls.Add(SectionLabel("Programa carregado"));
 
-            Panel metrics = new Panel();
-            metrics.Dock = DockStyle.Top;
-            metrics.Height = 164;
-
             scanBox = ReadOnlyBox();
             scanBox.Dock = DockStyle.Right;
             scanBox.Width = 300;
@@ -751,6 +749,9 @@ namespace ModernPC12
             metricsBody.Controls.Add(processBox);
             metricsBody.Controls.Add(scanBox);
 
+            Panel metrics = new Panel();
+            metrics.Dock = DockStyle.Top;
+            metrics.Height = 178;
             metrics.Controls.Add(metricsBody);
             metrics.Controls.Add(SectionLabel("Estado da planta e da varredura"));
 
@@ -762,12 +763,11 @@ namespace ModernPC12
             rungPanel.Dock = DockStyle.Top;
             rungPanel.Height = 48;
             rungPanel.Controls.Add(rungStrip);
-            rungPanel.Controls.Add(SectionLabel("Energização dos rungs"));
+            rungPanel.Controls.Add(SectionLabel("Energização das linhas Ladder"));
 
-            synoptic = new ConveyorSynoptic();
+            synoptic = new ProcessSynoptic();
             synoptic.Dock = DockStyle.Top;
-            synoptic.Height = 250;
-            synoptic.Bind(plant, engine.Image);
+            synoptic.Height = 260;
 
             panel.Controls.Add(programPanel);
             panel.Controls.Add(metrics);
@@ -823,11 +823,13 @@ namespace ModernPC12
                 watchedNames.Add(points[i].Name);
             }
 
-            AddWatch("C0001", "Marcha selada");
-            AddWatch("V0001", "Horímetro de marcha");
-            AddWatch("V0002", "Contador de caixas");
+            AddWatch("C0001", "Auxiliar C0001");
+            AddWatch("C0002", "Auxiliar C0002");
+            AddWatch("V0001", "Temporizador V0001");
+            AddWatch("V0002", "Contador V0002");
             AddWatch("SC004", "Pulso de 1 s");
 
+            ioList.BeginUpdate();
             ioList.Items.Clear();
             for (int i = 0; i < watched.Count; i++)
             {
@@ -838,6 +840,7 @@ namespace ModernPC12
                 item.Tag = watched[i];
                 ioList.Items.Add(item);
             }
+            ioList.EndUpdate();
         }
 
         private void AddWatch(string address, string name)
@@ -879,8 +882,7 @@ namespace ModernPC12
 
         private void ResetRun()
         {
-            bool wasRunning = ticker.Enabled;
-            if (wasRunning) Stop();
+            if (ticker.Enabled) Stop();
 
             engine.Reset();
             engine.Forces.ReleaseAll();
@@ -893,14 +895,12 @@ namespace ModernPC12
             scansPerSecond = 0;
 
             RefreshAll();
-            statusLabel.Text = "Simulação reiniciada.";
         }
 
         private void ExecuteStep()
         {
             plant.Step(StepMs / 1000.0, engine.Image);
             engine.Execute(StepMs);
-            synoptic.Advance(StepMs / 1000.0);
         }
 
         private void OnTick(object sender, EventArgs e)
@@ -981,7 +981,7 @@ namespace ModernPC12
             text += "Tempo simulado: " + (engine.TotalMilliseconds / 1000.0).ToString("0.0", CultureInfo.InvariantCulture) + " s\r\n";
             text += "Período de varredura: " + StepMs.ToString("0", CultureInfo.InvariantCulture) + " ms\r\n";
             text += "Varreduras por segundo: " + scansPerSecond.ToString(CultureInfo.InvariantCulture) + "\r\n";
-            text += "Rungs no programa: " + engine.RungCount.ToString(CultureInfo.InvariantCulture) + "\r\n";
+            text += "Linhas no programa: " + engine.RungCount.ToString(CultureInfo.InvariantCulture) + "\r\n";
             text += "Forçamentos ativos: " + engine.Forces.Count.ToString(CultureInfo.InvariantCulture);
             scanBox.Text = text;
         }

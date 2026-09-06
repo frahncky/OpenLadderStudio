@@ -464,8 +464,8 @@ namespace ModernPC12
                 if (compiled.Output != null && compiled.Output.Kind == UniversalElementKind.End) hasEnd = true;
             }
 
-            if (rungs.Count == 0) diagnostics.Add("O programa não possui rungs.");
-            else if (!hasEnd) diagnostics.Add("Programa sem END: todos os rungs serão executados em cada varredura.");
+            if (rungs.Count == 0) diagnostics.Add("O programa não possui linhas Ladder.");
+            else if (!hasEnd) diagnostics.Add("Programa sem END: todas as linhas Ladder serão executadas em cada varredura.");
 
             return rungs.Count > 0;
         }
@@ -480,7 +480,7 @@ namespace ModernPC12
             CompileLane(source.Parallel, rung, number, true);
 
             if (rung.Output != null && (rung.Output.Kind == UniversalElementKind.RisingEdge || rung.Output.Kind == UniversalElementKind.FallingEdge))
-                diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ": borda sem bobina associada; o pulso é calculado mas não escreve em memória.");
+                diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ": borda sem bobina associada; o pulso é calculado mas não escreve em memória.");
 
             return rung;
         }
@@ -501,12 +501,12 @@ namespace ModernPC12
                 {
                     if (parallel)
                     {
-                        diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ": saída em ramo paralelo não é executada.");
+                        diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ": saída em ramo paralelo não é executada.");
                         continue;
                     }
                     if (rung.Output != null)
                     {
-                        diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ": mais de uma saída; apenas a primeira é executada.");
+                        diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ": mais de uma saída; apenas a primeira é executada.");
                         continue;
                     }
                     rung.Output = CompileOutput(element, number);
@@ -515,7 +515,7 @@ namespace ModernPC12
 
                 if (column >= ConditionColumns)
                 {
-                    diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ": condição na coluna de saída foi ignorada.");
+                    diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ": condição na coluna de saída foi ignorada.");
                     continue;
                 }
 
@@ -525,7 +525,7 @@ namespace ModernPC12
                 condition.Resolved = SimAddress.TryParseBit(element.Address, out bit);
                 condition.Bit = bit;
                 if (!condition.Resolved)
-                    diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ", coluna " + (column + 1).ToString(CultureInfo.InvariantCulture) +
+                    diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ", coluna " + (column + 1).ToString(CultureInfo.InvariantCulture) +
                                     ": endereço \"" + (element.Address ?? string.Empty) + "\" não reconhecido; o bit é lido como 0.");
 
                 if (parallel) rung.Parallel[column] = condition;
@@ -544,7 +544,7 @@ namespace ModernPC12
             if (element.Kind == UniversalElementKind.Function)
             {
                 output.Executable = false;
-                diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ": função " +
+                diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ": função " +
                                 (string.IsNullOrEmpty(element.Address) ? output.FunctionCode : element.Address) +
                                 " ainda não é executada pelo simulador.");
                 return output;
@@ -557,7 +557,7 @@ namespace ModernPC12
             if (!SimAddress.TryParseBit(element.Address, out bit))
             {
                 output.Executable = false;
-                diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ": saída com endereço \"" +
+                diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ": saída com endereço \"" +
                                 (element.Address ?? string.Empty) + "\" não reconhecido.");
                 return output;
             }
@@ -569,7 +569,7 @@ namespace ModernPC12
                 if (bit.Area != SimBitArea.Variable)
                 {
                     output.Executable = false;
-                    diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ": TMR/CNT exigem identificador V0001–V0256.");
+                    diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ": TMR/CNT exigem identificador V0001–V0256.");
                     return output;
                 }
 
@@ -589,7 +589,7 @@ namespace ModernPC12
                 else
                 {
                     output.Executable = false;
-                    diagnostics.Add("Rung " + number.ToString(CultureInfo.InvariantCulture) + ": preset \"" +
+                    diagnostics.Add("Linha " + number.ToString(CultureInfo.InvariantCulture) + ": preset \"" +
                                     (element.Parameter ?? string.Empty) + "\" inválido.");
                 }
             }
@@ -788,7 +788,7 @@ namespace ModernPC12
         {
             StringBuilder text = new StringBuilder();
             text.Append("Programa: ").Append(programName).Append("\r\n");
-            text.Append("Rungs: ").Append(rungs.Count.ToString(CultureInfo.InvariantCulture)).Append("\r\n");
+            text.Append("Linhas: ").Append(rungs.Count.ToString(CultureInfo.InvariantCulture)).Append("\r\n");
             if (diagnostics.Count == 0) text.Append("Sem avisos de compilação.");
             else
             {

@@ -8,7 +8,7 @@
       "layer": "Domain",
       "owns": [
         "PLC platform contracts, controller capabilities, memory addressing, universal ladder model",
-        "ladder scan engine, virtual process image and simulated plant models"
+        "ladder scan engine, virtual process image, simulated plant library and synoptic scene model"
       ],
       "mustNotDependOn": [
         "System.Windows.Forms",

@@ -47,6 +47,7 @@ Arquivos atuais:
 - `UniversalLadderAdapter.cs`;
 - `LadderSimulation.cs`;
 - `ProcessSimulation.cs`;
+- `SimulatedPlants.cs`;
 - estruturas de mapa de memória que não dependem de UI.
 
 Regra principal: o domínio não deve referenciar WinForms, arquivos de tela ou detalhes de comunicação serial/TCP.

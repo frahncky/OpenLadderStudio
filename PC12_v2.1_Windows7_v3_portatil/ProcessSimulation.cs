@@ -83,8 +83,17 @@ namespace ModernPC12
 
         public bool Update(double input)
         {
-            if (state) { if (input <= offLevel) state = false; }
-            else { if (input >= onLevel) state = true; }
+            if (onLevel >= offLevel)
+            {
+                if (state) { if (input <= offLevel) state = false; }
+                else { if (input >= onLevel) state = true; }
+            }
+            else
+            {
+                // Limiar invertido: liga abaixo de onLevel e desliga acima de offLevel.
+                if (state) { if (input >= offLevel) state = false; }
+                else { if (input <= onLevel) state = true; }
+            }
             return state;
         }
     }
@@ -128,6 +137,168 @@ namespace ModernPC12
         }
     }
 
+    /// <summary>Papel visual de uma primitiva. A cor concreta é escolhida pela interface.</summary>
+    internal enum SimTone
+    {
+        Neutral,
+        Structure,
+        Active,
+        Info,
+        Warning,
+        Danger,
+        Cargo,
+        Muted,
+        Dark
+    }
+
+    internal enum SimTextAlign
+    {
+        Left,
+        Center,
+        Right
+    }
+
+    internal enum SimShapeKind
+    {
+        Rectangle,
+        Ellipse,
+        Line,
+        Text,
+        Belt,
+        Level,
+        Lamp
+    }
+
+    /// <summary>
+    /// Primitiva de desenho do sinóptico. Em <see cref="SimShapeKind.Line"/> os campos
+    /// W e H são o segundo ponto do segmento, e não largura e altura.
+    /// </summary>
+    internal sealed class SimShape
+    {
+        public SimShapeKind Kind;
+        public double X;
+        public double Y;
+        public double W;
+        public double H;
+        public SimTone Fill = SimTone.Neutral;
+        public SimTone Stroke = SimTone.Structure;
+        public string Text = string.Empty;
+        public double Value;
+        public bool On;
+        public bool Dashed;
+        public bool Bold;
+        public SimTextAlign Align = SimTextAlign.Left;
+    }
+
+    /// <summary>
+    /// Sinóptico de uma planta, descrito em coordenadas próprias e sem depender de WinForms.
+    /// A interface escala a cena para o tamanho disponível e escolhe as cores de cada papel.
+    /// </summary>
+    internal sealed class SimScene
+    {
+        public const double Width = 1000.0;
+        public const double Height = 320.0;
+
+        private readonly List<SimShape> shapes = new List<SimShape>();
+
+        public IList<SimShape> Shapes { get { return shapes.AsReadOnly(); } }
+
+        public void Clear()
+        {
+            shapes.Clear();
+        }
+
+        public SimScene Rect(double x, double y, double w, double h, SimTone fill, SimTone stroke)
+        {
+            return Rect(x, y, w, h, fill, stroke, string.Empty);
+        }
+
+        public SimScene Rect(double x, double y, double w, double h, SimTone fill, SimTone stroke, string text)
+        {
+            SimShape shape = new SimShape();
+            shape.Kind = SimShapeKind.Rectangle;
+            shape.X = x; shape.Y = y; shape.W = w; shape.H = h;
+            shape.Fill = fill; shape.Stroke = stroke; shape.Text = text ?? string.Empty;
+            shapes.Add(shape);
+            return this;
+        }
+
+        public SimScene Ellipse(double x, double y, double w, double h, SimTone fill, SimTone stroke)
+        {
+            SimShape shape = new SimShape();
+            shape.Kind = SimShapeKind.Ellipse;
+            shape.X = x; shape.Y = y; shape.W = w; shape.H = h;
+            shape.Fill = fill; shape.Stroke = stroke;
+            shapes.Add(shape);
+            return this;
+        }
+
+        public SimScene Line(double x1, double y1, double x2, double y2, SimTone tone)
+        {
+            return Line(x1, y1, x2, y2, tone, false);
+        }
+
+        public SimScene Line(double x1, double y1, double x2, double y2, SimTone tone, bool dashed)
+        {
+            SimShape shape = new SimShape();
+            shape.Kind = SimShapeKind.Line;
+            shape.X = x1; shape.Y = y1; shape.W = x2; shape.H = y2;
+            shape.Stroke = tone; shape.Dashed = dashed;
+            shapes.Add(shape);
+            return this;
+        }
+
+        public SimScene Label(double x, double y, string text, SimTone tone)
+        {
+            return Label(x, y, text, tone, SimTextAlign.Left, false);
+        }
+
+        public SimScene Label(double x, double y, string text, SimTone tone, SimTextAlign align, bool bold)
+        {
+            SimShape shape = new SimShape();
+            shape.Kind = SimShapeKind.Text;
+            shape.X = x; shape.Y = y;
+            shape.Text = text ?? string.Empty;
+            shape.Fill = tone; shape.Align = align; shape.Bold = bold;
+            shapes.Add(shape);
+            return this;
+        }
+
+        /// <summary>Correia com estrias que se deslocam conforme a fase informada.</summary>
+        public SimScene Belt(double x, double y, double w, double h, double phase)
+        {
+            SimShape shape = new SimShape();
+            shape.Kind = SimShapeKind.Belt;
+            shape.X = x; shape.Y = y; shape.W = w; shape.H = h;
+            shape.Value = phase;
+            shape.Fill = SimTone.Structure; shape.Stroke = SimTone.Structure;
+            shapes.Add(shape);
+            return this;
+        }
+
+        /// <summary>Recipiente com preenchimento proporcional, de baixo para cima.</summary>
+        public SimScene Level(double x, double y, double w, double h, double fraction, SimTone tone)
+        {
+            SimShape shape = new SimShape();
+            shape.Kind = SimShapeKind.Level;
+            shape.X = x; shape.Y = y; shape.W = w; shape.H = h;
+            shape.Value = fraction < 0.0 ? 0.0 : (fraction > 1.0 ? 1.0 : fraction);
+            shape.Fill = tone; shape.Stroke = SimTone.Structure;
+            shapes.Add(shape);
+            return this;
+        }
+
+        public SimScene Lamp(double x, double y, double diameter, bool on, SimTone tone)
+        {
+            SimShape shape = new SimShape();
+            shape.Kind = SimShapeKind.Lamp;
+            shape.X = x; shape.Y = y; shape.W = diameter; shape.H = diameter;
+            shape.On = on; shape.Fill = tone;
+            shapes.Add(shape);
+            return this;
+        }
+    }
+
     /// <summary>
     /// Contrato de planta virtual. A planta lê as saídas do PLC e escreve as entradas,
     /// em um relógio próprio, independente do tempo de varredura.
@@ -143,362 +314,117 @@ namespace ModernPC12
         void Reset();
         void Step(double dtSeconds, PlcProcessImage image);
         string StateSummary();
-    }
 
-    internal sealed class ConveyorBox
-    {
-        public int Id;
-        public double Position;
+        /// <summary>Descreve o sinóptico no estado atual.</summary>
+        void BuildScene(SimScene scene, PlcProcessImage image);
+
+        /// <summary>Programa Ladder de exemplo que comanda esta planta.</summary>
+        UniversalLadderProgram BuildSampleProgram();
+
+        /// <summary>Explicação rung a rung do programa de exemplo.</summary>
+        string DescribeSampleProgram();
     }
 
     /// <summary>
-    /// Esteira transportadora com alimentador, dois sensores fotoelétricos, desviador pneumático
-    /// e proteção térmica do motor.
-    ///
-    /// O realismo vem das imperfeições e não da equação ideal: rampa de aceleração do motor,
-    /// tempo de curso do pistão, atraso de resposta dos sensores, histerese de comparação,
-    /// jitter no intervalo de alimentação e falhas injetáveis.
+    /// Base comum das plantas: registro de pontos de I/O, falhas injetáveis e resolução
+    /// de endereços, para que cada processo trate apenas da própria física.
     /// </summary>
-    internal sealed class ConveyorProcess : ISimulatedProcess
+    internal abstract class SimulatedProcessBase : ISimulatedProcess
     {
-        public const string MotorOutput = "Y0001";
-        public const string PusherOutput = "Y0002";
-        public const string LampOutput = "Y0003";
-        public const string EntrySensorInput = "X0001";
-        public const string ExitSensorInput = "X0002";
-        public const string PusherFeedbackInput = "X0003";
-        public const string StartInput = "X0004";
-        public const string StopInput = "X0005";
-        public const string OverloadInput = "X0006";
-
-        public const double BeltLength = 2.0;
-        public const double BoxLength = 0.20;
-        public const double EntrySensorPosition = 0.20;
-        public const double ExitSensorPosition = 1.70;
-        public const double PusherPosition = 1.78;
-
-        /// <summary>Largura da placa do desviador. Define a janela física de captura da caixa.</summary>
-        public const double PusherPlateWidth = 0.30;
-
-        private const double NominalSpeed = 0.30;
-        private const double Acceleration = 0.60;
-        private const double Braking = 0.90;
-        private const double PusherExtendRate = 1.0 / 0.35;
-        private const double PusherRetractRate = 1.0 / 0.45;
-        private const double SlipFactor = 0.35;
-        private const double OverloadDelaySeconds = 8.0;
-        private const double FeedIntervalSeconds = 4.0;
-
         private readonly List<SimulatedIoPoint> points = new List<SimulatedIoPoint>();
         private readonly List<SimulatedFault> faults = new List<SimulatedFault>();
-        private readonly List<ConveyorBox> boxes = new List<ConveyorBox>();
 
-        private readonly SimulatedFault slipFault = new SimulatedFault("belt.slip", "Esteira patinando", "Reduz a velocidade da correia e leva o motor à sobrecarga térmica.");
-        private readonly SimulatedFault exitSensorFault = new SimulatedFault("sensor.exit.stuck", "Sensor de saída travado", "O sensor X0002 congela no último valor lido.");
-        private readonly SimulatedFault pusherFault = new SimulatedFault("pusher.jam", "Desviador emperrado", "O pistão não completa o curso e o fim de curso X0003 nunca é atingido.");
-
-        private readonly RateLimiter speed = new RateLimiter();
-        private readonly RateLimiter pusherStroke = new RateLimiter();
-        private readonly FirstOrderLag entrySensorLag = new FirstOrderLag(0.025);
-        private readonly FirstOrderLag exitSensorLag = new FirstOrderLag(0.025);
-        private readonly HysteresisSwitch entrySensorSwitch = new HysteresisSwitch(0.60, 0.40);
-        private readonly HysteresisSwitch exitSensorSwitch = new HysteresisSwitch(0.60, 0.40);
-        private readonly HysteresisSwitch pusherFeedbackSwitch = new HysteresisSwitch(0.97, 0.90);
-        private readonly Random jitter = new Random(20260905);
-
-        private SimBitRef motorBit;
-        private SimBitRef pusherBit;
-        private SimBitRef entryBit;
-        private SimBitRef exitBit;
-        private SimBitRef feedbackBit;
-        private SimBitRef overloadBit;
-
-        private double feedTimer;
-        private double nextFeedInterval = FeedIntervalSeconds;
-        private double overloadTimer;
-        private double runningSeconds;
-        private bool overloadTripped;
-        private bool exitSensorHeld;
-        private int nextBoxId = 1;
-        private int divertedCount;
-        private int lostCount;
-
-        public ConveyorProcess()
-        {
-            points.Add(new SimulatedIoPoint(MotorOutput, "Motor da esteira", SimIoDirection.PlcOutput, true));
-            points.Add(new SimulatedIoPoint(PusherOutput, "Desviador pneumático", SimIoDirection.PlcOutput, true));
-            points.Add(new SimulatedIoPoint(LampOutput, "Sinaleiro de marcha", SimIoDirection.PlcOutput, true));
-            points.Add(new SimulatedIoPoint(EntrySensorInput, "Sensor de entrada S1", SimIoDirection.PlcInput, true));
-            points.Add(new SimulatedIoPoint(ExitSensorInput, "Sensor de saída S2", SimIoDirection.PlcInput, true));
-            points.Add(new SimulatedIoPoint(PusherFeedbackInput, "Fim de curso do desviador", SimIoDirection.PlcInput, true));
-            points.Add(new SimulatedIoPoint(StartInput, "Botoeira liga", SimIoDirection.PlcInput, false));
-            points.Add(new SimulatedIoPoint(StopInput, "Botoeira para", SimIoDirection.PlcInput, false));
-            points.Add(new SimulatedIoPoint(OverloadInput, "Relé térmico do motor", SimIoDirection.PlcInput, true));
-
-            faults.Add(slipFault);
-            faults.Add(exitSensorFault);
-            faults.Add(pusherFault);
-
-            SimAddress.TryParseBit(MotorOutput, out motorBit);
-            SimAddress.TryParseBit(PusherOutput, out pusherBit);
-            SimAddress.TryParseBit(EntrySensorInput, out entryBit);
-            SimAddress.TryParseBit(ExitSensorInput, out exitBit);
-            SimAddress.TryParseBit(PusherFeedbackInput, out feedbackBit);
-            SimAddress.TryParseBit(OverloadInput, out overloadBit);
-
-            Reset();
-        }
-
-        public string Id { get { return "conveyor.diverter"; } }
-        public string DisplayName { get { return "Esteira com desviador"; } }
-
-        public string Description
-        {
-            get
-            {
-                return "Esteira de " + BeltLength.ToString("0.0", CultureInfo.InvariantCulture) +
-                       " m com alimentador, sensores fotoelétricos na entrada e na saída, desviador pneumático com fim de curso e proteção térmica.";
-            }
-        }
+        public abstract string Id { get; }
+        public abstract string DisplayName { get; }
+        public abstract string Description { get; }
 
         public IList<SimulatedIoPoint> Points { get { return points.AsReadOnly(); } }
         public IList<SimulatedFault> Faults { get { return faults.AsReadOnly(); } }
-        public IList<ConveyorBox> Boxes { get { return boxes.AsReadOnly(); } }
 
-        public double BeltSpeed { get { return speed.Value; } }
-        public double PusherStroke { get { return pusherStroke.Value; } }
-        public bool OverloadTripped { get { return overloadTripped; } }
-        public int DivertedCount { get { return divertedCount; } }
-        public int LostCount { get { return lostCount; } }
-        public double RunningSeconds { get { return runningSeconds; } }
-
-        public void Reset()
+        protected SimBitRef Output(string address, string name)
         {
-            boxes.Clear();
-            speed.Reset(0.0);
-            pusherStroke.Reset(0.0);
-            entrySensorLag.Reset(0.0);
-            exitSensorLag.Reset(0.0);
-            entrySensorSwitch.Reset(false);
-            exitSensorSwitch.Reset(false);
-            pusherFeedbackSwitch.Reset(false);
-
-            feedTimer = 0.0;
-            nextFeedInterval = FeedIntervalSeconds;
-            overloadTimer = 0.0;
-            runningSeconds = 0.0;
-            overloadTripped = false;
-            exitSensorHeld = false;
-            nextBoxId = 1;
-            divertedCount = 0;
-            lostCount = 0;
+            return Register(address, name, SimIoDirection.PlcOutput, true);
         }
 
-        public void Step(double dt, PlcProcessImage image)
+        /// <summary>Entrada escrita pela planta: sensor, fim de curso, relé de proteção.</summary>
+        protected SimBitRef Sensor(string address, string name)
         {
-            if (dt <= 0.0 || image == null) return;
-
-            bool motorCommand = image.GetBit(motorBit);
-            bool pusherCommand = image.GetBit(pusherBit);
-
-            UpdateOverload(motorCommand, dt);
-            UpdateSpeed(motorCommand, dt);
-            MoveBoxes(dt);
-            UpdatePusher(pusherCommand, dt);
-            FeedBoxes(dt);
-
-            image.SetBit(entryBit, ReadEntrySensor(dt));
-            image.SetBit(exitBit, ReadExitSensor(dt));
-            image.SetBit(feedbackBit, pusherFeedbackSwitch.Update(pusherStroke.Value));
-            image.SetBit(overloadBit, overloadTripped);
+            return Register(address, name, SimIoDirection.PlcInput, true);
         }
 
-        private void UpdateOverload(bool motorCommand, double dt)
+        /// <summary>Entrada de campo: botoeira ou chave que o operador aciona.</summary>
+        protected SimBitRef Button(string address, string name)
         {
-            if (motorCommand && slipFault.Active && !overloadTripped)
-            {
-                overloadTimer += dt;
-                if (overloadTimer >= OverloadDelaySeconds) overloadTripped = true;
-            }
-            else if (!motorCommand)
-            {
-                overloadTimer = Math.Max(0.0, overloadTimer - (dt * 0.5));
-            }
+            return Register(address, name, SimIoDirection.PlcInput, false);
         }
 
-        private void UpdateSpeed(bool motorCommand, double dt)
+        protected SimulatedFault Fault(string id, string name, string description)
         {
-            bool energised = motorCommand && !overloadTripped;
-            double target = energised ? NominalSpeed * (slipFault.Active ? SlipFactor : 1.0) : 0.0;
-            speed.Update(target, Acceleration, Braking, dt);
-            if (speed.Value > 0.001) runningSeconds += dt;
+            SimulatedFault fault = new SimulatedFault(id, name, description);
+            faults.Add(fault);
+            return fault;
         }
 
-        private void UpdatePusher(bool pusherCommand, double dt)
+        private SimBitRef Register(string address, string name, SimIoDirection direction, bool drivenByProcess)
         {
-            double target = pusherCommand ? 1.0 : 0.0;
-            if (pusherFault.Active && target > 0.55) target = 0.55;
-            pusherStroke.Update(target, PusherExtendRate, PusherRetractRate, dt);
-
-            // A placa varre a esteira: qualquer caixa dentro da janela física sai enquanto o curso está avançado.
-            if (pusherStroke.Value >= 0.60) DivertBoxes();
+            points.Add(new SimulatedIoPoint(address, name, direction, drivenByProcess));
+            SimBitRef bit;
+            SimAddress.TryParseBit(address, out bit);
+            return bit;
         }
 
-        private void DivertBoxes()
+        protected void ClearFaults()
         {
-            double window = (BoxLength + PusherPlateWidth) / 2.0;
-            for (int i = boxes.Count - 1; i >= 0; i--)
-            {
-                if (Math.Abs(boxes[i].Position - PusherPosition) <= window)
-                {
-                    boxes.RemoveAt(i);
-                    divertedCount++;
-                }
-            }
+            for (int i = 0; i < faults.Count; i++) faults[i].Active = false;
         }
 
-        private void MoveBoxes(double dt)
-        {
-            double step = speed.Value * dt;
-            for (int i = boxes.Count - 1; i >= 0; i--)
-            {
-                boxes[i].Position += step;
-                if (boxes[i].Position > BeltLength)
-                {
-                    boxes.RemoveAt(i);
-                    lostCount++;
-                }
-            }
-        }
-
-        private void FeedBoxes(double dt)
-        {
-            feedTimer += dt;
-            if (feedTimer < nextFeedInterval) return;
-
-            feedTimer = 0.0;
-            nextFeedInterval = FeedIntervalSeconds * (0.90 + (jitter.NextDouble() * 0.20));
-
-            for (int i = 0; i < boxes.Count; i++)
-                if (boxes[i].Position < BoxLength) return;
-
-            ConveyorBox box = new ConveyorBox();
-            box.Id = nextBoxId++;
-            box.Position = 0.0;
-            boxes.Add(box);
-        }
-
-        private bool ReadEntrySensor(double dt)
-        {
-            double raw = Covers(EntrySensorPosition) ? 1.0 : 0.0;
-            return entrySensorSwitch.Update(entrySensorLag.Update(raw, dt));
-        }
-
-        private bool ReadExitSensor(double dt)
-        {
-            if (exitSensorFault.Active) return exitSensorHeld;
-
-            double raw = Covers(ExitSensorPosition) ? 1.0 : 0.0;
-            exitSensorHeld = exitSensorSwitch.Update(exitSensorLag.Update(raw, dt));
-            return exitSensorHeld;
-        }
-
-        private bool Covers(double sensorPosition)
-        {
-            for (int i = 0; i < boxes.Count; i++)
-                if (Math.Abs(boxes[i].Position - sensorPosition) <= (BoxLength / 2.0)) return true;
-            return false;
-        }
-
-        public string StateSummary()
-        {
-            StringBuilder text = new StringBuilder();
-            text.Append("Velocidade da correia: ").Append(speed.Value.ToString("0.000", CultureInfo.InvariantCulture)).Append(" m/s\r\n");
-            text.Append("Curso do desviador: ").Append((pusherStroke.Value * 100.0).ToString("0", CultureInfo.InvariantCulture)).Append(" %\r\n");
-            text.Append("Caixas na esteira: ").Append(boxes.Count.ToString(CultureInfo.InvariantCulture)).Append("\r\n");
-            text.Append("Caixas desviadas: ").Append(divertedCount.ToString(CultureInfo.InvariantCulture)).Append("\r\n");
-            text.Append("Caixas perdidas no fim da esteira: ").Append(lostCount.ToString(CultureInfo.InvariantCulture)).Append("\r\n");
-            text.Append("Tempo de correia em movimento: ").Append(runningSeconds.ToString("0.0", CultureInfo.InvariantCulture)).Append(" s\r\n");
-            text.Append("Relé térmico: ").Append(overloadTripped ? "atuado" : "normal");
-            return text.ToString();
-        }
+        public abstract void Reset();
+        public abstract void Step(double dtSeconds, PlcProcessImage image);
+        public abstract string StateSummary();
+        public abstract void BuildScene(SimScene scene, PlcProcessImage image);
+        public abstract UniversalLadderProgram BuildSampleProgram();
+        public abstract string DescribeSampleProgram();
     }
 
     /// <summary>
-    /// Programas de exemplo do simulador. São montados diretamente no modelo Ladder universal
-    /// e usam apenas elementos que o editor já sabe inserir.
+    /// Montagem de rungs no modelo Ladder universal. Cada rung tem sete colunas de condição
+    /// e a última coluna reservada à saída, como no editor.
     /// </summary>
-    internal static class SimulationSamples
+    internal sealed class RungBuilder
     {
-        public static UniversalLadderProgram BuildConveyorProgram()
+        private readonly UniversalLadderRung rung = new UniversalLadderRung();
+
+        public RungBuilder NO(int column, string address)
         {
-            UniversalLadderProgram program = new UniversalLadderProgram();
-            program.Name = "Esteira com desviador (exemplo)";
-
-            UniversalLadderRung start = new UniversalLadderRung();
-            start.Series.Add(Contact(0, false, ConveyorProcess.StartInput));
-            start.Parallel.Add(Contact(0, false, "C0001"));
-            start.Series.Add(Contact(1, true, ConveyorProcess.StopInput));
-            start.Series.Add(Contact(2, true, ConveyorProcess.OverloadInput));
-            start.Series.Add(Coil("C0001"));
-            program.Rungs.Add(start);
-
-            UniversalLadderRung motor = new UniversalLadderRung();
-            motor.Series.Add(Contact(0, false, "C0001"));
-            motor.Series.Add(Contact(1, true, ConveyorProcess.PusherOutput));
-            motor.Series.Add(Coil(ConveyorProcess.MotorOutput));
-            program.Rungs.Add(motor);
-
-            UniversalLadderRung arm = new UniversalLadderRung();
-            arm.Series.Add(Contact(0, false, ConveyorProcess.ExitSensorInput));
-            arm.Series.Add(Contact(1, false, "C0001"));
-            arm.Series.Add(Contact(2, true, ConveyorProcess.PusherFeedbackInput));
-            arm.Series.Add(Output(UniversalElementKind.Set, ConveyorProcess.PusherOutput, string.Empty, string.Empty));
-            program.Rungs.Add(arm);
-
-            UniversalLadderRung retract = new UniversalLadderRung();
-            retract.Series.Add(Contact(0, false, ConveyorProcess.PusherFeedbackInput));
-            retract.Series.Add(Output(UniversalElementKind.Reset, ConveyorProcess.PusherOutput, string.Empty, string.Empty));
-            program.Rungs.Add(retract);
-
-            UniversalLadderRung counter = new UniversalLadderRung();
-            counter.Series.Add(Contact(0, false, ConveyorProcess.PusherFeedbackInput));
-            counter.Series.Add(Output(UniversalElementKind.Counter, "V0002", "999", string.Empty));
-            program.Rungs.Add(counter);
-
-            UniversalLadderRung lamp = new UniversalLadderRung();
-            lamp.Series.Add(Contact(0, false, "C0001"));
-            lamp.Series.Add(Contact(1, false, "SC004"));
-            lamp.Series.Add(Coil(ConveyorProcess.LampOutput));
-            program.Rungs.Add(lamp);
-
-            UniversalLadderRung hourMeter = new UniversalLadderRung();
-            hourMeter.Series.Add(Contact(0, false, "C0001"));
-            hourMeter.Series.Add(Output(UniversalElementKind.Timer, "V0001", "600", "RESET"));
-            program.Rungs.Add(hourMeter);
-
-            UniversalLadderRung end = new UniversalLadderRung();
-            end.Series.Add(Output(UniversalElementKind.End, string.Empty, string.Empty, string.Empty));
-            program.Rungs.Add(end);
-
-            return program;
+            rung.Series.Add(Contact(column, address, false));
+            return this;
         }
 
-        public static string DescribeConveyorProgram()
+        public RungBuilder NC(int column, string address)
         {
-            StringBuilder text = new StringBuilder();
-            text.Append("1  X0004 ou C0001, com X0005 e X0006 normalmente fechados, selam C0001 (marcha).\r\n");
-            text.Append("2  C0001 com Y0002 normalmente fechado aciona Y0001 (motor da esteira).\r\n");
-            text.Append("3  X0002 e C0001, com X0003 normalmente fechado, dão SET em Y0002 (avança o desviador).\r\n");
-            text.Append("4  X0003 dá RESET em Y0002 (recolhe o desviador no fim de curso).\r\n");
-            text.Append("5  X0003 incrementa o contador V0002 (caixas desviadas).\r\n");
-            text.Append("6  C0001 com SC004 pisca Y0003 (sinaleiro de marcha a 1 Hz).\r\n");
-            text.Append("7  C0001 alimenta o temporizador retentivo V0001 (horímetro de marcha).\r\n");
-            text.Append("8  END.");
-            return text.ToString();
+            rung.Series.Add(Contact(column, address, true));
+            return this;
         }
 
-        private static UniversalLadderElement Contact(int column, bool normallyClosed, string address)
+        public RungBuilder ParallelNO(int column, string address)
+        {
+            rung.Parallel.Add(Contact(column, address, false));
+            return this;
+        }
+
+        public RungBuilder ParallelNC(int column, string address)
+        {
+            rung.Parallel.Add(Contact(column, address, true));
+            return this;
+        }
+
+        public UniversalLadderRung Out(UniversalLadderElement output)
+        {
+            rung.Series.Add(output);
+            return rung;
+        }
+
+        private static UniversalLadderElement Contact(int column, string address, bool normallyClosed)
         {
             UniversalLadderElement element = new UniversalLadderElement();
             element.Kind = normallyClosed ? UniversalElementKind.ContactNC : UniversalElementKind.ContactNO;
@@ -506,10 +432,44 @@ namespace ModernPC12
             element.Column = column;
             return element;
         }
+    }
 
-        private static UniversalLadderElement Coil(string address)
+    internal static class LadderBuild
+    {
+        public static RungBuilder Rung()
+        {
+            return new RungBuilder();
+        }
+
+        public static UniversalLadderElement Coil(string address)
         {
             return Output(UniversalElementKind.Coil, address, string.Empty, string.Empty);
+        }
+
+        public static UniversalLadderElement Set(string address)
+        {
+            return Output(UniversalElementKind.Set, address, string.Empty, string.Empty);
+        }
+
+        public static UniversalLadderElement Reset(string address)
+        {
+            return Output(UniversalElementKind.Reset, address, string.Empty, string.Empty);
+        }
+
+        /// <summary>Temporizador. O preset é contado em décimos de segundo.</summary>
+        public static UniversalLadderElement Timer(string variable, int preset, bool retentive)
+        {
+            return Output(UniversalElementKind.Timer, variable, preset.ToString(CultureInfo.InvariantCulture), retentive ? "RESET" : string.Empty);
+        }
+
+        public static UniversalLadderElement Counter(string variable, int preset)
+        {
+            return Output(UniversalElementKind.Counter, variable, preset.ToString(CultureInfo.InvariantCulture), string.Empty);
+        }
+
+        public static UniversalLadderElement End()
+        {
+            return Output(UniversalElementKind.End, string.Empty, string.Empty, string.Empty);
         }
 
         private static UniversalLadderElement Output(UniversalElementKind kind, string address, string parameter, string functionCode)
@@ -521,6 +481,29 @@ namespace ModernPC12
             element.FunctionCode = functionCode;
             element.Column = LadderScanEngine.ConditionColumns;
             return element;
+        }
+    }
+
+    /// <summary>
+    /// Plantas disponíveis no simulador. É o ponto de extensão da biblioteca de processos.
+    /// </summary>
+    internal static class SimulatedProcessCatalog
+    {
+        public static IList<ISimulatedProcess> Create()
+        {
+            List<ISimulatedProcess> list = new List<ISimulatedProcess>();
+            list.Add(new ConveyorProcess());
+            list.Add(new SiloProcess());
+            list.Add(new StarDeltaProcess());
+            list.Add(new TrafficLightProcess());
+            list.Add(new FreightElevatorProcess());
+            list.Add(new PressProcess());
+            return list;
+        }
+
+        public static string DefaultId
+        {
+            get { return "conveyor.diverter"; }
         }
     }
 }

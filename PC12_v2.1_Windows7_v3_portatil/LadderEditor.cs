@@ -393,12 +393,12 @@ namespace ModernPC12
                 return;
             }
 
-            string address = AddressDialog.Ask("Contato TP02", "Endereço do contato (X0001, Y0001, C0001 ou SC001):", "X0001");
+            string address = AddressDialog.Ask("Contato TP02", "Endereço do contato (X0001, Y0001, C0001, SC001 ou V0001):", "X0001");
             if (address == null) return;
             address = NormalizeBitAddress(address);
             if (!IsBitAddress(address))
             {
-                MessageBox.Show("Endereço inválido para contato TP02. Use X0001–X0384, Y0001–Y0384, C0001–C2048 ou SC001–SC128.", "Endereço inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Endereço inválido para contato TP02. Use X0001–X0384, Y0001–Y0384, C0001–C2048, SC001–SC128 ou V0001–V0256.", "Endereço inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -452,7 +452,7 @@ namespace ModernPC12
                 string address = AddressDialog.Ask("OUT / Bobina", "Saída ou ponto auxiliar (Y0001 ou C0001):", "Y0001");
                 if (address == null) return;
                 address = NormalizeBitAddress(address);
-                if (!IsCoilAddress(address)) { ShowOutputAddressError(); return; }
+                if (!IsCoilAddress(address)) { ShowOutputAddressError(false); return; }
                 next.Type = LadderElementType.Coil;
                 next.Address = address;
             }
@@ -482,10 +482,12 @@ namespace ModernPC12
             }
             else if (tool == LadderTool.Set || tool == LadderTool.Reset)
             {
-                string target = AddressDialog.Ask(tool == LadderTool.Set ? "SET F-23" : "RESET F-24", "Bobina alvo (Y0001 ou C0001):", "Y0001");
+                bool reset = tool == LadderTool.Reset;
+                string target = AddressDialog.Ask(reset ? "RESET F-24" : "SET F-23",
+                    reset ? "Alvo (Y0001, C0001 ou V0001):" : "Bobina alvo (Y0001 ou C0001):", "Y0001");
                 if (target == null) return;
                 target = NormalizeBitAddress(target);
-                if (!IsCoilAddress(target)) { ShowOutputAddressError(); return; }
+                if (reset ? !IsResetAddress(target) : !IsCoilAddress(target)) { ShowOutputAddressError(reset); return; }
                 next.Type = tool == LadderTool.Set ? LadderElementType.Set : LadderElementType.Reset;
                 next.Address = target;
             }
@@ -533,9 +535,12 @@ namespace ModernPC12
             target.Mode = source.Mode;
         }
 
-        private void ShowOutputAddressError()
+        private void ShowOutputAddressError(bool reset)
         {
-            MessageBox.Show("Para OUT, SET e RESET use uma saída Y0001–Y0384 ou ponto auxiliar C0001–C2048.", "Endereço inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            string text = reset
+                ? "Para RESET use uma saída Y0001–Y0384, um ponto auxiliar C0001–C2048 ou um bloco V0001–V0256."
+                : "Para OUT e SET use uma saída Y0001–Y0384 ou ponto auxiliar C0001–C2048.";
+            MessageBox.Show(text, "Endereço inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         private void CanvasElementDoubleClick(object sender, EventArgs e)
@@ -554,10 +559,11 @@ namespace ModernPC12
 
             if (el.Type == LadderElementType.Coil || el.Type == LadderElementType.Set || el.Type == LadderElementType.Reset)
             {
+                bool reset = el.Type == LadderElementType.Reset;
                 string address = AddressDialog.Ask("Editar saída", "Novo endereço:", el.Address);
                 if (address == null) return;
                 address = NormalizeBitAddress(address);
-                if (!IsCoilAddress(address)) { ShowOutputAddressError(); return; }
+                if (reset ? !IsResetAddress(address) : !IsCoilAddress(address)) { ShowOutputAddressError(reset); return; }
                 SaveUndoState(); el.Address = address; MarkChanged("Saída atualizada."); return;
             }
 
@@ -595,7 +601,7 @@ namespace ModernPC12
             int n;
             if (!int.TryParse(digits, out n)) return v;
             if (prefix == "SC") return "SC" + n.ToString("000");
-            if (prefix == "X" || prefix == "Y" || prefix == "C") return prefix + n.ToString("0000");
+            if (prefix == "X" || prefix == "Y" || prefix == "C" || prefix == "V") return prefix + n.ToString("0000");
             return v;
         }
 
@@ -606,6 +612,7 @@ namespace ModernPC12
             if (value.StartsWith("X") && int.TryParse(value.Substring(1), out n)) return n >= 1 && n <= 384;
             if (value.StartsWith("Y") && int.TryParse(value.Substring(1), out n)) return n >= 1 && n <= 384;
             if (value.StartsWith("C") && int.TryParse(value.Substring(1), out n)) return n >= 1 && n <= 2048;
+            if (value.StartsWith("V") && int.TryParse(value.Substring(1), out n)) return n >= 1 && n <= 256;
             return false;
         }
 
@@ -615,6 +622,18 @@ namespace ModernPC12
             if (value.StartsWith("Y") && int.TryParse(value.Substring(1), out n)) return n >= 1 && n <= 384;
             if (value.StartsWith("C") && int.TryParse(value.Substring(1), out n)) return n >= 1 && n <= 2048;
             return false;
+        }
+
+        /// <summary>
+        /// RESET tambem alcanca TMR/CNT: e assim que um temporizador retentivo ou um contador
+        /// volta a zero. Bobina comum continua restrita a Y e C, porque quem aciona o bit de V
+        /// e o proprio bloco.
+        /// </summary>
+        private static bool IsResetAddress(string value)
+        {
+            int n;
+            if (IsCoilAddress(value)) return true;
+            return value.StartsWith("V") && int.TryParse(value.Substring(1), out n) && n >= 1 && n <= 256;
         }
 
         private static string NormalizeVAddress(string value)

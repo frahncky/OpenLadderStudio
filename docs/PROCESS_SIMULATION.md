@@ -2,7 +2,7 @@
 
 O OpenLadder Studio executa programas Ladder em um PLC virtual acoplado a uma planta simulada. O objetivo é validar lógica, treinar e demonstrar comportamento antes de ligar qualquer equipamento real.
 
-Esta é a **fase A** do plano de simulação: motor de varredura, I/O virtual, forçamento, driver simulado e uma planta de esteira para validação.
+A **fase A** entregou o motor de varredura, o I/O virtual, o forçamento, o driver simulado e a primeira planta. A **fase B** transformou a planta única em uma biblioteca de seis processos discretos, com sinóptico descrito pela própria planta.
 
 ## O que é simulado e o que não é
 
@@ -15,12 +15,13 @@ Nenhuma saída física é acionada. O simulador é o único lugar do produto em 
 | Camada | Arquivo | Responsabilidade |
 |---|---|---|
 | Domínio | `LadderSimulation.cs` | endereçamento, imagem de processo, forçamento, entradas de campo, contatos especiais e motor de varredura |
-| Domínio | `ProcessSimulation.cs` | contrato de planta, blocos de imperfeição física, planta de esteira e programa de exemplo |
+| Domínio | `ProcessSimulation.cs` | blocos de imperfeição física, contrato de planta, modelo de cena, montagem de rungs e catálogo |
+| Domínio | `SimulatedPlants.cs` | as seis plantas e os programas Ladder de exemplo |
 | Infraestrutura | `PLCPlatform.cs` | `SimulatedPlcDriver` e o perfil `openladder.simulator.plc` |
-| Apresentação | `LadderSimulator.cs` | janela de simulação, sinóptico, tabela de I/O, forçamento e injeção de falhas |
+| Apresentação | `LadderSimulator.cs` | janela de simulação, renderizador de cena, tabela de I/O, forçamento e injeção de falhas |
 | Verificação | `SimulationSelfTest.cs` | autoteste em console, executado no build e no CI |
 
-`LadderSimulation.cs` e `ProcessSimulation.cs` não referenciam WinForms. `scripts/ValidateProject.ps1` bloqueia o build se essa regra for violada.
+`LadderSimulation.cs`, `ProcessSimulation.cs` e `SimulatedPlants.cs` não referenciam WinForms. `scripts/ValidateProject.ps1` bloqueia o build se essa regra for violada.
 
 ## Ciclo de varredura
 
@@ -49,6 +50,8 @@ O simulador usa o mesmo endereçamento do editor Ladder:
 | `SC` | `SC001`–`SC128` | contatos especiais |
 | `V` | `V0001`–`V0256` | identificadores de TMR/CNT |
 | `D` | `D0001`–`D2048` | registradores de dados |
+
+Um contato em `V` lê o bit de conclusão do temporizador ou contador correspondente, e `RESET V####` zera o acumulado. Sem isso nenhuma sequência temporizada seria expressável, e metade dos processos desta biblioteca — semáforo, prensa, porta do elevador — não existiria.
 
 ### Contatos especiais
 
@@ -90,72 +93,58 @@ O rung energiza quando todas as colunas com conteúdo resultam em verdadeiro.
 
 Uma unidade de preset de temporizador equivale a **100 ms**. Preset `10` é 1,0 s.
 
-### Divergências conhecidas entre o motor e o editor
+Bobina comum continua restrita a `Y` e `C`: quem aciona o bit de um `V` é o próprio bloco TMR/CNT.
 
-O motor aceita `V0001`–`V0256` como endereço de contato e como alvo de `RESET`, para que o bit de conclusão de um temporizador ou contador possa ser usado na lógica. O editor ainda não permite inserir esses elementos: os diálogos de contato aceitam apenas `X`, `Y`, `C` e `SC`, e `SET`/`RESET` aceitam apenas `Y` e `C`.
+## Biblioteca de plantas
 
-O programa de exemplo foi escrito de propósito dentro do subconjunto que o editor sabe inserir, para poder ser reproduzido à mão. Fechar essa lacuna no editor é trabalho da fase C.
+Todas as plantas seguem o mesmo contrato: leem as saídas do PLC, escrevem as entradas, expõem falhas injetáveis, descrevem o próprio sinóptico e trazem um programa Ladder de exemplo escrito apenas com elementos que o editor sabe inserir.
 
-## Planta de esteira
-
-A planta de referência é uma esteira de 2,0 m com alimentador, dois sensores fotoelétricos, desviador pneumático e proteção térmica.
-
-| Endereço | Ponto | Origem |
+| Planta | O que exercita | Falhas injetáveis |
 |---|---|---|
-| `Y0001` | motor da esteira | PLC |
-| `Y0002` | desviador pneumático | PLC |
-| `Y0003` | sinaleiro de marcha | PLC |
-| `X0001` | sensor de entrada S1 | planta |
-| `X0002` | sensor de saída S2 | planta |
-| `X0003` | fim de curso do desviador | planta |
-| `X0004` | botoeira liga | operador |
-| `X0005` | botoeira para | operador |
-| `X0006` | relé térmico do motor | planta |
+| Esteira com desviador | selo de partida, intertravamento, contagem, contato de pulso, temporizador retentivo | esteira patinando, sensor de saída travado, desviador emperrado |
+| Silo com enchimento e descarga | controle liga-desliga por chaves de nível, descarga condicionada, transbordo | válvula travada aberta, chave de nível alto cega, material empedrado |
+| Partida estrela-triângulo | comutação temporizada, tempo morto entre contatores, permissão por corrente | contator de estrela colado, térmico com ajuste baixo, carga pesada |
+| Cruzamento semafórico | sequenciador de quatro fases em cascata, atendimento sob demanda | hora de pico, laço detector cego, lâmpada queimada |
+| Elevador de carga de dois níveis | chamadas, intertravamento de sentido, ciclo de porta temporizado, sobrepeso | porta emperrada, fim de curso superior cego, carga acima do limite |
+| Prensa com comando bimanual | comando sem selo, cortina de luz, tempo de prensagem, anti-repetição | operador na zona de risco, vazamento hidráulico, fim de curso inferior cego |
 
-O realismo vem das imperfeições, não da equação ideal:
+### O que cada planta ensina quando a lógica está errada
 
-- rampa de aceleração e frenagem do motor, em vez de degrau de velocidade;
-- tempo de curso do pistão, diferente no avanço e no recuo;
-- atraso de primeira ordem na resposta dos sensores, com histerese na comparação;
-- janela física de captura do desviador, definida pela largura da placa;
-- jitter no intervalo do alimentador;
-- atraso de transporte inerente: a caixa leva o tempo real de percurso entre os sensores;
-- sobrecarga térmica que só atua após um tempo sustentado de esforço.
+O valor de uma planta simulada está em falhar de forma observável. Cada uma conta um evento que só acontece com lógica malfeita:
 
-O gerador de jitter usa semente fixa, portanto uma execução é reproduzível.
+- **Estrela-triângulo** conta **curto entre fases** quando estrela e triângulo ficam fechados ao mesmo tempo. O contator de estrela leva cerca de 50 ms para abrir: sem o tempo morto do programa, o curto acontece em toda partida.
+- **Semáforo** conta **conflito entre verdes**, varredura a varredura.
+- **Prensa** conta **descida com a cortina interrompida**. Retire o contato da cortina do primeiro rung e injete a falha para ver.
+- **Silo** conta **transbordo** quando a única proteção de nível é removida ou cega.
+- **Elevador** conta **colisão no fim do curso** quando o fim de curso superior não atua.
+- **Esteira** conta **caixas perdidas** no fim da correia.
 
-### Falhas injetáveis
+### Imperfeições físicas
 
-| Falha | Efeito |
-|---|---|
-| Esteira patinando | reduz a velocidade da correia e leva o motor à sobrecarga térmica |
-| Sensor de saída travado | `X0002` congela no último valor lido |
-| Desviador emperrado | o curso não completa e `X0003` nunca é atingido |
+O realismo vem das imperfeições, não da equação ideal. A caixa de ferramentas em `ProcessSimulation.cs` traz três blocos reutilizados por todas as plantas:
 
-A falha do desviador é a mais didática: o programa de exemplo dá `SET` em `Y0002` e depende do fim de curso para o `RESET`. Sem o fim de curso, a saída fica travada e o intertravamento desliga o motor — exatamente o que aconteceria na máquina.
+- `FirstOrderLag` — tempo de resposta de sensores e grandezas que não mudam em degrau;
+- `RateLimiter` — rampa de motor, curso de válvula, curso de pistão, deslocamento de cabine;
+- `HysteresisSwitch` — comparação com banda, para que ruído não gere chaveamento no limiar.
 
-## Programa de exemplo
+Somam-se a isso o atraso de transporte inerente (a caixa leva o tempo real de percurso entre os sensores), o jitter dos geradores de eventos e os contadores de falha. Os geradores usam semente fixa, portanto uma execução é reproduzível.
 
-```text
-1  X0004 ou C0001, com X0005 e X0006 normalmente fechados, selam C0001 (marcha).
-2  C0001 com Y0002 normalmente fechado aciona Y0001 (motor da esteira).
-3  X0002 e C0001, com X0003 normalmente fechado, dão SET em Y0002 (avança o desviador).
-4  X0003 dá RESET em Y0002 (recolhe o desviador no fim de curso).
-5  X0003 incrementa o contador V0002 (caixas desviadas).
-6  C0001 com SC004 pisca Y0003 (sinaleiro de marcha a 1 Hz).
-7  C0001 alimenta o temporizador retentivo V0001 (horímetro de marcha).
-8  END.
-```
+## Sinóptico
+
+A planta descreve o próprio sinóptico em `BuildScene`, usando primitivas semânticas: retângulo, elipse, linha, texto, correia, nível e sinaleiro. As coordenadas são de uma tela virtual de 1000 × 320, e as cores são **papéis** (`SimTone.Active`, `SimTone.Danger`, `SimTone.Cargo`), não valores RGB.
+
+A interface escala a cena com proporção preservada e resolve os papéis na paleta do tema escuro. O domínio continua sem depender de WinForms, e uma planta nova custa uma dezena de linhas de desenho em vez de um controle gráfico próprio.
 
 ## Como usar
 
-Pelo shell principal: **Ferramentas → Simulação de processo**, ou o item **Simular processo** na navegação lateral. Se o editor já tiver elementos, o projeto aberto é carregado no PLC virtual; caso contrário, o simulador mantém o programa de exemplo.
+Pelo shell principal: **Ferramentas → Simulação de processo**, ou o item **Simular processo** na navegação lateral. Se o editor já tiver elementos, o projeto aberto é carregado no PLC virtual; caso contrário, o simulador mantém o programa de exemplo da planta selecionada.
 
 Como ferramenta separada: `INICIAR_SIMULADOR.bat`.
 
 Na janela:
 
 - **Iniciar**, **Parar**, **Passo** e **Reiniciar** controlam a execução; **Passo** executa uma varredura por vez;
+- a lista **Planta** troca o processo simulado, refazendo tabela de I/O, botoeiras, falhas e programa de exemplo;
 - a velocidade pode ser 1x, 2x ou 5x do tempo real;
 - as botoeiras de campo permanecem acionadas enquanto pressionadas, com mouse ou teclado;
 - a tabela de I/O permite forçar 1, forçar 0 e liberar pontos selecionados;
@@ -163,12 +152,20 @@ Na janela:
 
 ## Verificação
 
-`SimulationSelfTest.cs` gera `OpenLadderSimTest.exe`, que roda o par PLC virtual + planta e verifica endereçamento, selo de partida, ciclo completo da esteira, contato de pulso, temporizador retentivo, forçamento e as três falhas injetáveis.
+`SimulationSelfTest.cs` gera `OpenLadderSimTest.exe`, que roda o par PLC virtual + planta e verifica endereçamento, carga limpa do programa de cada planta, e o comportamento específico de cada processo — inclusive sob falha injetada. São mais de cem verificações em menos de um quinto de segundo.
 
 O autoteste é executado pelo `BUILD_INTERFACE_MODERNA.bat` e pelo GitHub Actions. Uma falha interrompe o build e a publicação.
 
+## Como adicionar uma planta
+
+1. Derive de `SimulatedProcessBase` em `SimulatedPlants.cs`.
+2. Registre os pontos no construtor com `Output`, `Sensor` e `Button`, e as falhas com `Fault`.
+3. Implemente `Step` com a física, usando os blocos de imperfeição em vez de degraus ideais.
+4. Implemente `BuildScene` com as primitivas de cena e `StateSummary` com os números que importam.
+5. Escreva `BuildSampleProgram` com `LadderBuild` e `RungBuilder`, e explique rung a rung em `DescribeSampleProgram`.
+6. Acrescente a planta em `SimulatedProcessCatalog.Create` e um bloco de verificação em `SimulationSelfTest.cs`.
+
 ## Próximas fases
 
-- **Fase B** — biblioteca de processos discretos: silo, partida estrela-triângulo, semáforo, elevador, prensa.
 - **Fase C** — blocos de comparação, aritmética e analógicos no modelo Ladder, abrindo caminho para processos contínuos: nível de tanque, forno com tempo morto, pressão, vazão.
 - **Fase D** — servidor Modbus TCP expondo o PLC virtual, cenários de falha roteirizados e replay sobre o histórico de tendências.

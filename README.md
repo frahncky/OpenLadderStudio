@@ -28,7 +28,7 @@ A versão oficial do produto é definida em `PC12_v2.1_Windows7_v3_portatil/vers
 - exportação CSV;
 - suporte de leitura e pesquisa para WEG TP02;
 - PLC virtual com motor de varredura próprio e simulação de processo;
-- planta de esteira simulada com sensores, desviador e falhas injetáveis;
+- biblioteca de seis plantas discretas simuladas, com falhas injetáveis;
 - forçamento de pontos e execução passo a passo;
 - atualizador e instalador próprios;
 - modo foco do editor com `F11`.
@@ -51,7 +51,18 @@ A presença de um perfil no catálogo não significa que exista compilador ou pr
 
 ## Simulação de processo
 
-O OpenLadder Studio executa o programa Ladder em um PLC virtual acoplado a uma planta simulada, para validar lógica antes de ligar equipamento real. A planta de referência é uma esteira com alimentador, sensores fotoelétricos, desviador pneumático e proteção térmica.
+O OpenLadder Studio executa o programa Ladder em um PLC virtual acoplado a uma planta simulada, para validar lógica antes de ligar equipamento real. A biblioteca traz seis processos discretos:
+
+| Planta | O que exercita |
+|---|---|
+| Esteira com desviador | selo, intertravamento, contagem e temporizador retentivo |
+| Silo com enchimento e descarga | chaves de nível, descarga condicionada e transbordo |
+| Partida estrela-triângulo | comutação temporizada e tempo morto entre contatores |
+| Cruzamento semafórico | sequenciador de fases e atendimento sob demanda |
+| Elevador de carga de dois níveis | chamadas, intertravamento de sentido e ciclo de porta |
+| Prensa com comando bimanual | cortina de luz, tempo de prensagem e anti-repetição |
+
+Cada planta conta o que a lógica errada provoca: curto entre fases, conflito entre verdes, transbordo, colisão no fim de curso ou descida com a cortina de luz interrompida.
 
 A simulação é fenomenológica: reproduz o comportamento observável com modelos físicos plausíveis — rampa de motor, tempo de curso de pistão, atraso de sensor, histerese e atraso de transporte — e não a identificação de um equipamento específico.
 
