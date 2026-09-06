@@ -23,16 +23,27 @@ a janela pela metade. O aplicativo oferece reiniciar na hora.
 
 | Papel | Escuro (padrão) | Claro |
 |---|---|---|
-| fundo da janela | `#1B1F26` | `#E9EEF4` |
-| painel/chrome | `#22272F` | `#F4F7FA` |
-| superfície elevada | `#2A303A` | `#FBFCFE` |
-| borda | `#39414D` | `#D2DBE5` |
-| texto principal | `#E6EAF0` | `#1E2C3E` |
-| texto secundário | `#A3ADBA` | `#5A6B80` |
-| destaque | `#4C8DF6` | `#1C69D2` |
+| fundo da janela | `#181E28` | `#E9EFF6` |
+| painel/chrome | `#202834` | `#F4F7FB` |
+| superfície elevada | `#283241` | `#FAFCFF` |
+| borda | `#3F4E62` | `#C2CFDF` |
+| texto principal | `#E9EFF7` | `#1E2C3E` |
+| texto secundário | `#B1BED0` | `#4D6077` |
+| destaque | `#6EAEFF` | `#1C69D2` |
 
 Nenhum dos dois usa preto puro ou branco puro em superfície grande: são as duas
 extremidades que mais cansam a vista em jornada longa.
+
+A navegação usa uma base mais profunda, os painéis ficam no nível intermediário
+e os campos de entrada usam a superfície elevada. Seleção e item ativo recebem
+um preenchimento azul discreto; bordas separam as regiões sem competir com o Ladder.
+Texto secundário e rótulos discretos mantêm contraste de pelo menos 4,5:1 sobre
+os painéis e superfícies elevadas dos dois temas.
+
+Botões preenchidos com `Accent` ou `AccentDark` devem usar `OnAccent`: texto
+azul profundo no tema escuro e branco no tema claro. Não fixar branco sobre o
+azul luminoso do tema escuro. Grades sem estilo próprio recebem linhas alternadas,
+separadores horizontais e cabeçalhos na mesma paleta.
 
 ## Cor semântica
 
