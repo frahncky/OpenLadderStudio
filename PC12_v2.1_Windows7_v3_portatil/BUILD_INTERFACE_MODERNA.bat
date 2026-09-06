@@ -68,13 +68,13 @@ if errorlevel 1 goto :erro
 "%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.SimulationSelfTest /out:"OpenLadderSimTest.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "LadderSimulation.cs" "ProcessSimulation.cs" "SimulatedPlants.cs" "SimulationSelfTest.cs"
 if errorlevel 1 goto :erro
 
-"OpenLadderSimTest.exe"
+".\OpenLadderSimTest.exe"
 if errorlevel 1 goto :erro
 
 "%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:OpenLadderStudio.Core.Tests.LadderProjectCodecSelfTest /out:"OpenLadderCoreTest.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\src\OpenLadderStudio.Core\LadderProject.cs" "..\tests\OpenLadderStudio.Core.Tests\LadderProjectCodecSelfTest.cs"
 if errorlevel 1 goto :erro
 
-"OpenLadderCoreTest.exe"
+".\OpenLadderCoreTest.exe"
 if errorlevel 1 goto :erro
 
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.SimulatorProgram /out:"OpenLadderSimulator.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "LadderSimulation.cs" "ProcessSimulation.cs" "SimulatedPlants.cs" "LadderSimulator.cs"

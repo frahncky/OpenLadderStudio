@@ -335,7 +335,7 @@ namespace ModernPC12
             StringBuilder note = new StringBuilder();
             note.Append(frame.Length.ToString(CultureInfo.InvariantCulture)).Append("B");
             if ((sum % 256) == 0xFF) note.Append("  soma=FF");
-            // Formato derivado do codigo do PC12: CMD LEN payload[LEN] CHECKSUM.
+            // Formato derivado do código do PC12: CMD LEN payload[LEN] CHECKSUM.
             if (frame.Length >= 3 && frame[1] == frame.Length - 3)
             {
                 note.Append("  CMD=").Append(frame[0].ToString("X2", CultureInfo.InvariantCulture));

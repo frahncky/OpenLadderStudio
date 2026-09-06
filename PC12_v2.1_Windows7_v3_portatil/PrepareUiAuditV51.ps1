@@ -102,15 +102,19 @@ $glyphInsert = @'
                         break;
 
                     case StudioIcon.Timer:
-                        g.DrawRectangle(p, x + w * 0.18f, y + h * 0.18f, w * 0.64f, h * 0.64f);
-                        TextRenderer.DrawText(g, "T", StudioTheme.UiBold, Rectangle.Round(r), c,
-                            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                        // Cronometro: mostrador, botao superior e dois ponteiros.
+                        g.DrawEllipse(p, x + w * 0.18f, y + h * 0.24f, w * 0.64f, h * 0.64f);
+                        g.DrawLine(p, x + w * 0.40f, y + h * 0.12f, x + w * 0.60f, y + h * 0.12f);
+                        g.DrawLine(p, cx, y + h * 0.12f, cx, y + h * 0.24f);
+                        g.DrawLine(p, cx, y + h * 0.56f, cx, y + h * 0.34f);
+                        g.DrawLine(p, cx, y + h * 0.56f, x + w * 0.64f, y + h * 0.60f);
                         break;
 
                     case StudioIcon.Counter:
-                        g.DrawRectangle(p, x + w * 0.18f, y + h * 0.18f, w * 0.64f, h * 0.64f);
-                        TextRenderer.DrawText(g, "C", StudioTheme.UiBold, Rectangle.Round(r), c,
-                            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                        // Contador mecanico: janela de tres digitos.
+                        g.DrawRectangle(p, x + w * 0.12f, y + h * 0.30f, w * 0.76f, h * 0.40f);
+                        g.DrawLine(p, x + w * 0.37f, y + h * 0.30f, x + w * 0.37f, y + h * 0.70f);
+                        g.DrawLine(p, x + w * 0.62f, y + h * 0.30f, x + w * 0.62f, y + h * 0.70f);
                         break;
 
 '@

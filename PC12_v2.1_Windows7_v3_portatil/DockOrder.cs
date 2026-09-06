@@ -5,10 +5,10 @@ namespace ModernPC12
     /// <summary>
     /// Ordena a ancoragem dos filhos de um container.
     ///
-    /// O layout do Windows Forms percorre os filhos do ultimo indice para o primeiro:
-    /// quem esta no indice mais alto escolhe seu espaco primeiro e fica na borda
-    /// externa. Um controle Fill inserido por ultimo ocupa toda a area util e as
-    /// barras ancoradas passam a se sobrepor ao conteudo.
+    /// O layout do Windows Forms percorre os filhos do último índice para o primeiro:
+    /// quem está no índice mais alto escolhe seu espaço primeiro e fica na borda
+    /// externa. Um controle Fill inserido por último ocupa toda a área útil e as
+    /// barras ancoradas passam a se sobrepor ao conteúdo.
     ///
     /// Passe o controle Fill primeiro e depois as barras, da mais interna para a mais
     /// externa.

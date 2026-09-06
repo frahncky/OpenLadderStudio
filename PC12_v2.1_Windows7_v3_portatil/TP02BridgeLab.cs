@@ -693,8 +693,8 @@ namespace ModernPC12
         private delegate void ApplyHandler(int baud, Parity parity, int dataBits, StopBits stopBits, string prefix);
 
         /// <summary>
-        /// Percorre combinacoes de baud, paridade, bits, stop bits e prefixo ate que o
-        /// TP02 responda alguma coisa. Roda em thread propria: sao mais de cem tentativas
+        /// Percorre combinações de baud, paridade, bits, stop bits e prefixo até que o
+        /// TP02 responda alguma coisa. Roda em thread própria: são mais de cem tentativas
         /// e cada uma abre e fecha a porta, o que congelaria a janela se fosse na UI.
         /// </summary>
         private void ToggleScan()
@@ -906,9 +906,9 @@ namespace ModernPC12
         }
 
         /// <summary>
-        /// Le ate o CR final ou ate esgotar o prazo, devolvendo tambem o que chegou
+        /// Lê até o CR final ou até esgotar o prazo, devolvendo também o que chegou
         /// incompleto. Um quadro parcial distingue "nada respondeu" de "respondeu com
-        /// parâmetros seriais errados", que exigem correcoes diferentes.
+        /// parâmetros seriais errados", que exigem correções diferentes.
         /// </summary>
         private static string ReadUntilCarriageReturn(SerialPort port, int timeoutMs, out bool complete)
         {

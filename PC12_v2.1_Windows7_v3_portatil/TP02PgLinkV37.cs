@@ -146,7 +146,7 @@ namespace ModernPC12
 
             info.Controls.Add(LabelAt("Diagnóstico v0.37", 10.0f, FontStyle.Bold, TextPrimary, 18, 13));
             Label explanation = new Label();
-            explanation.Text = "1. Abre COM em 19200/8O1 com DTR/RTS on.  2. Confirma o HELLO conhecido.  3. Somente após C0 01 09 35 envia F0 00 0F uma vez.  4. Registra RX bruto, remove apenas eco exato de F0 00 0F e calcula a soma.  5. Mantem escuta passiva por mais 5 s sem qualquer novo TX.";
+            explanation.Text = "1. Abre COM em 19200/8O1 com DTR/RTS on.  2. Confirma o HELLO conhecido.  3. Somente após C0 01 09 35 envia F0 00 0F uma vez.  4. Registra RX bruto, remove apenas eco exato de F0 00 0F e calcula a soma.  5. Mantém escuta passiva por mais 5 s sem qualquer novo TX.";
             explanation.AutoSize = false;
             explanation.Location = new Point(18, 40);
             explanation.Size = new Size(1110, 58);
