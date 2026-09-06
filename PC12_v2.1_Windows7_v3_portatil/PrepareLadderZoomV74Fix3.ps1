@@ -8,6 +8,7 @@ $old = '$menuStart = ''        private MenuStrip BuildMenu()'''
 $new = '$menuStart = ''        private void TogglePanel(int which)'''
 if (-not $text.Contains($old)) { throw 'V74 Fix3: ancora de encerramento do ProcessCmdKey nao encontrada.' }
 $text = $text.Replace($old, $new)
+$text = $text.Replace('V72SelectLadderTool(LadderTool.Select);', 'V73SelectLadderTool(LadderTool.Select);')
 
 $runtime = Join-Path $root 'PrepareLadderZoomV74.runtime.ps1'
 try {
