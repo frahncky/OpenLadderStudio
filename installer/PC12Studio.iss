@@ -14,7 +14,9 @@ DefaultDirName={localappdata}\Programs\OpenLadder Studio
 DefaultGroupName=OpenLadder Studio
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
-MinVersion=6.1sp1
+; Windows 7 RTM (6.1) também é aceito. O .NET Framework 4 usado pelo Studio
+; possui redistribuível oficial compatível com Windows 7 e é tratado abaixo.
+MinVersion=6.1
 OutputDir=output
 OutputBaseFilename=OpenLadder-Studio-Setup
 SetupIconFile=..\PC12_v2.1_Windows7_v3_portatil\OpenLadderStudio.ico
@@ -35,6 +37,8 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 Name: "desktopicon"; Description: "Criar atalho na Área de Trabalho"; GroupDescription: "Atalhos:"; Flags: unchecked
 
 [Files]
+; Pré-requisito incorporado ao setup. Só é extraído/executado quando não existe .NET 4.x.
+Source: "prerequisites\dotNetFx40_Full_x86_x64.exe"; Flags: dontcopy
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderStudio.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderUpdater.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderDeviceManager.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -76,6 +80,65 @@ Filename: "{app}\OpenLadderStudio.exe"; Description: "Abrir OpenLadder Studio"; 
 [Code]
 var
   OpenLadderWasRunning: Boolean;
+
+function DotNet4KeyInstalled(RootKey: Integer; const SubKey: String): Boolean;
+var
+  InstallValue: Cardinal;
+begin
+  Result := RegQueryDWordValue(RootKey, SubKey, 'Install', InstallValue) and (InstallValue = 1);
+end;
+
+function IsDotNet4Installed(): Boolean;
+begin
+  Result :=
+    DotNet4KeyInstalled(HKLM32, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full') or
+    DotNet4KeyInstalled(HKLM32, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Client');
+
+  if (not Result) and IsWin64 then
+    Result :=
+      DotNet4KeyInstalled(HKLM64, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full') or
+      DotNet4KeyInstalled(HKLM64, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Client');
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+  DotNetSetup: String;
+begin
+  Result := '';
+  if IsDotNet4Installed() then
+    exit;
+
+  WizardForm.StatusLabel.Caption := 'Preparando o Microsoft .NET Framework 4...';
+  ExtractTemporaryFile('dotNetFx40_Full_x86_x64.exe');
+  DotNetSetup := ExpandConstant('{tmp}\dotNetFx40_Full_x86_x64.exe');
+
+  if not FileExists(DotNetSetup) then
+  begin
+    Result := 'O pré-requisito Microsoft .NET Framework 4 não foi encontrado dentro do instalador.';
+    exit;
+  end;
+
+  if not ShellExec('runas', DotNetSetup, '/q /norestart', '', SW_SHOW,
+    ewWaitUntilTerminated, ResultCode) then
+  begin
+    Result := 'Não foi possível iniciar a instalação do Microsoft .NET Framework 4. Autorize a elevação de administrador e tente novamente.';
+    exit;
+  end;
+
+  if ResultCode = 3010 then
+    NeedsRestart := True
+  else if ResultCode = 1641 then
+    NeedsRestart := True
+  else if ResultCode <> 0 then
+  begin
+    Result := 'A instalação do Microsoft .NET Framework 4 falhou. Código: ' + IntToStr(ResultCode) + '.';
+    exit;
+  end;
+
+  if (not IsDotNet4Installed()) and (not NeedsRestart) then
+    Result := 'O Microsoft .NET Framework 4 não foi detectado após a instalação. Reinicie o Windows e execute este instalador novamente.';
+end;
 
 function UpdateResumeRequested(): Boolean;
 begin
