@@ -52,17 +52,6 @@ $paint = @'
             using (Brush page = new SolidBrush(Color.White))
                 g.FillRectangle(page, 0, 0, width + 40, totalHeight);
 
-            // Guias de coluna bem discretas: ajudam a posicionar sem poluir o diagrama.
-            using (Pen gridPen = new Pen(Color.FromArgb(232, 237, 242), 1.0f))
-            {
-                gridPen.DashStyle = DashStyle.Dot;
-                for (int c = 1; c < LadderRung.ColumnCount; c++)
-                {
-                    int gx = LeftRail + c * cellWidth;
-                    g.DrawLine(gridPen, gx, TopMargin - 10, gx, bottom);
-                }
-            }
-
             using (Pen railPen = new Pen(Color.FromArgb(32, 53, 70), 3.0f))
             {
                 g.DrawLine(railPen, LeftRail, TopMargin - 10, LeftRail, bottom);
@@ -95,7 +84,7 @@ $paint = @'
                 using (Font lineFont = new Font("Segoe UI Semibold", 7.8f, FontStyle.Bold))
                 using (Brush lineBrush = new SolidBrush(r == SelectedRung ? Color.FromArgb(35, 96, 178) : Color.FromArgb(112, 126, 140)))
                 {
-                    string number = (r + 1).ToString("000");
+                    string number = "L" + (r + 1).ToString();
                     SizeF ns = g.MeasureString(number, lineFont);
                     g.DrawString(number, lineFont, lineBrush, badge.Left + (badge.Width - ns.Width) / 2f, badge.Top + 5f);
                 }

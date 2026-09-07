@@ -115,6 +115,13 @@ Consequências para quem escreve interface:
 - a declaração é de DPI do sistema, não per-monitor: mover a janela entre telas de escalas
   diferentes não redimensiona os controles até reabrir o aplicativo.
 
+No editor Ladder, 100% ajusta o diagrama à largura disponível. Redimensionar a
+janela ou os painéis recalcula esse ajuste; o zoom de 50% a 200% amplia ou reduz
+o desenho a partir dessa base. Desenho, seleção e hover compartilham a mesma
+transformação, inclusive com rolagem. Os fundos de destaque são desenhados antes
+dos fios para preservar as conexões dos elementos. O grid usa linhas contínuas,
+com L1, L2… na lateral e C1, C2… no topo para identificar as posições.
+
 ## Erros visíveis ao usuário
 
 Falha inesperada não pode encerrar o aplicativo em silêncio. `StudioDiagnostics` captura

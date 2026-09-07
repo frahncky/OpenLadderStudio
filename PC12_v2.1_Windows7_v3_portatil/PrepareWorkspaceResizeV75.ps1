@@ -131,6 +131,15 @@ $janelaReplacement = @'
 '@
 $shell = Required $shell $janelaAnchor $janelaReplacement.TrimEnd() 'comando de restaurar layout'
 
+# O editor embutido usa a area do host; o tamanho minimo da janela
+# independente nao deve forcar o documento por baixo dos paineis laterais.
+$embedAnchor = '                child.FormBorderStyle = FormBorderStyle.None;'
+$embedReplacement = @'
+                child.FormBorderStyle = FormBorderStyle.None;
+                if (child is LadderEditorForm) child.MinimumSize = Size.Empty;
+'@
+$shell = Required $shell $embedAnchor $embedReplacement.TrimEnd() 'limite do editor embutido'
+
 # Guardrails: V75 deve permanecer uma camada puramente de interface.
 if ($shell -notmatch 'V75EnableWorkspaceResize\(workspace, center\)') { throw 'V75: resize do workspace nao aplicado.' }
 if ($shell -notmatch 'Largura do painel Projeto') { throw 'V75: divisor do painel Projeto ausente.' }

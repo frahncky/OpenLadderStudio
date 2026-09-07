@@ -2,6 +2,21 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.80] - 2026-09-06
+
+### Grade do editor Ladder
+- linhas identificadas por **L1, L2…** na lateral e colunas por **C1 a C8** no topo, no lugar de `001`/`002` e do rótulo único "SAÍDA";
+- cabeçalho de colunas e calha de linhas ficam congelados: o cabeçalho acompanha só a rolagem horizontal e a calha só a vertical;
+- a linha e a coluna da célula selecionada são destacadas nas duas réguas;
+- linhas verticais deixam de ser pontilhadas, acompanham cada linha do programa e os segmentos encostam entre si, eliminando o tracejado nos limites;
+- separador horizontal encosta nos dois trilhos;
+- `GridLine` ganha contraste nos dois temas; no escuro a grade quase não aparecia;
+- `TopMargin` sobe de 30 para 46 para abrir espaço ao cabeçalho fixo.
+
+### Zoom do editor
+- corrigido o laço que fazia as barras de rolagem piscarem: mostrar a barra vertical reduzia a largura útil, mudando a escala de ajuste, a altura do conteúdo e escondendo a barra de novo. A largura útil passa a reservar a calha da barra;
+- a escala efetiva passa a valer no cálculo de rolagem, então o ponto central não salta mais ao dar zoom.
+
 ## [0.79] - 2026-09-06
 
 ### Interface
