@@ -140,6 +140,13 @@ namespace ModernPC12
         public static Color Chrome { get { return Pick(32, 40, 52, 244, 247, 251); } }
         public static Color ChromeLight { get { return Pick(40, 50, 65, 250, 252, 255); } }
         public static Color Border { get { return Pick(63, 78, 98, 194, 207, 223); } }
+
+        /// <summary>
+        /// Aresta inferior da barra superior. A borda comum e uma linha de divisao
+        /// entre pares; o topo separa o comando do documento e precisa ler como
+        /// aresta da moldura, nao como mais um traco igual aos outros.
+        /// </summary>
+        public static Color HeaderLine { get { return Pick(88, 112, 142, 166, 185, 210); } }
         public static Color Workspace { get { return Pick(18, 24, 33, 220, 229, 240); } }
 
         public static Color NavBg { get { return Pick(20, 27, 38, 226, 234, 244); } }

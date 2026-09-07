@@ -192,6 +192,15 @@ $newStatus = 'if (statusText != null) statusText.Text = tool == LadderTool.Selec
              '                    : "Clique no rung para inserir. Ctrl insere em sequência • botão direito ou Esc solta.";'
 $shell = $shell.Replace($oldStatus, $newStatus)
 
+# ---------------------------------------------------------------------------
+# 5. Aresta da barra superior. Ela usava a mesma cor de borda de todo divisor
+#    interno, entao a moldura de comando nao se distinguia do conteudo: o topo
+#    lia como mais uma divisao entre paineis. Uma cor propria, um passo mais
+#    forte, separa o que e comando do que e documento.
+# ---------------------------------------------------------------------------
+$shell = $shell.Replace('            bar.BottomLine = Border;', '            bar.BottomLine = OpenLadderPalette.HeaderLine;')
+$shell = $shell.Replace('            brand.BottomLine = Border;', '            brand.BottomLine = OpenLadderPalette.HeaderLine;')
+
 # O canvas e redesenhado pela V57/V74; suas cores finais precisam passar pela
 # mesma paleta, inclusive na compilacao do editor como ferramenta separada.
 $ladderPath = Join-Path $root 'LadderEditor.build.cs'
