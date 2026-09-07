@@ -4,7 +4,12 @@ on:
   pull_request:
     paths:
       - 'src/OpenLadderStudio.Core/Tp02TargetCompiler.cs'
+      - 'src/OpenLadderStudio.Core/Tp02LadderTargetCompiler.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
+      - 'tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs'
+      - 'PC12_v2.1_Windows7_v3_portatil/Tp02DryRunPreview.cs'
+      - 'PC12_v2.1_Windows7_v3_portatil/PrepareTp02DryRunV83.ps1'
+      - 'PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat'
       - 'docs/TP02_MACHINE_CODE_REVERSE_ENGINEERING.md'
       - 'docs/TP02_OPCODE_RESEARCH.md'
       - 'docs/data/tp02_function_map_normalized.csv'
@@ -14,7 +19,11 @@ on:
       - main
     paths:
       - 'src/OpenLadderStudio.Core/Tp02TargetCompiler.cs'
+      - 'src/OpenLadderStudio.Core/Tp02LadderTargetCompiler.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
+      - 'tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs'
+      - 'PC12_v2.1_Windows7_v3_portatil/Tp02DryRunPreview.cs'
+      - 'PC12_v2.1_Windows7_v3_portatil/PrepareTp02DryRunV83.ps1'
       - '.github/workflows/validate-tp02-compiler.yml'
 
 jobs:
@@ -24,7 +33,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Compilar autoteste TP02
+      - name: Compilar autoteste encoder TP02
         shell: cmd
         run: >-
           C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
@@ -34,6 +43,22 @@ jobs:
           src\OpenLadderStudio.Core\Tp02TargetCompiler.cs
           tests\OpenLadderStudio.Core.Tests\Tp02TargetCompilerSelfTest.cs
 
-      - name: Executar autoteste TP02
+      - name: Executar autoteste encoder TP02
         shell: cmd
         run: Tp02TargetCompilerSelfTest.exe
+
+      - name: Compilar autoteste Ladder TP02
+        shell: cmd
+        run: >-
+          C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
+          /nologo
+          /target:exe
+          /out:Tp02LadderTargetCompilerSelfTest.exe
+          src\OpenLadderStudio.Core\LadderProject.cs
+          src\OpenLadderStudio.Core\Tp02TargetCompiler.cs
+          src\OpenLadderStudio.Core\Tp02LadderTargetCompiler.cs
+          tests\OpenLadderStudio.Core.Tests\Tp02LadderTargetCompilerSelfTest.cs
+
+      - name: Executar autoteste Ladder TP02
+        shell: cmd
+        run: Tp02LadderTargetCompilerSelfTest.exe
