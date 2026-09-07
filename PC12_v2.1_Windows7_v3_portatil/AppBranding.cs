@@ -166,7 +166,7 @@ namespace ModernPC12
         public static Color Canvas { get { return Pick(27, 34, 45, 246, 248, 252); } }
         public static Color Rail { get { return Pick(163, 181, 204, 74, 90, 107); } }
         public static Color Wire { get { return Pick(141, 162, 188, 95, 110, 128); } }
-        public static Color GridLine { get { return Pick(37, 46, 61, 225, 232, 242); } }
+        public static Color GridLine { get { return Pick(55, 69, 88, 206, 216, 229); } }
         public static Color SelectionFill { get { return Pick(32, 60, 96, 220, 234, 251); } }
         public static Color SelectionEdge { get { return Accent; } }
 

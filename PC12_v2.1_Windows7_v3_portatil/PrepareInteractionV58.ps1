@@ -49,9 +49,13 @@ $outputGuide = @'
             using (Font outputFont = new Font("Segoe UI Semibold", 7.0f, FontStyle.Bold))
             using (Brush outputText = new SolidBrush(Color.FromArgb(132, 145, 158)))
             {
-                string label = "SAÍDA";
-                SizeF ls = g.MeasureString(label, outputFont);
-                g.DrawString(label, outputFont, outputText, outputLeft + (cellWidth - ls.Width) / 2f, TopMargin - 27);
+                for (int c = 0; c < LadderRung.ColumnCount; c++)
+                {
+                    string label = "C" + (c + 1).ToString();
+                    SizeF ls = g.MeasureString(label, outputFont);
+                    g.DrawString(label, outputFont, outputText,
+                        LeftRail + c * cellWidth + (cellWidth - ls.Width) / 2f, TopMargin - 27);
+                }
             }
 
             using (Pen railPen = new Pen(Color.FromArgb(32, 53, 70), 3.0f))
@@ -82,6 +86,67 @@ $hoverMethod = @'
         private static void DrawSelection(Graphics g, Rectangle cell)
 '@
 $ladder = Replace-Required $ladder $selectionAnchor $hoverMethod.TrimEnd() 'metodo hover'
+
+# Pinte os fundos antes da fiacao: selecao e hover nao podem apagar os fios.
+$mainHighlight = @'
+                    if (r == HoverRung && c == HoverColumn && !(r == SelectedRung && c == SelectedColumn && SelectedLane == 0))
+                        DrawHover(g, mainCell);
+                    if (r == SelectedRung && c == SelectedColumn && SelectedLane == 0) DrawSelection(g, mainCell);
+'@
+$ladder = LF $ladder
+$mainHighlight = LF $mainHighlight
+$ladder = Replace-Required $ladder $mainHighlight.TrimEnd() '' 'retirar destaque sobre fio principal'
+$branchHighlight = '                        if (r == SelectedRung && c == SelectedColumn && SelectedLane == 1) DrawSelection(g, branchCell);'
+$ladder = Replace-Required $ladder $branchHighlight '' 'retirar destaque sobre ramificacao'
+$wireAnchor = '                using (Pen wirePen = new Pen(Color.FromArgb(48, 65, 78), 2.0f))'
+$backgroundPass = @'
+                // Fundos primeiro; fios e simbolos permanecem sobre o destaque.
+                for (int c = 0; c < LadderRung.ColumnCount; c++)
+                {
+                    int cellLeft = LeftRail + c * cellWidth;
+                    Rectangle mainCell = new Rectangle(cellLeft + 3, y - 31, cellWidth - 6, 62);
+                    if (r == HoverRung && c == HoverColumn && !(r == SelectedRung && c == SelectedColumn && SelectedLane == 0))
+                        DrawHover(g, mainCell);
+                    if (r == SelectedRung && c == SelectedColumn && SelectedLane == 0) DrawSelection(g, mainCell);
+                    if (r == SelectedRung && c == SelectedColumn && SelectedLane == 1
+                        && Rungs[r].Parallel[c].Type != LadderElementType.Empty && c < LadderRung.ColumnCount - 1)
+                    {
+                        Rectangle branchCell = new Rectangle(cellLeft + 3, branchY - 22, cellWidth - 6, 44);
+                        DrawSelection(g, branchCell);
+                    }
+                }
+
+
+                using (Pen gridPen = new Pen(OpenLadderPalette.GridLine, 1.0f))
+                {
+                    for (int c = 1; c < LadderRung.ColumnCount; c++)
+                    {
+                        int gx = LeftRail + c * cellWidth;
+                        g.DrawLine(gridPen, gx, lineTop + 2, gx, lineTop + RungHeight - 2);
+                    }
+                }
+'@
+$ladder = Replace-Required $ladder $wireAnchor ($backgroundPass + $wireAnchor) 'fundos antes dos fios'
+$ladder = Replace-Required $ladder 'DrawElement(g, Rungs[r].Elements[c], mainCell, y, false);' 'DrawElement(g, Rungs[r].Elements[c], mainCell, y, false, ElementBackground(r, c, false));' 'fundo do elemento principal'
+$ladder = Replace-Required $ladder 'DrawElement(g, branch, branchCell, branchY, true);' 'DrawElement(g, branch, branchCell, branchY, true, ElementBackground(r, c, true));' 'fundo do elemento paralelo'
+$elementAnchor = '        private static void DrawElement(Graphics g, LadderElement element, Rectangle cell, int y, bool branch)'
+$elementMethod = @'
+        private Color ElementBackground(int rung, int column, bool branch)
+        {
+            if (rung == SelectedRung && column == SelectedColumn && SelectedLane == (branch ? 1 : 0))
+                return OpenLadderPalette.SelectionFill;
+            if (!branch && rung == HoverRung && column == HoverColumn)
+                return OpenLadderPalette.NavHover;
+            return rung == SelectedRung || column == LadderRung.ColumnCount - 1
+                ? OpenLadderPalette.Chrome : OpenLadderPalette.Canvas;
+        }
+
+        private static void DrawElement(Graphics g, LadderElement element, Rectangle cell, int y, bool branch, Color background)
+'@
+$ladder = Replace-Required $ladder $elementAnchor $elementMethod.TrimEnd() 'fundo real dos contatos e bobinas'
+$ladder = Replace-Required $ladder 'new Pen(Color.White, 4.0f)' 'new Pen(background, 4.0f)' 'mascara na cor do destaque'
+$ladder = Replace-Required $ladder 'cx - 23, y, cx + 23, y' 'cx - 16, y, cx + 16, y' 'fio encosta no contato'
+$ladder = Replace-Required $ladder 'cx - 28, y, cx + 28, y' 'cx - 24, y, cx + 24, y' 'fio encosta na bobina'
 
 $mouseAnchor = '        private void CanvasMouseDown(object sender, MouseEventArgs e)'
 $mouseMove = @'

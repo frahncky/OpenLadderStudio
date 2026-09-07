@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $root = Get-Location
 $source = Join-Path $root 'PrepareLadderZoomV74Fix2.ps1'
 if (-not (Test-Path $source)) { throw 'V74 Fix3: PrepareLadderZoomV74Fix2.ps1 nao encontrado.' }
@@ -12,7 +12,7 @@ $text = $text.Replace('V72SelectLadderTool(LadderTool.Select);', 'V73SelectLadde
 
 $runtime = Join-Path $root 'PrepareLadderZoomV74.runtime.ps1'
 try {
-    [System.IO.File]::WriteAllText($runtime, $text, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText($runtime, $text, [System.Text.Encoding]::UTF8)
     & $runtime
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }

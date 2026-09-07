@@ -25,6 +25,26 @@ $ladder = LF ([System.IO.File]::ReadAllText($ladderPath))
 $zoomState = @'
         private int HoverColumn = -1;
         private float zoomFactor = 1.0f;
+        private bool updatingZoomExtent;
+
+        // Reserve a scrollbar gutter so adding vertical scrolling cannot
+        // change the fit scale and repeatedly toggle the scrollbars.
+        private int ViewportWidth
+        {
+            get { return Math.Max(1, ClientSize.Width
+                + (VerticalScroll.Visible ? SystemInformation.VerticalScrollBarWidth : 0)
+                - SystemInformation.VerticalScrollBarWidth); }
+        }
+
+        private int LogicalCanvasWidth
+        {
+            get { return Math.Max(960, ViewportWidth); }
+        }
+
+        private float EffectiveZoom
+        {
+            get { return zoomFactor * Math.Min(1.0f, ViewportWidth / 960.0f); }
+        }
 
         public int ZoomPercent
         {
@@ -38,41 +58,46 @@ $zoomState = @'
             if (Math.Abs(next - zoomFactor) < 0.001f) return;
 
             Point oldScroll = AutoScrollPosition;
-            float oldZoom = zoomFactor;
+            float oldZoom = EffectiveZoom;
             float centerX = (-oldScroll.X + ClientSize.Width / 2.0f) / Math.Max(0.01f, oldZoom);
             float centerY = (-oldScroll.Y + ClientSize.Height / 2.0f) / Math.Max(0.01f, oldZoom);
             zoomFactor = next;
             UpdateZoomExtent();
 
-            int scrollX = Math.Max(0, (int)Math.Round(centerX * zoomFactor - ClientSize.Width / 2.0f));
-            int scrollY = Math.Max(0, (int)Math.Round(centerY * zoomFactor - ClientSize.Height / 2.0f));
+            int scrollX = Math.Max(0, (int)Math.Round(centerX * EffectiveZoom - ClientSize.Width / 2.0f));
+            int scrollY = Math.Max(0, (int)Math.Round(centerY * EffectiveZoom - ClientSize.Height / 2.0f));
             AutoScrollPosition = new Point(scrollX, scrollY);
             Invalidate();
         }
 
         private void UpdateZoomExtent()
         {
-            int count = Rungs == null ? 1 : Math.Max(1, Rungs.Count);
-            int totalHeight = TopMargin + count * RungHeight + 44;
-            int logicalWidth = Math.Max((int)Math.Ceiling(ClientSize.Width / Math.Max(0.01f, zoomFactor)) - RightMargin, 920);
-            AutoScrollMinSize = new Size(
-                Math.Max(1, (int)Math.Ceiling((logicalWidth + 40) * zoomFactor)),
-                Math.Max(1, (int)Math.Ceiling(totalHeight * zoomFactor)));
+            if (updatingZoomExtent) return;
+            updatingZoomExtent = true;
+            try
+            {
+                int count = Rungs == null ? 1 : Math.Max(1, Rungs.Count);
+                int totalHeight = TopMargin + count * RungHeight + 44;
+                AutoScrollMinSize = new Size(
+                    Math.Max(1, (int)Math.Ceiling(LogicalCanvasWidth * EffectiveZoom)),
+                    Math.Max(1, (int)Math.Ceiling(totalHeight * EffectiveZoom)));
+            }
+            finally { updatingZoomExtent = false; }
         }
 '@
 $ladder = Required $ladder '        private int HoverColumn = -1;' $zoomState.TrimEnd() 'estado do zoom'
 $ladder = Required $ladder '            AutoScrollMinSize = new Size(920, totalHeight);' '            UpdateZoomExtent();' 'extensao escalada'
 $matrix = @'
-            using (Matrix view = new Matrix(zoomFactor, 0.0f, 0.0f, zoomFactor, scroll.X, scroll.Y))
+            using (Matrix view = new Matrix(EffectiveZoom, 0.0f, 0.0f, EffectiveZoom, scroll.X, scroll.Y))
                 g.Transform = view;
 '@
 $ladder = Required $ladder '            g.TranslateTransform(scroll.X, scroll.Y);' $matrix.TrimEnd() 'matriz do canvas'
 $ladder = $ladder.Replace('            int width = Math.Max(ClientSize.Width - RightMargin, 920);',
-                          '            int width = Math.Max((int)Math.Ceiling(ClientSize.Width / Math.Max(0.01f, zoomFactor)) - RightMargin, 920);')
-$ladder = Required $ladder '            int px = e.X - scroll.X;' '            int px = (int)Math.Floor((e.X - scroll.X) / Math.Max(0.01f, zoomFactor));' 'hover X'
-$ladder = Required $ladder '            int py = e.Y - scroll.Y;' '            int py = (int)Math.Floor((e.Y - scroll.Y) / Math.Max(0.01f, zoomFactor));' 'hover Y'
-$ladder = Required $ladder '            int px = point.X - scroll.X;' '            int px = (int)Math.Floor((point.X - scroll.X) / Math.Max(0.01f, zoomFactor));' 'selecao X'
-$ladder = Required $ladder '            int py = point.Y - scroll.Y;' '            int py = (int)Math.Floor((point.Y - scroll.Y) / Math.Max(0.01f, zoomFactor));' 'selecao Y'
+                          '            int width = LogicalCanvasWidth - RightMargin;')
+$ladder = Required $ladder '            int px = e.X - scroll.X;' '            int px = (int)Math.Floor((e.X - scroll.X) / Math.Max(0.01f, EffectiveZoom));' 'hover X'
+$ladder = Required $ladder '            int py = e.Y - scroll.Y;' '            int py = (int)Math.Floor((e.Y - scroll.Y) / Math.Max(0.01f, EffectiveZoom));' 'hover Y'
+$ladder = Required $ladder '            int px = point.X - scroll.X;' '            int px = (int)Math.Floor((point.X - scroll.X) / Math.Max(0.01f, EffectiveZoom));' 'selecao X'
+$ladder = Required $ladder '            int py = point.Y - scroll.Y;' '            int py = (int)Math.Floor((point.Y - scroll.Y) / Math.Max(0.01f, EffectiveZoom));' 'selecao Y'
 
 $resize = @'
         protected override void OnResize(EventArgs e)
@@ -126,7 +151,7 @@ $keyZoom = @'
 '@
 $ladder = Required $ladder $keyAnchor $keyZoom.TrimEnd() 'atalhos do editor'
 if ($ladder -notmatch 'public int ZoomPercent') { throw 'V74: ZoomPercent ausente.' }
-if ($ladder -notmatch 'new Matrix\(zoomFactor') { throw 'V74: matriz de escala ausente.' }
+if ($ladder -notmatch 'new Matrix\(EffectiveZoom') { throw 'V74: matriz de escala ausente.' }
 if ($ladder -notmatch 'point\.X - scroll\.X\) / Math\.Max') { throw 'V74: hit-testing sem escala.' }
 [System.IO.File]::WriteAllText($ladderPath, $ladder, (New-Object System.Text.UTF8Encoding($false)))
 
