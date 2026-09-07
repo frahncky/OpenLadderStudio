@@ -2,6 +2,27 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.82] - 2026-09-07
+
+### Editor Ladder
+- arrastar elemento entre células, com desfazer, limiar de 4 px e destino marcado durante o movimento;
+- botão direito sobre um elemento abre menu com Editar parâmetro, Copiar, Colar e Apagar; com ferramenta armada ele continua soltando a ferramenta;
+- símbolos padrão no lugar de caixas de texto com o código TP02: `SET` → `-( S )-`, `RESET` → `-( R )-`, borda de subida → `-| P |-`, borda de descida → `-| N |-`. O retângulo fica reservado a TMR, CNT, função e END;
+- corrigido o hit-testing divergente entre hover e seleção: `CanvasMouseMove` usava `LogicalCanvasWidth` e trilho em `-30`, `SelectFromPoint` usava `ClientSize` com piso 850 e trilho em `-28`, e a detecção de via ainda usava `y = rungTop + 40` enquanto o desenho já passara para `+ 44`.
+
+### Controlador
+- o perfil de partida passa a ser o PLC virtual, não `weg.tp02.60mr`: o produto abria apontado para um controlador que o usuário não escolheu;
+- o submenu **Diagnóstico avançado TP02** passa a seguir o controlador ativo, em vez de aparecer sempre e recusar depois do clique.
+
+### Interface
+- a aresta inferior da barra superior passa a usar `OpenLadderPalette.HeaderLine`, um passo mais forte que as divisórias internas.
+
+### Manutenção
+- removidas 1 732 linhas de código inalcançável, incluindo `TP02PgLinkV32.cs` e `TP02PgLinkV33.cs`, dois formulários compilados dentro do `OpenLadderStudio.exe` e instanciados por ninguém;
+- `lastfile.cpu` e `lastfile.dir` saem do controle de versão;
+- nomes dos scripts de preparação padronizados em `Prepare<Área>V<NN>[a|b].ps1`, sem qualificadores de qualidade;
+- auditoria do repositório em `docs/AUDITORIA_REPOSITORIO.md`.
+
 ## [0.80] - 2026-09-06
 
 ### Grade do editor Ladder
