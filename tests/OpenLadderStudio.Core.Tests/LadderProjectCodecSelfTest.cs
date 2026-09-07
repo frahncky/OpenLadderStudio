@@ -53,6 +53,15 @@ namespace OpenLadderStudio.Core.Tests
             second.Series[7] = Element(LadderProjectElementKind.End, "F-00", string.Empty, string.Empty);
             source.Rungs.Add(second);
 
+            // Os tres separadores do formato dentro do conteudo: | separa colunas,
+            // ~ separa a via serie da paralela e : separa os campos do elemento.
+            // O til passava sem escape (e "unreserved" na RFC 3986), gravava um
+            // separador a mais e o arquivo era recusado na leitura seguinte.
+            LadderProjectRung third = new LadderProjectRung();
+            third.Series[0] = Element(LadderProjectElementKind.ContactNormallyOpen, "A~B|C:D", string.Empty, string.Empty);
+            third.Parallel[0] = Element(LadderProjectElementKind.ContactNormallyClosed, "PARALELO", string.Empty, string.Empty);
+            source.Rungs.Add(third);
+
             string encoded = LadderProjectCodec.Serialize(source);
             LadderProjectDocument restored = LadderProjectCodec.Deserialize(encoded);
 
@@ -61,6 +70,9 @@ namespace OpenLadderStudio.Core.Tests
             Check("quantidade de rungs preservada", restored.Rungs.Count == source.Rungs.Count);
             Check("todos os elementos preservados", DocumentsEqual(source, restored));
             Check("ramificação paralela preservada", restored.Rungs[0].Parallel[0].Kind == LadderProjectElementKind.ContactNormallyClosed);
+            Check("til escapado como %7E", encoded.IndexOf("A%7EB%7CC%3AD", StringComparison.Ordinal) >= 0);
+            Check("separadores no conteúdo sobrevivem à ida e volta", restored.Rungs[2].Series[0].Address == "A~B|C:D");
+            Check("til no conteúdo não cria via extra", restored.Rungs[2].Parallel[0].Address == "PARALELO");
         }
 
         private static void TestLegacyImport()

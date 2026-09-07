@@ -22,6 +22,12 @@ Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquiv
 - `lastfile.cpu` e `lastfile.dir` saem do controle de versão;
 - nomes dos scripts de preparação padronizados em `Prepare<Área>V<NN>[a|b].ps1`, sem qualificadores de qualidade;
 - auditoria do repositório em `docs/AUDITORIA_REPOSITORIO.md`.
+## [0.81] - 2026-09-07
+
+### Formato de projeto
+- corrigida perda de projeto no formato `.pladder` v2: o til (`~`), que separa a via série da via paralela dentro da célula, é *unreserved* na RFC 3986 e passava sem escape por `Uri.EscapeDataString`. Um til no conteúdo gravava um separador a mais e o arquivo era recusado na leitura seguinte com "quantidade de ramificações inválida" — o projeto salvava e depois não abria;
+- o til passa a ser gravado como `%7E`; arquivos já gravados seguem legíveis, porque `Uri.UnescapeDataString` sempre decodificou essa sequência;
+- o autoteste do formato passa a cobrir os três separadores (`|`, `~` e `:`) dentro do conteúdo.
 
 ## [0.80] - 2026-09-06
 
