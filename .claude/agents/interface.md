@@ -47,6 +47,21 @@ Se uma tela quer cor específica num campo, defina explicitamente: o `Skin` resp
 
 `StudioIconPalette` vive em `StudioUi.cs` mas é reescrita pela cadeia de preparação — mudanças de cor de ícone vão em `PrepareThemeUnificationV78.ps1`, não no fonte. Consulte o agente `build-chain` antes de mexer ali.
 
+## Grade do editor Ladder
+
+O diagrama é uma grade endereçável: **L1, L2…** identificam as linhas na calha à esquerda e **C1 a C8** identificam as colunas no cabeçalho do topo. A última coluna é reservada à saída.
+
+Cabeçalho e calha são **congelados**, cada um no próprio eixo — o cabeçalho acompanha só a rolagem horizontal e a calha só a vertical. Por isso são desenhados por último, sobre o conteúdo já rolado, com uma matriz própria que zera a translação do eixo congelado. Rótulo que rola junto com o conteúdo perde exatamente a função que tinha.
+
+Ao mexer ali, duas armadilhas já pagas:
+
+- `SmoothingMode.AntiAlias` numa faixa retangular deixa a borda meio pixel para dentro e passa uma linha de conteúdo por baixo. Faixa e divisória são retângulos alinhados ao eixo: desenhe com `SmoothingMode.None`;
+- a faixa precisa ser mais larga que o último trilho, senão sobra um vão à direita do C8 em janela larga.
+
+`TopMargin` reserva o espaço do cabeçalho e é a mesma constante usada no hit-testing — mudar uma coisa move a outra junto, o que é o comportamento desejado.
+
+Alteração visual aqui se verifica **renderizando**, não lendo o código: compile um harness que instancie `LadderCanvas` fora da tela, chame `DrawToBitmap` e salve PNG nos dois temas e com a rolagem deslocada. Os três defeitos acima só apareceram assim.
+
 ## DPI e layout
 
 `scripts/ValidateProject.ps1` reprova o build por estes erros — conheça-os antes de escrever a tela:

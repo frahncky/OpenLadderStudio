@@ -52,12 +52,34 @@ Para gravar com BOM: `New-Object System.Text.UTF8Encoding($true, $false)`.
 
 ## Regra 3 — fim de linha
 
-`.editorconfig` exige CRLF. Cuidado com dois erros que já aconteceram:
+**Os fontes seguem o `.editorconfig` e usam CRLF. Os `*.build.cs` gerados, não.** `LadderEditor.build.cs` sai em **LF**, porque a V57 e a V58 o escrevem assim. Um script que normalize suas âncoras para CRLF antes de procurá-las falha em **todas** de uma vez, com a mensagem enganosa de âncora ausente.
+
+Leia a convenção do próprio arquivo antes de casar âncora multilinha:
+
+```powershell
+$eol = if ($texto.Contains("`r`n")) { "`r`n" } else { "`n" }
+$ancora = $ancora.Replace("`r`n", "`n").Replace("`n", $eol)
+```
+
+Outros dois erros que já aconteceram:
 
 - `sed -i` converte o arquivo inteiro para LF e quebra âncoras multilinha;
 - um regex `(?m)^...;\r?$` **consome** o `\r`; devolva-o com um grupo de captura, senão o arquivo fica com fim de linha misto.
 
-Depois de qualquer reescrita em massa, normalize e confira com `git diff --stat` (um diff inflado indica EOL trocado).
+Depois de qualquer reescrita em massa nos fontes, normalize para CRLF e confira com `git diff --stat` (um diff inflado indica EOL trocado).
+
+## Regra 4 — âncora validada contra o estado commitado
+
+Uma âncora só vale se casar com o que o **CI** vai compilar, não com o que está na sua árvore de trabalho. Se outra frente estiver editando os mesmos scripts sem ter commitado, seu script passa localmente e quebra no CI.
+
+Antes de abrir PR com um script novo, teste isolado:
+
+```bash
+git worktree add /tmp/wt HEAD
+cp <seus arquivos> /tmp/wt/PC12_v2.1_Windows7_v3_portatil/
+# construa dentro de /tmp/wt e confirme saída 0
+git worktree remove --force /tmp/wt
+```
 
 ## Loop de validação
 
