@@ -276,7 +276,14 @@ namespace OpenLadderStudio.Core
 
         private static string Escape(string value)
         {
-            return Uri.EscapeDataString(value == null ? string.Empty : value);
+            // O til separa a via série da via paralela dentro da célula, mas é um
+            // caractere "unreserved" na RFC 3986: Uri.EscapeDataString o deixa
+            // passar. Um til no conteúdo gravava um separador a mais, e o arquivo
+            // era recusado na leitura seguinte com "quantidade de ramificações
+            // inválida" — ou seja, o projeto salvava e depois não abria.
+            // Uri.UnescapeDataString devolve %7E como til, então o par continua
+            // simétrico e arquivos já gravados seguem legíveis.
+            return Uri.EscapeDataString(value == null ? string.Empty : value).Replace("~", "%7E");
         }
 
         private static string Unescape(string value, int line, int column)
