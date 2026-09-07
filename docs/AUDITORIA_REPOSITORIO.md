@@ -43,13 +43,25 @@ São o software WEG original e o runtime Borland. **O instalador não os distrib
 
 ## Nomenclatura
 
-O esquema atual identifica arquivos por **número de iteração**, não por responsabilidade: `PrepareUiAuditV51`, `PrepareUiAuditV52`, `PrepareUiFixV53`, `PrepareUiPolishV54`, `PrepareUiConsistencyV55`, `PrepareUiEfficiencyV56`. O nome diz *quando* a mudança entrou, e não *o que* o script faz — para saber, é preciso abrir. Com 50 scripts, encontrar onde uma regra vive passa a depender de `grep`.
+Renomear um script **é** seguro. As âncoras da cadeia são trechos de código C# *dentro* dos scripts, não os nomes dos arquivos; o nome só aparece como referência no `.bat`, nos encadeamentos e no workflow, e o build acusa qualquer referência esquecida.
 
-Pior: `PrepareLadderZoomV74`, `...V74Fix`, `...V74Fix2`, `...V74Fix3` — quatro arquivos para um recurso, sendo dois mortos, e o nome não diz qual é o vivo.
+O que **não** dá para consertar por renomeação: os scripts `V51`–`V56` não têm uma responsabilidade. Cada um faz quatro ou cinco coisas sem relação entre si — o `V51`, por exemplo, mexe em toolbar, painel lateral, desenho da bobina, Refazer e lista de elementos. São *changesets* de uma iteração, não módulos. Chamá-los de "Audit", "Fix", "Polish", "Consistency" ou "Efficiency" atribuía a eles uma responsabilidade inexistente: o nome passava informação falsa.
 
-O mesmo vale para `ModernPC12.cs` e `PC12Studio.cs`: dois shells legados cujos nomes não distinguem um do outro.
+### Padrão adotado
 
-Não recomendo renomear agora: **os nomes são âncoras textuais** de outros scripts e do `.bat`, e uma renomeação em massa é exatamente o tipo de mudança que a cadeia não tolera. A recomendação é congelar o esquema (parar de criar `VNN`) e nomear por responsabilidade daqui em diante.
+```text
+Prepare<Área>V<NN>[a|b].ps1
+```
+
+Área (`Ui`, `Ladder`, `Modbus`, `Tp02`, `Workspace`, `Theme`…) mais o número da iteração em que a mudança entrou, sem qualificadores de qualidade. Quando uma iteração precisa de mais de um script, sufixo de letra na ordem de execução — `Fix2`/`Fix3` não diziam qual era o vivo.
+
+Já renomeados: `PrepareUiAuditV51` → `PrepareUiV51`, e o mesmo para `V52`–`V56`; `PrepareLadderZoomV74Fix2` → `PrepareLadderZoomV74a`; `...Fix3` → `...V74b`.
+
+### O que continua ruim
+
+`ModernPC12.cs` e `PC12Studio.cs` são dois shells legados cujos nomes não distinguem um do outro. Renomear mexe na linha de compilação e nos scripts que os leem pelo nome — vale fazer junto com a decisão de qual dos dois sobrevive, não antes.
+
+A pasta `PC12_v2.1_Windows7_v3_portatil` carrega versão, sistema operacional e o adjetivo "portátil" de um produto que já não é o produto. É o pior nome do repositório. Renomeá-la atinge o workflow de CI, os dois arquivos do instalador, `scripts/`, o `.gitignore` e boa parte da documentação: mecânico, mas com o pipeline de release no caminho, então merece ser uma mudança isolada.
 
 ## Recomendações, por risco
 
