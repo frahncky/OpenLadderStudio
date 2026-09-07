@@ -123,3 +123,4 @@ $shell = Invoke-ReplaceText $shell '        private void RefreshProfileUi()' $me
 & (Join-Path $root 'PrepareLadderZoomV74Fix3.ps1')
 & (Join-Path $root 'PrepareWorkspaceResizeV75.ps1')
 & (Join-Path $root 'PrepareThemeUnificationV78.ps1')
+& (Join-Path $root 'PrepareLadderGridV79.ps1')
