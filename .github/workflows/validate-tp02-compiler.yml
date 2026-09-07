@@ -1,0 +1,39 @@
+name: validate-tp02-compiler
+
+on:
+  pull_request:
+    paths:
+      - 'src/OpenLadderStudio.Core/Tp02TargetCompiler.cs'
+      - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
+      - 'docs/TP02_MACHINE_CODE_REVERSE_ENGINEERING.md'
+      - 'docs/TP02_OPCODE_RESEARCH.md'
+      - 'docs/data/tp02_function_map_normalized.csv'
+      - '.github/workflows/validate-tp02-compiler.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/OpenLadderStudio.Core/Tp02TargetCompiler.cs'
+      - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
+      - '.github/workflows/validate-tp02-compiler.yml'
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compilar autoteste TP02
+        shell: cmd
+        run: >-
+          C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
+          /nologo
+          /target:exe
+          /out:Tp02TargetCompilerSelfTest.exe
+          src\OpenLadderStudio.Core\Tp02TargetCompiler.cs
+          tests\OpenLadderStudio.Core.Tests\Tp02TargetCompilerSelfTest.cs
+
+      - name: Executar autoteste TP02
+        shell: cmd
+        run: Tp02TargetCompilerSelfTest.exe
