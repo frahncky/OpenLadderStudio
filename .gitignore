@@ -30,3 +30,7 @@ PC12_v2.1_Windows7_v3_portatil/*.verified.il.txt
 PC12_v2.1_Windows7_v3_portatil/*.build.cs
 installer/PC12Studio.build.iss
 installer/output/
+
+# Estado de execucao do PC12 original, nao e fonte.
+PC12_v2.1_Windows7_v3_portatil/lastfile.cpu
+PC12_v2.1_Windows7_v3_portatil/lastfile.dir

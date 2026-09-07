@@ -1,7 +1,7 @@
 ﻿$ErrorActionPreference = 'Stop'
 $root = Get-Location
-$source = Join-Path $root 'PrepareLadderZoomV74Fix2.ps1'
-if (-not (Test-Path $source)) { throw 'V74 Fix3: PrepareLadderZoomV74Fix2.ps1 nao encontrado.' }
+$source = Join-Path $root 'PrepareLadderZoomV74a.ps1'
+if (-not (Test-Path $source)) { throw 'V74 Fix3: PrepareLadderZoomV74a.ps1 nao encontrado.' }
 
 $text = [System.IO.File]::ReadAllText($source).Replace("`r`n", "`n")
 $old = '$menuStart = ''        private MenuStrip BuildMenu()'''

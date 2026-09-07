@@ -363,9 +363,18 @@ namespace ModernPC12
             return null;
         }
 
+        /// <summary>
+        /// Perfil de partida. E o PLC virtual, nao um modelo de fabricante: o
+        /// produto nao tem como saber que controlador esta na bancada, e abrir
+        /// ja apontado para um deles fazia o usuario herdar uma escolha que nao
+        /// fez. O virtual tambem e o unico lugar onde escrita e transferencia
+        /// sao liberadas, porque nao ha hardware do outro lado.
+        /// A escolha do modelo real fica com o usuario, no gerenciador de
+        /// controladores, e passa a valer a partir dali.
+        /// </summary>
         public static PlcDeviceProfile DefaultProfile
         {
-            get { return FindProfile("weg.tp02.60mr"); }
+            get { return FindProfile(SimulatedPlcDriver.ProfileId) ?? FindProfile("weg.tp02.60mr"); }
         }
     }
 
