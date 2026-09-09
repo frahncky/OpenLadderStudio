@@ -44,7 +44,7 @@ $enumOld = @'
 $enumNew = @'
         None, Doc, Folder, Save, Undo, Redo, Plus, Minus, Check, Plug, Download,
         Refresh, Chip, Gear, Ladder, Convert, Terminal, Close, Bolt, Monitor, Grid,
-        Select, ContactNO, ContactNC, Coil, Timer, Counter
+        Select, ContactNO, ContactNC, BranchNO, BranchNC, Coil, Timer, Counter
 '@
 $ui = Replace-Required $ui $enumOld.TrimEnd() $enumNew.TrimEnd() 'enum StudioIcon'
 
@@ -60,6 +60,8 @@ $paletteLadder = @'
                 case StudioIcon.Select:    return Color.FromArgb(226, 232, 240);
                 case StudioIcon.ContactNO: return Color.FromArgb(125, 211, 252);
                 case StudioIcon.ContactNC: return Color.FromArgb(125, 211, 252);
+                case StudioIcon.BranchNO:  return Color.FromArgb(125, 211, 252);
+                case StudioIcon.BranchNC:  return Color.FromArgb(125, 211, 252);
                 case StudioIcon.Coil:      return Color.FromArgb(251, 191, 36);
                 case StudioIcon.Timer:     return Color.FromArgb(167, 139, 250);
                 case StudioIcon.Counter:   return Color.FromArgb(244, 114, 182);
@@ -86,12 +88,31 @@ $glyphInsert = @'
 
                     case StudioIcon.ContactNO:
                     case StudioIcon.ContactNC:
-                        g.DrawLine(p, x + w * 0.08f, cy, x + w * 0.32f, cy);
-                        g.DrawLine(p, x + w * 0.38f, y + h * 0.18f, x + w * 0.38f, y + h * 0.82f);
-                        g.DrawLine(p, x + w * 0.62f, y + h * 0.18f, x + w * 0.62f, y + h * 0.82f);
-                        g.DrawLine(p, x + w * 0.68f, cy, x + w * 0.92f, cy);
+                        // As barras ficam afastadas e a diagonal do NF ultrapassa o
+                        // contato: a 16 px a barra curta dentro da folga nao aparecia e
+                        // NA e NF chegavam iguais na caixa de ferramentas.
+                        g.DrawLine(p, x + w * 0.04f, cy, x + w * 0.30f, cy);
+                        g.DrawLine(p, x + w * 0.30f, y + h * 0.20f, x + w * 0.30f, y + h * 0.80f);
+                        g.DrawLine(p, x + w * 0.70f, y + h * 0.20f, x + w * 0.70f, y + h * 0.80f);
+                        g.DrawLine(p, x + w * 0.70f, cy, x + w * 0.96f, cy);
                         if (icon == StudioIcon.ContactNC)
-                            g.DrawLine(p, x + w * 0.31f, y + h * 0.82f, x + w * 0.69f, y + h * 0.18f);
+                            g.DrawLine(p, x + w * 0.18f, y + h * 0.86f, x + w * 0.82f, y + h * 0.14f);
+                        break;
+
+                    case StudioIcon.BranchNO:
+                    case StudioIcon.BranchNC:
+                        // Contato na linha principal mais o desvio que sai e volta. E o
+                        // caminho paralelo que distingue o ramo do contato simples; sem
+                        // ele as duas ferramentas usavam o mesmo desenho.
+                        g.DrawLine(p, x + w * 0.04f, y + h * 0.38f, x + w * 0.30f, y + h * 0.38f);
+                        g.DrawLine(p, x + w * 0.30f, y + h * 0.14f, x + w * 0.30f, y + h * 0.62f);
+                        g.DrawLine(p, x + w * 0.70f, y + h * 0.14f, x + w * 0.70f, y + h * 0.62f);
+                        g.DrawLine(p, x + w * 0.70f, y + h * 0.38f, x + w * 0.96f, y + h * 0.38f);
+                        if (icon == StudioIcon.BranchNC)
+                            g.DrawLine(p, x + w * 0.20f, y + h * 0.68f, x + w * 0.80f, y + h * 0.08f);
+                        g.DrawLine(p, x + w * 0.12f, y + h * 0.38f, x + w * 0.12f, y + h * 0.90f);
+                        g.DrawLine(p, x + w * 0.88f, y + h * 0.38f, x + w * 0.88f, y + h * 0.90f);
+                        g.DrawLine(p, x + w * 0.12f, y + h * 0.90f, x + w * 0.88f, y + h * 0.90f);
                         break;
 
                     case StudioIcon.Coil:

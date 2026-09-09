@@ -69,6 +69,8 @@ $glyphColors = @(
     @('case StudioIcon.Select:    return Color.FromArgb(226, 232, 240);', 'case StudioIcon.Select:    return Color.FromArgb(74, 90, 106);'),
     @('case StudioIcon.ContactNO: return Color.FromArgb(125, 211, 252);', 'case StudioIcon.ContactNO: return Color.FromArgb(20, 122, 178);'),
     @('case StudioIcon.ContactNC: return Color.FromArgb(125, 211, 252);', 'case StudioIcon.ContactNC: return Color.FromArgb(20, 122, 178);'),
+    @('case StudioIcon.BranchNO:  return Color.FromArgb(125, 211, 252);', 'case StudioIcon.BranchNO:  return Color.FromArgb(20, 122, 178);'),
+    @('case StudioIcon.BranchNC:  return Color.FromArgb(125, 211, 252);', 'case StudioIcon.BranchNC:  return Color.FromArgb(20, 122, 178);'),
     @('case StudioIcon.Coil:      return Color.FromArgb(251, 191, 36);',  'case StudioIcon.Coil:      return Color.FromArgb(176, 120, 12);'),
     @('case StudioIcon.Timer:     return Color.FromArgb(167, 139, 250);', 'case StudioIcon.Timer:     return Color.FromArgb(108, 92, 196);'),
     @('case StudioIcon.Counter:   return Color.FromArgb(244, 114, 182);', 'case StudioIcon.Counter:   return Color.FromArgb(190, 62, 128);')

@@ -22,7 +22,7 @@ $canonical = @'
     {
         None, Doc, Folder, Save, Undo, Redo, Plus, Minus, Check, Plug, Download,
         Refresh, Chip, Gear, Ladder, Convert, Terminal, Close, Bolt, Monitor, Grid,
-        Select, ContactNO, ContactNC, Coil, Timer, Counter
+        Select, ContactNO, ContactNC, BranchNO, BranchNC, Coil, Timer, Counter
     }
 '@
 $compat = @'

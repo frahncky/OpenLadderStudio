@@ -2,6 +2,12 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.84] - 2026-09-09
+
+### Interface
+- **Ramo paralelo NA** e **Ramo paralelo NF** ganham ícone próprio na caixa de ferramentas. As duas entradas usavam literalmente `StudioIcon.ContactNO` e `ContactNC`, o mesmo desenho e a mesma cor dos contatos simples, sem nada que indicasse o caminho paralelo. O glifo novo é o contato sobre a linha principal mais o desvio que sai e volta;
+- **Contato NA** e **Contato NF** passam a se distinguir a 16 px, que é o tamanho real do ícone. A única diferença era uma diagonal atravessando a folga de 3,8 px entre as barras, na mesma cor: as barras foram afastadas, de 0,38 e 0,62 da largura para 0,30 e 0,70, e a diagonal do NF passa a ultrapassar o contato. O desenho no canvas não tinha o problema e não mudou — ali o contato tem 32 px e a diagonal, 40 px.
+
 ## [0.82] - 2026-09-07
 
 ### Editor Ladder
