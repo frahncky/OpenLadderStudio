@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.3",
-  "title": "TP02 PG - recovery automatico do HELLO + ensaio 38 apos F0",
+  "packageVersion": "2026.09.09.4",
+  "title": "TP02 PG - matriz de recovery do HELLO + F0/38 protegido",
   "sweeps": 1,
   "passiveCaptureMs": 5000,
   "stopOnUnknown": true,
@@ -10,7 +10,7 @@
     "runs": 12,
     "rearmBetweenRuns": true,
     "rearmDelayMs": 900,
-    "attemptsPerRun": 10,
+    "attemptsPerRun": 4,
     "rxWindowMs": 1800,
     "interAttemptMs": 180,
     "passiveAfterEachMs": 350,
@@ -18,14 +18,50 @@
   },
   "serialProfiles": [
     {
-      "name": "Perfil validado TP02",
+      "name": "TP02 validado - DTR on RTS on",
       "baud": 19200,
       "dataBits": 8,
       "parity": "Odd",
       "stopBits": "One",
       "dtr": true,
       "rts": true,
-      "attempts": 10,
+      "attempts": 4,
+      "rxWindowMs": 1800,
+      "interAttemptMs": 180
+    },
+    {
+      "name": "Diagnostico - DTR on RTS off",
+      "baud": 19200,
+      "dataBits": 8,
+      "parity": "Odd",
+      "stopBits": "One",
+      "dtr": true,
+      "rts": false,
+      "attempts": 4,
+      "rxWindowMs": 1800,
+      "interAttemptMs": 180
+    },
+    {
+      "name": "Diagnostico - DTR off RTS on",
+      "baud": 19200,
+      "dataBits": 8,
+      "parity": "Odd",
+      "stopBits": "One",
+      "dtr": false,
+      "rts": true,
+      "attempts": 4,
+      "rxWindowMs": 1800,
+      "interAttemptMs": 180
+    },
+    {
+      "name": "Diagnostico - DTR off RTS off",
+      "baud": 19200,
+      "dataBits": 8,
+      "parity": "Odd",
+      "stopBits": "One",
+      "dtr": false,
+      "rts": false,
+      "attempts": 4,
       "rxWindowMs": 1800,
       "interAttemptMs": 180
     }
@@ -135,27 +171,19 @@
     }
   ],
   "safety": {
-    "readOnlyAllowlist": [
-      "F0 00 0F",
-      "38 00 C7"
-    ],
-    "blockedTx": [
-      "0F 00 F0"
-    ],
+    "readOnlyAllowlist": ["F0 00 0F", "38 00 C7"],
+    "blockedTx": ["0F 00 F0"],
     "notes": [
-      "O ensaio usa somente o perfil fisicamente validado em 2026-09-09: 19200 8O1, DTR=on e RTS=on.",
-      "CON-ICB<CR> respondeu 80 01 09 75 em aproximadamente 248 ms na sessao STOP observada; soma modulo 256 = FF.",
-      "F0 00 0F respondeu 00 02 10 22 CB em aproximadamente 267 ms na mesma sessao; soma modulo 256 = FF.",
-      "Em um novo ensaio fisico da v0.88, o mesmo perfil enviou oito HELLOs e recebeu zero bytes em todas as tentativas; o teste terminou em NO_RX antes de F0 e 38.",
-      "O motor 1.4 passa a fazer recovery sem transmitir quadros extras: a cada duas falhas consecutivas do HELLO rearma DTR/RTS; a cada quatro falhas fecha e reabre a mesma porta serial.",
-      "O perfil passa a permitir ate dez tentativas para que cada estado de recovery seja realmente exercitado antes de declarar NO_RX.",
-      "O motor 1.4 so libera READ_ONLY_CANDIDATE se o operador autorizar READ-ONLY manualmente, o F0 tiver sido validado na mesma sessao aberta e o TX for exatamente 38 00 C7.",
-      "38 00 C7 foi recuperado por analise estatica do PC12 no fluxo de Read PLC Program e anteriormente retornou zero bytes quando testado isoladamente; este ensaio testa a dependencia de sessao imediatamente apos F0.",
-      "F0 nao tem espera passiva antes do 38: a consulta candidata ocorre na mesma porta serial e logo apos a confirmacao do vetor 00 02 10 22 CB.",
-      "O 38 aguarda ate 6000 ms por resposta. Se houver resposta, o motor registra RX bruto, procura subquadros cuja soma fecha em FF e continua em escuta passiva por mais 5000 ms.",
-      "Qualquer resposta ao 38 e tratada como descoberta: expected permanece vazio para nao impor uma estrutura ainda desconhecida.",
-      "34 03 00 00 A0 28, 14 00 EB e quadros 0A permanecem CANDIDATE desabilitados e nao sao enviados.",
-      "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado a Clear All Memory.",
+      "O baud/data/paridade/stop permanece fixo em 19200 8O1; a matriz altera somente DTR/RTS para diagnosticar o estado do conversor/enlace.",
+      "O perfil comprovado fisicamente continua sendo DTR=on e RTS=on e e sempre tentado primeiro.",
+      "Antes do primeiro HELLO de cada perfil o motor 1.5 escuta passivamente por 500 ms e registra qualquer byte espontaneo.",
+      "Cada perfil executa no maximo quatro HELLOs, com rearme DTR/RTS apos duas falhas e reabertura da COM apos quatro falhas.",
+      "CON-ICB<CR> ja respondeu 80 01 09 75 em sessoes STOP; soma modulo 256 = FF.",
+      "F0 00 0F ja respondeu 00 02 10 22 CB em sessao fisica; soma modulo 256 = FF.",
+      "F0 e 38 continuam bloqueados quando READ-ONLY estiver desativado.",
+      "38 00 C7 somente pode sair se o operador autorizar READ-ONLY, o quadro estiver na allowlist e F0 tiver sido validado na mesma sessao serial.",
+      "34 03 00 00 A0 28, 14 00 EB e quadros 0A permanecem desabilitados.",
+      "0F 00 F0 permanece BLOCKED por estar associado a Clear All Memory.",
       "RUN/STOP remoto, escrita, download, apagamento e firmware permanecem fora deste ensaio."
     ]
   }
