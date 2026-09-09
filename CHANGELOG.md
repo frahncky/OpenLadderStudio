@@ -21,7 +21,7 @@ Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquiv
 - removidas 1 732 linhas de código inalcançável, incluindo `TP02PgLinkV32.cs` e `TP02PgLinkV33.cs`, dois formulários compilados dentro do `OpenLadderStudio.exe` e instanciados por ninguém;
 - `lastfile.cpu` e `lastfile.dir` saem do controle de versão;
 - nomes dos scripts de preparação padronizados em `Prepare<Área>V<NN>[a|b].ps1`, sem qualificadores de qualidade;
-- auditoria do repositório em `docs/AUDITORIA_REPOSITORIO.md`.
+- auditoria do repositório em `docs/repository-audit.md`.
 ## [0.81] - 2026-09-07
 
 ### Formato de projeto

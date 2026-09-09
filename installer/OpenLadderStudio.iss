@@ -19,7 +19,7 @@ PrivilegesRequired=lowest
 MinVersion=6.1
 OutputDir=output
 OutputBaseFilename=OpenLadder-Studio-Setup
-SetupIconFile=..\PC12_v2.1_Windows7_v3_portatil\OpenLadderStudio.ico
+SetupIconFile=..\src\OpenLadderStudio.Desktop\OpenLadderStudio.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -39,17 +39,17 @@ Name: "desktopicon"; Description: "Criar atalho na Área de Trabalho"; GroupDesc
 [Files]
 ; Pré-requisito incorporado ao setup. Só é extraído/executado quando não existe .NET 4.x.
 Source: "prerequisites\dotNetFx40_Full_x86_x64.exe"; Flags: dontcopy
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderStudio.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderUpdater.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderDeviceManager.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderModbus.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderMemoryMap.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderTP02PgLab.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderTP02Capture.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderSimulator.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\TP02-PG-Tests.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\OpenLadderStudio.ico"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\PC12_v2.1_Windows7_v3_portatil\version.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderStudio.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderUpdater.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderDeviceManager.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderModbus.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderMemoryMap.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderTP02PgLab.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderTP02Capture.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderSimulator.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\TP02-PG-Tests.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderStudio.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\version.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
 Type: files; Name: "{app}\OpenLadderTP02PgLink.exe"

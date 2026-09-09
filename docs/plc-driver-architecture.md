@@ -22,8 +22,8 @@ Fluxo previsto:
 - `ModbusCore.cs` — implementação genérica Modbus RTU e Modbus TCP.
 - `ModbusMonitorV14.cs` — monitor de coils, entradas e registradores; o build aplica sobre ele as etapas de preparação V15, V17 e V18.
 - `PrepareUniversalStudioV20.ps1` — integra o seletor de controlador, o mapa de memória e o monitor Modbus ao shell principal durante o build.
-- `INICIAR_CONTROLADORES.bat` — inicializa o gerenciador de controladores.
-- `INICIAR_MODBUS.bat` — inicializa o monitor Modbus.
+- `StartDeviceManager.bat` — inicializa o gerenciador de controladores.
+- `StartModbusMonitor.bat` — inicializa o monitor Modbus.
 
 O perfil escolhido é salvo em `%APPDATA%\OpenLadder Studio\device.profile`. O shell principal carrega esse perfil e passa a exibir o controlador selecionado no painel de propriedades e na barra de status.
 
@@ -97,7 +97,7 @@ memória por PLC — o catálogo não traz mapa de endereços presumido para ess
 
 ## PLC virtual
 
-O perfil `openladder.simulator.plc` usa o driver `openladder.simulator`, que executa o modelo Ladder universal no motor de varredura interno em vez de falar com um equipamento. É o único driver com escrita e transferência de programa habilitadas, porque nenhuma saída física existe do outro lado. Está documentado em [`PROCESS_SIMULATION.md`](PROCESS_SIMULATION.md).
+O perfil `openladder.simulator.plc` usa o driver `openladder.simulator`, que executa o modelo Ladder universal no motor de varredura interno em vez de falar com um equipamento. É o único driver com escrita e transferência de programa habilitadas, porque nenhuma saída física existe do outro lado. Está documentado em [`process-simulation.md`](process-simulation.md).
 
 ## Regra de segurança técnica
 

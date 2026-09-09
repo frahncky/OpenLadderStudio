@@ -18,17 +18,19 @@
 - escrita em PLC deve permanecer separada de leitura e exigir validação específica;
 - não criar novos arquivos com sufixo de versão quando um arquivo estável puder ser evoluído.
 
-Para a estratégia de migração e os limites impostos pelo build atual, consulte `docs/DEVELOPMENT_GUIDE.md`.
+Para a estratégia de migração e os limites impostos pelo build atual, consulte `docs/development-guide.md`.
 
 ## Versionamento
 
-`PC12_v2.1_Windows7_v3_portatil/version.txt` é a fonte principal da versão da aplicação.
+`src/OpenLadderStudio.Desktop/version.txt` é a fonte principal da versão da aplicação.
+
+Após alterar `version.txt` ou `TP02-PG-Tests.json` no módulo Desktop, execute `scripts/SyncCompatibilityMetadata.ps1` para atualizar os metadados públicos usados por versões instaladas. Consulte as [convenções de nomes](docs/repository-layout.md).
 
 Não inserir manualmente números de versão em novos arquivos. O shell e o instalador devem derivar a versão desse arquivo por scripts de build.
 
 ## Interface
 
-Seguir `docs/UI_GUIDELINES.md`.
+Seguir `docs/ui-guidelines.md`.
 
 - preservar a identidade OpenLadder;
 - usar cores semânticas de forma consistente;

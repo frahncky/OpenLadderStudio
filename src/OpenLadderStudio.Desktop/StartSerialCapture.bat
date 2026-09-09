@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo Preparando o capturador serial PC12 / TP02...
-call "BUILD_INTERFACE_MODERNA.bat"
+call "Build.bat"
 if errorlevel 1 (
     echo.
     echo Nao foi possivel preparar o capturador.

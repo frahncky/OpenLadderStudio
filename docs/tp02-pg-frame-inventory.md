@@ -2,7 +2,7 @@
 
 Data: 2026-09-04
 
-Complementa `TP02_PG_READONLY_STATIC_ANALYSIS.md`. Ferramenta:
+Complementa `tp02-pg-readonly-static-analysis.md`. Ferramenta:
 `scripts/extract_pc12_frames.py`. Apenas leitura do binário; nada é executado nem alterado.
 
 ## Método

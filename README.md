@@ -2,7 +2,7 @@
 
 **OpenLadder Studio** é um ambiente de engenharia para programação Ladder, configuração e monitoramento de PLCs. O projeto começou pela compatibilidade com o WEG TP02/PC12, mas a arquitetura atual é orientada a múltiplos fabricantes, perfis de dispositivo e drivers.
 
-A versão oficial do produto é definida em `PC12_v2.1_Windows7_v3_portatil/version.txt`. As releases são geradas automaticamente a partir da `main` após validação e build no GitHub Actions.
+A versão oficial do produto é definida em `src/OpenLadderStudio.Desktop/version.txt`. As releases são geradas automaticamente a partir da `main` após validação e build no GitHub Actions.
 
 ## Objetivos do projeto
 
@@ -66,9 +66,9 @@ Cada planta conta o que a lógica errada provoca: curto entre fases, conflito en
 
 A simulação é fenomenológica: reproduz o comportamento observável com modelos físicos plausíveis — rampa de motor, tempo de curso de pistão, atraso de sensor, histerese e atraso de transporte — e não a identificação de um equipamento específico.
 
-Abrir pelo shell em **Ferramentas → Simulação de processo**, ou como ferramenta separada por `INICIAR_SIMULADOR.bat`.
+Abrir pelo shell em **Ferramentas → Simulação de processo**, ou como ferramenta separada por `StartSimulator.bat`.
 
-Detalhes em [`docs/PROCESS_SIMULATION.md`](docs/PROCESS_SIMULATION.md).
+Detalhes em [`docs/process-simulation.md`](docs/process-simulation.md).
 
 ## Arquitetura
 
@@ -86,7 +86,7 @@ Drivers e infraestrutura
 PLC
 ```
 
-A regra de dependência é detalhada em [`docs/SOFTWARE_ARCHITECTURE.md`](docs/SOFTWARE_ARCHITECTURE.md). A arquitetura específica de drivers também está documentada em [`docs/PLC_DRIVER_ARCHITECTURE.md`](docs/PLC_DRIVER_ARCHITECTURE.md).
+A regra de dependência é detalhada em [`docs/software-architecture.md`](docs/software-architecture.md). A arquitetura específica de drivers também está documentada em [`docs/plc-driver-architecture.md`](docs/plc-driver-architecture.md).
 
 ## Estrutura do repositório
 
@@ -98,12 +98,12 @@ installer/                         template do instalador Inno Setup
 scripts/                           validações e preparação de release
 src/OpenLadderStudio.Core/         núcleo independente de interface
 tests/OpenLadderStudio.Core.Tests/ autotestes do núcleo e do formato de projeto
-PC12_v2.1_Windows7_v3_portatil/   fontes atuais, ferramentas e compatibilidade legada
+src/OpenLadderStudio.Desktop/      aplicação Windows, ferramentas e build
 CHANGELOG.md                       histórico de versões
 CONTRIBUTING.md                    regras de contribuição
 ```
 
-O diretório `PC12_v2.1_Windows7_v3_portatil` ainda contém uma mistura histórica de fontes e compatibilidade. Ele é tratado como dívida técnica controlada. A migração gradual para `src/` começou pelo codec `.pladder` do núcleo e está descrita na documentação de arquitetura.
+O módulo `src/OpenLadderStudio.Desktop` reúne a aplicação Windows e sua cadeia de build. A extração gradual das responsabilidades internas começou pelo codec `.pladder` do núcleo. As convenções de nomes, o mapa de renomeações e as URLs preservadas para versões instaladas estão em [`docs/repository-layout.md`](docs/repository-layout.md).
 
 ## Identidade e interface
 
@@ -113,15 +113,15 @@ O destaque é o azul OpenLadder e as cores seguem função (azul para arquivos e
 
 O `.ico` é gerado em múltiplas resoluções: 16, 24, 32, 48, 64, 128 e 256 px.
 
-As regras visuais estão em [`docs/UI_GUIDELINES.md`](docs/UI_GUIDELINES.md).
+As regras visuais estão em [`docs/ui-guidelines.md`](docs/ui-guidelines.md).
 
 ## Build
 
 No Windows:
 
 ```bat
-cd PC12_v2.1_Windows7_v3_portatil
-BUILD_INTERFACE_MODERNA.bat
+cd src/OpenLadderStudio.Desktop
+Build.bat
 ```
 
 O build compila e executa `OpenLadderCoreTest.exe` e `OpenLadderSimTest.exe`. Uma falha no formato de projeto, no motor de varredura ou na planta interrompe o build.
@@ -138,7 +138,7 @@ O instalador é preparado a partir de `version.txt` por:
 .\scripts\PrepareInstaller.ps1
 ```
 
-Isso gera `installer/PC12Studio.build.iss`, que é um arquivo temporário e não deve ser versionado.
+Isso gera `installer/OpenLadderStudio.build.iss`, que é um arquivo temporário e não deve ser versionado.
 
 ## Versionamento e releases
 
@@ -164,6 +164,6 @@ Consulte:
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — fluxo de contribuição e regras de código;
 - [`CHANGELOG.md`](CHANGELOG.md) — histórico das versões;
-- [`docs/SOFTWARE_ARCHITECTURE.md`](docs/SOFTWARE_ARCHITECTURE.md) — organização e plano de evolução;
-- [`docs/UI_GUIDELINES.md`](docs/UI_GUIDELINES.md) — identidade e padrões de interface;
-- [`docs/PROCESS_SIMULATION.md`](docs/PROCESS_SIMULATION.md) — PLC virtual, plantas simuladas e semântica do motor de varredura.
+- [`docs/software-architecture.md`](docs/software-architecture.md) — organização e plano de evolução;
+- [`docs/ui-guidelines.md`](docs/ui-guidelines.md) — identidade e padrões de interface;
+- [`docs/process-simulation.md`](docs/process-simulation.md) — PLC virtual, plantas simuladas e semântica do motor de varredura.

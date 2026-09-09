@@ -26,11 +26,11 @@ jobs:
 
       - name: Compilar OpenLadder Studio e ferramentas
         shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
+        working-directory: src/OpenLadderStudio.Desktop
         run: |
-          call BUILD_INTERFACE_MODERNA.bat
+          call Build.bat
           if errorlevel 1 exit /b 1
-          call BUILD_PG_LAB.bat
+          call BuildTp02Lab.bat
           if errorlevel 1 exit /b 1
           if not exist OpenLadderStudio.ico exit /b 1
           if not exist OpenLadderStudio.icon.png exit /b 1
@@ -49,7 +49,7 @@ jobs:
 
       - name: Executar autotestes do núcleo
         shell: cmd
-        working-directory: PC12_v2.1_Windows7_v3_portatil
+        working-directory: src/OpenLadderStudio.Desktop
         run: |
           OpenLadderCoreTest.exe
           if errorlevel 1 exit /b 1
@@ -58,7 +58,7 @@ jobs:
 
       - name: Testar inicialização da interface
         shell: powershell
-        working-directory: PC12_v2.1_Windows7_v3_portatil
+        working-directory: src/OpenLadderStudio.Desktop
         run: |
           $logDir = Join-Path $env:APPDATA 'OpenLadder Studio\logs'
           if (Test-Path $logDir) { Remove-Item $logDir -Recurse -Force }
@@ -107,7 +107,7 @@ jobs:
       - name: Gerar instalador
         shell: cmd
         run: |
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\PC12Studio.build.iss"
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\OpenLadderStudio.build.iss"
 
       - name: Gerar SHA-256
         shell: powershell
@@ -121,20 +121,20 @@ jobs:
         with:
           name: OpenLadder-Studio
           path: |
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.ico
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.icon.png
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderStudio.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderEditor.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderDeviceManager.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderModbus.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderMemoryMap.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderUpdater.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderTP02PgLink.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderTP02Capture.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderTP02PgLab.exe
-            PC12_v2.1_Windows7_v3_portatil/OpenLadderSimulator.exe
-            PC12_v2.1_Windows7_v3_portatil/TP02-PG-Tests.json
-            PC12_v2.1_Windows7_v3_portatil/version.txt
+            src/OpenLadderStudio.Desktop/OpenLadderStudio.ico
+            src/OpenLadderStudio.Desktop/OpenLadderStudio.icon.png
+            src/OpenLadderStudio.Desktop/OpenLadderStudio.exe
+            src/OpenLadderStudio.Desktop/OpenLadderEditor.exe
+            src/OpenLadderStudio.Desktop/OpenLadderDeviceManager.exe
+            src/OpenLadderStudio.Desktop/OpenLadderModbus.exe
+            src/OpenLadderStudio.Desktop/OpenLadderMemoryMap.exe
+            src/OpenLadderStudio.Desktop/OpenLadderUpdater.exe
+            src/OpenLadderStudio.Desktop/OpenLadderTP02PgLink.exe
+            src/OpenLadderStudio.Desktop/OpenLadderTP02Capture.exe
+            src/OpenLadderStudio.Desktop/OpenLadderTP02PgLab.exe
+            src/OpenLadderStudio.Desktop/OpenLadderSimulator.exe
+            src/OpenLadderStudio.Desktop/TP02-PG-Tests.json
+            src/OpenLadderStudio.Desktop/version.txt
 
       - name: Publicar instalador
         uses: actions/upload-artifact@v4
@@ -165,7 +165,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $version = (Get-Content 'PC12_v2.1_Windows7_v3_portatil\version.txt').Trim()
+          $version = (Get-Content 'src\OpenLadderStudio.Desktop\version.txt').Trim()
           if ([string]::IsNullOrWhiteSpace($version)) { throw 'version.txt está vazio.' }
           $tag = "v$version"
           $setup = 'installer\output\OpenLadder-Studio-Setup.exe'

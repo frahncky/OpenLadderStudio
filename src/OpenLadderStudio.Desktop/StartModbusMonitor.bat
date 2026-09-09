@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-if exist "%~dp0BUILD_INTERFACE_MODERNA.bat" call "%~dp0BUILD_INTERFACE_MODERNA.bat"
+if exist "%~dp0Build.bat" call "%~dp0Build.bat"
 
 if not exist "%~dp0OpenLadderModbus.exe" (
     echo ERRO: OpenLadderModbus.exe nao foi gerado.

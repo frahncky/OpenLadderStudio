@@ -9,7 +9,7 @@ Você é o especialista em versionamento e publicação do OpenLadder Studio.
 
 ## Como uma versão é publicada
 
-`PC12_v2.1_Windows7_v3_portatil/version.txt` é a fonte única da versão. Dela saem o shell (durante o build) e o instalador (via `scripts/PrepareInstaller.ps1`, que substitui o token `@OPENLADDER_VERSION@` — o template **nunca** carrega versão fixa; `ValidateProject.ps1` reprova isso).
+`src/OpenLadderStudio.Desktop/version.txt` é a fonte única da versão. Dela saem o shell (durante o build) e o instalador (via `scripts/PrepareInstaller.ps1`, que substitui o token `@OPENLADDER_VERSION@` — o template **nunca** carrega versão fixa; `ValidateProject.ps1` reprova isso).
 
 O workflow `.github/workflows/validate-modern-ui.yml` tem dois jobs:
 

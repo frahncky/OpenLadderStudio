@@ -7,11 +7,11 @@ on:
       - 'src/OpenLadderStudio.Core/Tp02LadderTargetCompiler.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs'
-      - 'PC12_v2.1_Windows7_v3_portatil/Tp02DryRunPreview.cs'
-      - 'PC12_v2.1_Windows7_v3_portatil/PrepareTp02DryRunV83.ps1'
-      - 'PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat'
-      - 'docs/TP02_MACHINE_CODE_REVERSE_ENGINEERING.md'
-      - 'docs/TP02_OPCODE_RESEARCH.md'
+      - 'src/OpenLadderStudio.Desktop/Tp02DryRunPreview.cs'
+      - 'src/OpenLadderStudio.Desktop/PrepareTp02DryRunV83.ps1'
+      - 'src/OpenLadderStudio.Desktop/Build.bat'
+      - 'docs/tp02-machine-code-reverse-engineering.md'
+      - 'docs/tp02-opcode-research.md'
       - 'docs/data/tp02_function_map_normalized.csv'
       - '.github/workflows/validate-tp02-compiler.yml'
   push:
@@ -22,8 +22,8 @@ on:
       - 'src/OpenLadderStudio.Core/Tp02LadderTargetCompiler.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs'
-      - 'PC12_v2.1_Windows7_v3_portatil/Tp02DryRunPreview.cs'
-      - 'PC12_v2.1_Windows7_v3_portatil/PrepareTp02DryRunV83.ps1'
+      - 'src/OpenLadderStudio.Desktop/Tp02DryRunPreview.cs'
+      - 'src/OpenLadderStudio.Desktop/PrepareTp02DryRunV83.ps1'
       - '.github/workflows/validate-tp02-compiler.yml'
 
 jobs:

@@ -24,7 +24,7 @@ from unicorn import *
 from unicorn.x86_const import *
 from capstone import *
 
-EXE = 'PC12_v2.1_Windows7_v3_portatil/pc12.exe'
+EXE = 'src/OpenLadderStudio.Desktop/pc12.exe'
 TX_BUF, TX_LEN = 0x4FA7A8, 0x4FA8AC
 TX_ROUTINE = 0x46F5E6
 API_BASE = 0x70000000

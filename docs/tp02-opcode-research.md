@@ -38,7 +38,7 @@ A análise estática do `pc12.exe` original localizou a rotina que transforma a 
 - labels `F-42`, `JMP F-43` e `CALL F-44`;
 - **91 formas internas de funções F-xx**, incluindo variantes `w` e `d` e as formas múltiplas de `F-33`/`F-33w`.
 
-A documentação completa está em [`TP02_MACHINE_CODE_REVERSE_ENGINEERING.md`](TP02_MACHINE_CODE_REVERSE_ENGINEERING.md).
+A documentação completa está em [`tp02-machine-code-reverse-engineering.md`](tp02-machine-code-reverse-engineering.md).
 
 O mapa auditável está em [`data/tp02_function_map_normalized.csv`](data/tp02_function_map_normalized.csv).
 

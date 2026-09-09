@@ -23,12 +23,6 @@ function Repair-TechnicalTokens([string]$text) {
         '(?i)(https://github\.com/frahncky/OpenLadderStudio/releases/)[^/"''\\]+/',
         '$1download/')
 
-    # Caminho tecnico usado no fallback de version.txt. Nomes de caminho nao recebem acento.
-    $fixed = [regex]::Replace(
-        $fixed,
-        '(?i)PC12_v2\.1_Windows7_v3_port[^/"''\\]*',
-        'PC12_v2.1_Windows7_v3_portatil')
-
     return $fixed
 }
 
@@ -55,7 +49,7 @@ $updaterText = [System.IO.File]::ReadAllText($updaterBuild)
 $requiredTechnicalTokens = @(
     'browser_download_url',
     '/releases/download/',
-    'PC12_v2.1_Windows7_v3_portatil/version.txt'
+    'src/OpenLadderStudio.Desktop/version.txt'
 )
 foreach ($token in $requiredTechnicalTokens) {
     if (-not $updaterText.Contains($token)) {
@@ -67,12 +61,10 @@ foreach ($token in $requiredTechnicalTokens) {
     }
 }
 
-# O caminho da pasta portatil aparece com e sem barra final; so e corrupcao
-# quando 'port' nao e seguido de 'atil' terminando o token.
+# URLs de release e campos da API devem permanecer intactos.
 $forbiddenPatterns = @(
     'browser_(?!download_url)[^"''\s\\]*?_url',
-    '(?i)github\.com/frahncky/OpenLadderStudio/releases/(?!download/)[^/"''\\]+/',
-    '(?i)PC12_v2\.1_Windows7_v3_port(?!atil(?![A-Za-z]))[^/"''\\]*'
+    '(?i)github\.com/frahncky/OpenLadderStudio/releases/(?!download/)[^/"''\\]+/'
 )
 foreach ($rx in $forbiddenPatterns) {
     if ([regex]::IsMatch($updaterText, $rx)) {
@@ -100,7 +92,6 @@ function Is-TechnicalLiteral([string]$value) {
     if ($value -match 'https?://') { return $true }
     if ($value -match '(?i)browser_download_url|tag_name') { return $true }
     if ($value -match '(?i)OpenLadder-Studio-Setup\.exe(?:\.sha256)?') { return $true }
-    if ($value -match '(?i)PC12_v2\.1_Windows7_v3_portatil') { return $true }
     return $false
 }
 function Has-Mojibake([string]$value) {
