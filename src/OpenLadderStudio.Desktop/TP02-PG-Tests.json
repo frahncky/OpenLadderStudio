@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.8",
-  "title": "TP02 PG - validacao controlada do status/preflight F0 00 0F",
+  "packageVersion": "2026.09.09.1",
+  "title": "TP02 PG - F0 reproduzido em STOP; proximo 38 permanece desabilitado",
   "sweeps": 2,
   "passiveCaptureMs": 5000,
   "stopOnUnknown": true,
@@ -85,7 +85,7 @@
     },
     {
       "id": "status-preflight-f0",
-      "name": "Status/preflight do PC12 F0 00 0F - validacao unica",
+      "name": "Status/preflight do PC12 F0 00 0F - resposta fisica caracterizada",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
@@ -93,7 +93,10 @@
       "txHex": "F0 00 0F",
       "timeoutMs": 4000,
       "passiveAfterMs": 1500,
-      "expected": []
+      "expected": [
+        { "name": "F0-STOP-CONFIRMADO-20260909", "hex": "00 02 10 22 CB" },
+        { "name": "F0-BIT40-OBSERVADO-ANTERIORMENTE", "hex": "40 02 10 22 8B" }
+      ]
     },
     {
       "id": "capture-after-f0",
@@ -109,7 +112,7 @@
     },
     {
       "id": "read-program-preflight-38",
-      "name": "Read PLC Program - preambulo/metadados 38 00 C7 - depende do F0",
+      "name": "Read PLC Program - preambulo/metadados 38 00 C7 - testar somente depois de F0",
       "type": "txrx",
       "enabled": false,
       "sweepProfiles": false,
@@ -121,7 +124,7 @@
     },
     {
       "id": "read-program-static",
-      "name": "Read PLC Program 34 03 00 00 A0 28 - depende da sequencia anterior",
+      "name": "Read PLC Program 34 03 00 00 A0 28 - depende da resposta ao 38",
       "type": "txrx",
       "enabled": false,
       "sweepProfiles": false,
@@ -188,14 +191,14 @@
       "0F 00 F0"
     ],
     "notes": [
-      "Esta validacao transmite somente um novo quadro apos HELLO valido: F0 00 0F, uma unica vez.",
-      "A analise estatica confirmou F0 00 0F dentro da rotina de preflight/status da conexao do PC12, antes do fluxo normal de operacao.",
-      "O PC12 configura F0 com modo de recepcao 2 e comprimento de dados 2; a rotina serial espera 5 bytes no total.",
-      "Depois do F0, o codigo de conexao consulta o bit 0x40 do primeiro byte recebido para distinguir o estado operacional do PLC.",
-      "O parser comum do PC12 usa o bit 0x80 do primeiro byte como indicacao de resposta de erro e exige checksum de soma modulo 256 igual a FF.",
-      "Uma resposta fisica F0 de 5 bytes ja havia sido observada anteriormente; esta etapa serve para reproduzir e caracterizar o quadro de forma controlada.",
-      "38 00 C7 foi testado isoladamente depois do HELLO em STOP e retornou zero bytes; permanece CANDIDATE ate a validacao do F0 na mesma sessao.",
-      "34 03 00 00 A0 28 foi testado isoladamente em STOP e RUN e retornou zero bytes em ambos os casos; permanece CANDIDATE.",
+      "F0 00 0F continua sendo o unico quadro binario transmitido apos HELLO no pacote padrao.",
+      "Em 2026-09-09, com HELLO-STOP 80 01 09 75, F0 respondeu 00 02 10 22 CB em aproximadamente 267 ms; soma modulo 256 = FF.",
+      "A resposta F0 reproduzida possui exatamente 5 bytes, como previsto pela analise estatica do PC12.",
+      "A escuta passiva por aproximadamente 3 s apos F0 nao recebeu bytes adicionais.",
+      "A captura anterior 40 02 10 22 8B difere apenas pelo bit 0x40 do primeiro byte e pelo checksum compensatorio; isso reforca a hipotese de status operacional, mas RUN ainda precisa de reproducao explicita.",
+      "O segundo byte 02 e coerente com dois bytes de payload 10 22 no formato STATUS/CMD LEN PAYLOAD CHECKSUM; a semantica de 10 22 permanece desconhecida.",
+      "38 00 C7 permanece CANDIDATE e desabilitado. O proximo ensaio deve testa-lo somente na mesma sessao, depois de HELLO e F0 validos.",
+      "34 03 00 00 A0 28 permanece CANDIDATE e nao deve ser habilitado antes da caracterizacao da resposta ao 38.",
       "14 00 EB permanece CANDIDATE por pertencer ao ramo condicional de senha.",
       "Read PLC System permanece CANDIDATE e desabilitado.",
       "C0 01 09 35 continua correlacionado experimentalmente com PLC em RUN: HELLO-RUN.",
