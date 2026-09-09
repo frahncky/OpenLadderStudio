@@ -16,7 +16,8 @@ function Replace-Required([string]$source, [string]$needle, [string]$replacement
 }
 
 # Estado efemero da sessao: o candidato 38 so pode sair depois de uma resposta F0
-# fisicamente conhecida na mesma porta aberta. Reiniciar o teste limpa esta prova.
+# fisicamente conhecida na mesma porta aberta. Reiniciar o teste ou abrir nova sessao
+# limpa esta prova.
 $text = Replace-Required $text @'
         private volatile bool running;
         private volatile bool cancelRequested;
@@ -62,6 +63,15 @@ $text = Replace-Required $text @'
 '@ 'Reset do preflight'
 
 $text = Replace-Required $text '            LogUi("SEGURANCA", "READ_ONLY=" + (readOnlyApproved ? "AUTORIZADO PELO USUARIO" : "DESATIVADO") + "; candidatos e BLOCKED nunca sao enviados.");' '            LogUi("SEGURANCA", "READ_ONLY=" + (readOnlyApproved ? "AUTORIZADO PELO USUARIO" : "DESATIVADO") + "; 38 exige F0 valido na mesma sessao; demais CANDIDATE e BLOCKED nunca sao enviados.");' 'Log de seguranca'
+
+# O motor de campanha pode fechar e reabrir a porta ao procurar o HELLO. A prova do F0
+# deve nascer somente depois que o perfil atual ja estabeleceu o link.
+$text = Replace-Required $text @'
+                                bool sequenceOk = RunPostHandshakeSteps(port, handshakeIndex + 1, readOnlyApproved, totalWatch);
+'@ @'
+                                f0ValidatedInCurrentSession = false;
+                                bool sequenceOk = RunPostHandshakeSteps(port, handshakeIndex + 1, readOnlyApproved, totalWatch);
+'@ 'Reset F0 antes da sequencia pos-handshake'
 
 $text = Replace-Required $text @'
                     if (matched != null)
