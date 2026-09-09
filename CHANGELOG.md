@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.99] - 2026-09-09
+
+### Protocolo TP02 PG
+- **varredura do programa (0x0000)**: a v0.97 baixou toda a faixa `0x6000–0x7AE0` em hardware (40 leituras, todas respondendo), confirmando o primitivo `0A 03 [end][qtd] chk → 00 LEN payload`. Essa é a área de sistema/registradores; o programa Ladder mora em `0x0000–0x4000` pelo RBP. A v0.99 acrescenta uma etapa `read_sweep_0a` a partir de `0x0000` para ler o programa pelo mesmo comando de leitura;
+- **relatório limpo + decodificação**: na varredura, o motor deixa de emitir as dezenas de linhas `FRAME FF` por endereço (ruído — a resposta já é quadro completo) e passa a registrar `RX RAW` + `DECOD` (`CMD=00`, `LEN`, contagem de bytes não-zero, só para quadro completo com checksum `FF`). Assim dá para ver de imediato quais endereços guardam dados.
+
+### Segurança
+- tudo continua leitura: montagem intrínseca a `CMD=0A`, modo READ-ONLY, limite de leituras, denylist por quadro antes de transmitir e parada no silêncio. `0F 00 F0` segue bloqueado; `38 00 C7` segue exigindo F0 validado.
+
 ## [0.98] - 2026-09-09
 
 ### Protocolo TP02 PG

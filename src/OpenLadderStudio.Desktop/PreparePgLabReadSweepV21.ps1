@@ -111,8 +111,6 @@ $text = Replace-Required $text @'
                 {
                     silentStreak = 0;
                     RecordFrame("RX RAW", step.name + " " + addrHex, noEcho, sw.ElapsedMilliseconds);
-                    foreach (byte[] f in DiscoverChecksumFrames(noEcho))
-                        RecordFrame("FRAME FF", "varredura 0A em " + addrHex, f, sw.ElapsedMilliseconds);
                 }
                 if (gap > 0 && !cancelRequested) Thread.Sleep(gap);
             }
