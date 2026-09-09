@@ -75,6 +75,17 @@ Outros dois erros que já aconteceram:
 - `sed -i` converte o arquivo inteiro para LF e quebra âncoras multilinha;
 - um regex `(?m)^...;\r?$` **consome** o `\r`; devolva-o com um grupo de captura, senão o arquivo fica com fim de linha misto.
 
+O caso do `sed -i` tem uma segunda direção, menos óbvia e já vivida: editar o **próprio `Prepare*.ps1`** com uma ferramenta que reescreve o fim de linha. As âncoras moram em here-strings, e o here-string herda o fim de linha do script. Passe `sed -i` no `PrepareUiV51.ps1`, mesmo mudando só um nome de ícone numa linha isolada, e **todas** as âncoras multilinha dele passam a ser LF contra o CRLF que o `NormalizeStudioIconEnumV51.ps1` grava no `StudioUi.build.cs`.
+
+O que torna isso caro é a mensagem. O build morre em `Ancora nao encontrada (enum StudioIcon)`, que manda você investigar o enum — intacto. O culpado é o fim de linha do arquivo inteiro, e o rótulo é só a primeira âncora multilinha da fila.
+
+Dos 19 scripts que definem `Replace-Required`, **7 ainda usam `.Contains()` cru** em vez do comparador tolerante acima, e o `PrepareUiV51.ps1` é um deles — por isso ele é o primeiro a cair. Para editar qualquer um desses, use ferramenta que preserve CRLF (`[System.IO.File]::WriteAllText` com `New-Object System.Text.UTF8Encoding($true)`) e confirme antes de compilar:
+
+```bash
+f=src/OpenLadderStudio.Desktop/PrepareUiV51.ps1
+[ "$(wc -l < $f)" = "$(grep -c $'\r$' $f)" ] && echo CRLF || echo "EOL trocado"
+```
+
 Depois de qualquer reescrita em massa nos fontes, normalize para CRLF e confira com `git diff --stat` (um diff inflado indica EOL trocado).
 
 ## Regra 4 — âncora validada contra o estado commitado
