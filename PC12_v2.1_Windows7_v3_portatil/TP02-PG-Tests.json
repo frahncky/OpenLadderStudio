@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.8",
-  "title": "TP02 PG - validacao controlada do status/preflight F0 00 0F",
+  "packageVersion": "2026.09.09.1",
+  "title": "TP02 PG - status/preflight F0 00 0F validado em hardware",
   "sweeps": 2,
   "passiveCaptureMs": 5000,
   "stopOnUnknown": true,
@@ -85,7 +85,7 @@
     },
     {
       "id": "status-preflight-f0",
-      "name": "Status/preflight do PC12 F0 00 0F - validacao unica",
+      "name": "Status/preflight do PC12 F0 00 0F - validado em hardware",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
@@ -93,7 +93,9 @@
       "txHex": "F0 00 0F",
       "timeoutMs": 4000,
       "passiveAfterMs": 1500,
-      "expected": []
+      "expected": [
+        { "name": "F0-STOP-OBSERVADO-2026-09-09", "hex": "00 02 10 22 CB" }
+      ]
     },
     {
       "id": "capture-after-f0",
@@ -188,22 +190,26 @@
       "0F 00 F0"
     ],
     "notes": [
-      "Esta validacao transmite somente um novo quadro apos HELLO valido: F0 00 0F, uma unica vez.",
+      "Em 2026-09-09 o perfil 19200 8O1, DTR=on e RTS=on estabeleceu sessao real com o TP02.",
+      "Na captura de 2026-09-09, CON-ICB<CR> respondeu 80 01 09 75 em aproximadamente 248 ms na quinta tentativa; a soma modulo 256 fecha em FF e a sessao foi classificada como HELLO-STOP.",
+      "Na mesma sessao, F0 00 0F respondeu 00 02 10 22 CB em aproximadamente 267 ms; a soma modulo 256 fecha em FF.",
+      "A resposta fisica ao F0 confirma comprimento total de 5 bytes: CMD=00, LEN=02, payload=10 22, checksum=CB, se aplicado o enquadramento comum reconstruido.",
+      "Apos a resposta F0, uma escuta passiva de 3000 ms nao recebeu bytes adicionais.",
+      "A semantica individual dos bytes 10 e 22 ainda nao esta confirmada e nao deve ser inferida a partir de uma unica captura.",
       "A analise estatica confirmou F0 00 0F dentro da rotina de preflight/status da conexao do PC12, antes do fluxo normal de operacao.",
-      "O PC12 configura F0 com modo de recepcao 2 e comprimento de dados 2; a rotina serial espera 5 bytes no total.",
-      "Depois do F0, o codigo de conexao consulta o bit 0x40 do primeiro byte recebido para distinguir o estado operacional do PLC.",
+      "O PC12 configura F0 com modo de recepcao 2 e comprimento de dados 2; a rotina serial espera 5 bytes no total, agora confirmado em hardware.",
+      "Depois do F0, o codigo de conexao consulta o bit 0x40 do primeiro byte recebido para distinguir estado; a interpretacao exata ainda precisa de comparacao RUN versus STOP.",
       "O parser comum do PC12 usa o bit 0x80 do primeiro byte como indicacao de resposta de erro e exige checksum de soma modulo 256 igual a FF.",
-      "Uma resposta fisica F0 de 5 bytes ja havia sido observada anteriormente; esta etapa serve para reproduzir e caracterizar o quadro de forma controlada.",
-      "38 00 C7 foi testado isoladamente depois do HELLO em STOP e retornou zero bytes; permanece CANDIDATE ate a validacao do F0 na mesma sessao.",
+      "38 00 C7 foi testado isoladamente depois do HELLO em STOP e retornou zero bytes; permanece CANDIDATE. O proximo ensaio deve testa-lo somente na mesma sessao, imediatamente apos F0 validado.",
       "34 03 00 00 A0 28 foi testado isoladamente em STOP e RUN e retornou zero bytes em ambos os casos; permanece CANDIDATE.",
       "14 00 EB permanece CANDIDATE por pertencer ao ramo condicional de senha.",
       "Read PLC System permanece CANDIDATE e desabilitado.",
       "C0 01 09 35 continua correlacionado experimentalmente com PLC em RUN: HELLO-RUN.",
-      "80 01 09 75 continua correlacionado experimentalmente com PLC em STOP: HELLO-STOP.",
+      "80 01 09 75 esta confirmado em hardware na sessao STOP observada em 2026-09-09.",
       "0D 01 09 E8 permanece fisicamente observado, mas nao classificado.",
       "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
       "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado ao Clear All Memory.",
-      "RUN/STOP remoto, escrita, download e apagamento permanecem fora deste teste."
+      "RUN/STOP remoto, escrita, download, apagamento e atualizacao de firmware permanecem fora deste teste."
     ]
   }
 }
