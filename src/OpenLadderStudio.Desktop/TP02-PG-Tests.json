@@ -1,75 +1,28 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.10",
-  "title": "TP02 PG - VARREDURA COMPLETA + dump de leitura 0A em uma execucao",
-  "sweeps": 2,
-  "passiveCaptureMs": 1500,
+  "packageVersion": "2026.09.09.11",
+  "title": "TP02 PG - SESSAO LIMPA READ PLC (HELLO -> F0 -> 38 -> 34)",
+  "sweeps": 1,
+  "passiveCaptureMs": 500,
   "stopOnUnknown": false,
-  "campaign": {
-    "enabled": false,
-    "runs": 1,
-    "rearmBetweenRuns": true,
-    "rearmDelayMs": 900,
-    "attemptsPerRun": 6,
-    "rxWindowMs": 1800,
-    "interAttemptMs": 180,
-    "passiveAfterEachMs": 250,
-    "stopOnUnknown": false
-  },
   "serialProfiles": [
     {
-      "name": "TP02 validado - DTR on RTS on",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "Odd",
-      "stopBits": "One",
-      "dtr": true,
-      "rts": true,
-      "attempts": 6,
-      "rxWindowMs": 1800,
-      "interAttemptMs": 180
-    },
-    {
-      "name": "Fallback - DTR on RTS off",
+      "name": "Sessao limpa TP02 - DTR on RTS off",
       "baud": 19200,
       "dataBits": 8,
       "parity": "Odd",
       "stopBits": "One",
       "dtr": true,
       "rts": false,
-      "attempts": 6,
+      "attempts": 1,
       "rxWindowMs": 1800,
-      "interAttemptMs": 180
-    },
-    {
-      "name": "Fallback - DTR off RTS on",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "Odd",
-      "stopBits": "One",
-      "dtr": false,
-      "rts": true,
-      "attempts": 6,
-      "rxWindowMs": 1800,
-      "interAttemptMs": 180
-    },
-    {
-      "name": "Fallback - DTR off RTS off",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "Odd",
-      "stopBits": "One",
-      "dtr": false,
-      "rts": false,
-      "attempts": 6,
-      "rxWindowMs": 1800,
-      "interAttemptMs": 180
+      "interAttemptMs": 0
     }
   ],
   "steps": [
     {
       "id": "hello-pg",
-      "name": "1. Localizar enlace PG PC12",
+      "name": "1. HELLO PG - confirmar TP02 em STOP",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": true,
@@ -79,29 +32,25 @@
       "passiveAfterMs": 0,
       "expected": [
         {
-          "name": "HELLO-RUN",
-          "hex": "C0 01 09 35"
-        },
-        {
           "name": "HELLO-STOP",
           "hex": "80 01 09 75"
         },
         {
-          "name": "HELLO-0D-NAO-CLASSIFICADO",
-          "hex": "0D 01 09 E8"
+          "name": "HELLO-RUN",
+          "hex": "C0 01 09 35"
         }
       ]
     },
     {
       "id": "status-preflight-f0",
-      "name": "2. Status/preflight F0 (matriz de temporizacao/RTS)",
+      "name": "2. F0 - uma tentativa por sessao limpa",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
       "safetyClass": "READ_ONLY_VERIFIED",
       "txHex": "F0 00 0F",
-      "timeoutMs": 3000,
-      "passiveAfterMs": 300,
+      "timeoutMs": 1600,
+      "passiveAfterMs": 0,
       "expected": [
         {
           "name": "F0-STOP-OBSERVADO-2026-09-09",
@@ -111,350 +60,31 @@
     },
     {
       "id": "read-program-preflight-38",
-      "name": "3. Read PLC Program - preambulo 38 (tentativa 1/5)",
+      "name": "3. Preambulo 38 - somente apos F0 valido",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
       "safetyClass": "READ_ONLY_CANDIDATE",
       "txHex": "38 00 C7",
-      "timeoutMs": 3000,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-program-preflight-38-2",
-      "name": "3. Read PLC Program - preambulo 38 (tentativa 2/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_CANDIDATE",
-      "txHex": "38 00 C7",
-      "timeoutMs": 3000,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-program-preflight-38-3",
-      "name": "3. Read PLC Program - preambulo 38 (tentativa 3/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_CANDIDATE",
-      "txHex": "38 00 C7",
-      "timeoutMs": 3000,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-program-preflight-38-4",
-      "name": "3. Read PLC Program - preambulo 38 (tentativa 4/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_CANDIDATE",
-      "txHex": "38 00 C7",
-      "timeoutMs": 3000,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-program-preflight-38-5",
-      "name": "3. Read PLC Program - preambulo 38 (tentativa 5/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_CANDIDATE",
-      "txHex": "38 00 C7",
-      "timeoutMs": 3000,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "passive-after-38",
-      "name": "3p. Escuta passiva apos o bloco 38",
-      "type": "passive",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "PASSIVE",
-      "txHex": "",
-      "timeoutMs": 0,
-      "passiveAfterMs": 1500,
-      "expected": []
+      "timeoutMs": 1600,
+      "passiveAfterMs": 0,
+      "expected": [
+        {
+          "name": "38-OBSERVADO-2026-09-09",
+          "hex": "00 02 00 0A F3"
+        }
+      ]
     },
     {
       "id": "read-program-static",
-      "name": "4. Read PLC Program - bloco 34 (tentativa 1/5)",
+      "name": "4. Read PLC Program - bloco 34 base",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
       "safetyClass": "READ_ONLY_PROBE",
       "txHex": "34 03 00 00 A0 28",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 700,
-      "expected": []
-    },
-    {
-      "id": "read-program-static-2",
-      "name": "4. Read PLC Program - bloco 34 (tentativa 2/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "34 03 00 00 A0 28",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 700,
-      "expected": []
-    },
-    {
-      "id": "read-program-static-3",
-      "name": "4. Read PLC Program - bloco 34 (tentativa 3/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "34 03 00 00 A0 28",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 700,
-      "expected": []
-    },
-    {
-      "id": "read-program-static-4",
-      "name": "4. Read PLC Program - bloco 34 (tentativa 4/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "34 03 00 00 A0 28",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 700,
-      "expected": []
-    },
-    {
-      "id": "read-program-static-5",
-      "name": "4. Read PLC Program - bloco 34 (tentativa 5/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "34 03 00 00 A0 28",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 700,
-      "expected": []
-    },
-    {
-      "id": "passive-after-34",
-      "name": "4p. Escuta passiva apos o bloco 34",
-      "type": "passive",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "PASSIVE",
-      "txHex": "",
-      "timeoutMs": 0,
-      "passiveAfterMs": 1500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-1",
-      "name": "5. Read PLC System - parte 1 (tentativa 1/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-1-b",
-      "name": "5. Read PLC System - parte 1 (tentativa 2/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-1-c",
-      "name": "5. Read PLC System - parte 1 (tentativa 3/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-1-d",
-      "name": "5. Read PLC System - parte 1 (tentativa 4/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-1-e",
-      "name": "5. Read PLC System - parte 1 (tentativa 5/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-2",
-      "name": "6. Read PLC System - parte 2 (tentativa 1/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 AC AC 3A",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-2-b",
-      "name": "6. Read PLC System - parte 2 (tentativa 2/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 AC AC 3A",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-2-c",
-      "name": "6. Read PLC System - parte 2 (tentativa 3/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 AC AC 3A",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-2-d",
-      "name": "6. Read PLC System - parte 2 (tentativa 4/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 AC AC 3A",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-2-e",
-      "name": "6. Read PLC System - parte 2 (tentativa 5/5)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 AC AC 3A",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "read-sweep-0a-6000",
-      "name": "6s. Varredura de leitura 0A a partir de 0x6000",
-      "type": "read_sweep_0a",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_SWEEP_0A",
-      "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 200,
-      "expected": []
-    },
-    {
-      "id": "read-sweep-0a-0000",
-      "name": "6t. Varredura de leitura 0A do programa a partir de 0x0000",
-      "type": "read_sweep_0a",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_SWEEP_0A",
-      "txHex": "0A 03 00 00 AC 46",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 200,
-      "expected": []
-    },
-    {
-      "id": "passive-after-0a",
-      "name": "6p. Escuta passiva apos os blocos 0A",
-      "type": "passive",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "PASSIVE",
-      "txHex": "",
-      "timeoutMs": 0,
-      "passiveAfterMs": 1500,
-      "expected": []
-    },
-    {
-      "id": "password-prelude-14",
-      "name": "7. Consulta do ramo de senha - 14 (tentativa 1/3)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "14 00 EB",
-      "timeoutMs": 2500,
-      "passiveAfterMs": 400,
-      "expected": []
-    },
-    {
-      "id": "password-prelude-14-2",
-      "name": "7. Consulta do ramo de senha - 14 (tentativa 2/3)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "14 00 EB",
-      "timeoutMs": 2500,
-      "passiveAfterMs": 400,
-      "expected": []
-    },
-    {
-      "id": "password-prelude-14-3",
-      "name": "7. Consulta do ramo de senha - 14 (tentativa 3/3)",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "14 00 EB",
-      "timeoutMs": 2500,
-      "passiveAfterMs": 400,
-      "expected": []
-    },
-    {
-      "id": "passive-final",
-      "name": "8. Escuta passiva final da sessao",
-      "type": "passive",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "PASSIVE",
-      "txHex": "",
-      "timeoutMs": 0,
-      "passiveAfterMs": 3000,
+      "timeoutMs": 3200,
+      "passiveAfterMs": 0,
       "expected": []
     },
     {
@@ -474,26 +104,21 @@
     "readOnlyAllowlist": [
       "F0 00 0F",
       "38 00 C7",
-      "34 03 00 00 A0 28",
-      "0A 03 60 00 AC E6",
-      "0A 03 60 AC AC 3A",
-      "14 00 EB"
+      "34 03 00 00 A0 28"
     ],
     "blockedTx": [
       "0F 00 F0"
     ],
     "notes": [
-      "VARREDURA COMPLETA: o operador escolhe apenas a COM e pressiona TESTE UNICO. Em uma unica sessao serial a bateria READ-ONLY inteira e executada e um unico relatorio TXT/JSON e gerado.",
-      "A busca do enlace usa primeiro 19200 8O1 DTR=on RTS=on e, se necessario, testa automaticamente as demais combinacoes DTR/RTS. Duas varreduras de enlace (sweeps=2) reduzem a chance de perder o HELLO quando o TP02 ignora as primeiras tentativas.",
-      "F0 00 0F roda a matriz pos-handshake (temporizacao curta/longa, RTS on e transicoes RTS on->off e off->on) na mesma porta aberta; e o mecanismo de retentativa do F0 e nao introduz nenhum opcode novo.",
-      "Cada consulta de leitura e repetida na mesma sessao (38 x5, 34 x5, os dois 0A x5 cada, 14 x3), porque o TP02 costuma ignorar varias tentativas seguidas antes de responder. A repeticao separa silencio real de tentativa ignorada.",
-      "Capturas passivas sao intercaladas entre os blocos e ao final para registrar qualquer quadro espontaneo com soma modulo 256 = FF.",
-      "38 00 C7 continua com regra especial: so e transmitido depois do F0 conhecido validado na mesma sessao serial.",
-      "34 03 00 00 A0 28, os dois quadros 0A e 14 00 EB sao probes READ-ONLY que precisam coincidir byte a byte com a lista interna do motor E com esta readOnlyAllowlist. Nenhum endereco ou opcode novo e gerado.",
-      "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado a Clear All Memory.",
-      "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado por esta bateria. Opcodes de efeito desconhecido recuperados do PC12 (01, 02, 03, 04, 11, 13, 37, 09) permanecem fora da allowlist e nunca sao transmitidos.",
-      "A etapa read_sweep_0a monta quadros 0A 03 [end_hi][end_lo][qtd] chk a partir do endereco base 0x6000 (qtd=0xAC), varrendo enderecos contiguos com retentativa por endereco. O motor so consegue emitir CMD 0A (leitura); escrita, apagamento e firmware continuam impossiveis por essa via.",
-      "A varredura read_sweep_0a a partir de 0x0000 tenta ler a area de programa (faixa RBP documentada 0x0000-0x4000) pelo mesmo comando de leitura 0A. Ainda e leitura: o motor so emite CMD 0A."
+      "TESTE FOCADO: o laboratorio executa somente HELLO, F0, 38 e um bloco 34.",
+      "O perfil confirmado e 19200 8O1, DTR=on, RTS=off.",
+      "O HELLO precisa confirmar STOP com 80 01 09 75. Se retornar C0 01 09 35, o teste termina pedindo STOP.",
+      "Ha apenas uma tentativa de F0 por abertura da COM. Se F0 nao devolver 00 02 10 22 CB, a porta e fechada, aguarda-se 1500 ms e uma nova sessao comeca desde o HELLO.",
+      "38 00 C7 so e enviado depois do F0 validado e precisa confirmar 00 02 00 0A F3.",
+      "34 03 00 00 A0 28 so e enviado depois de HELLO-STOP, F0 e 38 validos. A resposta e validada por LEN e soma modulo 256 = FF e e salva em binario.",
+      "As varreduras 0A e a consulta 14 foram removidas deste teste para reduzir ruido e tempo de bancada.",
+      "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado.",
+      "0F 00 F0 permanece bloqueado por estar associado a Clear All Memory."
     ]
   }
 }
