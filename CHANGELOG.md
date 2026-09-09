@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.95] - 2026-09-09
+
+### Protocolo TP02 PG
+- **varredura completa em uma única execução**: o Teste Único passa a rodar toda a bateria READ-ONLY de descoberta na mesma sessão serial — handshake → matriz F0 → `38` → `34` → dois `0A` → `14` — e grava um só relatório TXT e JSON. Não é mais preciso rodar cada consulta em execução separada nem acrescentar uma por versão;
+- cada leitura é **repetida na mesma sessão** (`38` ×5, `34` ×5, cada `0A` ×5, `14` ×3): como o TP02 costuma ignorar várias tentativas seguidas, a repetição separa silêncio real de tentativa ignorada. Antes, cada consulta saía uma única vez e o `RX []` era ambíguo;
+- `sweeps = 2` na busca do enlace e quatro capturas passivas intercaladas para registrar quadros espontâneos com soma módulo 256 = `FF`;
+- pacote `2026.09.09.7`, entregue pelo atualizador do laboratório sem reinstalar o programa;
+- novo guia consolidado `docs/tp02-pg-varredura-completa.md` com o mapa de opcodes do PC12 e o critério de fechamento da fase de leitura.
+
+### Segurança
+- a bateria transmite apenas os seis quadros READ-ONLY já validados, cada um travado pela lista interna do motor **e** pela `readOnlyAllowlist` do pacote; `38 00 C7` só sai após F0 validado na mesma sessão;
+- nenhum quadro novo é gerado; escrita, download/WBP, RUN/STOP remoto, apagamento e firmware seguem sem transmissão, e `0F 00 F0` (Clear All Memory) continua bloqueado. Opcodes de efeito desconhecido (`01`, `02`, `03`, `04`, `11`, `13`, `37`, `09`) ficam só documentados.
+
 ## [0.86] - 2026-09-09
 
 ### Interface
