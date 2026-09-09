@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.11",
-  "title": "TP02 PG - SESSAO LIMPA READ PLC (HELLO -> F0 -> 38 -> 34)",
+  "packageVersion": "2026.09.09.12",
+  "title": "TP02 PG - SESSAO LIMPA COM HELLO REPETIDO (HELLO -> F0 -> 38 -> 34)",
   "sweeps": 1,
   "passiveCaptureMs": 500,
   "stopOnUnknown": false,
@@ -14,15 +14,15 @@
       "stopBits": "One",
       "dtr": true,
       "rts": false,
-      "attempts": 1,
+      "attempts": 6,
       "rxWindowMs": 1800,
-      "interAttemptMs": 0
+      "interAttemptMs": 180
     }
   ],
   "steps": [
     {
       "id": "hello-pg",
-      "name": "1. HELLO PG - confirmar TP02 em STOP",
+      "name": "1. HELLO PG - ate 6 tentativas na mesma sessao",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": true,
@@ -43,7 +43,7 @@
     },
     {
       "id": "status-preflight-f0",
-      "name": "2. F0 - uma tentativa por sessao limpa",
+      "name": "2. F0 - uma unica tentativa apos HELLO-STOP valido",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
@@ -111,12 +111,13 @@
     ],
     "notes": [
       "TESTE FOCADO: o laboratorio executa somente HELLO, F0, 38 e um bloco 34.",
-      "O perfil confirmado e 19200 8O1, DTR=on, RTS=off.",
+      "O perfil confirmado continua 19200 8O1, DTR=on, RTS=off.",
+      "O log de bancada mostrou que o HELLO pode ficar silencioso varias vezes e depois responder corretamente; por isso cada sessao pode enviar ate 6 HELLOs mantendo a mesma COM aberta.",
       "O HELLO precisa confirmar STOP com 80 01 09 75. Se retornar C0 01 09 35, o teste termina pedindo STOP.",
-      "Ha apenas uma tentativa de F0 por abertura da COM. Se F0 nao devolver 00 02 10 22 CB, a porta e fechada, aguarda-se 1500 ms e uma nova sessao comeca desde o HELLO.",
+      "Mesmo com HELLO repetido, F0 00 0F continua sendo enviado apenas UMA vez por abertura da COM. Se nao devolver 00 02 10 22 CB, a porta e fechada, aguarda-se 1500 ms e uma nova sessao comeca desde o HELLO.",
       "38 00 C7 so e enviado depois do F0 validado e precisa confirmar 00 02 00 0A F3.",
       "34 03 00 00 A0 28 so e enviado depois de HELLO-STOP, F0 e 38 validos. A resposta e validada por LEN e soma modulo 256 = FF e e salva em binario.",
-      "As varreduras 0A e a consulta 14 foram removidas deste teste para reduzir ruido e tempo de bancada.",
+      "As varreduras 0A e a consulta 14 permanecem fora deste teste focado.",
       "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado.",
       "0F 00 F0 permanece bloqueado por estar associado a Clear All Memory."
     ]
