@@ -424,8 +424,8 @@ $inspector = @'
             V73AddSection(list, "CONTATOS");
             V73AddInstruction(list, "Contato NA", StudioIcon.ContactNO, LadderTool.ContactNO);
             V73AddInstruction(list, "Contato NF", StudioIcon.ContactNC, LadderTool.ContactNC);
-            V73AddInstruction(list, "Ramo paralelo NA", StudioIcon.ContactNO, LadderTool.ParallelNO);
-            V73AddInstruction(list, "Ramo paralelo NF", StudioIcon.ContactNC, LadderTool.ParallelNC);
+            V73AddInstruction(list, "Ramo paralelo NA", StudioIcon.BranchNO, LadderTool.ParallelNO);
+            V73AddInstruction(list, "Ramo paralelo NF", StudioIcon.BranchNC, LadderTool.ParallelNC);
 
             V73AddSection(list, "SAÍDAS");
             V73AddInstruction(list, "Bobina", StudioIcon.Coil, LadderTool.Coil);
