@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.6",
+  "packageVersion": "2026.09.09.7",
   "title": "TP02 PG - TESTE UNICO: enlace + consultas READ-ONLY",
   "sweeps": 1,
   "passiveCaptureMs": 1500,
@@ -17,182 +17,32 @@
     "stopOnUnknown": false
   },
   "serialProfiles": [
-    {
-      "name": "TP02 validado - DTR on RTS on",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "Odd",
-      "stopBits": "One",
-      "dtr": true,
-      "rts": true,
-      "attempts": 6,
-      "rxWindowMs": 1800,
-      "interAttemptMs": 180
-    },
-    {
-      "name": "Fallback - DTR on RTS off",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "Odd",
-      "stopBits": "One",
-      "dtr": true,
-      "rts": false,
-      "attempts": 6,
-      "rxWindowMs": 1800,
-      "interAttemptMs": 180
-    },
-    {
-      "name": "Fallback - DTR off RTS on",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "Odd",
-      "stopBits": "One",
-      "dtr": false,
-      "rts": true,
-      "attempts": 6,
-      "rxWindowMs": 1800,
-      "interAttemptMs": 180
-    },
-    {
-      "name": "Fallback - DTR off RTS off",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "Odd",
-      "stopBits": "One",
-      "dtr": false,
-      "rts": false,
-      "attempts": 6,
-      "rxWindowMs": 1800,
-      "interAttemptMs": 180
-    }
+    { "name": "TP02 validado - DTR on RTS on", "baud": 19200, "dataBits": 8, "parity": "Odd", "stopBits": "One", "dtr": true, "rts": true, "attempts": 6, "rxWindowMs": 1800, "interAttemptMs": 180 },
+    { "name": "Fallback - DTR on RTS off", "baud": 19200, "dataBits": 8, "parity": "Odd", "stopBits": "One", "dtr": true, "rts": false, "attempts": 6, "rxWindowMs": 1800, "interAttemptMs": 180 },
+    { "name": "Fallback - DTR off RTS on", "baud": 19200, "dataBits": 8, "parity": "Odd", "stopBits": "One", "dtr": false, "rts": true, "attempts": 6, "rxWindowMs": 1800, "interAttemptMs": 180 },
+    { "name": "Fallback - DTR off RTS off", "baud": 19200, "dataBits": 8, "parity": "Odd", "stopBits": "One", "dtr": false, "rts": false, "attempts": 6, "rxWindowMs": 1800, "interAttemptMs": 180 }
   ],
   "steps": [
-    {
-      "id": "hello-pg",
-      "name": "1. Localizar enlace PG PC12",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": true,
-      "safetyClass": "HANDSHAKE",
-      "txHex": "43 4F 4E 2D 49 43 42 0D",
-      "timeoutMs": 1800,
-      "passiveAfterMs": 0,
-      "expected": [
-        { "name": "HELLO-RUN", "hex": "C0 01 09 35" },
-        { "name": "HELLO-STOP", "hex": "80 01 09 75" },
-        { "name": "HELLO-0D-NAO-CLASSIFICADO", "hex": "0D 01 09 E8" }
-      ]
-    },
-    {
-      "id": "status-preflight-f0",
-      "name": "2. Status/preflight F0",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_VERIFIED",
-      "txHex": "F0 00 0F",
-      "timeoutMs": 3000,
-      "passiveAfterMs": 200,
-      "expected": [
-        { "name": "F0-STOP-OBSERVADO-2026-09-09", "hex": "00 02 10 22 CB" }
-      ]
-    },
-    {
-      "id": "read-program-preflight-38",
-      "name": "3. Read PLC Program - preambulo 38 apos F0",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_CANDIDATE",
-      "txHex": "38 00 C7",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 700,
-      "expected": []
-    },
-    {
-      "id": "read-program-static",
-      "name": "4. Read PLC Program - bloco 34",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "34 03 00 00 A0 28",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 900,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-1",
-      "name": "5. Read PLC System - parte 1",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 700,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-2",
-      "name": "6. Read PLC System - parte 2",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "0A 03 60 AC AC 3A",
-      "timeoutMs": 3500,
-      "passiveAfterMs": 700,
-      "expected": []
-    },
-    {
-      "id": "password-prelude-14",
-      "name": "7. Consulta do ramo de senha - 14",
-      "type": "txrx",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "READ_ONLY_PROBE",
-      "txHex": "14 00 EB",
-      "timeoutMs": 2500,
-      "passiveAfterMs": 500,
-      "expected": []
-    },
-    {
-      "id": "clear-all-memory",
-      "name": "Clear All Memory - PC12 original",
-      "type": "txrx",
-      "enabled": false,
-      "sweepProfiles": false,
-      "safetyClass": "BLOCKED",
-      "txHex": "0F 00 F0",
-      "timeoutMs": 0,
-      "passiveAfterMs": 0,
-      "expected": []
-    }
+    { "id": "hello-pg", "name": "1. Localizar enlace PG PC12", "type": "txrx", "enabled": true, "sweepProfiles": true, "safetyClass": "HANDSHAKE", "txHex": "43 4F 4E 2D 49 43 42 0D", "timeoutMs": 1800, "passiveAfterMs": 0, "expected": [ { "name": "HELLO-RUN", "hex": "C0 01 09 35" }, { "name": "HELLO-STOP", "hex": "80 01 09 75" }, { "name": "HELLO-0D-NAO-CLASSIFICADO", "hex": "0D 01 09 E8" } ] },
+    { "id": "status-preflight-f0", "name": "2. Status/preflight F0", "type": "txrx", "enabled": true, "sweepProfiles": false, "safetyClass": "READ_ONLY_VERIFIED", "txHex": "F0 00 0F", "timeoutMs": 3000, "passiveAfterMs": 200, "expected": [ { "name": "F0-STOP-OBSERVADO-2026-09-09", "hex": "00 02 10 22 CB" } ] },
+    { "id": "read-program-preflight-38", "name": "3. Read PLC Program - preambulo 38 apos F0", "type": "txrx", "enabled": true, "sweepProfiles": false, "safetyClass": "READ_ONLY_CANDIDATE", "txHex": "38 00 C7", "timeoutMs": 3500, "passiveAfterMs": 700, "expected": [] },
+    { "id": "read-program-static", "name": "4. Read PLC Program - bloco 34", "type": "txrx", "enabled": true, "sweepProfiles": false, "safetyClass": "READ_ONLY_PROBE", "txHex": "34 03 00 00 A0 28", "timeoutMs": 4000, "passiveAfterMs": 900, "expected": [] },
+    { "id": "read-system-part-1", "name": "5. Read PLC System - parte 1", "type": "txrx", "enabled": true, "sweepProfiles": false, "safetyClass": "READ_ONLY_PROBE", "txHex": "0A 03 60 00 AC E6", "timeoutMs": 3500, "passiveAfterMs": 700, "expected": [] },
+    { "id": "read-system-part-2", "name": "6. Read PLC System - parte 2", "type": "txrx", "enabled": true, "sweepProfiles": false, "safetyClass": "READ_ONLY_PROBE", "txHex": "0A 03 60 AC AC 3A", "timeoutMs": 3500, "passiveAfterMs": 700, "expected": [] },
+    { "id": "password-prelude-14", "name": "7. Consulta do ramo de senha - 14", "type": "txrx", "enabled": true, "sweepProfiles": false, "safetyClass": "READ_ONLY_PROBE", "txHex": "14 00 EB", "timeoutMs": 2500, "passiveAfterMs": 500, "expected": [] },
+    { "id": "clear-all-memory", "name": "Clear All Memory - PC12 original", "type": "txrx", "enabled": false, "sweepProfiles": false, "safetyClass": "BLOCKED", "txHex": "0F 00 F0", "timeoutMs": 0, "passiveAfterMs": 0, "expected": [] }
   ],
   "safety": {
-    "readOnlyAllowlist": [
-      "F0 00 0F",
-      "38 00 C7",
-      "34 03 00 00 A0 28",
-      "0A 03 60 00 AC E6",
-      "0A 03 60 AC AC 3A",
-      "14 00 EB"
-    ],
-    "blockedTx": [
-      "0F 00 F0"
-    ],
+    "readOnlyAllowlist": [ "F0 00 0F", "38 00 C7", "34 03 00 00 A0 28", "0A 03 60 00 AC E6", "0A 03 60 AC AC 3A", "14 00 EB" ],
+    "blockedTx": [ "0F 00 F0" ],
     "notes": [
       "Este pacote executa um unico ensaio automatico. O operador escolhe apenas a COM e pressiona TESTE UNICO.",
-      "A busca do enlace usa primeiro 19200 8O1 DTR=on RTS=on e, se necessario, testa automaticamente as demais combinacoes DTR/RTS.",
-      "A bancada da v0.91 encontrou HELLO-STOP 80 01 09 75 com DTR=on RTS=off depois da reabertura da COM.",
-      "Na mesma sessao da v0.91, F0 00 0F ficou sem resposta com RTS=off, enquanto uma sessao fisica anterior respondeu 00 02 10 22 CB com DTR=on RTS=on.",
-      "O motor 1.7 executa uma matriz pos-handshake na mesma porta aberta: estado vencedor com atrasos curto/longo, RTS on e transicoes RTS on->off e off->on entre TX e RX.",
-      "A matriz pos-handshake retransmite somente F0 00 0F, ja classificado como READ_ONLY_VERIFIED; nenhum novo opcode e introduzido.",
-      "Se qualquer variante F0 confirmar 00 02 10 22 CB, o estado RTS vencedor e preservado e 38 00 C7 e liberado automaticamente na mesma sessao.",
-      "38 00 C7 continua com regra especial: somente e enviado se o F0 conhecido tiver sido validado na mesma sessao.",
-      "34 03 00 00 A0 28, os dois quadros 0A e 14 00 EB sao probes READ-ONLY allowlisted e continuam sendo testados mesmo se outro probe ficar sem resposta.",
-      "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado a Clear All Memory.",
+      "A bancada encontrou HELLO-STOP 80 01 09 75 com DTR=on RTS=off depois da reabertura da COM.",
+      "Uma sessao fisica anterior respondeu F0 00 0F com 00 02 10 22 CB.",
+      "Na v0.92, a variante F0 TX RTS on -> RX RTS off devolveu novamente HELLO-STOP 80 01 09 75; o motor 1.8 trata isso como ressincronizacao valida.",
+      "Depois de RESYNC, o motor retransmite somente F0 00 0F em quatro tentativas automaticas com atrasos de 80, 220, 450 e 700 ms, preservando a mesma COM.",
+      "Se F0 confirmar 00 02 10 22 CB, 38 00 C7 e liberado automaticamente na mesma sessao.",
+      "0F 00 F0 permanece bloqueado por estar associado a Clear All Memory.",
       "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado pelo Teste Unico."
     ]
   }
