@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.5",
+  "packageVersion": "2026.09.09.6",
   "title": "TP02 PG - TESTE UNICO: enlace + consultas READ-ONLY",
   "sweeps": 1,
   "passiveCaptureMs": 1500,
@@ -184,14 +184,14 @@
     ],
     "notes": [
       "Este pacote executa um unico ensaio automatico. O operador escolhe apenas a COM e pressiona TESTE UNICO.",
-      "A busca do enlace usa primeiro o perfil fisicamente validado 19200 8O1, DTR=on, RTS=on; os demais perfis alteram somente DTR/RTS.",
-      "Cada perfil faz ate seis HELLOs: apos duas falhas rearma DTR/RTS; apos quatro falhas reabre a COM; as tentativas 5 e 6 verificam o estado depois da reabertura.",
-      "Antes do primeiro HELLO de cada perfil o motor escuta passivamente por 500 ms.",
-      "Quando um HELLO conhecido e encontrado, a mesma sessao serial e preservada e o teste executa automaticamente todas as consultas READ-ONLY habilitadas.",
-      "F0 00 0F e consulta fisicamente confirmada. O vetor STOP observado foi 00 02 10 22 CB.",
+      "A busca do enlace usa primeiro 19200 8O1 DTR=on RTS=on e, se necessario, testa automaticamente as demais combinacoes DTR/RTS.",
+      "A bancada da v0.91 encontrou HELLO-STOP 80 01 09 75 com DTR=on RTS=off depois da reabertura da COM.",
+      "Na mesma sessao da v0.91, F0 00 0F ficou sem resposta com RTS=off, enquanto uma sessao fisica anterior respondeu 00 02 10 22 CB com DTR=on RTS=on.",
+      "O motor 1.7 executa uma matriz pos-handshake na mesma porta aberta: estado vencedor com atrasos curto/longo, RTS on e transicoes RTS on->off e off->on entre TX e RX.",
+      "A matriz pos-handshake retransmite somente F0 00 0F, ja classificado como READ_ONLY_VERIFIED; nenhum novo opcode e introduzido.",
+      "Se qualquer variante F0 confirmar 00 02 10 22 CB, o estado RTS vencedor e preservado e 38 00 C7 e liberado automaticamente na mesma sessao.",
       "38 00 C7 continua com regra especial: somente e enviado se o F0 conhecido tiver sido validado na mesma sessao.",
-      "34 03 00 00 A0 28, os dois quadros 0A e 14 00 EB foram recuperados por analise estatica de fluxos de leitura do PC12 e sao tratados como probes READ-ONLY allowlisted.",
-      "Uma consulta sem resposta ou com resposta ainda desconhecida nao interrompe o Teste Unico; o motor continua para os demais probes e registra tudo no mesmo TXT/JSON.",
+      "34 03 00 00 A0 28, os dois quadros 0A e 14 00 EB sao probes READ-ONLY allowlisted e continuam sendo testados mesmo se outro probe ficar sem resposta.",
       "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado a Clear All Memory.",
       "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado pelo Teste Unico."
     ]
