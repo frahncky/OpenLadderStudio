@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.97] - 2026-09-09
+
+### Protocolo TP02 PG
+- **varredura de leitura 0A (motor PG Lab 1.11)**: a bancada da v0.96 confirmou que o `0A` é uma leitura — `0A 03 [end_hi][end_lo][qtd] chk` devolve `CMD=00 · LEN=qtd · payload`, e a leitura de `0x60AC` retornou dados (`00 AC 00 00 …`). Novo tipo de etapa `read_sweep_0a`: a partir de um quadro `0A` base, o motor monta novos quadros `0A` com checksum, varre endereços contíguos (passo = `qtd`) e captura cada resposta, com retentativa por endereço e parada após 6 endereços silenciosos. O pacote `2026.09.09.9` acrescenta a varredura a partir de `0x6000`;
+- novo registro de bancada `docs/tp02-pg-leitura-0a-2026-09-09.md`: generalização do enquadramento de resposta `CMD=00 / LEN / payload` (F0, `14 → 00 00 FF` reproduzido 3/3, e `0A → 00 AC …`).
+
+### Segurança
+- a montagem da varredura é intrínseca a `CMD=0A` (leitura): o motor não consegue produzir escrita, RUN/STOP remoto, download, apagamento ou firmware por essa via; roda só no modo READ-ONLY, é limitada em número de leituras e para no silêncio. `0F 00 F0` segue bloqueado e o `38 00 C7` segue exigindo F0 validado na mesma sessão.
+
 ## [0.96] - 2026-09-09
 
 ### Protocolo TP02 PG
