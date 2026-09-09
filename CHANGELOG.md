@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.96] - 2026-09-09
+
+### Protocolo TP02 PG
+- **F0 com retentativas (motor PG Lab 1.10)**: a matriz F0 pós-handshake passa a ser repetida em até 3 rodadas na mesma sessão (até 18 tentativas, contra 6), parando assim que uma variante devolver `00 02 10 22 CB`. A primeira execução da varredura completa em hardware mostrou o HELLO respondendo enquanto o F0 ficava mudo nas 6 variantes — e, sem F0 validado, o `38 00 C7` é bloqueado e a leitura de programa não abre. Como o TP02 ignora sequências de tentativas, mais rodadas de F0 seguem o mesmo princípio já aplicado às leituras na v0.95;
+- novo registro de bancada `docs/tp02-pg-sessao-varredura-2026-09-09.md`: enlace em `DTR=on/RTS=off` com `80 01 09 75` (STOP); F0 mudo nas 6 variantes; `34` e os dois `0A` em silêncio; e o achado `14 00 EB → 00 00 FF` (candidato a resposta vazia `CMD=00 / LEN=0`, a confirmar).
+
+### Segurança
+- nenhum opcode novo: cada rodada transmite só `F0 00 0F`, já `READ_ONLY_VERIFIED`; o `38 00 C7` continua exigindo F0 validado na mesma sessão; escrita, RUN/STOP remoto, download, apagamento, firmware e `0F 00 F0` seguem bloqueados.
+
 ## [0.95] - 2026-09-09
 
 ### Protocolo TP02 PG
