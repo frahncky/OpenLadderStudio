@@ -36,8 +36,11 @@ $text = Replace-Required $text @'
         {
             if (frame == null || frame.Length < 3 || frame[0] != 0x00) return;
             int len = frame[1];
-            int avail = frame.Length - 3;
-            if (len > avail) len = avail;
+            if (frame.Length != len + 3 || Sum8(frame) != 0xFF)
+            {
+                LogEvent("DECOD", addrHex + ": resposta incompleta ou sem checksum FF; decodificacao adiada", string.Empty, null, elapsedMs);
+                return;
+            }
             int nonZero = 0;
             for (int i = 0; i < len; i++) if (frame[2 + i] != 0x00) nonZero++;
             LogEvent("DECOD", addrHex + ": CMD=00 LEN=0x" + len.ToString("X2", CultureInfo.InvariantCulture) + " (" + len.ToString(CultureInfo.InvariantCulture) + " bytes) nao-zero=" + nonZero.ToString(CultureInfo.InvariantCulture), string.Empty, null, elapsedMs);
