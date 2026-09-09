@@ -1,12 +1,20 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $path = Join-Path (Get-Location) 'StudioUi.build.cs'
 if (-not (Test-Path $path)) { throw 'StudioUi.build.cs nao encontrado. Execute PrepareStudioUiV20.ps1 antes.' }
 $text = [System.IO.File]::ReadAllText($path)
 
 function Replace-Required([string]$haystack, [string]$needle, [string]$replacement, [string]$label) {
-    if (-not $haystack.Contains($needle)) { throw "Ancora nao encontrada em StudioUi.build.cs ($label)." }
-    return $haystack.Replace($needle, $replacement)
+    # A ancora vem de um here-string e herda o fim de linha deste script; o alvo
+    # gerado pode estar em LF, CRLF ou misto. Procurar so numa das formas falha
+    # em todas as ancoras multilinha de uma vez, culpando a primeira da fila.
+    $ancoraLf = $needle.Replace("`r`n", "`n")
+    $ancoraCrLf = $ancoraLf.Replace("`n", "`r`n")
+    $novoLf = $replacement.Replace("`r`n", "`n")
+    $novoCrLf = $novoLf.Replace("`n", "`r`n")
+    if ($haystack.Contains($ancoraCrLf)) { return $haystack.Replace($ancoraCrLf, $novoCrLf) }
+    if ($haystack.Contains($ancoraLf)) { return $haystack.Replace($ancoraLf, $novoLf) }
+    throw "Ancora nao encontrada em StudioUi.build.cs ($label)."
 }
 
 function Replace-Section([string]$haystack, [string]$startAnchor, [string]$endAnchor, [string]$replacement, [string]$label) {
