@@ -108,27 +108,27 @@ $workspace = @'
             V72AddSection(list, "CONTATOS");
             V72AddInstruction(list, "Contato NA", StudioIcon.ContactNO, LadderTool.ContactNO);
             V72AddInstruction(list, "Contato NF", StudioIcon.ContactNC, LadderTool.ContactNC);
-            V72AddInstruction(list, "Ramo paralelo NA", StudioIcon.ContactNO, LadderTool.ParallelNO);
-            V72AddInstruction(list, "Ramo paralelo NF", StudioIcon.ContactNC, LadderTool.ParallelNC);
+            V72AddInstruction(list, "Ramo paralelo NA", StudioIcon.BranchNO, LadderTool.ParallelNO);
+            V72AddInstruction(list, "Ramo paralelo NF", StudioIcon.BranchNC, LadderTool.ParallelNC);
 
             V72AddSection(list, "SAÍDAS");
             V72AddInstruction(list, "Bobina", StudioIcon.Coil, LadderTool.Coil);
-            V72AddInstruction(list, "SET", StudioIcon.Check, LadderTool.Set);
-            V72AddInstruction(list, "RESET", StudioIcon.Refresh, LadderTool.Reset);
+            V72AddInstruction(list, "SET", StudioIcon.CoilSet, LadderTool.Set);
+            V72AddInstruction(list, "RESET", StudioIcon.CoilReset, LadderTool.Reset);
 
             V72AddSection(list, "TEMPORIZAÇÃO E CONTAGEM");
             V72AddInstruction(list, "Temporizador", StudioIcon.Timer, LadderTool.Timer);
             V72AddInstruction(list, "Contador", StudioIcon.Counter, LadderTool.Counter);
 
             V72AddSection(list, "FUNÇÕES");
-            V72AddInstruction(list, "Borda de subida", StudioIcon.Bolt, LadderTool.EdgeUp);
-            V72AddInstruction(list, "Borda de descida", StudioIcon.Bolt, LadderTool.EdgeDown);
+            V72AddInstruction(list, "Borda de subida", StudioIcon.EdgeUp, LadderTool.EdgeUp);
+            V72AddInstruction(list, "Borda de descida", StudioIcon.EdgeDown, LadderTool.EdgeDown);
             V72AddInstruction(list, "Função especial", StudioIcon.Chip, LadderTool.Function);
             V72AddInstruction(list, "END", StudioIcon.Terminal, LadderTool.End);
 
             V72AddSection(list, "EDIÇÃO");
             V72AddInstruction(list, "Selecionar", StudioIcon.Select, LadderTool.Select);
-            V72AddAction(list, "Apagar selecionado", StudioIcon.Minus, delegate { InvokeLadder("DeleteSelectedElement", null); });
+            V72AddAction(list, "Apagar selecionado", StudioIcon.Trash, delegate { InvokeLadder("DeleteSelectedElement", null); });
             V72AddAction(list, "Adicionar linha", StudioIcon.Plus, delegate { InvokeLadder("AddRung", null); });
             V72AddAction(list, "Remover linha", StudioIcon.Minus, delegate { InvokeLadder("DeleteSelectedRung", null); });
 

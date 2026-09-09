@@ -50,21 +50,21 @@ $elementLibrary = @'
             AddElementSection(list, "CONTATOS");
             AddElementTool(list, "Contato NA", StudioIcon.ContactNO, LadderTool.ContactNO);
             AddElementTool(list, "Contato NF", StudioIcon.ContactNC, LadderTool.ContactNC);
-            AddElementTool(list, "Ramo paralelo NA", StudioIcon.ContactNO, LadderTool.ParallelNO);
-            AddElementTool(list, "Ramo paralelo NF", StudioIcon.ContactNC, LadderTool.ParallelNC);
+            AddElementTool(list, "Ramo paralelo NA", StudioIcon.BranchNO, LadderTool.ParallelNO);
+            AddElementTool(list, "Ramo paralelo NF", StudioIcon.BranchNC, LadderTool.ParallelNC);
 
             AddElementSection(list, "SAÍDAS");
             AddElementTool(list, "Bobina", StudioIcon.Coil, LadderTool.Coil);
-            AddElementTool(list, "SET", StudioIcon.Check, LadderTool.Set);
-            AddElementTool(list, "RESET", StudioIcon.Refresh, LadderTool.Reset);
+            AddElementTool(list, "SET", StudioIcon.CoilSet, LadderTool.Set);
+            AddElementTool(list, "RESET", StudioIcon.CoilReset, LadderTool.Reset);
 
             AddElementSection(list, "TEMPORIZAÇÃO E CONTAGEM");
             AddElementTool(list, "Temporizador", StudioIcon.Timer, LadderTool.Timer);
             AddElementTool(list, "Contador", StudioIcon.Counter, LadderTool.Counter);
 
             AddElementSection(list, "FUNÇÕES");
-            AddElementTool(list, "Borda de subida", StudioIcon.Bolt, LadderTool.EdgeUp);
-            AddElementTool(list, "Borda de descida", StudioIcon.Bolt, LadderTool.EdgeDown);
+            AddElementTool(list, "Borda de subida", StudioIcon.EdgeUp, LadderTool.EdgeUp);
+            AddElementTool(list, "Borda de descida", StudioIcon.EdgeDown, LadderTool.EdgeDown);
             AddElementTool(list, "Função especial", StudioIcon.Chip, LadderTool.Function);
             AddElementTool(list, "END", StudioIcon.Terminal, LadderTool.End);
 
