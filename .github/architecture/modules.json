@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceRoot": "PC12_v2.1_Windows7_v3_portatil",
+  "sourceRoot": "src/OpenLadderStudio.Desktop",
   "targetStructure": "src",
   "modules": [
     {
@@ -56,7 +56,7 @@
   ],
   "migrationRules": [
     "New production code belongs under src once its target module exists.",
-    "The portable directory remains the compatibility and legacy-build boundary until the project build is migrated.",
+    "OpenLadderStudio.Desktop remains the compatibility and legacy-build boundary until responsibilities are extracted into the target modules.",
     "Generated .build.cs files must never be committed.",
     "New protocol behavior is introduced through driver contracts, not through UI conditionals."
   ]

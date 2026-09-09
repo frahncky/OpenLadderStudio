@@ -93,7 +93,7 @@ A infraestrutura conhece os contratos do domínio. O domínio não conhece a inf
 
 ## Dívida técnica conhecida
 
-O projeto nasceu dentro do diretório legado `PC12_v2.1_Windows7_v3_portatil`, que ainda mistura fontes modernas, ferramentas de pesquisa e binários de compatibilidade. Também existem arquivos com sufixos de versão e scripts que transformam código durante o build.
+O projeto nasceu dentro do diretório legado `src/OpenLadderStudio.Desktop`, que ainda mistura fontes modernas, ferramentas de pesquisa e binários de compatibilidade. Também existem arquivos com sufixos de versão e scripts que transformam código durante o build.
 
 Esses pontos não devem ser ampliados.
 

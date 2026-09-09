@@ -6,7 +6,7 @@ Levantamento de código morto, duplicação e nomenclatura na base atual. Cada i
 
 Um arquivo é considerado **morto** quando nada o alcança: nenhum `.bat`, nenhum `Prepare*.ps1`, nenhum `new Classe(...)` e nenhum passo do workflow de CI. As duas armadilhas deste repositório:
 
-- o build está em **três** lugares — `BUILD_INTERFACE_MODERNA.bat`, os encadeamentos dentro de `PrepareUpdateNotification.ps1` e de `PreparePgLinkV39.ps1`, e o CI, que também chama `BUILD_PG_LAB.bat`. Olhar só o `.bat` principal produz falso positivo;
+- o build está em **três** lugares — `Build.bat`, os encadeamentos dentro de `PrepareUpdateNotification.ps1` e de `PreparePgLinkV39.ps1`, e o CI, que também chama `BuildTp02Lab.bat`. Olhar só o `.bat` principal produz falso positivo;
 - um `.cs` pode não aparecer no `.bat` e ainda assim ser usado, porque um script o lê e grava outro nome (`ModbusMonitorV14.cs` → `ModbusMonitorV15.build.cs`).
 
 ## Código morto confirmado
@@ -25,7 +25,7 @@ Um arquivo é considerado **morto** quando nada o alcança: nenhum `.bat`, nenhu
 
 **Cinco gerações do mesmo utilitário TP02 PG são compiladas no shell**: `TP02PgLinkV32/V33/V34/V35/V37.cs`, cerca de 2 700 linhas. Delas, V32 e V33 são inalcançáveis (acima); V35 e V37 têm `Main` próprio; V34 é aberto por um script de preparação. Cada geração é uma cópia com ajustes da anterior — corrigir um defeito de protocolo exige repetir a correção em até cinco arquivos.
 
-**Três lançadores para o mesmo executável**: `INICIAR_LINK_PG_V035.bat`, `INICIAR_LINK_PG_V037.bat` e `INICIAR_LINK_PG_V038.bat` abrem todos o mesmo `OpenLadderTP02PgLink.exe`. Os números no nome sugerem versões diferentes que não existem.
+**Lançadores TP02 consolidados**: os três lançadores históricos foram substituídos por `StartTp02Link.bat`, que abre `OpenLadderTP02PgLink.exe`.
 
 ## Peso do repositório
 
@@ -39,7 +39,18 @@ BDS52F.DLL           83 KB     HELPDLG.HLP    8,0 KB
 pc12help.CNT        836 B      lastfile.cpu/.dir  20 B
 ```
 
-São o software WEG original e o runtime Borland. **O instalador não os distribui**; o único acesso é `INICIAR_PC12_CLASSICO.bat`, que roda `pc12.exe` direto da pasta. `lastfile.cpu` e `lastfile.dir` são estado de execução daquele programa, não fonte — não deveriam estar versionados em nenhuma hipótese.
+São o software WEG original e o runtime Borland. `lastfile.cpu` e `lastfile.dir` eram estado de execução daquele programa, não fonte, e já saíram do controle de versão.
+
+### Correção: estes binários ficam
+
+Uma primeira versão desta auditoria recomendou tirá-los do repositório, com o argumento de que o instalador não os distribui. **O argumento estava incompleto e a recomendação era errada.** Eles não são resíduo, são entrada de duas coisas vivas:
+
+- `.github/workflows/analyze-pc12-protocol.yml` dispara em `push` que toque `pc12.exe` e roda `scripts/analyze_pc12_protocol.py` sobre o binário para extrair o protocolo do TP02. É a pesquisa registrada em [`tp02-opcode-research.md`](tp02-opcode-research.md), que **ainda não foi confirmada em hardware** — remover o `.exe` mataria a única fonte que a sustenta. As quatro DLLs Borland são dependências dele;
+- `ModernPC12.cs` abre `PC12HELP.HLP`, `Tp022.hlp` e `HELPDLG.HLP` no menu de ajuda do modo clássico, e lança `pc12.exe`.
+
+Só `pc12help.CNT` (836 B) não tem nenhum uso.
+
+A lição vale além deste caso: "o instalador não distribui" não é prova de que um arquivo é dispensável. A verificação tem de cobrir os workflows de CI, e não só o build e o código.
 
 ## Nomenclatura
 
@@ -61,7 +72,7 @@ Já renomeados: `PrepareUiAuditV51` → `PrepareUiV51`, e o mesmo para `V52`–`
 
 `ModernPC12.cs` e `PC12Studio.cs` são dois shells legados cujos nomes não distinguem um do outro. Renomear mexe na linha de compilação e nos scripts que os leem pelo nome — vale fazer junto com a decisão de qual dos dois sobrevive, não antes.
 
-A pasta `PC12_v2.1_Windows7_v3_portatil` carrega versão, sistema operacional e o adjetivo "portátil" de um produto que já não é o produto. É o pior nome do repositório. Renomeá-la atinge o workflow de CI, os dois arquivos do instalador, `scripts/`, o `.gitignore` e boa parte da documentação: mecânico, mas com o pipeline de release no caminho, então merece ser uma mudança isolada.
+A pasta principal foi movida para `src/OpenLadderStudio.Desktop`, com referências atualizadas no build, no CI, no instalador e na documentação. Builds, lançadores e documentos receberam nomes consistentes. O [mapa de renomeações](repository-layout.md) registra os nomes anteriores e a compatibilidade mantida para URLs públicas.
 
 ## Recomendações, por risco
 
@@ -73,8 +84,8 @@ A pasta `PC12_v2.1_Windows7_v3_portatil` carrega versão, sistema operacional e 
 
 **Risco baixo — decidir:**
 
-4. mover o legado PC12 (7 MB) para fora do repositório, ou para uma release de arquivo. Quem clona hoje baixa 7 MB de binário de 1995 que o produto não distribui;
-5. reduzir os três `INICIAR_LINK_PG_*` a um único lançador.
+4. remover `pc12help.CNT`, o único dos binários legados sem nenhum uso;
+5. concluído: lançadores TP02 consolidados em `StartTp02Link.bat`.
 
 **Risco médio — planejar:**
 

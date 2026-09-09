@@ -326,7 +326,7 @@ namespace ModernPC12
 
     /// <summary>
     /// Contatos especiais do PLC virtual. A correspondência com o mapa real do TP02
-    /// ainda depende da pesquisa registrada em docs/TP02_OPCODE_RESEARCH.md.
+    /// ainda depende da pesquisa registrada em docs/tp02-opcode-research.md.
     /// </summary>
     internal static class SpecialContacts
     {

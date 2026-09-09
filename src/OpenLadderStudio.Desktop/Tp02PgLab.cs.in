@@ -106,7 +106,7 @@ namespace ModernPC12
     {
         private const string EngineVersion = "1.0";
         private const string PackageFileName = "TP02-PG-Tests.json";
-        private const string RemotePackageUrl = "https://raw.githubusercontent.com/frahncky/OpenLadderStudio/main/PC12_v2.1_Windows7_v3_portatil/TP02-PG-Tests.json";
+        private const string RemotePackageUrl = "https://raw.githubusercontent.com/frahncky/OpenLadderStudio/main/src/OpenLadderStudio.Desktop/TP02-PG-Tests.json";
         private const string BuiltInHello = "43 4F 4E 2D 49 43 42 0D";
 
         private readonly Color Navy = Color.FromArgb(18, 39, 63);

@@ -6,7 +6,7 @@ on:
     paths:
       - 'scripts/analyze_pc12_protocol.py'
       - '.github/workflows/analyze-pc12-protocol.yml'
-      - 'PC12_v2.1_Windows7_v3_portatil/pc12.exe'
+      - 'src/OpenLadderStudio.Desktop/pc12.exe'
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
         run: |
           mkdir -p protocol-analysis
           python3 scripts/analyze_pc12_protocol.py \
-            PC12_v2.1_Windows7_v3_portatil/pc12.exe \
+            src/OpenLadderStudio.Desktop/pc12.exe \
             -o protocol-analysis/pc12-protocol-analysis.txt
 
       - name: PE headers
@@ -31,7 +31,7 @@ jobs:
             echo
             echo 'OBJDUMP PE HEADERS'
             echo '================================================================================'
-            objdump -h PC12_v2.1_Windows7_v3_portatil/pc12.exe || true
+            objdump -h src/OpenLadderStudio.Desktop/pc12.exe || true
           } >> protocol-analysis/pc12-protocol-analysis.txt
 
       - name: Relevant strings from GNU strings
@@ -40,7 +40,7 @@ jobs:
             echo
             echo 'GNU STRINGS FILTER'
             echo '================================================================================'
-            strings -tx -n 4 PC12_v2.1_Windows7_v3_portatil/pc12.exe \
+            strings -tx -n 4 src/OpenLadderStudio.Desktop/pc12.exe \
               | grep -Ei 'Read PLC Program|PLC Program|Clear All Memory|Clear Program|Download|Upload|RUN|STOP|CON-ICB' \
               | head -n 300 || true
           } >> protocol-analysis/pc12-protocol-analysis.txt

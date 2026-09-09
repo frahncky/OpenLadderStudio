@@ -117,7 +117,7 @@ def render(groups):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('binary', nargs='?',
-                    default='PC12_v2.1_Windows7_v3_portatil/pc12.exe')
+                    default='src/OpenLadderStudio.Desktop/pc12.exe')
     args = ap.parse_args()
     data = pathlib.Path(args.binary).read_bytes()
     base, secs = pe_sections(data)

@@ -24,7 +24,7 @@ Confundir as duas leva a "consertar" mojibake reescrevendo a string, o que masca
 Limites que você precisa respeitar:
 
 - **atua só em literais de string.** Comentários ficam intactos **de propósito**: vários `Prepare*.ps1` usam trechos de comentário em português como âncora textual, e acentuá-los quebra o build seguinte. Isso já aconteceu. Não "melhore" esse comportamento;
-- **varre só `PC12_v2.1_Windows7_v3_portatil`.** Texto em `src/` e `tests/` não passa por ela e precisa ser acentuado à mão — inclusive mensagens de erro de `LadderProject.cs`, que aparecem em diálogo quando um projeto não abre;
+- **varre só `src/OpenLadderStudio.Desktop`.** Texto em `src/` e `tests/` não passa por ela e precisa ser acentuado à mão — inclusive mensagens de erro de `LadderProject.cs`, que aparecem em diálogo quando um projeto não abre;
 - `Is-TechnicalLiteral` pula URL, `snake_case`, regex e caminho técnico. Ao ampliar o mapa, verifique que o termo não aparece em contexto técnico;
 - **chaves duplicadas quebram o script** (hashtable do PowerShell). Antes de acrescentar termos, confira que a chave já não existe;
 - `Preserve-Case` mantém a caixa original, então basta a forma minúscula no mapa.
@@ -38,7 +38,7 @@ Depois de ampliar o mapa, rode o build inteiro: a validação é ele passar e o 
 Auditoria (saída deve ser vazia):
 
 ```powershell
-Get-ChildItem PC12_v2.1_Windows7_v3_portatil -Filter *.ps1 | Where-Object {
+Get-ChildItem src/OpenLadderStudio.Desktop -Filter *.ps1 | Where-Object {
     $b = [System.IO.File]::ReadAllBytes($_.FullName)
     ($b | Where-Object { $_ -gt 127 }) -and -not ($b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF)
 }

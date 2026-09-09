@@ -12,11 +12,11 @@ Program Files sem tentar abrir arquivos no caminho antigo.
 COMO USAR
 1. Extraia TODO o conteúdo do ZIP para uma pasta, por exemplo C:\PC12.
 2. Não execute o programa diretamente dentro do ZIP.
-3. Execute INICIAR_PC12.bat.
+3. Execute StartClassicPc12.bat.
 4. Mantenha todos os DLLs e arquivos de suporte na mesma pasta do pc12.exe.
 
 Se algum projeto antigo ficar gravado como último arquivo e causar erro,
-execute RESETAR_ULTIMO_ARQUIVO.bat e depois abra novamente o PC12.
+execute ResetClassicPc12State.bat e depois abra novamente o PC12.
 
 Alterações:
 - SETUP.EXE de 16 bits não é necessário.

@@ -5,7 +5,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash, PowerShell
 model: opus
 ---
 
-Você é o especialista no domínio PLC do OpenLadder Studio. A referência é `docs/PROCESS_SIMULATION.md` — leia antes de decidir, e atualize quando mudar semântica.
+Você é o especialista no domínio PLC do OpenLadder Studio. A referência é `docs/process-simulation.md` — leia antes de decidir, e atualize quando mudar semântica.
 
 ## Guardrail de arquitetura
 
@@ -49,7 +49,7 @@ Bobina comum é restrita a `Y` e `C`: quem aciona o bit de um `V` é o próprio 
 
 Um contato em `V` lê o bit de conclusão do TMR/CNT correspondente. Sem isso nenhuma sequência temporizada seria expressável e metade da biblioteca de plantas não existiria.
 
-Os contatos especiais são **convenção do simulador**. A correspondência com o mapa real do TP02 depende da pesquisa em `docs/TP02_OPCODE_RESEARCH.md` e **ainda não foi confirmada em hardware** — não afirme o contrário em documentação nem em interface.
+Os contatos especiais são **convenção do simulador**. A correspondência com o mapa real do TP02 depende da pesquisa em `docs/tp02-opcode-research.md` e **ainda não foi confirmada em hardware** — não afirme o contrário em documentação nem em interface.
 
 ## Plantas simuladas
 
@@ -59,7 +59,7 @@ O realismo vem das imperfeições, não da equação ideal. Use os blocos de `Pr
 
 O valor de uma planta está em **falhar de forma observável**. Cada uma conta um evento que só acontece com lógica malfeita: curto entre fases, conflito entre verdes, transbordo, colisão no fim de curso, descida com a cortina interrompida. Uma planta nova sem esse contador está incompleta.
 
-Para acrescentar uma planta, siga os seis passos de `docs/PROCESS_SIMULATION.md` e **sempre** acrescente o bloco de verificação em `SimulationSelfTest.cs`.
+Para acrescentar uma planta, siga os seis passos de `docs/process-simulation.md` e **sempre** acrescente o bloco de verificação em `SimulationSelfTest.cs`.
 
 ## Segurança operacional
 

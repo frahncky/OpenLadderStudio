@@ -44,7 +44,7 @@ $updaterText = [System.IO.File]::ReadAllText($updaterBuild)
 $repoConst = '        private const string RepoApi = "https://api.github.com/repos/frahncky/OpenLadderStudio/releases/latest";'
 $repoReplacement = @'
         private const string RepoApi = "https://api.github.com/repos/frahncky/OpenLadderStudio/releases/latest";
-        private const string RawVersionUrl = "https://raw.githubusercontent.com/frahncky/OpenLadderStudio/main/PC12_v2.1_Windows7_v3_portatil/version.txt";
+        private const string RawVersionUrl = "https://raw.githubusercontent.com/frahncky/OpenLadderStudio/main/src/OpenLadderStudio.Desktop/version.txt";
         private const string ReleasesPage = "https://github.com/frahncky/OpenLadderStudio/releases/latest";
 '@
 if (-not $updaterText.Contains($repoConst)) { throw 'Constante RepoApi não encontrada no atualizador.' }

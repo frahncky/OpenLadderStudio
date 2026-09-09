@@ -29,7 +29,7 @@ namespace ModernPC12
             this.editor = editor;
             this.profile = profile;
 
-            Text = "Pre-compilacao TP02 - dry-run";
+            Text = "Pre-compilação TP02 - dry-run";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(940, 650);
             Size = new Size(1180, 780);
@@ -52,7 +52,7 @@ namespace ModernPC12
             Controls.Add(header);
 
             Label title = new Label();
-            title.Text = "PRE-COMPILACAO TP02 - LADDER -> 24 BITS -> WBP";
+            title.Text = "PRE-COMPILAÇÃO TP02 - LADDER -> 24 BITS -> WBP";
             title.AutoSize = true;
             title.Location = new Point(18, 13);
             title.Font = new Font("Segoe UI Semibold", 12.5f, FontStyle.Bold);
@@ -60,7 +60,7 @@ namespace ModernPC12
             header.Controls.Add(title);
 
             Label safe = new Label();
-            safe.Text = "OFFLINE / DRY-RUN - NENHUM BYTE E ENVIADO AO PLC";
+            safe.Text = "OFF-LINE / DRY-RUN - NENHUM BYTE E ENVIADO AO PLC";
             safe.AutoSize = true;
             safe.Location = new Point(20, 41);
             safe.Font = new Font("Segoe UI Semibold", 8.6f, FontStyle.Bold);
@@ -74,7 +74,7 @@ namespace ModernPC12
             Controls.Add(bar);
 
             int x = 16;
-            bar.Controls.Add(NewLabel("Estacao", x, 8));
+            bar.Controls.Add(NewLabel("Estação", x, 8));
             station = NewNumber(x, 27, 0, 99, 1); x += 92;
             bar.Controls.Add(station);
 
@@ -160,9 +160,9 @@ namespace ModernPC12
             try
             {
                 if (editor == null || editor.IsDisposed)
-                    throw new InvalidOperationException("Editor Ladder nao esta disponivel.");
+                    throw new InvalidOperationException("Editor Ladder não esta disponível.");
                 if (profile == null || !string.Equals(profile.DriverId, "weg.tp02.serial", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Selecione um perfil WEG TP02 antes de usar a pre-compilacao.");
+                    throw new InvalidOperationException("Selecione um perfil WEG TP02 antes de usar a pre-compilação.");
 
                 LadderProjectDocument document = CaptureEditorDocument(editor);
                 Tp02LadderCompilationResult result = Tp02LadderTargetCompiler.Compile(document);
@@ -186,7 +186,7 @@ namespace ModernPC12
                         report.Append("] ");
                         report.AppendLine(frames[i].Replace("\r", "<CR>"));
                     }
-                    state.Text = result.Words.Count.ToString() + " passo(s) / " + frames.Count.ToString() + " quadro(s) / offline";
+                    state.Text = result.Words.Count.ToString() + " passo(s) / " + frames.Count.ToString() + " quadro(s) / off-line";
                     state.ForeColor = OpenLadderPalette.Ok;
                 }
                 else
@@ -198,7 +198,7 @@ namespace ModernPC12
             catch (Exception ex)
             {
                 report.Clear();
-                report.AppendLine("PRE-COMPILACAO TP02 INTERROMPIDA");
+                report.AppendLine("PRE-COMPILAÇÃO TP02 INTERROMPIDA");
                 report.AppendLine();
                 report.AppendLine(ex.Message);
                 report.AppendLine();
@@ -216,7 +216,7 @@ namespace ModernPC12
         private static LadderProjectDocument CaptureEditorDocument(LadderEditorForm source)
         {
             MethodInfo serialize = typeof(LadderEditorForm).GetMethod("SerializeProject", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (serialize == null) throw new MissingMethodException("LadderEditorForm.SerializeProject nao encontrado.");
+            if (serialize == null) throw new MissingMethodException("LadderEditorForm.SerializeProject não encontrado.");
             string data = serialize.Invoke(source, null) as string;
             if (string.IsNullOrEmpty(data)) throw new InvalidDataException("Editor retornou projeto vazio.");
             return LadderProjectCodec.Deserialize(data);

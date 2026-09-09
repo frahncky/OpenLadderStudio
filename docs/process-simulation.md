@@ -55,7 +55,7 @@ Um contato em `V` lê o bit de conclusão do temporizador ou contador correspond
 
 ### Contatos especiais
 
-Os contatos especiais implementados são uma **convenção do simulador**. A correspondência com o mapa real do TP02 depende da pesquisa registrada em [`TP02_OPCODE_RESEARCH.md`](TP02_OPCODE_RESEARCH.md) e ainda não foi confirmada em hardware.
+Os contatos especiais implementados são uma **convenção do simulador**. A correspondência com o mapa real do TP02 depende da pesquisa registrada em [`tp02-opcode-research.md`](tp02-opcode-research.md) e ainda não foi confirmada em hardware.
 
 | Endereço | Significado |
 |---|---|
@@ -139,7 +139,7 @@ A interface escala a cena com proporção preservada e resolve os papéis na pal
 
 Pelo shell principal: **Ferramentas → Simulação de processo**, ou o item **Simular processo** na navegação lateral. Se o editor já tiver elementos, o projeto aberto é carregado no PLC virtual; caso contrário, o simulador mantém o programa de exemplo da planta selecionada.
 
-Como ferramenta separada: `INICIAR_SIMULADOR.bat`.
+Como ferramenta separada: `StartSimulator.bat`.
 
 Na janela:
 
@@ -154,7 +154,7 @@ Na janela:
 
 `SimulationSelfTest.cs` gera `OpenLadderSimTest.exe`, que roda o par PLC virtual + planta e verifica endereçamento, carga limpa do programa de cada planta, e o comportamento específico de cada processo — inclusive sob falha injetada. São mais de cem verificações em menos de um quinto de segundo.
 
-O autoteste é executado pelo `BUILD_INTERFACE_MODERNA.bat` e pelo GitHub Actions. Uma falha interrompe o build e a publicação.
+O autoteste é executado pelo `Build.bat` e pelo GitHub Actions. Uma falha interrompe o build e a publicação.
 
 ## Como adicionar uma planta
 

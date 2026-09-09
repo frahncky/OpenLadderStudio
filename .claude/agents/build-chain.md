@@ -1,6 +1,6 @@
 ---
 name: build-chain
-description: Especialista na cadeia de build do OpenLadder Studio — os ~45 scripts Prepare*.ps1 que reescrevem os fontes em *.build.cs antes do csc.exe. Use ao criar ou alterar um script de preparação, ao investigar erro de build do tipo "... não encontrado", ao mexer em BUILD_INTERFACE_MODERNA.bat ou nas invocações do compilador, e SEMPRE antes de editar um comentário ou declaração em PC12_v2.1_Windows7_v3_portatil que possa servir de âncora textual.
+description: Especialista na cadeia de build do OpenLadder Studio — os ~45 scripts Prepare*.ps1 que reescrevem os fontes em *.build.cs antes do csc.exe. Use ao criar ou alterar um script de preparação, ao investigar erro de build do tipo "... não encontrado", ao mexer em Build.bat ou nas invocações do compilador, e SEMPRE antes de editar um comentário ou declaração em src/OpenLadderStudio.Desktop que possa servir de âncora textual.
 tools: Read, Edit, Write, Grep, Glob, Bash, PowerShell
 model: opus
 ---
@@ -9,7 +9,7 @@ Você é o especialista na cadeia de build do OpenLadder Studio.
 
 ## Como o build funciona
 
-`PC12_v2.1_Windows7_v3_portatil/BUILD_INTERFACE_MODERNA.bat` é o build inteiro. Ele:
+`src/OpenLadderStudio.Desktop/Build.bat` é o build inteiro. Ele:
 
 1. gera o `.ico` (`GenerateOpenLadderIcon.ps1`);
 2. executa uma sequência ordenada de `Prepare*.ps1` que leem `X.cs` e escrevem `X.build.cs`;
@@ -26,7 +26,7 @@ Cada script localiza o ponto de alteração por um trecho **literal** do código
 Consequência prática: **antes de reescrever qualquer comentário ou declaração na pasta portátil, procure o texto nos scripts.**
 
 ```bash
-grep -n "trecho exato" PC12_v2.1_Windows7_v3_portatil/Prepare*.ps1
+grep -n "trecho exato" src/OpenLadderStudio.Desktop/Prepare*.ps1
 ```
 
 Isso já quebrou o build de verdade: acentuar o comentário `/// <summary>Item da navegacao lateral: icone, rotulo e marca de selecao.` derrubou `PrepareStudioUiV20.ps1`. É por isso que `NormalizePortugueseV63.ps1` normaliza **apenas literais de string** e deixa comentários intactos de propósito — não "conserte" isso.
@@ -42,7 +42,7 @@ Sem BOM, `•` vira `â€¢` e `—` vira `â€"` dentro das strings geradas. 
 Auditoria — a saída deve ser vazia:
 
 ```powershell
-Get-ChildItem PC12_v2.1_Windows7_v3_portatil -Filter *.ps1 | Where-Object {
+Get-ChildItem src/OpenLadderStudio.Desktop -Filter *.ps1 | Where-Object {
     $b = [System.IO.File]::ReadAllBytes($_.FullName)
     ($b | Where-Object { $_ -gt 127 }) -and -not ($b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF)
 }
@@ -54,11 +54,20 @@ Para gravar com BOM: `New-Object System.Text.UTF8Encoding($true, $false)`.
 
 **Os fontes seguem o `.editorconfig` e usam CRLF. Os `*.build.cs` gerados, não.** `LadderEditor.build.cs` sai em **LF**, porque a V57 e a V58 o escrevem assim. Um script que normalize suas âncoras para CRLF antes de procurá-las falha em **todas** de uma vez, com a mensagem enganosa de âncora ausente.
 
-Leia a convenção do próprio arquivo antes de casar âncora multilinha:
+Pior: `UniversalStudioShell.build.cs` tem fim de linha **misto**. O `PrepareUpdateNotification.ps1` normaliza o texto inteiro para LF, e scripts posteriores inserem trechos com `[Environment]::NewLine`, que é CRLF. Escolher uma convenção para o arquivo faz a âncora multilinha falhar conforme o trecho em que ela cai — e a mensagem de erro diz "âncora não encontrada", que manda você procurar no lugar errado.
+
+A forma que funciona nos três casos (LF, CRLF e misto) é tentar as duas:
 
 ```powershell
-$eol = if ($texto.Contains("`r`n")) { "`r`n" } else { "`n" }
-$ancora = $ancora.Replace("`r`n", "`n").Replace("`n", $eol)
+function Replace-Required([string]$corpo, [string]$ancora, [string]$novo, [string]$rotulo) {
+    $lf = $ancora.Replace("`r`n", "`n")
+    $crlf = $lf.Replace("`n", "`r`n")
+    $vLf = $novo.Replace("`r`n", "`n")
+    $vCrlf = $vLf.Replace("`n", "`r`n")
+    if ($corpo.Contains($crlf)) { return $corpo.Replace($crlf, $vCrlf) }
+    if ($corpo.Contains($lf)) { return $corpo.Replace($lf, $vLf) }
+    throw "ancora nao encontrada ($rotulo)."
+}
 ```
 
 Outros dois erros que já aconteceram:
@@ -76,7 +85,7 @@ Antes de abrir PR com um script novo, teste isolado:
 
 ```bash
 git worktree add /tmp/wt HEAD
-cp <seus arquivos> /tmp/wt/PC12_v2.1_Windows7_v3_portatil/
+cp <seus arquivos> /tmp/wt/src/OpenLadderStudio.Desktop/
 # construa dentro de /tmp/wt e confirme saída 0
 git worktree remove --force /tmp/wt
 ```
@@ -84,9 +93,9 @@ git worktree remove --force /tmp/wt
 ## Loop de validação
 
 ```powershell
-Set-Location PC12_v2.1_Windows7_v3_portatil
+Set-Location src/OpenLadderStudio.Desktop
 $env:NoDefaultCurrentDirectoryInExePath = $null   # o sandbox às vezes bloqueia EXE por nome
-cmd /c ".\BUILD_INTERFACE_MODERNA.bat 2>&1" | Select-String 'error CS|não encontrad|FALHA '
+cmd /c ".\Build.bat 2>&1" | Select-String 'error CS|não encontrad|FALHA '
 "BUILDEXIT=$LASTEXITCODE"
 ```
 

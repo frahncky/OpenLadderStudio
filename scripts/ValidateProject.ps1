@@ -1,18 +1,18 @@
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$portable = Join-Path $repoRoot 'PC12_v2.1_Windows7_v3_portatil'
-$versionPath = Join-Path $portable 'version.txt'
+$desktopRoot = Join-Path $repoRoot 'src/OpenLadderStudio.Desktop'
+$versionPath = Join-Path $desktopRoot 'version.txt'
 $changeLogPath = Join-Path $repoRoot 'CHANGELOG.md'
-$installer = Join-Path $repoRoot 'installer\PC12Studio.iss'
-$universalPrep = Join-Path $portable 'PrepareUniversalStudioV20.ps1'
-$uiPrep = Join-Path $portable 'PrepareStudioUiV20.ps1'
-$iconPrep = Join-Path $portable 'GenerateOpenLadderIcon.ps1'
-$scanEngine = Join-Path $portable 'LadderSimulation.cs'
-$processModel = Join-Path $portable 'ProcessSimulation.cs'
-$plantLibrary = Join-Path $portable 'SimulatedPlants.cs'
-$simulatorUi = Join-Path $portable 'LadderSimulator.cs'
-$simulatorTest = Join-Path $portable 'SimulationSelfTest.cs'
+$installer = Join-Path $repoRoot 'installer\OpenLadderStudio.iss'
+$universalPrep = Join-Path $desktopRoot 'PrepareUniversalStudioV20.ps1'
+$uiPrep = Join-Path $desktopRoot 'PrepareStudioUiV20.ps1'
+$iconPrep = Join-Path $desktopRoot 'GenerateOpenLadderIcon.ps1'
+$scanEngine = Join-Path $desktopRoot 'LadderSimulation.cs'
+$processModel = Join-Path $desktopRoot 'ProcessSimulation.cs'
+$plantLibrary = Join-Path $desktopRoot 'SimulatedPlants.cs'
+$simulatorUi = Join-Path $desktopRoot 'LadderSimulator.cs'
+$simulatorTest = Join-Path $desktopRoot 'SimulationSelfTest.cs'
 $coreRoot = Join-Path $repoRoot 'src\OpenLadderStudio.Core'
 $ladderProjectCodec = Join-Path $coreRoot 'LadderProject.cs'
 $ladderProjectTest = Join-Path $repoRoot 'tests\OpenLadderStudio.Core.Tests\LadderProjectCodecSelfTest.cs'
@@ -20,6 +20,7 @@ $ladderProjectTest = Join-Path $repoRoot 'tests\OpenLadderStudio.Core.Tests\Ladd
 $architectureValidation = Join-Path $PSScriptRoot 'ValidateArchitecture.ps1'
 if (-not (Test-Path $architectureValidation)) { throw "Validador arquitetural ausente: $architectureValidation" }
 & $architectureValidation
+& (Join-Path $PSScriptRoot 'SyncCompatibilityMetadata.ps1') -Check
 
 $required = @($versionPath, $changeLogPath, $installer, $universalPrep, $uiPrep, $iconPrep, $scanEngine, $processModel, $plantLibrary, $simulatorUi, $simulatorTest, $ladderProjectCodec, $ladderProjectTest)
 foreach ($path in $required) {
@@ -76,7 +77,7 @@ foreach ($core in Get-ChildItem -Path $coreRoot -Filter '*.cs' -Recurse) {
     }
 }
 
-$buildScript = Join-Path $portable 'BUILD_INTERFACE_MODERNA.bat'
+$buildScript = Join-Path $desktopRoot 'Build.bat'
 if (-not (Test-Path $buildScript)) { throw "Arquivo obrigatório ausente: $buildScript" }
 
 $buildText = [System.IO.File]::ReadAllText($buildScript)
@@ -90,9 +91,9 @@ $produced = @()
 foreach ($hit in [Regex]::Matches($buildText, '/out:"([A-Za-z0-9_]+\.exe)"')) {
     $produced += $hit.Groups[1].Value
 }
-if ($produced.Count -eq 0) { throw 'Nenhum executável encontrado em BUILD_INTERFACE_MODERNA.bat.' }
+if ($produced.Count -eq 0) { throw 'Nenhum executável encontrado em Build.bat.' }
 
-$manifest = Join-Path $portable 'OpenLadderStudio.manifest'
+$manifest = Join-Path $desktopRoot 'OpenLadderStudio.manifest'
 if (-not (Test-Path $manifest)) { throw "Arquivo obrigatório ausente: $manifest" }
 
 $manifestText = [System.IO.File]::ReadAllText($manifest)
@@ -101,7 +102,7 @@ if ($manifestText -notmatch '<dpiAware[^>]*>\s*true\s*</dpiAware>') {
 }
 
 $compileLines = @([Regex]::Matches($buildText, '(?m)^.*?/out:"[A-Za-z0-9_]+\.exe".*$'))
-if ($compileLines.Count -eq 0) { throw 'Nenhuma invocação do compilador encontrada em BUILD_INTERFACE_MODERNA.bat.' }
+if ($compileLines.Count -eq 0) { throw 'Nenhuma invocação do compilador encontrada em Build.bat.' }
 foreach ($line in $compileLines) {
     if ($line.Value -notmatch '/win32manifest:') {
         throw 'Toda invocação do compilador deve usar /win32manifest para embutir o reconhecimento de DPI.'
@@ -111,17 +112,17 @@ foreach ($line in $compileLines) {
     }
 }
 
-foreach ($launcher in Get-ChildItem -Path $portable -Filter 'INICIAR_*.bat') {
+foreach ($launcher in Get-ChildItem -Path $desktopRoot -Filter 'Start*.bat') {
     $launcherText = [System.IO.File]::ReadAllText($launcher.FullName).Replace('%~dp0', '')
     foreach ($hit in [Regex]::Matches($launcherText, '([A-Za-z0-9_]+\.exe)')) {
         $exe = $hit.Groups[1].Value
         if ($produced -contains $exe) { continue }
-        if (Test-Path (Join-Path $portable $exe)) { continue }
+        if (Test-Path (Join-Path $desktopRoot $exe)) { continue }
         throw "$($launcher.Name) chama $exe, que não é gerado pelo build nem existe no repositório."
     }
 }
 
-foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
+foreach ($file in Get-ChildItem -Path $desktopRoot -Filter '*.cs') {
     $code = [System.IO.File]::ReadAllText($file.FullName)
     if ($code -notmatch '(?m)class\s+\w+\s*:\s*Form\b') { continue }
     if ($code -notmatch 'AutoScaleMode') {
@@ -132,7 +133,7 @@ foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
     }
 }
 
-foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
+foreach ($file in Get-ChildItem -Path $desktopRoot -Filter '*.cs') {
     $code = [System.IO.File]::ReadAllText($file.FullName)
     if ($code -notmatch 'new DataGridView\(\)') { continue }
     if ($code -notmatch 'ColumnHeadersHeightSizeMode') {
@@ -140,7 +141,7 @@ foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
     }
 }
 
-foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
+foreach ($file in Get-ChildItem -Path $desktopRoot -Filter '*.cs') {
     $code = [System.IO.File]::ReadAllText($file.FullName)
     if ($code -notmatch '(?m)class\s+\w+\s*:\s*Form\b') { continue }
     foreach ($hit in [Regex]::Matches($code, '(\w+)\.Dock\s*=\s*DockStyle\.(Top|Bottom|Left|Right)\s*;')) {
@@ -152,9 +153,9 @@ foreach ($file in Get-ChildItem -Path $portable -Filter '*.cs') {
 }
 
 $generated = @(
-    (Join-Path $repoRoot 'installer\PC12Studio.build.iss'),
-    (Join-Path $portable 'StudioUi.build.cs'),
-    (Join-Path $portable 'UniversalStudioShell.build.cs')
+    (Join-Path $repoRoot 'installer\OpenLadderStudio.build.iss'),
+    (Join-Path $desktopRoot 'StudioUi.build.cs'),
+    (Join-Path $desktopRoot 'UniversalStudioShell.build.cs')
 )
 foreach ($path in $generated) {
     if (Test-Path $path) { Write-Host "Arquivo gerado presente no workspace: $path" }

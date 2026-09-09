@@ -7,7 +7,7 @@ A interface deve parecer uma ferramenta de engenharia profissional: compacta, pr
 ## Paleta central
 
 Existe **uma única fonte de cor** no produto: `OpenLadderPalette`, em
-`PC12_v2.1_Windows7_v3_portatil/AppBranding.cs`. Esse arquivo entra em todos os
+`src/OpenLadderStudio.Desktop/AppBranding.cs`. Esse arquivo entra em todos os
 executáveis, então shell, editor, simulador, monitor Modbus, gerenciador de
 controladores, atualizador e ferramentas TP02 leem exatamente as mesmas cores.
 

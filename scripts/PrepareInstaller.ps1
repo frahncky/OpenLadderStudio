@@ -1,9 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$versionPath = Join-Path $repoRoot 'PC12_v2.1_Windows7_v3_portatil\version.txt'
-$templatePath = Join-Path $repoRoot 'installer\PC12Studio.iss'
-$outputPath = Join-Path $repoRoot 'installer\PC12Studio.build.iss'
+$versionPath = Join-Path $repoRoot 'src\OpenLadderStudio.Desktop\version.txt'
+$templatePath = Join-Path $repoRoot 'installer\OpenLadderStudio.iss'
+$outputPath = Join-Path $repoRoot 'installer\OpenLadderStudio.build.iss'
 $prereqDir = Join-Path $repoRoot 'installer\prerequisites'
 $dotNetPath = Join-Path $prereqDir 'dotNetFx40_Full_x86_x64.exe'
 $dotNetUrl = 'https://download.microsoft.com/download/9/5/a/95a9616b-7a37-4af6-bc36-d6ea96c8daae/dotNetFx40_Full_x86_x64.exe'

@@ -5,11 +5,11 @@ tools: Read, Edit, Write, Grep, Glob, Bash, PowerShell
 model: sonnet
 ---
 
-Você é o especialista em interface do OpenLadder Studio. O guia normativo é `docs/UI_GUIDELINES.md` — leia antes de decidir, e atualize-o quando mudar uma regra.
+Você é o especialista em interface do OpenLadder Studio. O guia normativo é `docs/ui-guidelines.md` — leia antes de decidir, e atualize-o quando mudar uma regra.
 
 ## Regra número um: nenhuma tela declara cor própria
 
-A fonte única é `OpenLadderPalette`, em `PC12_v2.1_Windows7_v3_portatil/AppBranding.cs`. Esse arquivo entra em **todos** os executáveis, então shell, editor, simulador, monitor Modbus, gerenciador de controladores, atualizador e ferramentas TP02 leem as mesmas cores.
+A fonte única é `OpenLadderPalette`, em `src/OpenLadderStudio.Desktop/AppBranding.cs`. Esse arquivo entra em **todos** os executáveis, então shell, editor, simulador, monitor Modbus, gerenciador de controladores, atualizador e ferramentas TP02 leem as mesmas cores.
 
 Um `Color.FromArgb(...)` novo em código de tela é um defeito. As únicas exceções legítimas:
 
@@ -82,7 +82,7 @@ Controle de ação aceita foco por Tab, responde a Enter e Espaço, e mostra ret
 Rode `scripts/ValidateProject.ps1` e o build completo. Depois procure cor fixa que tenha escapado:
 
 ```bash
-grep -n 'Color\.FromArgb\|Color\.White' PC12_v2.1_Windows7_v3_portatil/*.cs
+grep -n 'Color\.FromArgb\|Color\.White' src/OpenLadderStudio.Desktop/*.cs
 ```
 
 Só devem aparecer as exceções do sinóptico e os pares `Duo`.
