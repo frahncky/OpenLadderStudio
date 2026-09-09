@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.98] - 2026-09-09
+
+### Protocolo TP02 PG
+- **decodificação do dump 0A no relatório (motor PG Lab 1.12)**: para cada endereço que responde na varredura `0A`, o relatório passa a incluir uma linha `DECOD` com `CMD=00`, o `LEN` retornado e quantos bytes do payload são não-zero. Assim o operador vê de imediato quais endereços guardam dados (`nao-zero>0`) e quais são área vazia, sem segmentar os bytes à mão;
+- é só interpretação da resposta já capturada — nenhuma transmissão nova.
+
+### Segurança
+- sem efeito sobre o que é transmitido; todas as travas da varredura `0A` permanecem (intrínseca a `CMD=0A`, READ-ONLY, limite de leituras, denylist por quadro, parada no silêncio). `0F 00 F0` segue bloqueado e o `38 00 C7` segue exigindo F0 validado.
+
 ## [0.97] - 2026-09-09
 
 ### Protocolo TP02 PG
