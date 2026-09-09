@@ -77,7 +77,14 @@ $text = Replace-Required $text @'
                 byte[] tx = BuildRead0AFrame(addr, readLen);
                 if (tx[0] != 0x0A || tx.Length != 6) break;
                 string addrHex = "0x" + addr.ToString("X4", CultureInfo.InvariantCulture);
+                string txHexN = ToHex(tx);
+                if (IsBuiltInBlocked(txHexN) || PackageBlocked(txHexN))
+                {
+                    LogEvent("BLOQUEIO", step.name + " " + addrHex + " - quadro na denylist; nao transmitido", string.Empty, null, totalWatch.ElapsedMilliseconds);
+                    continue;
+                }
                 byte[] raw = new byte[0];
+                byte[] noEcho = new byte[0];
                 Stopwatch sw = Stopwatch.StartNew();
                 for (int t = 1; t <= perAddrTries && !cancelRequested; t++)
                 {
@@ -85,13 +92,14 @@ $text = Replace-Required $text @'
                     port.Write(tx, 0, tx.Length);
                     if (t == 1) RecordFrame("TX", step.name + " " + addrHex, tx, sw.ElapsedMilliseconds);
                     raw = ReadBurst(port, perTimeout, 250);
-                    if (raw.Length > 0) break;
+                    noEcho = RemoveLeadingExactEcho(raw, tx);
+                    if (noEcho.Length > 0) break;
                     if (t < perAddrTries) Thread.Sleep(gap);
                 }
                 sw.Stop();
-                if (raw.Length == 0)
+                if (noEcho.Length == 0)
                 {
-                    LogEvent("RX", addrHex + " -> [] apos " + perAddrTries.ToString(CultureInfo.InvariantCulture) + " tentativas", string.Empty, null, sw.ElapsedMilliseconds);
+                    LogEvent("RX", addrHex + " -> [] apos " + perAddrTries.ToString(CultureInfo.InvariantCulture) + " tentativas (sem eco)", string.Empty, null, sw.ElapsedMilliseconds);
                     silentStreak++;
                     if (silentStreak >= 6)
                     {
@@ -102,7 +110,6 @@ $text = Replace-Required $text @'
                 else
                 {
                     silentStreak = 0;
-                    byte[] noEcho = RemoveLeadingExactEcho(raw, tx);
                     RecordFrame("RX RAW", step.name + " " + addrHex, noEcho, sw.ElapsedMilliseconds);
                     foreach (byte[] f in DiscoverChecksumFrames(noEcho))
                         RecordFrame("FRAME FF", "varredura 0A em " + addrHex, f, sw.ElapsedMilliseconds);
