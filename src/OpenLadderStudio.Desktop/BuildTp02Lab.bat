@@ -45,6 +45,10 @@ if not exist "PreparePgLabPostHandshakeV17.ps1" (
     echo PreparePgLabPostHandshakeV17.ps1 nao encontrado.
     exit /b 1
 )
+if not exist "PreparePgLabResyncV18.ps1" (
+    echo PreparePgLabResyncV18.ps1 nao encontrado.
+    exit /b 1
+)
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0GenerateOpenLadderIcon.ps1"
 if errorlevel 1 exit /b 1
@@ -74,11 +78,14 @@ if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePgLabPostHandshakeV17.ps1"
 if errorlevel 1 goto :erro
 
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePgLabResyncV18.ps1"
+if errorlevel 1 goto :erro
+
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02PgLabProgram /out:"OpenLadderTP02PgLab.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll "StudioDiagnostics.cs" "TP02PgLab.build.cs"
 if errorlevel 1 goto :erro
 
 del /q "TP02PgLab.build.cs" >nul 2>&1
-echo OpenLadderTP02PgLab.exe criado com sucesso - motor PG Lab 1.7 Teste Unico com matriz pos-handshake.
+echo OpenLadderTP02PgLab.exe criado com sucesso - motor PG Lab 1.8 Teste Unico com ressincronizacao automatica.
 exit /b 0
 
 :erro
