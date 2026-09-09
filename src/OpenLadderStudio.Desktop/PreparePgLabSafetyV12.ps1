@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $path = Join-Path (Get-Location) 'TP02PgLab.build.cs'
 if (-not (Test-Path $path)) { throw 'TP02PgLab.build.cs nao encontrado.' }
@@ -6,8 +6,16 @@ if (-not (Test-Path $path)) { throw 'TP02PgLab.build.cs nao encontrado.' }
 $text = [System.IO.File]::ReadAllText($path)
 
 function Replace-Required([string]$source, [string]$needle, [string]$replacement, [string]$label) {
-    if (-not $source.Contains($needle)) { throw "$label nao encontrado." }
-    return $source.Replace($needle, $replacement)
+    # A ancora vem de um here-string e herda o fim de linha deste script; o alvo
+    # gerado pode estar em LF, CRLF ou misto. Procurar so numa das formas falha
+    # em todas as ancoras multilinha de uma vez, culpando a primeira da fila.
+    $ancoraLf = $needle.Replace("`r`n", "`n")
+    $ancoraCrLf = $ancoraLf.Replace("`n", "`r`n")
+    $novoLf = $replacement.Replace("`r`n", "`n")
+    $novoCrLf = $novoLf.Replace("`n", "`r`n")
+    if ($source.Contains($ancoraCrLf)) { return $source.Replace($ancoraCrLf, $novoCrLf) }
+    if ($source.Contains($ancoraLf)) { return $source.Replace($ancoraLf, $novoLf) }
+    throw "$label nao encontrado."
 }
 
 # O motor 1.1 bloqueava F0 00 0F por precaucao enquanto sua semantica era desconhecida.

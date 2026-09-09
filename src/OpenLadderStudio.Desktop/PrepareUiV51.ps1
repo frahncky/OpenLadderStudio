@@ -11,8 +11,16 @@ foreach ($p in @($uiPath, $shellPath, $ladderPath)) {
 
 function LF([string]$text) { return $text }
 function Replace-Required([string]$text, [string]$needle, [string]$replacement, [string]$label) {
-    if (-not $text.Contains($needle)) { throw "Ancora nao encontrada ($label)." }
-    return $text.Replace($needle, $replacement)
+    # A ancora vem de um here-string e herda o fim de linha deste script; o alvo
+    # gerado pode estar em LF, CRLF ou misto. Procurar so numa das formas falha
+    # em todas as ancoras multilinha de uma vez, culpando a primeira da fila.
+    $ancoraLf = $needle.Replace("`r`n", "`n")
+    $ancoraCrLf = $ancoraLf.Replace("`n", "`r`n")
+    $novoLf = $replacement.Replace("`r`n", "`n")
+    $novoCrLf = $novoLf.Replace("`n", "`r`n")
+    if ($text.Contains($ancoraCrLf)) { return $text.Replace($ancoraCrLf, $novoCrLf) }
+    if ($text.Contains($ancoraLf)) { return $text.Replace($ancoraLf, $novoLf) }
+    throw "Ancora nao encontrada ($label)."
 }
 function Replace-Section([string]$text, [string]$startAnchor, [string]$endAnchor, [string]$replacement, [string]$label) {
     $start = $text.IndexOf($startAnchor)
