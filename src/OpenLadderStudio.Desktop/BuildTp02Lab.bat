@@ -73,6 +73,10 @@ if not exist "PreparePgLabDecodeV22.ps1" (
     echo PreparePgLabDecodeV22.ps1 nao encontrado.
     exit /b 1
 )
+if not exist "PreparePgLabCleanSessionV23.ps1" (
+    echo PreparePgLabCleanSessionV23.ps1 nao encontrado.
+    exit /b 1
+)
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0GenerateOpenLadderIcon.ps1"
 if errorlevel 1 exit /b 1
@@ -117,11 +121,14 @@ if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePgLabDecodeV22.ps1"
 if errorlevel 1 goto :erro
 
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePgLabCleanSessionV23.ps1"
+if errorlevel 1 goto :erro
+
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02PgLabProgram /out:"OpenLadderTP02PgLab.exe" /reference:System.dll /reference:System.Security.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll "StudioDiagnostics.cs" "Tp02OpenAiAgent.cs" "Tp02PersistentOpenAiAgent.cs" "TP02PgLab.build.cs"
 if errorlevel 1 goto :erro
 
 del /q "TP02PgLab.build.cs" >nul 2>&1
-echo OpenLadderTP02PgLab.exe criado com sucesso - motor PG Lab 1.12 com Pesquisa Continua IA, F0 com retentativas, varredura 0A e decodificacao no relatorio.
+echo OpenLadderTP02PgLab.exe criado com sucesso - motor PG Lab 1.13 com sessao limpa HELLO-F0-38-34 e um F0 por abertura da COM.
 exit /b 0
 
 :erro
