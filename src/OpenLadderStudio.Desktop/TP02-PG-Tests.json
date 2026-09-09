@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.12",
-  "title": "TP02 PG - SESSAO LIMPA COM HELLO REPETIDO (HELLO -> F0 -> 38 -> 34)",
+  "packageVersion": "2026.09.09.13",
+  "title": "TP02 PG - SESSAO LIMPA COM HELLO REPETIDO E 38 OBSERVADO (HELLO -> F0 -> 38 -> 34)",
   "sweeps": 1,
   "passiveCaptureMs": 500,
   "stopOnUnknown": false,
@@ -60,7 +60,7 @@
     },
     {
       "id": "read-program-preflight-38",
-      "name": "3. Preambulo 38 - somente apos F0 valido",
+      "name": "3. Preambulo 38 - aceitar somente vetores observados apos F0 valido",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
@@ -70,8 +70,12 @@
       "passiveAfterMs": 0,
       "expected": [
         {
-          "name": "38-OBSERVADO-2026-09-09",
+          "name": "38-OBSERVADO-A-2026-09-09",
           "hex": "00 02 00 0A F3"
+        },
+        {
+          "name": "38-OBSERVADO-B-2026-09-09",
+          "hex": "00 02 00 02 FB"
         }
       ]
     },
@@ -112,11 +116,11 @@
     "notes": [
       "TESTE FOCADO: o laboratorio executa somente HELLO, F0, 38 e um bloco 34.",
       "O perfil confirmado continua 19200 8O1, DTR=on, RTS=off.",
-      "O log de bancada mostrou que o HELLO pode ficar silencioso varias vezes e depois responder corretamente; por isso cada sessao pode enviar ate 6 HELLOs mantendo a mesma COM aberta.",
+      "Cada sessao pode enviar ate 6 HELLOs mantendo a mesma COM aberta, pois a bancada mostrou respostas tardias e intermitentes do enlace.",
       "O HELLO precisa confirmar STOP com 80 01 09 75. Se retornar C0 01 09 35, o teste termina pedindo STOP.",
-      "Mesmo com HELLO repetido, F0 00 0F continua sendo enviado apenas UMA vez por abertura da COM. Se nao devolver 00 02 10 22 CB, a porta e fechada, aguarda-se 1500 ms e uma nova sessao comeca desde o HELLO.",
-      "38 00 C7 so e enviado depois do F0 validado e precisa confirmar 00 02 00 0A F3.",
-      "34 03 00 00 A0 28 so e enviado depois de HELLO-STOP, F0 e 38 validos. A resposta e validada por LEN e soma modulo 256 = FF e e salva em binario.",
+      "F0 00 0F continua sendo enviado apenas UMA vez por abertura da COM. Se nao devolver 00 02 10 22 CB, a porta e fechada, aguarda-se 1500 ms e uma nova sessao comeca desde o HELLO.",
+      "O comando 38 00 C7 apresentou dois vetores validos e observados em bancada: 00 02 00 0A F3 e 00 02 00 02 FB. Como a semantica do payload ainda nao foi decodificada, somente esses dois vetores sao aceitos nesta versao.",
+      "34 03 00 00 A0 28 so e enviado depois de HELLO-STOP, F0 e um dos dois vetores 38 observados. A resposta 34 e validada por LEN e soma modulo 256 = FF e salva em binario.",
       "As varreduras 0A e a consulta 14 permanecem fora deste teste focado.",
       "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado.",
       "0F 00 F0 permanece bloqueado por estar associado a Clear All Memory."
