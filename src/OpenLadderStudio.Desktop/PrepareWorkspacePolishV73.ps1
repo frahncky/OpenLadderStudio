@@ -429,22 +429,22 @@ $inspector = @'
 
             V73AddSection(list, "SAÍDAS");
             V73AddInstruction(list, "Bobina", StudioIcon.Coil, LadderTool.Coil);
-            V73AddInstruction(list, "SET", StudioIcon.Check, LadderTool.Set);
-            V73AddInstruction(list, "RESET", StudioIcon.Refresh, LadderTool.Reset);
+            V73AddInstruction(list, "SET", StudioIcon.CoilSet, LadderTool.Set);
+            V73AddInstruction(list, "RESET", StudioIcon.CoilReset, LadderTool.Reset);
 
             V73AddSection(list, "TEMPORIZAÇÃO E CONTAGEM");
             V73AddInstruction(list, "Temporizador", StudioIcon.Timer, LadderTool.Timer);
             V73AddInstruction(list, "Contador", StudioIcon.Counter, LadderTool.Counter);
 
             V73AddSection(list, "FUNÇÕES");
-            V73AddInstruction(list, "Borda de subida", StudioIcon.Bolt, LadderTool.EdgeUp);
-            V73AddInstruction(list, "Borda de descida", StudioIcon.Bolt, LadderTool.EdgeDown);
+            V73AddInstruction(list, "Borda de subida", StudioIcon.EdgeUp, LadderTool.EdgeUp);
+            V73AddInstruction(list, "Borda de descida", StudioIcon.EdgeDown, LadderTool.EdgeDown);
             V73AddInstruction(list, "Função especial", StudioIcon.Chip, LadderTool.Function);
             V73AddInstruction(list, "END", StudioIcon.Terminal, LadderTool.End);
 
             V73AddSection(list, "EDIÇÃO");
             V73AddInstruction(list, "Selecionar", StudioIcon.Select, LadderTool.Select);
-            V73AddAction(list, "Apagar selecionado", StudioIcon.Minus, delegate { InvokeLadder("DeleteSelectedElement", null); });
+            V73AddAction(list, "Apagar selecionado", StudioIcon.Trash, delegate { InvokeLadder("DeleteSelectedElement", null); });
             V73AddAction(list, "Adicionar linha", StudioIcon.Plus, delegate { InvokeLadder("AddRung", null); });
             V73AddAction(list, "Remover linha", StudioIcon.Minus, delegate { InvokeLadder("DeleteSelectedRung", null); });
 

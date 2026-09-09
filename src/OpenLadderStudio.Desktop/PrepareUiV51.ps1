@@ -44,7 +44,8 @@ $enumOld = @'
 $enumNew = @'
         None, Doc, Folder, Save, Undo, Redo, Plus, Minus, Check, Plug, Download,
         Refresh, Chip, Gear, Ladder, Convert, Terminal, Close, Bolt, Monitor, Grid,
-        Select, ContactNO, ContactNC, BranchNO, BranchNC, Coil, Timer, Counter
+        Select, ContactNO, ContactNC, BranchNO, BranchNC, EdgeUp, EdgeDown,
+        Coil, CoilSet, CoilReset, Timer, Counter, Trash
 '@
 $ui = Replace-Required $ui $enumOld.TrimEnd() $enumNew.TrimEnd() 'enum StudioIcon'
 
@@ -62,12 +63,41 @@ $paletteLadder = @'
                 case StudioIcon.ContactNC: return Color.FromArgb(125, 211, 252);
                 case StudioIcon.BranchNO:  return Color.FromArgb(125, 211, 252);
                 case StudioIcon.BranchNC:  return Color.FromArgb(125, 211, 252);
+                case StudioIcon.EdgeUp:    return Color.FromArgb(125, 211, 252);
+                case StudioIcon.EdgeDown:  return Color.FromArgb(125, 211, 252);
                 case StudioIcon.Coil:      return Color.FromArgb(251, 191, 36);
+                case StudioIcon.CoilSet:   return Color.FromArgb(251, 191, 36);
+                case StudioIcon.CoilReset: return Color.FromArgb(251, 191, 36);
                 case StudioIcon.Timer:     return Color.FromArgb(167, 139, 250);
                 case StudioIcon.Counter:   return Color.FromArgb(244, 114, 182);
+                case StudioIcon.Trash:     return Color.FromArgb(224, 102, 102);
                 default:                  return StudioTheme.Fore;
 '@
 $ui = Replace-Required $ui $paletteDefault $paletteLadder.TrimEnd() 'paleta Ladder'
+
+# A letra que distingue SET/RESET e as bordas vive dentro do simbolo, como no
+# canvas. A 16 px a fonte suavizada vira borrao, por isso o grid fit sem
+# antialias; o corpo vai em pixel para acompanhar o retangulo em telas DPI alto.
+$markAnchor = '        private static Pen NewPen(Color c, float w)'
+$markHelper = @'
+        /// <summary>Letra que distingue a instrucao dentro do contato ou da bobina.</summary>
+        private static void Mark(Graphics g, string mark, float cx, float cy, float h, Color c)
+        {
+            System.Drawing.Text.TextRenderingHint previous = g.TextRenderingHint;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+            using (Font f = new Font("Segoe UI", h * 0.44f, FontStyle.Bold, GraphicsUnit.Pixel))
+            using (SolidBrush mb = new SolidBrush(c))
+            using (StringFormat sf = new StringFormat())
+            {
+                sf.Alignment = StringAlignment.Center;
+                sf.LineAlignment = StringAlignment.Center;
+                g.DrawString(mark, f, mb, cx, cy, sf);
+            }
+            g.TextRenderingHint = previous;
+        }
+
+'@
+$ui = Replace-Required $ui $markAnchor ($markHelper + $markAnchor) 'helper da letra'
 
 $glyphAnchor = '                    case StudioIcon.Refresh:'
 $glyphInsert = @'
@@ -115,11 +145,37 @@ $glyphInsert = @'
                         g.DrawLine(p, x + w * 0.12f, y + h * 0.90f, x + w * 0.88f, y + h * 0.90f);
                         break;
 
+                    case StudioIcon.EdgeUp:
+                    case StudioIcon.EdgeDown:
+                        // Mesma geometria do contato, com P ou N no lugar da diagonal.
+                        // E o desenho que o canvas ja usa para as bordas.
+                        g.DrawLine(p, x + w * 0.04f, cy, x + w * 0.30f, cy);
+                        g.DrawLine(p, x + w * 0.30f, y + h * 0.20f, x + w * 0.30f, y + h * 0.80f);
+                        g.DrawLine(p, x + w * 0.70f, y + h * 0.20f, x + w * 0.70f, y + h * 0.80f);
+                        g.DrawLine(p, x + w * 0.70f, cy, x + w * 0.96f, cy);
+                        Mark(g, icon == StudioIcon.EdgeUp ? "P" : "N", cx, cy, h, c);
+                        break;
+
                     case StudioIcon.Coil:
+                    case StudioIcon.CoilSet:
+                    case StudioIcon.CoilReset:
                         g.DrawLine(p, x + w * 0.05f, cy, x + w * 0.27f, cy);
                         g.DrawArc(p, x + w * 0.24f, y + h * 0.16f, w * 0.31f, h * 0.68f, 90, 180);
                         g.DrawArc(p, x + w * 0.45f, y + h * 0.16f, w * 0.31f, h * 0.68f, -90, 180);
                         g.DrawLine(p, x + w * 0.73f, cy, x + w * 0.95f, cy);
+                        if (icon == StudioIcon.CoilSet) Mark(g, "S", cx, cy, h, c);
+                        else if (icon == StudioIcon.CoilReset) Mark(g, "R", cx, cy, h, c);
+                        break;
+
+                    case StudioIcon.Trash:
+                        // Apagar o elemento selecionado nao e o mesmo que remover a
+                        // linha; antes as duas acoes dividiam o tracinho do Minus.
+                        g.DrawLine(p, x + w * 0.12f, y + h * 0.26f, x + w * 0.88f, y + h * 0.26f);
+                        g.DrawLine(p, x + w * 0.40f, y + h * 0.13f, x + w * 0.60f, y + h * 0.13f);
+                        g.DrawLine(p, x + w * 0.22f, y + h * 0.26f, x + w * 0.30f, y + h * 0.90f);
+                        g.DrawLine(p, x + w * 0.78f, y + h * 0.26f, x + w * 0.70f, y + h * 0.90f);
+                        g.DrawLine(p, x + w * 0.30f, y + h * 0.90f, x + w * 0.70f, y + h * 0.90f);
+                        g.DrawLine(p, cx, y + h * 0.42f, cx, y + h * 0.76f);
                         break;
 
                     case StudioIcon.Timer:

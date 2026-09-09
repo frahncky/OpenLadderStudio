@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.85] - 2026-09-09
+
+### Interface
+- fim da varredura de ícones da caixa de ferramentas iniciada na 0.84: renderizada a lista inteira a 16 px, nenhuma entrada divide mais o ícone com outra;
+- **Borda de subida** e **Borda de descida** usavam ambas o raio do `Bolt`; **Apagar selecionado** e **Remover linha**, ambas o traço do `Minus`. As quatro ganham ícone próprio;
+- `SET`, `RESET` e as duas bordas passam a mostrar o mesmo símbolo que o canvas desenha desde a 0.82, em miniatura: bobina com `S` e com `R`, contato com `P` e com `N`. Antes eram ícones emprestados da barra de ferramentas — um tique verde e uma seta circular — sem ligação com o desenho do canvas;
+- `Apagar selecionado` ganha uma lixeira, deixando o par `+` e `−` só para adicionar e remover linha;
+- a letra dentro do símbolo tem cerca de 7 px e é desenhada com `SingleBitPerPixelGridFit`, porque nesse tamanho a fonte suavizada vira borrão; o corpo vai em pixels sobre a altura do ícone, não em pontos, para acompanhar DPI alto.
+
 ## [0.84] - 2026-09-09
 
 ### Interface
