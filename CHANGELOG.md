@@ -17,6 +17,19 @@ Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquiv
 - **Ramo paralelo NA** e **Ramo paralelo NF** ganham ícone próprio na caixa de ferramentas. As duas entradas usavam literalmente `StudioIcon.ContactNO` e `ContactNC`, o mesmo desenho e a mesma cor dos contatos simples, sem nada que indicasse o caminho paralelo. O glifo novo é o contato sobre a linha principal mais o desvio que sai e volta;
 - **Contato NA** e **Contato NF** passam a se distinguir a 16 px, que é o tamanho real do ícone. A única diferença era uma diagonal atravessando a folga de 3,8 px entre as barras, na mesma cor: as barras foram afastadas, de 0,38 e 0,62 da largura para 0,30 e 0,70, e a diagonal do NF passa a ultrapassar o contato. O desenho no canvas não tinha o problema e não mudou — ali o contato tem 32 px e a diagonal, 40 px.
 
+## [0.83] - 2026-09-07
+
+### Compilação TP02
+- primeira cadeia completa e offline de `Ladder (.pladder)` para o WEG TP02: Boolean/IL, palavras de 24 bits e quadros WBP, no compilador `Tp02LadderTargetCompiler`, dentro do núcleo e independente de interface;
+- cobre contatos NA/NF em série, ramo paralelo em torno de uma coluna pela pilha Boolean (`STR`/`OR`/`AND STR`), e `OUT`, `TMR`, `CNT`, `SET`, `RESET`, `F-05`, `F-06`, `END` e as funções `F-xx` já mapeadas;
+- múltiplos quadros WBP gerados automaticamente quando o programa passa de 100 passos;
+- nova janela **PLC → Pré-compilar TP02 (dry-run)**, com rastreio linha/passo em Boolean/IL e palavra hexadecimal, e exportação do relatório para TXT;
+- autotestes da conversão Ladder → TP02 e dos quadros WBP.
+
+### Segurança
+- a ferramenta não tem `SerialPort` e não transmite WBP: apenas monta código e quadros para inspeção. Escrever programa no TP02 físico continua bloqueado até validação byte a byte por PC12 → PLC → RBP;
+- seguem recusados em vez de inferidos: contatos `SC` no encoder Boolean básico, preset TMR/CNT por registrador `D`, modos adicionais de TMR/CNT ainda não confirmados e `F-33` sem escolha explícita entre as formas de 2 e 3 passos.
+
 ## [0.82] - 2026-09-07
 
 ### Editor Ladder
