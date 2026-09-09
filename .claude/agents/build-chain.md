@@ -54,11 +54,20 @@ Para gravar com BOM: `New-Object System.Text.UTF8Encoding($true, $false)`.
 
 **Os fontes seguem o `.editorconfig` e usam CRLF. Os `*.build.cs` gerados, não.** `LadderEditor.build.cs` sai em **LF**, porque a V57 e a V58 o escrevem assim. Um script que normalize suas âncoras para CRLF antes de procurá-las falha em **todas** de uma vez, com a mensagem enganosa de âncora ausente.
 
-Leia a convenção do próprio arquivo antes de casar âncora multilinha:
+Pior: `UniversalStudioShell.build.cs` tem fim de linha **misto**. O `PrepareUpdateNotification.ps1` normaliza o texto inteiro para LF, e scripts posteriores inserem trechos com `[Environment]::NewLine`, que é CRLF. Escolher uma convenção para o arquivo faz a âncora multilinha falhar conforme o trecho em que ela cai — e a mensagem de erro diz "âncora não encontrada", que manda você procurar no lugar errado.
+
+A forma que funciona nos três casos (LF, CRLF e misto) é tentar as duas:
 
 ```powershell
-$eol = if ($texto.Contains("`r`n")) { "`r`n" } else { "`n" }
-$ancora = $ancora.Replace("`r`n", "`n").Replace("`n", $eol)
+function Replace-Required([string]$corpo, [string]$ancora, [string]$novo, [string]$rotulo) {
+    $lf = $ancora.Replace("`r`n", "`n")
+    $crlf = $lf.Replace("`n", "`r`n")
+    $vLf = $novo.Replace("`r`n", "`n")
+    $vCrlf = $vLf.Replace("`n", "`r`n")
+    if ($corpo.Contains($crlf)) { return $corpo.Replace($crlf, $vCrlf) }
+    if ($corpo.Contains($lf)) { return $corpo.Replace($lf, $vLf) }
+    throw "ancora nao encontrada ($rotulo)."
+}
 ```
 
 Outros dois erros que já aconteceram:
