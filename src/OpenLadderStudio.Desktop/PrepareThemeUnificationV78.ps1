@@ -122,48 +122,22 @@ $ui = [regex]::Replace($ui, 'case StudioIcon\.([A-Za-z]+):(\s+)return Color\.Fro
 if ($iconCases -lt 20) { throw "V78: apenas $iconCases icones receberam par de cores; esperado ao menos 20." }
 
 # ---------------------------------------------------------------------------
-# 3. Menu Exibir -> Tema. A troca vale integralmente na proxima abertura:
-#    muita tela fixa a cor no construtor, entao repintar a quente deixaria a
-#    janela pela metade. O usuario escolhe reiniciar na hora.
+# 3. Menu Exibir -> Tema. A troca vale na hora: o OpenLadderPalette.Use percorre
+#    as janelas abertas trocando cada cor do tema que sai pela equivalente do que
+#    entra. Antes daqui a paleta so mudava em memoria, a tela continuava igual e o
+#    usuario tinha de reiniciar o programa para ver alguma coisa.
 # ---------------------------------------------------------------------------
 $themeMenuMethod = @'
         private void ApplyThemeChoice(OpenLadderThemeMode mode)
         {
             if (OpenLadderPalette.Mode == mode) return;
             OpenLadderPalette.Use(mode);
-
-            string label = mode == OpenLadderThemeMode.Dark ? "escuro" : "claro";
-            DialogResult answer = MessageBox.Show(
-                "Tema " + label + " selecionado.\r\n\r\nAs janelas já abertas mantêm as cores atuais. Reiniciar o OpenLadder Studio agora para aplicar em tudo?",
-                "Tema do OpenLadder Studio",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            if (answer != DialogResult.Yes) return;
-            if (!ConfirmDiscardBeforeRestart()) return;
-            Application.Restart();
-        }
-
-        private bool ConfirmDiscardBeforeRestart()
-        {
-            // Reiniciar nunca pode descartar projeto em edicao sem aviso.
-            try
+            if (statusText != null)
             {
-                if (ladderForm == null || ladderForm.IsDisposed) return true;
-                FieldInfo field = typeof(LadderEditorForm).GetField("dirty", BindingFlags.Instance | BindingFlags.NonPublic);
-                if (field == null) return true;
-                if (!(bool)field.GetValue(ladderForm)) return true;
+                statusText.Text = mode == OpenLadderThemeMode.Dark
+                    ? "Tema escuro aplicado."
+                    : "Tema claro aplicado.";
             }
-            catch
-            {
-                return true;
-            }
-
-            return MessageBox.Show(
-                "O projeto tem alterações não salvas. Reiniciar mesmo assim?",
-                "Alterações não salvas",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning) == DialogResult.Yes;
         }
 
         private void SetRailEnabled

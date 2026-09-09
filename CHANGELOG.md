@@ -2,6 +2,14 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.86] - 2026-09-09
+
+### Interface
+- **Exibir → Tema** passa a valer na hora. Escolher Escuro ou Claro trocava a paleta em memória e não mudava nada na tela: as telas leem a paleta ao pintar, mas o que foi atribuído a `BackColor`/`ForeColor` na construção fica gravado no controle e ninguém relê — são 82 atribuições dessas entre o shell e o editor. `OpenLadderPalette` declarava um evento `Changed`, comentado como "para as janelas abertas se repintarem", que **não tinha um único assinante**;
+- `OpenLadderPalette.Use` agora guarda as cores do tema que sai, monta um de-para token a token e percorre as janelas abertas trocando o que reconhece: fundo, texto, borda de botão, grade e estilos de célula, itens de menu e submenu. O mapa se mantém sozinho por reflexão sobre as 26 cores da paleta, e nenhum par é ambíguo;
+- o diálogo que oferecia reiniciar o programa saiu, junto com `ConfirmDiscardBeforeRestart`. O rodapé confirma qual tema foi aplicado;
+- limite conhecido: cor que não vem da paleta continua onde está — restam duas no botão on-line do monitor Modbus.
+
 ## [0.85] - 2026-09-09
 
 ### Interface
