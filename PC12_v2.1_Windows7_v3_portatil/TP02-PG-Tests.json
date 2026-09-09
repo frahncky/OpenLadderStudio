@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.9",
+  "packageVersion": "2026.09.09.10",
   "title": "TP02 PG - VARREDURA COMPLETA + dump de leitura 0A em uma execucao",
   "sweeps": 2,
   "passiveCaptureMs": 1500,
@@ -386,6 +386,18 @@
       "expected": []
     },
     {
+      "id": "read-sweep-0a-0000",
+      "name": "6t. Varredura de leitura 0A do programa a partir de 0x0000",
+      "type": "read_sweep_0a",
+      "enabled": true,
+      "sweepProfiles": false,
+      "safetyClass": "READ_SWEEP_0A",
+      "txHex": "0A 03 00 00 AC 46",
+      "timeoutMs": 3500,
+      "passiveAfterMs": 200,
+      "expected": []
+    },
+    {
       "id": "passive-after-0a",
       "name": "6p. Escuta passiva apos os blocos 0A",
       "type": "passive",
@@ -480,7 +492,8 @@
       "34 03 00 00 A0 28, os dois quadros 0A e 14 00 EB sao probes READ-ONLY que precisam coincidir byte a byte com a lista interna do motor E com esta readOnlyAllowlist. Nenhum endereco ou opcode novo e gerado.",
       "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado a Clear All Memory.",
       "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado por esta bateria. Opcodes de efeito desconhecido recuperados do PC12 (01, 02, 03, 04, 11, 13, 37, 09) permanecem fora da allowlist e nunca sao transmitidos.",
-      "A etapa read_sweep_0a monta quadros 0A 03 [end_hi][end_lo][qtd] chk a partir do endereco base 0x6000 (qtd=0xAC), varrendo enderecos contiguos com retentativa por endereco. O motor so consegue emitir CMD 0A (leitura); escrita, apagamento e firmware continuam impossiveis por essa via."
+      "A etapa read_sweep_0a monta quadros 0A 03 [end_hi][end_lo][qtd] chk a partir do endereco base 0x6000 (qtd=0xAC), varrendo enderecos contiguos com retentativa por endereco. O motor so consegue emitir CMD 0A (leitura); escrita, apagamento e firmware continuam impossiveis por essa via.",
+      "A varredura read_sweep_0a a partir de 0x0000 tenta ler a area de programa (faixa RBP documentada 0x0000-0x4000) pelo mesmo comando de leitura 0A. Ainda e leitura: o motor so emite CMD 0A."
     ]
   }
 }
