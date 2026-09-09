@@ -43,7 +43,7 @@ $text = Replace-Required $text '            LogUi("SEGURANCA", "READ_ONLY=" + (r
 # na readOnlyAllowlist do pacote. O 38 permanece em classe propria e exige F0.
 $text = Replace-Required $text @'
                 if (cls == "READ_ONLY_CANDIDATE" && tx != "38 00 C7")
-                    throw new InvalidDataException("READ_ONLY_CANDIDATE protegido: somente 38 00 C7 e aceito pelo motor 1.3.");
+                    throw new InvalidDataException("READ_ONLY_CANDIDATE protegido: somente 38 00 C7 e aceito pelo motor 1.4.");
 '@ @'
                 if (cls == "READ_ONLY_CANDIDATE" && tx != "38 00 C7")
                     throw new InvalidDataException("READ_ONLY_CANDIDATE protegido: somente 38 00 C7 usa a dependencia de F0.");
