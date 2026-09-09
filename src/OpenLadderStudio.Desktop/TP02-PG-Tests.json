@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.6",
+  "packageVersion": "2026.09.09.7",
   "title": "TP02 PG - TESTE UNICO: enlace + consultas READ-ONLY",
   "sweeps": 1,
   "passiveCaptureMs": 1500,
@@ -185,13 +185,13 @@
     "notes": [
       "Este pacote executa um unico ensaio automatico. O operador escolhe apenas a COM e pressiona TESTE UNICO.",
       "A busca do enlace usa primeiro 19200 8O1 DTR=on RTS=on e, se necessario, testa automaticamente as demais combinacoes DTR/RTS.",
-      "A bancada da v0.91 encontrou HELLO-STOP 80 01 09 75 com DTR=on RTS=off depois da reabertura da COM.",
-      "Na mesma sessao da v0.91, F0 00 0F ficou sem resposta com RTS=off, enquanto uma sessao fisica anterior respondeu 00 02 10 22 CB com DTR=on RTS=on.",
-      "O motor 1.7 executa uma matriz pos-handshake na mesma porta aberta: estado vencedor com atrasos curto/longo, RTS on e transicoes RTS on->off e off->on entre TX e RX.",
-      "A matriz pos-handshake retransmite somente F0 00 0F, ja classificado como READ_ONLY_VERIFIED; nenhum novo opcode e introduzido.",
-      "Se qualquer variante F0 confirmar 00 02 10 22 CB, o estado RTS vencedor e preservado e 38 00 C7 e liberado automaticamente na mesma sessao.",
+      "A bancada encontrou HELLO-STOP 80 01 09 75 com DTR=on RTS=off depois da reabertura da COM.",
+      "Uma sessao fisica anterior respondeu F0 00 0F com 00 02 10 22 CB.",
+      "Na v0.92, a variante F0 TX RTS on -> RX RTS off devolveu novamente HELLO-STOP 80 01 09 75; o motor 1.8 trata isso como ressincronizacao valida.",
+      "Depois de RESYNC, o motor retransmite somente F0 00 0F em quatro tentativas automaticas com atrasos de 80, 220, 450 e 700 ms, preservando a mesma COM.",
+      "Se F0 confirmar 00 02 10 22 CB, 38 00 C7 e liberado automaticamente na mesma sessao.",
       "38 00 C7 continua com regra especial: somente e enviado se o F0 conhecido tiver sido validado na mesma sessao.",
-      "34 03 00 00 A0 28, os dois quadros 0A e 14 00 EB sao probes READ-ONLY allowlisted e continuam sendo testados mesmo se outro probe ficar sem resposta.",
+      "34 03 00 00 A0 28, os dois quadros 0A e 14 00 EB sao probes READ-ONLY allowlisted.",
       "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado a Clear All Memory.",
       "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado pelo Teste Unico."
     ]
