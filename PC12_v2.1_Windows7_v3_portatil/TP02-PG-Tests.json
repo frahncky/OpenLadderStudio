@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.4",
-  "title": "TP02 PG - matriz de recovery do HELLO + F0/38 protegido",
+  "packageVersion": "2026.09.09.5",
+  "title": "TP02 PG - TESTE UNICO: enlace + consultas READ-ONLY",
   "sweeps": 1,
-  "passiveCaptureMs": 5000,
-  "stopOnUnknown": true,
+  "passiveCaptureMs": 1500,
+  "stopOnUnknown": false,
   "campaign": {
     "enabled": false,
-    "runs": 12,
+    "runs": 1,
     "rearmBetweenRuns": true,
     "rearmDelayMs": 900,
-    "attemptsPerRun": 4,
+    "attemptsPerRun": 6,
     "rxWindowMs": 1800,
     "interAttemptMs": 180,
-    "passiveAfterEachMs": 350,
-    "stopOnUnknown": true
+    "passiveAfterEachMs": 250,
+    "stopOnUnknown": false
   },
   "serialProfiles": [
     {
@@ -25,43 +25,43 @@
       "stopBits": "One",
       "dtr": true,
       "rts": true,
-      "attempts": 4,
+      "attempts": 6,
       "rxWindowMs": 1800,
       "interAttemptMs": 180
     },
     {
-      "name": "Diagnostico - DTR on RTS off",
+      "name": "Fallback - DTR on RTS off",
       "baud": 19200,
       "dataBits": 8,
       "parity": "Odd",
       "stopBits": "One",
       "dtr": true,
       "rts": false,
-      "attempts": 4,
+      "attempts": 6,
       "rxWindowMs": 1800,
       "interAttemptMs": 180
     },
     {
-      "name": "Diagnostico - DTR off RTS on",
+      "name": "Fallback - DTR off RTS on",
       "baud": 19200,
       "dataBits": 8,
       "parity": "Odd",
       "stopBits": "One",
       "dtr": false,
       "rts": true,
-      "attempts": 4,
+      "attempts": 6,
       "rxWindowMs": 1800,
       "interAttemptMs": 180
     },
     {
-      "name": "Diagnostico - DTR off RTS off",
+      "name": "Fallback - DTR off RTS off",
       "baud": 19200,
       "dataBits": 8,
       "parity": "Odd",
       "stopBits": "One",
       "dtr": false,
       "rts": false,
-      "attempts": 4,
+      "attempts": 6,
       "rxWindowMs": 1800,
       "interAttemptMs": 180
     }
@@ -69,7 +69,7 @@
   "steps": [
     {
       "id": "hello-pg",
-      "name": "Handshake PG PC12 + estado operacional",
+      "name": "1. Localizar enlace PG PC12",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": true,
@@ -85,76 +85,76 @@
     },
     {
       "id": "status-preflight-f0",
-      "name": "Status/preflight F0 00 0F - vetor fisico confirmado",
+      "name": "2. Status/preflight F0",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
       "safetyClass": "READ_ONLY_VERIFIED",
       "txHex": "F0 00 0F",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 0,
+      "timeoutMs": 3000,
+      "passiveAfterMs": 200,
       "expected": [
         { "name": "F0-STOP-OBSERVADO-2026-09-09", "hex": "00 02 10 22 CB" }
       ]
     },
     {
       "id": "read-program-preflight-38",
-      "name": "Read PLC Program - candidato 38 00 C7 apos F0",
+      "name": "3. Read PLC Program - preambulo 38 apos F0",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
       "safetyClass": "READ_ONLY_CANDIDATE",
       "txHex": "38 00 C7",
-      "timeoutMs": 6000,
-      "passiveAfterMs": 5000,
+      "timeoutMs": 3500,
+      "passiveAfterMs": 700,
       "expected": []
     },
     {
       "id": "read-program-static",
-      "name": "Read PLC Program 34 03 00 00 A0 28 - etapa posterior ainda bloqueada",
+      "name": "4. Read PLC Program - bloco 34",
       "type": "txrx",
-      "enabled": false,
+      "enabled": true,
       "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
+      "safetyClass": "READ_ONLY_PROBE",
       "txHex": "34 03 00 00 A0 28",
       "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
-      "expected": []
-    },
-    {
-      "id": "password-prelude-14",
-      "name": "Quadro 14 00 EB do ramo condicional de senha",
-      "type": "txrx",
-      "enabled": false,
-      "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
-      "txHex": "14 00 EB",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
+      "passiveAfterMs": 900,
       "expected": []
     },
     {
       "id": "read-system-part-1",
-      "name": "Read PLC System parte 1 - desabilitado",
+      "name": "5. Read PLC System - parte 1",
       "type": "txrx",
-      "enabled": false,
+      "enabled": true,
       "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
+      "safetyClass": "READ_ONLY_PROBE",
       "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
+      "timeoutMs": 3500,
+      "passiveAfterMs": 700,
       "expected": []
     },
     {
       "id": "read-system-part-2",
-      "name": "Read PLC System parte 2 - desabilitado",
+      "name": "6. Read PLC System - parte 2",
       "type": "txrx",
-      "enabled": false,
+      "enabled": true,
       "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
+      "safetyClass": "READ_ONLY_PROBE",
       "txHex": "0A 03 60 AC AC 3A",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
+      "timeoutMs": 3500,
+      "passiveAfterMs": 700,
+      "expected": []
+    },
+    {
+      "id": "password-prelude-14",
+      "name": "7. Consulta do ramo de senha - 14",
+      "type": "txrx",
+      "enabled": true,
+      "sweepProfiles": false,
+      "safetyClass": "READ_ONLY_PROBE",
+      "txHex": "14 00 EB",
+      "timeoutMs": 2500,
+      "passiveAfterMs": 500,
       "expected": []
     },
     {
@@ -171,20 +171,29 @@
     }
   ],
   "safety": {
-    "readOnlyAllowlist": ["F0 00 0F", "38 00 C7"],
-    "blockedTx": ["0F 00 F0"],
+    "readOnlyAllowlist": [
+      "F0 00 0F",
+      "38 00 C7",
+      "34 03 00 00 A0 28",
+      "0A 03 60 00 AC E6",
+      "0A 03 60 AC AC 3A",
+      "14 00 EB"
+    ],
+    "blockedTx": [
+      "0F 00 F0"
+    ],
     "notes": [
-      "O baud/data/paridade/stop permanece fixo em 19200 8O1; a matriz altera somente DTR/RTS para diagnosticar o estado do conversor/enlace.",
-      "O perfil comprovado fisicamente continua sendo DTR=on e RTS=on e e sempre tentado primeiro.",
-      "Antes do primeiro HELLO de cada perfil o motor 1.5 escuta passivamente por 500 ms e registra qualquer byte espontaneo.",
-      "Cada perfil executa no maximo quatro HELLOs, com rearme DTR/RTS apos duas falhas e reabertura da COM apos quatro falhas.",
-      "CON-ICB<CR> ja respondeu 80 01 09 75 em sessoes STOP; soma modulo 256 = FF.",
-      "F0 00 0F ja respondeu 00 02 10 22 CB em sessao fisica; soma modulo 256 = FF.",
-      "F0 e 38 continuam bloqueados quando READ-ONLY estiver desativado.",
-      "38 00 C7 somente pode sair se o operador autorizar READ-ONLY, o quadro estiver na allowlist e F0 tiver sido validado na mesma sessao serial.",
-      "34 03 00 00 A0 28, 14 00 EB e quadros 0A permanecem desabilitados.",
-      "0F 00 F0 permanece BLOCKED por estar associado a Clear All Memory.",
-      "RUN/STOP remoto, escrita, download, apagamento e firmware permanecem fora deste ensaio."
+      "Este pacote executa um unico ensaio automatico. O operador escolhe apenas a COM e pressiona TESTE UNICO.",
+      "A busca do enlace usa primeiro o perfil fisicamente validado 19200 8O1, DTR=on, RTS=on; os demais perfis alteram somente DTR/RTS.",
+      "Cada perfil faz ate seis HELLOs: apos duas falhas rearma DTR/RTS; apos quatro falhas reabre a COM; as tentativas 5 e 6 verificam o estado depois da reabertura.",
+      "Antes do primeiro HELLO de cada perfil o motor escuta passivamente por 500 ms.",
+      "Quando um HELLO conhecido e encontrado, a mesma sessao serial e preservada e o teste executa automaticamente todas as consultas READ-ONLY habilitadas.",
+      "F0 00 0F e consulta fisicamente confirmada. O vetor STOP observado foi 00 02 10 22 CB.",
+      "38 00 C7 continua com regra especial: somente e enviado se o F0 conhecido tiver sido validado na mesma sessao.",
+      "34 03 00 00 A0 28, os dois quadros 0A e 14 00 EB foram recuperados por analise estatica de fluxos de leitura do PC12 e sao tratados como probes READ-ONLY allowlisted.",
+      "Uma consulta sem resposta ou com resposta ainda desconhecida nao interrompe o Teste Unico; o motor continua para os demais probes e registra tudo no mesmo TXT/JSON.",
+      "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado a Clear All Memory.",
+      "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado pelo Teste Unico."
     ]
   }
 }
