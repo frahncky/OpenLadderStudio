@@ -36,7 +36,7 @@ $text = Replace-Required $text '            stateLabel.Text = "EXECUTANDO TESTE 
 $text = Replace-Required $text '            LogUi("SEGURANCA", "READ_ONLY=" + (readOnlyApproved ? "AUTORIZADO PELO USUARIO" : "DESATIVADO") + "; 38 exige F0 valido na mesma sessao; demais CANDIDATE e BLOCKED nunca sao enviados.");' '            LogUi("SEGURANCA", "MODO=TESTE_UNICO_READ_ONLY; 38 exige F0 valido na mesma sessao; escrita, RUN/STOP, download, apagamento, firmware e BLOCKED nunca sao enviados.");' 'Log de seguranca'
 $text = Replace-Required $text @'
                 if (cls == "READ_ONLY_CANDIDATE" && tx != "38 00 C7")
-                    throw new InvalidDataException("READ_ONLY_CANDIDATE protegido: somente 38 00 C7 e aceito pelo motor 1.3.");
+                    throw new InvalidDataException("READ_ONLY_CANDIDATE protegido: somente 38 00 C7 e aceito pelo motor 1.4.");
 '@ @'
                 if (cls == "READ_ONLY_CANDIDATE" && tx != "38 00 C7")
                     throw new InvalidDataException("READ_ONLY_CANDIDATE protegido: somente 38 00 C7 usa a dependencia de F0.");
