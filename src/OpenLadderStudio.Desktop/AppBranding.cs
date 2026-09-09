@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace ModernPC12
@@ -104,6 +105,7 @@ namespace ModernPC12
     {
         private static OpenLadderThemeMode mode = OpenLadderThemeMode.Dark;
         private static bool loaded;
+        private static PropertyInfo[] tokenProperties;
 
         /// <summary>Disparado quando o tema muda, para as janelas abertas se repintarem.</summary>
         public static event EventHandler Changed;
@@ -122,8 +124,19 @@ namespace ModernPC12
         {
             EnsureLoaded();
             if (mode == value) return;
+
+            // As telas leem a paleta na hora de pintar, mas o que foi atribuido a
+            // BackColor ou ForeColor durante a construcao ficou gravado no controle
+            // e nao se atualiza sozinho. Guardamos as cores do tema que sai para
+            // reconhece-las na arvore de controles e trocar cada uma pela
+            // equivalente do tema que entra.
+            Color[] saindo = TokenValues();
             mode = value;
+            Color[] entrando = TokenValues();
             Save();
+
+            RestyleOpenForms(BuildRemap(saindo, entrando));
+
             EventHandler handler = Changed;
             if (handler != null) handler(null, EventArgs.Empty);
         }
@@ -258,6 +271,159 @@ namespace ModernPC12
             grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             grid.RowHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             grid.EnableHeadersVisualStyles = false;
+        }
+
+        /// <summary>
+        /// Propriedades de cor da paleta, em ordem estavel. A lista se mantem
+        /// sozinha: um token novo passa a ser considerado sem ninguem lembrar de
+        /// registra-lo aqui.
+        /// </summary>
+        private static PropertyInfo[] TokenProperties()
+        {
+            if (tokenProperties != null) return tokenProperties;
+
+            List<PropertyInfo> found = new List<PropertyInfo>();
+            foreach (PropertyInfo p in typeof(OpenLadderPalette).GetProperties(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (p.PropertyType != typeof(Color)) continue;
+                if (!p.CanRead || p.GetIndexParameters().Length > 0) continue;
+                found.Add(p);
+            }
+            found.Sort(delegate(PropertyInfo a, PropertyInfo b) { return string.CompareOrdinal(a.Name, b.Name); });
+
+            tokenProperties = found.ToArray();
+            return tokenProperties;
+        }
+
+        private static Color[] TokenValues()
+        {
+            PropertyInfo[] props = TokenProperties();
+            Color[] values = new Color[props.Length];
+            for (int i = 0; i < props.Length; i++) values[i] = (Color)props[i].GetValue(null, null);
+            return values;
+        }
+
+        /// <summary>
+        /// De-para do tema que sai para o que entra, indexado pelo ARGB de origem.
+        /// Dois tokens com a mesma cor de origem chegam ao mesmo destino nesta
+        /// paleta, entao a primeira entrada basta.
+        /// </summary>
+        private static Dictionary<int, Color> BuildRemap(Color[] saindo, Color[] entrando)
+        {
+            Dictionary<int, Color> map = new Dictionary<int, Color>();
+            for (int i = 0; i < saindo.Length && i < entrando.Length; i++)
+            {
+                int key = saindo[i].ToArgb();
+                if (key == entrando[i].ToArgb()) continue;
+                if (!map.ContainsKey(key)) map.Add(key, entrando[i]);
+            }
+            return map;
+        }
+
+        /// <summary>
+        /// Repinta as janelas abertas na troca de tema. Sem isto o usuario escolhe
+        /// outro tema e a tela so muda quando o programa e reaberto.
+        /// </summary>
+        private static void RestyleOpenForms(Dictionary<int, Color> map)
+        {
+            if (map.Count == 0) return;
+
+            // Copia a colecao antes de percorrer: repintar pode abrir ou fechar janela.
+            List<Form> open = new List<Form>();
+            foreach (Form f in Application.OpenForms) open.Add(f);
+
+            for (int i = 0; i < open.Count; i++)
+            {
+                Form form = open[i];
+                if (form == null || form.IsDisposed) continue;
+                try
+                {
+                    if (form.InvokeRequired)
+                    {
+                        form.BeginInvoke(new RestyleCallback(RestyleForm), new object[] { form, map });
+                        continue;
+                    }
+                    RestyleForm(form, map);
+                }
+                catch
+                {
+                    // Uma janela que recusa a repintura nao pode impedir as outras.
+                }
+            }
+        }
+
+        private delegate void RestyleCallback(Form form, Dictionary<int, Color> map);
+
+        private static void RestyleForm(Form form, Dictionary<int, Color> map)
+        {
+            if (form == null || form.IsDisposed) return;
+            Restyle(form, map);
+            form.Invalidate(true);
+        }
+
+        private static void Restyle(Control c, Dictionary<int, Color> map)
+        {
+            if (c == null || c.IsDisposed) return;
+
+            Color swap;
+            if (map.TryGetValue(c.BackColor.ToArgb(), out swap)) c.BackColor = swap;
+            if (map.TryGetValue(c.ForeColor.ToArgb(), out swap)) c.ForeColor = swap;
+
+            ButtonBase button = c as ButtonBase;
+            if (button != null)
+            {
+                FlatButtonAppearance flat = button.FlatAppearance;
+                if (map.TryGetValue(flat.BorderColor.ToArgb(), out swap)) flat.BorderColor = swap;
+                if (map.TryGetValue(flat.MouseOverBackColor.ToArgb(), out swap)) flat.MouseOverBackColor = swap;
+                if (map.TryGetValue(flat.MouseDownBackColor.ToArgb(), out swap)) flat.MouseDownBackColor = swap;
+            }
+
+            DataGridView grid = c as DataGridView;
+            if (grid != null) RestyleGrid(grid, map);
+
+            ToolStrip strip = c as ToolStrip;
+            if (strip != null)
+            {
+                for (int i = 0; i < strip.Items.Count; i++) RestyleItem(strip.Items[i], map);
+            }
+
+            for (int i = 0; i < c.Controls.Count; i++) Restyle(c.Controls[i], map);
+        }
+
+        private static void RestyleItem(ToolStripItem item, Dictionary<int, Color> map)
+        {
+            if (item == null) return;
+
+            Color swap;
+            if (map.TryGetValue(item.BackColor.ToArgb(), out swap)) item.BackColor = swap;
+            if (map.TryGetValue(item.ForeColor.ToArgb(), out swap)) item.ForeColor = swap;
+
+            ToolStripDropDownItem drop = item as ToolStripDropDownItem;
+            if (drop == null) return;
+            for (int i = 0; i < drop.DropDownItems.Count; i++) RestyleItem(drop.DropDownItems[i], map);
+        }
+
+        private static void RestyleGrid(DataGridView grid, Dictionary<int, Color> map)
+        {
+            Color swap;
+            if (map.TryGetValue(grid.BackgroundColor.ToArgb(), out swap)) grid.BackgroundColor = swap;
+            if (map.TryGetValue(grid.GridColor.ToArgb(), out swap)) grid.GridColor = swap;
+
+            RestyleCellStyle(grid.DefaultCellStyle, map);
+            RestyleCellStyle(grid.AlternatingRowsDefaultCellStyle, map);
+            RestyleCellStyle(grid.ColumnHeadersDefaultCellStyle, map);
+            RestyleCellStyle(grid.RowHeadersDefaultCellStyle, map);
+        }
+
+        private static void RestyleCellStyle(DataGridViewCellStyle style, Dictionary<int, Color> map)
+        {
+            if (style == null) return;
+
+            Color swap;
+            if (map.TryGetValue(style.BackColor.ToArgb(), out swap)) style.BackColor = swap;
+            if (map.TryGetValue(style.ForeColor.ToArgb(), out swap)) style.ForeColor = swap;
+            if (map.TryGetValue(style.SelectionBackColor.ToArgb(), out swap)) style.SelectionBackColor = swap;
+            if (map.TryGetValue(style.SelectionForeColor.ToArgb(), out swap)) style.SelectionForeColor = swap;
         }
 
         private static string SettingsPath()
