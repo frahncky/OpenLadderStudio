@@ -1,0 +1,172 @@
+# Validação física — OR NOT com X0002 (2026-09-10 12:19 BRT)
+
+## Objetivo
+
+Registrar a captura `TP02-PG-Lab-20260910-121927.txt`, obtida com **OpenLadder Studio v1.04 / TP02 PG Lab 1.16**, PLC em STOP e fluxo estritamente READ-ONLY.
+
+O teste seguiu diretamente o baseline paralelo anterior e alterou somente o tipo do segundo contato, de aberto para fechado:
+
+```text
+      +-- X0009 aberto  --+
+------|                   |------(Y0003)
+      +-- X0002 fechado --+
+```
+
+Baseline imediatamente anterior:
+
+```text
+      +-- X0009 aberto --+
+------|                  |------(Y0003)
+      +-- X0002 aberto --+
+```
+
+## Sessão válida
+
+Na sessão 12, o fluxo conhecido completou:
+
+```text
+HELLO -> 80 01 09 75
+F0    -> 00 02 10 22 CB
+38    -> 00 02 00 04 F9
+34    -> quadro de 243 bytes, LEN=F0, payload=240 bytes, checksum válido
+```
+
+O checksum final do quadro 34 foi `0x4D`.
+
+## Payload 34 observado
+
+Os únicos bytes não nulos do payload foram:
+
+```text
+payload[0x000] = 01
+payload[0x001] = 10
+payload[0x003] = 39
+payload[0x004] = 20
+payload[0x005] = 42
+payload[0x0A0] = 02
+payload[0x0A1] = 0C
+payload[0x0A2] = 08
+```
+
+Pela geometria conhecida:
+
+```text
+passo i:
+  HIGH = payload[2*i]
+  LOW  = payload[2*i+1]
+  BRAW = payload[0x0A0+i]
+```
+
+resulta:
+
+```text
+passo 0: HIGH=01 LOW=10 BRAW=02   -> STR X0009
+passo 1: HIGH=00 LOW=39 BRAW=0C   -> OR NOT X0002
+passo 2: HIGH=20 LOW=42 BRAW=08   -> OUT Y0003
+```
+
+## OR NOT confirmado fisicamente
+
+Para o segundo passo:
+
+```text
+LOW = 0x39
+0x39 & 0x78 = 0x38
+```
+
+A análise estática já associava `0x38` a **OR NOT**. Como o experimento alterou somente o segundo contato de aberto para fechado, mantendo topologia paralela, operandos e bobina, esta captura confirma fisicamente:
+
+```text
+STR X0009
+OR NOT X0002
+OUT Y0003
+```
+
+A previsão anterior de `LOW=0x39` foi satisfeita exatamente.
+
+## Comparação controlada com OR X0002
+
+Paralelo com X0002 aberto:
+
+```text
+passo 1: HIGH=00 LOW=31 BRAW=04
+checksum = 0x5D
+```
+
+Paralelo com X0002 fechado:
+
+```text
+passo 1: HIGH=00 LOW=39 BRAW=0C
+checksum = 0x4D
+```
+
+Somente dois bytes do payload mudaram:
+
+```text
+payload[0x003]: 0x31 -> 0x39   (+0x08)
+payload[0x0A1]: 0x04 -> 0x0C  (+0x08)
+```
+
+A soma das mudanças foi `+0x10`; o checksum caiu exatamente `0x10`, de `0x5D` para `0x4D`, mantendo a soma total do quadro em `0xFF`.
+
+## Padrão de inversão agora reforçado
+
+Já havia sido observado no caso STR/STR NOT para X0002 que mudar aberto -> fechado acrescentava `0x08` ao LOW e também `0x08` ao BRAW.
+
+Agora o mesmo padrão aparece de forma independente na família OR/OR NOT:
+
+```text
+OR X0002:      LOW=31  BRAW=04
+OR NOT X0002:  LOW=39  BRAW=0C
+                 +08        +08
+```
+
+Portanto, há **EVIDÊNCIA FORTE** de que a inversão do contato é refletida pelo bit `0x08` tanto no LOW quanto no BRAW nos casos já ensaiados. A semântica completa de BRAW, porém, continua não resolvida.
+
+## Comando 38
+
+O `38` permaneceu:
+
+```text
+00 02 00 04 F9
+```
+
+Assim, `PAYLOAD[1]=0x04` continua indiferente, nos experimentos controlados atuais, à troca entre AND/OR e também à inversão do segundo contato. Sua semântica exata permanece desconhecida.
+
+## O que esta captura confirma
+
+- `OR NOT` (`LOW & 0x78 = 0x38`) está confirmado fisicamente em bancada;
+- `OR NOT X0002` aparece como `HIGH=00 LOW=39 BRAW=0C` neste programa;
+- `STR X0009` permanece `01/10/02`;
+- `OUT Y0003` permanece `20/42/08`;
+- aberto -> fechado no segundo contato paralelo mudou somente LOW e BRAW desse passo;
+- em OR -> OR NOT, LOW e BRAW receberam `+0x08` cada;
+- checksum acompanhou exatamente a diferença dos bytes;
+- o valor do `38` permaneceu `0x04`.
+
+## Próximo experimento recomendado
+
+Voltar à topologia em série, mantendo os mesmos operandos e alterando apenas o segundo contato para fechado:
+
+```text
+X0009 aberto -- X0002 fechado -- (Y0003)
+```
+
+Objetivo: validar fisicamente **AND NOT X0002**. Pela análise estática e pelos padrões já observados, a previsão é:
+
+```text
+LOW = 0x29
+BRAW possivelmente = 0x0B
+```
+
+A previsão de BRAW é apenas hipótese até a captura física.
+
+## Segurança
+
+Nenhuma escrita foi habilitada. O teste permaneceu no fluxo:
+
+```text
+HELLO -> F0 -> 38 -> 34
+```
+
+com PLC em STOP. `0F 00 F0` continua bloqueado; nenhum comando de escrita, download, apagamento, firmware ou RUN/STOP remoto foi transmitido.
