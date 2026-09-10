@@ -13,6 +13,7 @@ namespace OpenLadderStudio.Core
         public string Instruction = "UNKNOWN";
         public string Device = string.Empty;
         public int DeviceNumber;
+        public string DisplayText = string.Empty;
         public bool IsBoolean;
         public bool IsEmpty;
         public bool BrawCheckApplicable;
@@ -22,6 +23,7 @@ namespace OpenLadderStudio.Core
         public string ToIl()
         {
             if (IsEmpty) return "NOP";
+            if (!string.IsNullOrEmpty(DisplayText)) return DisplayText;
             if (Instruction == "UNKNOWN")
                 return "UNKNOWN " + High.ToString("X2", CultureInfo.InvariantCulture)
                     + Low.ToString("X2", CultureInfo.InvariantCulture)
@@ -94,8 +96,9 @@ namespace OpenLadderStudio.Core
                 }
                 else
                 {
-                    // A relacao do 38 com o ultimo par ativo ainda e evidencia forte,
-                    // nao uma regra universal. Em divergencia, nao truncar o payload.
+                    // O 38 acompanha o offset do ultimo par HIGH/LOW nas capturas
+                    // conhecidas, inclusive com instrucoes de varios passos. Ainda
+                    // assim, divergencia futura nao deve truncar silenciosamente o 34.
                     result.StepCount = result.PayloadTailStepCount;
                 }
             }
@@ -118,7 +121,7 @@ namespace OpenLadderStudio.Core
 
                 result.Steps.Add(step);
                 if (step.IsBoolean) result.BooleanSteps++;
-                else if (!step.IsEmpty) result.UnknownSteps++;
+                else if (!step.IsEmpty && step.Instruction == "UNKNOWN") result.UnknownSteps++;
 
                 if (step.BrawCheckApplicable)
                 {
@@ -131,10 +134,21 @@ namespace OpenLadderStudio.Core
             return result;
         }
 
-        internal static byte CalculateBooleanBraw(byte high, byte low)
+        /// <summary>
+        /// Regra fisicamente observada no programa booleano de 26 passos e no
+        /// programa misto de 23 passos (TMR/CNT/SET/RST/ADDw/operandos/END):
+        /// soma dos quatro nibbles de HIGH/LOW reduzida ao nibble baixo.
+        /// </summary>
+        internal static byte CalculateBraw(byte high, byte low)
         {
             int sum = (high >> 4) + (high & 0x0F) + (low >> 4) + (low & 0x0F);
-            return (byte)sum;
+            return (byte)(sum & 0x0F);
+        }
+
+        // Mantido para compatibilidade com autotestes/chamadores anteriores.
+        internal static byte CalculateBooleanBraw(byte high, byte low)
+        {
+            return CalculateBraw(high, low);
         }
 
         private static Tp02Pg34Step DecodeStep(int index, byte high, byte low, byte braw)
@@ -161,20 +175,50 @@ namespace OpenLadderStudio.Core
                 step.Device = device;
                 step.DeviceNumber = number;
                 step.IsBoolean = true;
-                step.BrawCheckApplicable = true;
-                step.ExpectedBraw = CalculateBooleanBraw(high, low);
-                step.BrawMatches = step.ExpectedBraw == braw;
-                return step;
+            }
+            else if ((high & 0x80) == 0 && TryDecodeTimerCounter(high, low, out instruction, out number))
+            {
+                step.Instruction = instruction;
+                step.Device = "V";
+                step.DeviceNumber = number;
+            }
+            else if (TryDecodeConfirmedFunction(high, low, out instruction))
+            {
+                step.Instruction = instruction;
+                step.DisplayText = instruction;
+            }
+            else if (TryDecodeLiteral(high, low, out number))
+            {
+                step.Instruction = "K";
+                step.DisplayText = "K" + number.ToString(CultureInfo.InvariantCulture);
+            }
+            else if (TryDecodeSpecialBitOperand(high, low, out device, out number))
+            {
+                step.Instruction = "ARG";
+                step.Device = device;
+                step.DeviceNumber = number;
+            }
+            else if (TryDecodeConfirmedDOperand(high, low, out number))
+            {
+                step.Instruction = "ARG";
+                step.Device = "D";
+                step.DeviceNumber = number;
+            }
+            else if (high == 0x00 && low == 0x01)
+            {
+                step.Instruction = "AND STR";
+            }
+            else if (high == 0x00 && low == 0x02)
+            {
+                step.Instruction = "OR STR";
             }
 
-            // TMR/CNT sao conhecidos por analise estatica, mas o formato completo do
-            // operando e a regra de BRAW ainda nao foram validados fisicamente.
-            int opcode = low & 0x78;
-            if (opcode == 0x60) step.Instruction = "TMR";
-            else if (opcode == 0x68) step.Instruction = "CNT";
-            else if (low == 0x01) step.Instruction = "AND STR";
-            else if (low == 0x02) step.Instruction = "OR STR";
-
+            // A captura de 2026-09-10 18:35 mostrou a mesma regra BRAW em todos
+            // os 23 passos ativos, inclusive nao booleanos. A checagem continua
+            // diagnostica: divergencia e reportada, mas nao invalida o quadro 34.
+            step.BrawCheckApplicable = true;
+            step.ExpectedBraw = CalculateBraw(high, low);
+            step.BrawMatches = step.ExpectedBraw == braw;
             return step;
         }
 
@@ -204,10 +248,95 @@ namespace OpenLadderStudio.Core
             else if (deviceBase == 0x40) device = "C";
             else return false;
 
+            // HIGH com bit 7 pertence a outras classes (por exemplo literal).
+            if ((high & 0x80) != 0) return false;
+
             int group = high & 0x1F;
             int bit = low & 0x07;
             number = (group * 8) + bit + 1;
             return number > 0;
+        }
+
+        private static bool TryDecodeTimerCounter(byte high, byte low, out string instruction, out int number)
+        {
+            instruction = string.Empty;
+            number = 0;
+
+            int opcode = low & 0x78;
+            if (opcode == 0x60) instruction = "TMR";
+            else if (opcode == 0x68) instruction = "CNT";
+            else return false;
+
+            int index = (high & 0x7F) | ((low & 0x07) << 7);
+            number = index + 1;
+            return true;
+        }
+
+        private static bool TryDecodeConfirmedFunction(byte high, byte low, out string instruction)
+        {
+            instruction = string.Empty;
+            if (high == 0x00 && low == 0x70)
+            {
+                instruction = "F-00 END";
+                return true;
+            }
+            if (high == 0x17 && low == 0x71)
+            {
+                instruction = "F-23 SET";
+                return true;
+            }
+            if (high == 0x18 && low == 0x71)
+            {
+                instruction = "F-24 RST";
+                return true;
+            }
+            if (high == 0x0D && low == 0x77)
+            {
+                instruction = "F-13w ADD";
+                return true;
+            }
+            return false;
+        }
+
+        private static bool TryDecodeLiteral(byte high, byte low, out int value)
+        {
+            value = 0;
+            if (high < 0x80 || high > 0x9F || (low & 0x80) != 0) return false;
+
+            int highNibble = (high & 0x1E) >> 1;
+            int lowByte = ((high & 0x01) << 7) | (low & 0x7F);
+            value = (highNibble << 8) | lowByte;
+            return true;
+        }
+
+        private static bool TryDecodeSpecialBitOperand(byte high, byte low, out string device, out int number)
+        {
+            device = string.Empty;
+            number = 0;
+            if ((low & 0x80) == 0) return false;
+
+            int deviceBase = high & 0xF8;
+            if (deviceBase == 0xC0) device = "X";
+            else if (deviceBase == 0xC8) device = "Y";
+            else if (deviceBase == 0xD0) device = "C";
+            else return false;
+
+            int bit = high & 0x07;
+            int group = low & 0x7F;
+            number = (group * 8) + bit + 1;
+            return true;
+        }
+
+        private static bool TryDecodeConfirmedDOperand(byte high, byte low, out int number)
+        {
+            number = 0;
+            if ((high & 0xF8) != 0xF0 || (low & 0x80) != 0) return false;
+
+            int h = (high & 0x0E) >> 1;
+            int l = ((high & 0x01) << 7) | (low & 0x7F);
+            int index = (h << 8) | l;
+            number = index + 1;
+            return true;
         }
 
         private static int DetectPayloadTailStepCount(byte[] payload)
