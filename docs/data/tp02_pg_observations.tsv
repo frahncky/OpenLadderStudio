@@ -10,29 +10,55 @@ f0	F0-SEM	Semântica exata	F0 00 0F	-	unknown	Não chamar F0 de STOP	UNKNOWN
 38	38-A	Programa mínimo observado	38 00 C7	00 02 00 0A F3	observed	Quadro 38 válido	CONFIRMED
 38	38-B	Programa mínimo observado	38 00 C7	00 02 00 02 FB	observed	Quadro 38 válido	CONFIRMED
 38	38-C	X0001 aberto + X0002 aberto em série -> Y0003	38 00 C7	00 02 00 04 F9	observed	Terceiro quadro 38 válido	CONFIRMED
-38	38-STRUCT	Três respostas conhecidas	38 00 C7	00 02 00 XX CS	derived	FLAGS=00 LEN=02 payload[0]=00 e checksum FF; payload[1] variável	STRONG_EVIDENCE
-38	38-SEM	Byte XX	38 00 C7	-	unknown	Pode depender do programa; significado exato não conhecido	UNKNOWN
-34	34-REQ	Read PLC Program base	34 03 00 00 A0 28	00 F0 [240 payload] [CS]	observed	Primeiro bloco de programa conhecido	CONFIRMED
+38	38-STRUCT	Três respostas conhecidas	38 00 C7	00 02 00 XX CS	derived	FLAGS=00 LEN=02 payload[0]=00 checksum FF; payload[1] variável	STRONG_EVIDENCE
+38	38-SEM	Byte XX	38 00 C7	-	unknown	Semântica exata de payload[1] não conhecida	UNKNOWN
+34	34-REQ	Primeira leitura de programa	34 03 00 00 A0 28	00 F0 [240 payload] [CS]	observed	Primeiro bloco de programa conhecido	CONFIRMED
 34	34-FRAME	Programas mínimos	34 03 00 00 A0 28	243 bytes total	observed	LEN=F0=240 e checksum FF	CONFIRMED
 34	34-SEM	Comparações controladas	34 03 00 00 A0 28	payload muda com ladder	derived	Conteúdo diretamente relacionado ao programa	STRONG_EVIDENCE
-34	34-PAGING	Possíveis blocos seguintes	-	-	unknown	Paginação e fim do programa não conhecidos	UNKNOWN
+34	34-PAGING	Análise estática e emulação do pc12.exe	34 03 [step_hi] [step_lo] A0 CS	-	resolved	Endereço é contador de passos; avança 1 a 4 por instrução; paginação depende do conteúdo	CONFIRMED_STATIC
+34	34-PAGING-OLD	Hipótese histórica	-	00F0->01E0->02D0	superseded	Paginação fixa por 0xF0 foi descartada	REJECTED
+34	34-GEOMETRY	Payload LEN=F0	-	240 bytes	resolved	80 passos de 3 bytes organizados em região A 160 B e região B 80 B	CONFIRMED_STATIC
+34	34-PLANE-A	Geometria recuperada	-	payload[0x000..0x09F]	resolved	Dois bytes HIGH/LOW por passo	CONFIRMED_STATIC
+34	34-PLANE-B	Geometria recuperada	-	payload[0x0A0..0x0EF]	resolved	Um byte adicional por passo	CONFIRMED_STATIC
+34	34-MODEL-SIZE	TP02-40/60MR(T)	-	0x0FA0 steps	resolved	PC12 limita programa a 4000 passos para o modelo	CONFIRMED_STATIC
+opcode	OP-STR	Decodificador pc12.exe	-	LOW&78=10	resolved	STR	CONFIRMED_STATIC
+opcode	OP-STRNOT	Decodificador pc12.exe	-	LOW&78=18	resolved	STR NOT	CONFIRMED_STATIC
+opcode	OP-AND	Decodificador pc12.exe	-	LOW&78=20	resolved	AND	CONFIRMED_STATIC
+opcode	OP-ANDNOT	Decodificador pc12.exe	-	LOW&78=28	resolved	AND NOT	CONFIRMED_STATIC
+opcode	OP-OR	Decodificador pc12.exe	-	LOW&78=30	resolved	OR	CONFIRMED_STATIC
+opcode	OP-ORNOT	Decodificador pc12.exe	-	LOW&78=38	resolved	OR NOT	CONFIRMED_STATIC
+opcode	OP-OUT	Decodificador pc12.exe	-	LOW&78=40	resolved	OUT	CONFIRMED_STATIC
+opcode	OP-TMR	Decodificador pc12.exe	-	LOW&78=60	resolved	TMR	CONFIRMED_STATIC
+opcode	OP-CNT	Decodificador pc12.exe	-	LOW&78=68	resolved	CNT	CONFIRMED_STATIC
+opcode	OP-FIXED-00	Palavra fixa	-	00	resolved	Vazio/NOP	CONFIRMED_STATIC
+opcode	OP-FIXED-01	Palavra fixa	-	01	resolved	AND STR	CONFIRMED_STATIC
+opcode	OP-FIXED-02	Palavra fixa	-	02	resolved	OR STR	CONFIRMED_STATIC
+opcode	OP-ALT-08-0D	Segundo ramo do decodificador	-	08..0D	unknown	Família booleana alternativa sem índice de bit observada apenas estaticamente	UNKNOWN
+function	FUNC-DISPATCH	Tabela 0x4B4884	-	72 entries / 64 handlers	resolved	Byte HIGH indexa funções F-xx; 64 índices coincidem com mapa normalizado	CONFIRMED_STATIC
+function	FUNC-END	F-00	-	HIGH=00	resolved	End termina o programa no fluxo decodificado	CONFIRMED_STATIC
+address	ADDR-REBUILD	Decodificador 0x4B036C-0x4B03C6	-	LOW bits 0-2 + LOW bit7 + B bits4-6	resolved	Número do dispositivo é reconstruído dos dois planos e exibido como valor+1	CONFIRMED_STATIC
+address	ADDR-B-HIGHBITS	Região B	-	B&70	resolved	Bits 4-6 da região B carregam bits altos do número do dispositivo	CONFIRMED_STATIC
+address	ADDR-B-OTHER	Região B	-	B bits0-3,7	unknown	Semântica não resolvida neste caminho	UNKNOWN
+address	ADDR-CLASS	Instruções booleanas	-	-	unknown	Origem completa da classe X/Y/C no caminho booleano ainda não isolada	UNKNOWN
+address	ADDR-X0009	Teste discriminante	-	linear=18; decoder=10+B bit alto	planned	Captura X0009 decide entre aproximação linear antiga e reconstrução estática	NEXT
+payload34	P34-A	X0001 fechado -> Y0002	34 03 00 00 A0 28	p001=18;p002=20;p003=41;p0A0=09;p0A1=07	observed	Baseline de um contato + bobina	CONFIRMED
+payload34	P34-B	X0002 fechado -> Y0002	34 03 00 00 A0 28	p001=19;p002=20;p003=41;p0A0=0A;p0A1=07	observed	Mudança somente de X	CONFIRMED
+payload34	P34-C	X0002 fechado -> Y0003	34 03 00 00 A0 28	p001=19;p002=20;p003=42;p0A0=0A;p0A1=08	observed	Mudança somente de Y	CONFIRMED
+payload34	P34-D	X0002 aberto -> Y0003	34 03 00 00 A0 28	p001=11;p002=20;p003=42;p0A0=02;p0A1=08	observed	Mudança somente de fechado para aberto	CONFIRMED
+payload34	P34-E	X0001 aberto -> Y0003	34 03 00 00 A0 28	p001=10;p002=20;p003=42;p0A0=01;p0A1=08	observed	Mudança somente de X0002 para X0001	CONFIRMED
+payload34	P34-20	Casos A-E	-	p002=20	resolved	É o byte HIGH do passo da bobina Y nos casos observados	CONFIRMED_STATIC
+encoding	ENC-X-LINEAR-LOCAL	X0001/X0002	-	-	superseded	Aproximação linear é válida localmente até n=8, não é fórmula geral	SUPERSEDED
+encoding	ENC-X-TYPE	X0002 fechado versus aberto	-	19/0A versus 11/02	derived	Mudança de STR para STR NOT aparece como diferença 0x08 no LOW e diferenças correlatas em B	STRONG_EVIDENCE
+encoding	ENC-Y-LOCAL	Y0002 versus Y0003	-	41/07 versus 42/08	derived	Variação local compatível com reconstrução do endereço	STRONG_EVIDENCE
 0A	0A-FORMAT	Leituras de memória/sistema	0A 03 AH AL LEN CS	[STATE] [LEN] [PAYLOAD] [CS]	observed	AH AL comporta-se como endereço big-endian nos probes usados	CONFIRMED
 0A	0A-RUNSTOP	RUN versus STOP	0A ...	STOP 00... / RUN 40...	observed	Funciona em ambos os estados; reforça bit 0x40	CONFIRMED
 0A	0A-SCOPE	Escopo da memória	0A ...	-	unknown	Não assumir que 0A seja memória ladder	UNKNOWN
-14	14-STOP	PLC em STOP	14 00 EB	00 00 FF	observed	Resposta do comando 14 em STOP	CONFIRMED
-14	14-RUN	PLC em RUN	14 00 EB	40 00 BF	observed	Resposta do comando 14 em RUN	CONFIRMED
-blocked	CLEAR-ALL	Associado a Clear All Memory	0F 00 F0	NEVER_SEND	blocked	Comando perigoso explicitamente bloqueado	CONFIRMED
-payload34	P34-A	X0001 fechado -> Y0002	34 03 00 00 A0 28	p001=18;p002=20;p003=41;p0A0=09;p0A1=07	observed	Baseline de um contato + uma bobina	CONFIRMED
-payload34	P34-B	X0002 fechado -> Y0002	34 03 00 00 A0 28	p001=19;p002=20;p003=41;p0A0=0A;p0A1=07	observed	Mudança somente de X0001 para X0002	CONFIRMED
-payload34	P34-C	X0002 fechado -> Y0003	34 03 00 00 A0 28	p001=19;p002=20;p003=42;p0A0=0A;p0A1=08	observed	Mudança somente de Y0002 para Y0003	CONFIRMED
-payload34	P34-D	X0002 aberto -> Y0003	34 03 00 00 A0 28	p001=11;p002=20;p003=42;p0A0=02;p0A1=08	observed	Mudança somente do tipo fechado para aberto	CONFIRMED
-payload34	P34-E	X0001 aberto -> Y0003	34 03 00 00 A0 28	p001=10;p002=20;p003=42;p0A0=01;p0A1=08	observed	Mudança somente de X0002 para X0001	CONFIRMED
-encoding	ENC-X-LINEAR	X0001/X0002 aberto e fechado	-	-	derived	Endereço X varia linearmente nos pontos observados e aparece em p001 e p0A0	STRONG_EVIDENCE
-encoding	ENC-X-TYPE	X0002 fechado versus aberto	-	19/0A versus 11/02	derived	Fechado adiciona 0x08 nos dois campos X observados	STRONG_EVIDENCE
-encoding	ENC-Y-LINEAR	Y0002 versus Y0003	-	41/07 versus 42/08	derived	Endereço Y varia linearmente nos dois pontos observados e aparece em p003 e p0A1	STRONG_EVIDENCE
-encoding	ENC-X-FORMULA-OPEN	Xn aberto, apenas n=1,2 testados	-	p001≈0F+n;p0A0≈n	hypothesis	Fórmula candidata; precisa de endereços não adjacentes	HYPOTHESIS
-encoding	ENC-X-FORMULA-CLOSED	Xn fechado, apenas n=1,2 testados	-	p001≈17+n;p0A0≈08+n	hypothesis	Fórmula candidata; precisa de endereços não adjacentes	HYPOTHESIS
-encoding	ENC-Y-FORMULA	Yn, apenas n=2,3 testados	-	p003≈3F+n;p0A1≈05+n	hypothesis	Fórmula candidata; precisa de validação adicional	HYPOTHESIS
-encoding	ENC-20	Programas mínimos A-E	-	p002=20	observed	Byte constante nos cinco casos; semântica desconhecida	UNKNOWN
-next	NEXT-001	Retomada imediata	-	-	planned	PG Lab 1.16: capturar 34 de X0001 aberto em série com X0002 aberto -> Y0003	NEXT
-next	NEXT-002	Após NEXT-001	-	-	planned	Comparar dois contatos abertos em paralelo -> Y0003 para isolar série/paralelo e AND/OR	NEXT
+14	14-STOP	PLC em STOP	14 00 EB	00 00 FF	observed	Resposta em STOP	CONFIRMED
+14	14-RUN	PLC em RUN	14 00 EB	40 00 BF	observed	Resposta em RUN	CONFIRMED
+write	WRITE-09	Análise estática pc12.exe	09 [n] [addr_hi] [addr_lo] [qtd] [data...] CS	-	resolved	Primitiva de escrita espelha 0A; observada em rotinas de registradores	CONFIRMED_STATIC
+write	WRITE-09-BLOCK	Análise estática pc12.exe	09 11 ...	-	resolved	Existe escrita de bloco com 14 bytes de dados	CONFIRMED_STATIC
+write	WRITE-PROGRAM	Download completo	-	-	unknown	Laço/orquestração do Write PLC Program ainda não isolado; não assumir que todo download usa 09	UNKNOWN
+blocked	CLEAR-ALL	Análise estática pc12.exe	0F 00 F0	NEVER_SEND	blocked	Clear All Memory; comando destrutivo explicitamente bloqueado	CONFIRMED_STATIC
+next	NEXT-001	Prioridade imediata	-	-	planned	Capturar X0009 aberto -> Y0003 para validar endereçamento em hardware	NEXT
+next	NEXT-002	Após X0009	-	-	planned	PG Lab 1.16: capturar 34 de X0001 aberto em série com X0002 aberto -> Y0003	NEXT
+next	NEXT-003	Após captura série	-	-	planned	Comparar X0001/X0002 abertos em paralelo -> Y0003 para validar OR/ramificação	NEXT
