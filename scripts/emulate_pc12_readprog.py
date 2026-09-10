@@ -621,6 +621,48 @@ def confere_funcoes():
     return ok
 
 
+# ---------------------------------------------------------------------------
+# Comandos de escrita (mapa estatico)
+# ---------------------------------------------------------------------------
+# Apenas confere o que o pc12.exe MONTA para escrever. Nada e transmitido.
+# Ver docs/tp02-pg-escrita-mapa-estatico.md. A politica do projeto continua
+# READ-ONLY: este bloco documenta, nao habilita.
+
+SITIOS_ESCRITA = [
+    (0x004BD45E, 'C6 05 A8 A7 4F 00 0A', 'leitura 0A: CMD no indice 0'),
+    (0x004BD465, 'C6 05 A9 A7 4F 00 03', 'leitura 0A: n=3 (endereco + qtd)'),
+    (0x004BD5FE, 'C6 05 A8 A7 4F 00 09', 'escrita 09: CMD no indice 0'),
+    (0x004BD605, 'C6 05 A9 A7 4F 00 05', 'escrita 09: n=5 (endereco + qtd + 2 dados)'),
+    (0x0046F115, 'C6 05 A8 A7 4F 00 0F', 'Clear All Memory: 0F 00 F0 (destrutivo, bloqueado)'),
+]
+
+
+def confere_escrita():
+    print('=' * 78)
+    print('Comandos de escrita -- mapa estatico (nada e transmitido)')
+    print('=' * 78)
+    ok = True
+    for va, esperado, descr in SITIOS_ESCRITA:
+        alvo = bytes.fromhex(esperado.replace(' ', ''))
+        real = le(va, len(alvo))
+        bate = real == alvo
+        ok &= bate
+        print('  %s 0x%08X  %s' % ('OK  ' if bate else 'FALHA', va, descr))
+        if not bate:
+            print('        esperado %s' % esperado)
+            print('        no arquivo %s' % ' '.join('%02X' % b for b in real))
+    print()
+    print('  A primitiva de escrita e o comando 09, espelho do 0A:')
+    print('     leitura   0A [n=3] [end_hi] [end_lo] [qtd]           chk')
+    print('     escrita   09 [n=5] [end_hi] [end_lo] [qtd] [d0] [d1] chk')
+    print('  n = bytes que seguem antes do checksum; qtd = bytes de dado.')
+    print()
+    print('  0F 00 F0 (Clear All Memory) permanece bloqueado. O laco de')
+    print('  download de programa NAO foi isolado -- ver o documento.')
+    print()
+    return ok
+
+
 def hexs(b):
     return ' '.join('%02X' % x for x in b) if b else '(vazio)'
 
@@ -687,6 +729,9 @@ def main():
         return 1
     if not confere_funcoes():
         print('O despacho de funcoes nao confere. Nao siga adiante.')
+        return 1
+    if not confere_escrita():
+        print('O mapa de escrita nao confere com este pc12.exe. Nao siga adiante.')
         return 1
     if a.so_geometria:
         return 0
