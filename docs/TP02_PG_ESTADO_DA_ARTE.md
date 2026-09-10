@@ -2,32 +2,33 @@
 
 > **Documento canônico de recuperação da pesquisa.**
 >
-> Snapshot técnico: **2026-09-09 23:42 BRT**. Estado do software neste ponto: **OpenLadder Studio v1.03**, **TP02 PG Lab 1.16**, `main` no commit `840738c34928d2f534f26c42b3adb74d8dff3692`.
+> Snapshot consolidado: **2026-09-10**. Base técnica analisada: `main` no commit `15cef64558714382642e9666fe47ce9c517110ec`, após o merge do PR #54. Release de sincronização: **OpenLadder Studio v1.04**. O motor de bancada permanece **TP02 PG Lab 1.16**.
 >
-> Este arquivo deve ser atualizado sempre que uma hipótese for confirmada, refutada ou refinada. Ele separa explicitamente fatos observados, inferências fortes e pontos ainda desconhecidos para evitar que uma retomada futura confunda hipótese com protocolo confirmado.
+> Este arquivo separa fatos de bancada, resultados de análise estática/emulação, hipóteses e pontos ainda desconhecidos. Ele deve ser a primeira referência para qualquer retomada futura da pesquisa.
 
-## 1. Objetivo da pesquisa
+## 1. Objetivo
 
-O objetivo é compreender suficientemente o protocolo serial PG do PLC **WEG TP02-60MR** para permitir, inicialmente, leitura segura do programa armazenado no PLC e, posteriormente, decodificação do ladder. Escrita/download, RUN/STOP remoto, apagamento e firmware permanecem fora do escopo enquanto não houver evidência experimental e validação específica de segurança.
+Compreender suficientemente o protocolo serial PG do PLC **WEG TP02-60MR** para permitir leitura segura do programa, reconstrução do formato interno e, posteriormente, decodificação confiável do ladder.
 
-A investigação usa o **PC12 Design Center v2.1** como referência histórica e o **OpenLadder Studio / TP02 PG Lab** como ferramenta experimental. O PLC de bancada apresentou identificação **TP02-40/60MR(T) V2.2.4K**.
+O equipamento de bancada apresentou identificação **TP02-40/60MR(T) V2.2.4K**. O software histórico usado como referência é o **PC12 Design Center v2.1**.
 
-## 2. Convenção epistemológica
+A política de segurança permanece estritamente **READ-ONLY**. Escrita/download, apagamento, firmware e RUN/STOP remoto não são habilitados no OpenLadder Studio nesta fase.
 
-As anotações usam quatro níveis:
+## 2. Níveis de confiança
 
-- **CONFIRMADO** — observado fisicamente de forma direta e reproduzível, ou validado por checksum/estrutura em bancada.
-- **EVIDÊNCIA FORTE** — vários testes controlados apontam para a mesma interpretação, mas ainda faltam pontos de validação para chamar de regra geral.
-- **HIPÓTESE** — interpretação útil para orientar testes, ainda não demonstrada.
+- **CONFIRMADO EM BANCADA** — observado fisicamente no PLC e validado por resposta/checksum.
+- **RESOLVIDO POR ANÁLISE ESTÁTICA/EMULAÇÃO** — recuperado diretamente do `pc12.exe`, com verificações automáticas no repositório.
+- **EVIDÊNCIA FORTE** — múltiplas observações coerentes, ainda sem prova completa de generalidade.
+- **HIPÓTESE** — interpretação útil para orientar experimento, ainda não confirmada.
 - **DESCONHECIDO** — sem evidência suficiente para atribuir significado.
 
-Nenhuma hipótese deve virar regra automática de escrita ou compilação apenas por parecer coerente.
+Nenhuma hipótese deve ser promovida automaticamente a regra de protocolo.
 
-## 3. Camada serial conhecida
+## 3. Camada serial funcional
 
-### 3.1 Perfil funcional
+### 3.1 Perfil conhecido
 
-**CONFIRMADO em sessões de bancada:**
+**CONFIRMADO EM BANCADA:**
 
 ```text
 Baud:       19200
@@ -38,148 +39,94 @@ DTR:        ON
 RTS:        OFF
 ```
 
-Esse perfil já produziu HELLO, F0, 38 e 34 válidos. Isso prova que o caminho PC ↔ conversor ↔ TP02 pode operar nessa configuração. Não significa que seja a única combinação possível em todo cenário.
+Essa combinação já produziu HELLO, F0, 38 e 34 válidos.
 
-### 3.2 Intermitência observada
+### 3.2 Intermitência
 
-O enlace PG é fortemente intermitente. É comum várias tentativas de `CON-ICB\r` retornarem silêncio e uma tentativa posterior, sem mudança de programa, retornar o handshake correto.
+O enlace PG é intermitente: várias tentativas podem retornar silêncio e uma tentativa posterior, sem mudança física, pode responder corretamente.
 
-A estratégia que se mostrou prática no PG Lab atual é:
+Estratégia atual do PG Lab 1.16:
 
 1. abrir a COM em 19200 8O1, DTR on, RTS off;
-2. manter a mesma COM aberta;
-3. tentar o HELLO até 6 vezes;
-4. se nenhum HELLO-STOP válido aparecer, fechar a COM;
-5. aguardar 1500 ms;
-6. iniciar nova sessão limpa;
-7. quando houver HELLO-STOP, enviar F0 **uma única vez naquela abertura da COM**.
+2. tentar o HELLO até 6 vezes na mesma abertura;
+3. se não houver HELLO-STOP válido, fechar a COM;
+4. aguardar 1500 ms;
+5. iniciar nova sessão limpa;
+6. após HELLO-STOP, enviar F0 uma única vez naquela abertura da COM.
 
-O PG Lab usa até 12 sessões limpas por execução.
+O laboratório usa até 12 sessões limpas por execução.
 
-## 4. Checksum e formato geral
+## 4. Checksum e enquadramento
 
-### 4.1 Checksum
-
-**CONFIRMADO:** todos os quadros binários conhecidos fecham com:
+**CONFIRMADO EM BANCADA:**
 
 ```text
-sum(todos os bytes) mod 256 = 0xFF
+sum(todos os bytes do quadro) mod 256 = 0xFF
 ```
 
-Para construir o último byte a partir dos bytes anteriores:
+Para construir o checksum:
 
 ```text
 checksum = (0xFF - (sum(data) & 0xFF)) & 0xFF
 ```
 
-### 4.2 Estrutura de respostas com comprimento
-
-Há forte evidência de uma família de respostas no formato:
+Há uma família de respostas no formato:
 
 ```text
 [FLAGS/STATE] [LEN] [PAYLOAD de LEN bytes] [CHECKSUM]
 ```
 
-Tamanho total esperado:
+com tamanho total `LEN + 3` bytes. O formato é confirmado no 34 e compatível com 38, 0A e 14.
 
-```text
-LEN + 3 bytes
-```
+## 5. HELLO / sessão
 
-Esse formato é confirmado para respostas do 34 e é compatível com 38, 0A e 14 em suas formas observadas.
-
-## 5. HELLO / estabelecimento de sessão
-
-### 5.1 Requisição
-
-**CONFIRMADO:**
+### Requisição
 
 ```text
 ASCII: CON-ICB\r
 HEX:   43 4F 4E 2D 49 43 42 0D
 ```
 
-### 5.2 Resposta em STOP
-
-**CONFIRMADO:**
+### STOP
 
 ```text
-80 01 09 75
+RX: 80 01 09 75
 ```
 
-Checksum: `0xFF`.
-
-### 5.3 Resposta em RUN
-
-**CONFIRMADO:**
+### RUN
 
 ```text
-C0 01 09 35
+RX: C0 01 09 35
 ```
 
-Checksum: `0xFF`.
+**EVIDÊNCIA FORTE:** o bit `0x40` do primeiro byte acompanha RUN. Isso também aparece no comando 14.
 
-### 5.4 Bit de estado RUN
-
-**EVIDÊNCIA FORTE:** a diferença `0x40` no primeiro byte acompanha RUN em mais de uma família de respostas:
-
-```text
-STOP HELLO: 80 ...
-RUN  HELLO: C0 ...
-             ^ +0x40
-
-STOP cmd 14: 00 00 FF
-RUN  cmd 14: 40 00 BF
-             ^ +0x40
-```
-
-Portanto, o bit `0x40` do primeiro byte está fortemente associado ao estado RUN. O significado do bit/base `0x80` do HELLO continua **DESCONHECIDO** e não deve ser nomeado sem evidência adicional.
+O significado do bit/base `0x80` do HELLO permanece **DESCONHECIDO**.
 
 ## 6. Comando F0
 
-### 6.1 Requisição
-
-**CONFIRMADO:**
-
 ```text
 TX: F0 00 0F
+RX conhecido: 00 02 10 22 CB
 ```
 
-### 6.2 Resposta conhecida
+**CONFIRMADO EM BANCADA:**
 
-**CONFIRMADO:**
+- o F0 pode responder corretamente em STOP;
+- o F0 também pode ficar silencioso mesmo após HELLO-STOP válido;
+- STOP é necessário no fluxo de leitura de programa conhecido, mas não é suficiente para garantir resposta do F0.
 
-```text
-RX: 00 02 10 22 CB
-```
+**DESCONHECIDO:** semântica exata do F0.
 
-Checksum: `0xFF`.
-
-### 6.3 Comportamento
-
-O F0 frequentemente fica silencioso mesmo após HELLO-STOP válido. Em outras sessões, responde imediatamente com o vetor acima. Portanto:
-
-- **CONFIRMADO:** STOP é necessário para o fluxo conhecido de leitura de programa.
-- **CONFIRMADO:** STOP, sozinho, não garante resposta do F0.
-- **DESCONHECIDO:** semântica exata de `F0 00 0F`.
-- **IMPORTANTE:** F0 **não deve ser chamado de comando STOP**. Não existe evidência para isso.
-- **HIPÓTESE operacional:** repetir F0 várias vezes na mesma sessão pode não ajudar e pode alterar o estado interno da sessão. Isso não foi provado como fenômeno do protocolo; por segurança experimental, o PG Lab atual usa um único F0 por abertura da COM.
+**Regra importante:** F0 não é comando STOP. Não existe evidência para chamá-lo assim.
 
 ## 7. Comando 38
-
-### 7.1 Requisição
-
-**CONFIRMADO:**
 
 ```text
 TX: 38 00 C7
 ```
 
-O comando só é enviado no fluxo atual depois de F0 conhecido e válido na mesma sessão serial.
-
-### 7.2 Respostas observadas
-
-**CONFIRMADO em bancada:**
+Respostas reais observadas:
 
 ```text
 00 02 00 0A F3
@@ -187,379 +134,342 @@ O comando só é enviado no fluxo atual depois de F0 conhecido e válido na mesm
 00 02 00 04 F9
 ```
 
-Todos fecham checksum `0xFF`.
-
-Os três compartilham:
+Os três quadros têm:
 
 ```text
 FLAGS      = 00
 LEN        = 02
 PAYLOAD[0] = 00
 PAYLOAD[1] = variável
-CHECKSUM   = fecha em FF
+checksum   = FF
 ```
 
-### 7.3 Interpretação atual
+**EVIDÊNCIA FORTE:** `PAYLOAD[1]` depende do programa/estado relacionado ao programa e não é constante.
 
-**EVIDÊNCIA FORTE:** `PAYLOAD[1]` varia em função do programa carregado e não deve ser tratado como uma constante de protocolo.
+**DESCONHECIDO:** o significado exato desse byte variável.
 
-**DESCONHECIDO:** significado exato do byte variável. Pode representar tamanho, quantidade de unidades, metadado de programa ou outro parâmetro, mas nenhuma dessas interpretações está confirmada.
+O PG Lab 1.16 valida apenas a estrutura acima e registra o valor variável, sem lhe atribuir semântica.
 
-O **PG Lab 1.16** deixou de enumerar vetores fixos e valida estruturalmente o quadro 38, exigindo:
+## 8. Comando 34 — leitura de programa
 
-```text
-FLAGS = 00
-LEN = 02
-PAYLOAD[0] = 00
-checksum válido
-```
+### 8.1 Quadro base
 
-O byte `PAYLOAD[1]` é apenas registrado.
-
-## 8. Comando 34 — leitura do bloco de programa
-
-### 8.1 Requisição base conhecida
-
-**CONFIRMADO:**
+Primeira leitura conhecida:
 
 ```text
 TX: 34 03 00 00 A0 28
 ```
 
-### 8.2 Resposta
-
-**CONFIRMADO:** o TP02 retorna, nos programas mínimos testados:
+Resposta típica dos programas mínimos:
 
 ```text
 00 F0 [240 bytes de payload] [checksum]
 ```
 
-Tamanho total: **243 bytes**.
+Total: 243 bytes.
 
-O PG Lab valida o quadro por `LEN + checksum FF` e salva:
+### 8.2 Paginação — resolvida
 
-```text
-TP02-PG-34-frame-<timestamp>.bin
-TP02-PG-34-payload-<timestamp>.bin
-```
-
-### 8.3 O que o 34 representa
-
-**EVIDÊNCIA FORTE:** o payload retornado por 34 contém informação diretamente relacionada ao programa ladder, porque mudanças controladas de endereço e tipo de contato alteraram somente bytes específicos e previsíveis desse payload.
-
-**DESCONHECIDO:** semântica completa dos campos e endereços internos.
-
-**Fim do programa (2026-09-10):** o byte alto de cada passo é o número da função F-xx, despachado por uma tabela de 72 entradas em `0x4B4884`; o índice `0x00` é a função `End`. O programa termina por instrução de fim no fluxo, não por comprimento declarado.
-
-**RESOLVIDO POR ANÁLISE ESTÁTICA (2026-09-10):** a paginação e a geometria do bloco foram recuperadas do `pc12.exe` por emulação — ver [`tp02-pg-leitura-programa-emulacao.md`](tp02-pg-leitura-programa-emulacao.md).
-
-Os dois bytes de endereço são o **contador de passos do programa**, formatado com `%04X` e reconvertido para dois bytes; a quantidade é fixa em `0xA0` (160). O contador avança de 1 a 4 por instrução decodificada, portanto **a paginação é determinada pelo conteúdo do programa, não por um passo constante**. A hipótese anterior de incrementos fixos de `0xF0` (`00F0`, `01E0`, `02D0`) está descartada — corretamente, ela nunca havia sido promovida a fato.
-
-O bloco de 240 bytes contém **80 passos de 3 bytes**, em dois planos:
+**RESOLVIDO POR ANÁLISE ESTÁTICA/EMULAÇÃO:**
 
 ```text
-região A   payload[0x000 .. 0x09F]   160 bytes   2 por passo (alto, baixo)
-região B   payload[0x0A0 .. 0x0EF]    80 bytes   1 por passo
-
-passo i:   A = payload[2i], payload[2i+1]      B = payload[0x0A0 + i]
+34 03 [passo_hi] [passo_lo] A0 checksum
 ```
 
-Isso explica por que a informação aparece em duas regiões: `0x001`/`0x0A0` e `0x003`/`0x0A1` **não são campos duplicados**, são os planos A e B do mesmo passo.
+Os dois bytes de endereço representam o **contador de passos do programa**, não um offset linear em bytes.
 
-## 9. Experimentos controlados do payload 34
+A quantidade é fixa em `0xA0` no fluxo recuperado. O contador avança de **1 a 4** conforme o tamanho da instrução decodificada. Portanto, a próxima requisição depende do conteúdo já lido.
 
-Os testes abaixo alteraram uma única propriedade do ladder por vez. Isso permitiu isolar campos relacionados ao operando X, ao operando Y e ao tipo do contato.
-
-### 9.1 Capturas consolidadas
-
-| Teste | Ladder mínimo | `payload[0x001]` | `payload[0x002]` | `payload[0x003]` | `payload[0x0A0]` | `payload[0x0A1]` | Interpretação |
-|---|---|---:|---:|---:|---:|---:|---|
-| A | X0001 **fechado** → Y0002 | `18` | `20` | `41` | `09` | `07` | baseline inicial |
-| B | X0002 **fechado** → Y0002 | `19` | `20` | `41` | `0A` | `07` | mudou somente X |
-| C | X0002 **fechado** → Y0003 | `19` | `20` | `42` | `0A` | `08` | mudou somente Y |
-| D | X0002 **aberto** → Y0003 | `11` | `20` | `42` | `02` | `08` | mudou somente tipo do contato |
-| E | X0001 **aberto** → Y0003 | `10` | `20` | `42` | `01` | `08` | mudou somente X |
-
-Nos programas mínimos acima, os demais bytes do payload permaneceram zero, exceto os campos listados.
-
-### 9.2 Endereço da entrada X
-
-Comparações controladas:
+A antiga hipótese de paginação fixa:
 
 ```text
-X0001 aberto:  payload[0x001] = 10 ; payload[0x0A0] = 01
-X0002 aberto:  payload[0x001] = 11 ; payload[0x0A0] = 02
-
-X0001 fechado: payload[0x001] = 18 ; payload[0x0A0] = 09
-X0002 fechado: payload[0x001] = 19 ; payload[0x0A0] = 0A
+00F0 -> 01E0 -> 02D0
 ```
 
-**EVIDÊNCIA FORTE:** o endereço de X é linear nesses dois pontos consecutivos e aparece em pelo menos duas regiões do bloco.
+está **DESCARTADA**.
 
-Fórmulas candidatas, válidas apenas para os pontos já observados:
+Para o modelo `TP02-40/60MR(T)`, o PC12 fixa o limite de programa em **4000 passos (`0x0FA0`)**.
+
+### 8.3 Geometria do bloco — resolvida
+
+O payload de 240 bytes representa **80 passos de 3 bytes**, organizados em dois planos:
 
 ```text
-Contato aberto Xn:
-  payload[0x001] ≈ 0x0F + n
-  payload[0x0A0] ≈ n
+Região A: payload[0x000 .. 0x09F] = 160 bytes = 2 bytes por passo
+Região B: payload[0x0A0 .. 0x0EF] =  80 bytes = 1 byte por passo
 
-Contato fechado Xn:
-  payload[0x001] ≈ 0x17 + n
-  payload[0x0A0] ≈ 0x08 + n
+Passo i:
+  HIGH = payload[2*i]
+  LOW  = payload[2*i + 1]
+  B    = payload[0x0A0 + i]
 ```
 
-Essas fórmulas ainda devem ser validadas em endereços não adjacentes antes de serem consideradas regras gerais.
+Logo, os pares observados anteriormente em `0x001/0x0A0` e `0x003/0x0A1` **não são duplicatas**: são campos do mesmo passo distribuídos nos dois planos.
 
-**RESOLVIDO POR ANÁLISE ESTÁTICA (2026-09-10):** o decodificador do PC12, em `0x4B036C`–`0x4B03C6`, remonta o número do dispositivo a partir dos **dois planos**:
+## 9. Decodificação de instruções
+
+### 9.1 Booleanas
+
+**RESOLVIDO POR ANÁLISE ESTÁTICA:** o PC12 mascara o byte LOW com `0x78` e identifica:
+
+| LOW & 0x78 | Instrução |
+|---:|---|
+| `0x10` | STR |
+| `0x18` | STR NOT |
+| `0x20` | AND |
+| `0x28` | AND NOT |
+| `0x30` | OR |
+| `0x38` | OR NOT |
+| `0x40` | OUT |
+| `0x60` | TMR |
+| `0x68` | CNT |
+
+Os sete primeiros valores coincidem com o encoder já existente em `Tp02TargetCompiler.cs`. `TMR=0x60` e `CNT=0x68` foram recuperados posteriormente do decodificador.
+
+Há ainda uma família de opcodes `0x08`–`0x0D` tratada em outro ramo, relacionada aos mesmos mnemônicos booleanos sem índice de bit. Ela não apareceu em bancada e permanece sem interpretação completa.
+
+### 9.2 Palavras fixas
+
+O PC12 reconhece também:
 
 ```text
-bits 0-2  <- byte baixo do passo & 0x07
-bit  3    <- byte baixo do passo & 0x80
-bits 4-6  <- byte da região B & 0x10 / 0x20 / 0x40
-depois soma 1
+0x00 = vazio/NOP
+0x01 = AND STR
+0x02 = OR STR
 ```
 
-Essa reconstrução acerta os seis endereços das capturas da seção 9.1. Ela também explica por que a aproximação linear funcionava: para `n ≤ 8` os bits altos são todos zero e sobra apenas `LOW & 7`.
+Esses valores coincidem com palavras fixas já reconstruídas no encoder.
 
-**Ponto de quebra previsto:** a aproximação linear (`0x0F + n`) coincide com o modelo real de `n = 1` a `n = 8` e diverge a partir de `X0009` — linear prevê `payload[0x001] = 0x18`, o decodificador prevê `0x10` com o bit `0x10` aceso na região B. Uma única captura com `X0009` confirma a reconstrução em hardware. Ver [`tp02-pg-leitura-programa-emulacao.md`](tp02-pg-leitura-programa-emulacao.md).
+## 10. Funções F-xx e fim do programa
 
-### 9.3 Tipo do contato aberto/fechado
+**RESOLVIDO POR ANÁLISE ESTÁTICA:** quando o passo não corresponde ao caminho booleano/fixo, o PC12 usa o byte HIGH como índice de função em uma tabela de 72 entradas, com 64 handlers válidos.
 
-Comparação mantendo exatamente `X0002` e `Y0003`:
+O cruzamento com `docs/data/tp02_function_map_normalized.csv` coincidiu exatamente: os 64 índices com handler são os 64 números de função presentes no mapa.
+
+O índice `0x00` corresponde a **F-00 / End**.
+
+Portanto, o programa termina por uma instrução **End** no fluxo, e não simplesmente por um tamanho declarado.
+
+## 11. Endereçamento e Região B
+
+### 11.1 Reconstrução do número do dispositivo
+
+**RESOLVIDO POR ANÁLISE ESTÁTICA:** o PC12 reconstrói o número do dispositivo combinando LOW e Região B:
 
 ```text
-X0002 fechado: 19 / 0A
-X0002 aberto:  11 / 02
-                ^    ^
-             diferença 0x08
+bits 0-2 <- LOW & 0x07
+bit  3   <- LOW & 0x80
+bits 4-6 <- B & 0x10 / 0x20 / 0x40
+resultado final exibido = valor reconstruído + 1
 ```
 
-**EVIDÊNCIA FORTE:** o tipo fechado adiciona o bit/valor `0x08` nas duas representações relacionadas ao contato X. Ainda é necessário testar outros endereços e outros contextos de instrução para saber se isso é um bit de opcode geral, um modificador NOT ou parte de uma codificação mais ampla.
+Assim, a Região B carrega pelo menos os **bits altos do número do dispositivo**.
 
-### 9.4 Endereço da saída Y
+Os testes de bancada anteriores são todos compatíveis com essa reconstrução.
 
-Comparação mantendo X0002 fechado e alterando somente a bobina:
+### 11.2 Por que a fórmula linear parecia funcionar
+
+Para endereços até `n=8`, os bits altos permanecem zero e a aproximação linear observada em bancada coincide com a codificação real.
+
+O primeiro ponto discriminante é **X0009**:
 
 ```text
-Y0002: payload[0x003] = 41 ; payload[0x0A1] = 07
-Y0003: payload[0x003] = 42 ; payload[0x0A1] = 08
+modelo linear antigo: payload LOW = 0x18
+modelo reconstruído:  payload LOW = 0x10, com bit alto migrando para Região B
 ```
 
-**EVIDÊNCIA FORTE:** o endereço Y é linear nesses dois pontos consecutivos e também aparece em duas regiões.
+Uma única captura de X0009 em hardware valida ou refuta esse aspecto da reconstrução.
 
-Fórmulas candidatas, ainda não gerais:
+### 11.3 Bits ainda desconhecidos
 
-```text
-Yn:
-  payload[0x003] ≈ 0x3F + n
-  payload[0x0A1] ≈ 0x05 + n
-```
+Os bits `4–6` da Região B têm papel de endereçamento recuperado. Os bits `0–3` e `7` continuam sem semântica completa neste caminho.
 
-### 9.5 Byte constante 0x20
+A origem exata da **classe do dispositivo** (`X`, `Y`, `C` etc.) no decodificador booleano também não está totalmente explicada pelo caminho estático já recuperado.
 
-Nos cinco programas mínimos de um contato + uma bobina, `payload[0x002]` permaneceu `0x20`.
+## 12. Experimentos de bancada consolidados
 
-**RESOLVIDO POR ANÁLISE ESTÁTICA (2026-09-10):** `payload[0x002]` é o byte **alto** do passo da bobina — base do dispositivo `Y`, grupo 0. Pela geometria recuperada, o passo 0 ocupa `payload[0x000]` (alto) e `payload[0x001]` (baixo), e o passo 1 ocupa `payload[0x002]` e `payload[0x003]`. `payload[0x000]` permaneceu zero nas capturas porque é o byte alto do passo do contato, e a base de `X` é `0x00`.
+| Teste | Ladder mínimo | p001 | p002 | p003 | p0A0 | p0A1 |
+|---|---|---:|---:|---:|---:|---:|
+| A | X0001 fechado -> Y0002 | `18` | `20` | `41` | `09` | `07` |
+| B | X0002 fechado -> Y0002 | `19` | `20` | `41` | `0A` | `07` |
+| C | X0002 fechado -> Y0003 | `19` | `20` | `42` | `0A` | `08` |
+| D | X0002 aberto -> Y0003 | `11` | `20` | `42` | `02` | `08` |
+| E | X0001 aberto -> Y0003 | `10` | `20` | `42` | `01` | `08` |
 
-A fórmula do encoder já implementada em `Tp02TargetCompiler.cs` prevê as cinco capturas da seção 9.1 exatamente, incluindo este byte. Ver [`tp02-pg-leitura-programa-emulacao.md`](tp02-pg-leitura-programa-emulacao.md).
+Essas capturas bateram com o encoder já implementado em `Tp02TargetCompiler.cs` quando interpretadas segundo a geometria em dois planos.
 
-## 10. Novo caso: dois contatos abertos em série
+O antigo `payload[0x002] = 0x20`, antes tratado como campo desconhecido, é agora interpretado como o **byte HIGH do passo da bobina**, coerente com a base do dispositivo Y no encoder.
 
-Programa carregado no teste de 21:10:
+## 13. Caso de dois contatos em série
+
+Programa gravado:
 
 ```text
 X0001 aberto -- X0002 aberto -- (Y0003)
 ```
 
-No PG Lab 1.15, houve HELLO-STOP e F0 válidos. O 38 retornou de forma reproduzível:
+No PG Lab 1.15, HELLO-STOP e F0 foram válidos, e o 38 retornou repetidamente:
 
 ```text
 00 02 00 04 F9
 ```
 
-Como a 1.15 aceitava apenas `...0A...` e `...02...`, ela interrompeu corretamente o teste antes do 34. Esse caso motivou a validação estrutural do 38 no PG Lab 1.16.
+Como a versão 1.15 ainda enumerava apenas dois vetores do 38, ela interrompeu antes do 34. Isso motivou o PG Lab 1.16, que passou a validar estruturalmente o 38.
 
-**PONTO EXATO DE RETOMADA:** atualizar/usar OpenLadder Studio v1.03 com PG Lab 1.16, manter esse mesmo ladder sem qualquer alteração, colocar o TP02 em STOP e repetir o Teste Único. O objetivo é obter o payload do 34 para o programa com dois contatos em série.
+Ainda falta uma captura de bancada do **34 desse programa em série** usando o PG Lab 1.16.
 
-Depois disso, o próximo experimento recomendado é construir os mesmos dois contatos **em paralelo**, mantendo X0001, X0002 e Y0003, para comparar a representação de lógica série versus paralela e começar a separar AND/OR, sequência e estrutura de rung.
+## 14. Comando 0A — leitura geral
 
-## 11. Comando 0A — leitura geral de memória/sistema
-
-### 11.1 Formato de requisição observado
-
-**CONFIRMADO para os probes usados:**
+Formato observado:
 
 ```text
 0A 03 AH AL LEN CS
 ```
 
-onde `AH AL` se comporta como endereço de 16 bits big-endian e `LEN` como quantidade solicitada nos testes realizados. O checksum fecha em FF.
+`AH AL` comporta-se como endereço big-endian nos probes usados.
 
-Exemplos usados no histórico do laboratório:
+Exemplos históricos:
 
 ```text
 0A 03 60 00 AC E6
 0A 03 60 AC AC 3A
 ```
 
-### 11.2 Respostas RUN/STOP
+O 0A responde em RUN e STOP; nas respostas observadas, RUN adiciona `0x40` no primeiro byte.
 
-**CONFIRMADO:** o comando 0A produz respostas tanto em STOP quanto em RUN. Nos quadros observados, o primeiro byte muda de `00` em STOP para `40` em RUN, reforçando a associação do bit `0x40` ao estado RUN.
+**IMPORTANTE:** não assumir que 0A lê o ladder. O escopo exato da memória lida continua diferente/mais amplo que o fluxo 34 e não está completamente caracterizado.
 
-### 11.3 Escopo semântico
-
-**IMPORTANTE:** 0A deve ser tratado como leitura de memória/sistema genérica. Não existe evidência suficiente para dizer que 0A corresponde à memória do ladder ou ao mesmo conteúdo retornado por 34.
-
-Em um teste STOP antigo, as primeiras consultas 0A chegaram a ficar silenciosas e depois voltaram a responder sem mudança física aparente, demonstrando que o enlace/protocolo possui estado ou temporização ainda não totalmente compreendidos.
-
-## 12. Comando 14
-
-**CONFIRMADO:**
+## 15. Comando 14
 
 ```text
 TX: 14 00 EB
-
 STOP RX: 00 00 FF
 RUN  RX: 40 00 BF
 ```
 
-O comando foi observado no ramo histórico associado a consulta de senha/estado no PC12, mas sua semântica exata ainda é **DESCONHECIDA**. Ele é útil como evidência independente do bit `0x40` de RUN.
+Sua semântica exata permanece desconhecida. É uma evidência independente do bit `0x40` associado a RUN.
 
-O 14 não faz parte do Teste Único focado atual do PG Lab 1.16.
+## 16. Mapa estático de escrita
 
-## 13. Comando perigoso explicitamente bloqueado
+A análise estática do `pc12.exe` encontrou a primitiva de escrita **0x09** como espelho do 0A de leitura:
+
+```text
+leitura: 0A [n=3] [end_hi] [end_lo] [qtd]              chk
+escrita: 09 [n=5] [end_hi] [end_lo] [qtd] [d0] [d1]    chk
+```
+
+Também existe escrita em blocos maiores, incluindo quadros `09 11 ...` com 14 bytes de dados.
+
+A rotina de escrita de registradores `V/D/WC/FILE` usa o comando 09.
+
+**NÃO RESOLVIDO:** o laço completo de download de programa e a confirmação de que o download inteiro usa 09. A primitiva está mapeada, mas a orquestração não.
+
+Este conhecimento é apenas documental. Nenhum código de transmissão de escrita foi habilitado.
+
+## 17. Comando destrutivo bloqueado
 
 ```text
 0F 00 F0
 ```
 
-Está associado, na pesquisa do PC12, a **Clear All Memory**. Permanece classificado como `BLOCKED` e nunca deve ser transmitido pela campanha READ-ONLY.
+**RESOLVIDO POR ANÁLISE ESTÁTICA:** corresponde a **Clear All Memory**.
 
-## 14. Fluxo READ-ONLY atual do PG Lab 1.16
+Permanece explicitamente bloqueado e não deve ser transmitido pelo PG Lab.
 
-Fluxo canônico:
+## 18. Fluxo READ-ONLY atual do PG Lab 1.16
 
 ```text
-ABRIR COM
-  19200 8O1
-  DTR=ON
-  RTS=OFF
-     |
-     v
-HELLO = CON-ICB\r
-  até 6 tentativas na mesma COM
-     |
-     +--> C0 01 09 35 => PLC_RUN_NEEDS_STOP; parar
-     |
-     +--> sem STOP válido => fechar COM, 1500 ms, nova sessão
-     |
-     v
-80 01 09 75
-HELLO-STOP confirmado
-     |
-     v
-F0 00 0F
-  exatamente 1 vez nessa abertura da COM
-     |
-     +--> sem 00 02 10 22 CB => fechar COM, 1500 ms, nova sessão
-     |
-     v
-00 02 10 22 CB
-     |
-     v
-38 00 C7
-     |
-     +--> exigir estrutura 00 02 00 XX CS com checksum FF
-     |
-     v
-34 03 00 00 A0 28
-     |
-     +--> exigir quadro LEN/checksum válido
-     |
-     v
-salvar frame34 + payload34 em .bin
+ABRIR COM: 19200 8O1, DTR ON, RTS OFF
+  -> HELLO CON-ICB\r, até 6 tentativas
+  -> exigir 80 01 09 75 (STOP)
+  -> F0 00 0F, uma vez por abertura
+  -> exigir 00 02 10 22 CB
+  -> 38 00 C7
+  -> exigir estrutura 00 02 00 XX CS com checksum FF
+  -> 34 03 00 00 A0 28
+  -> validar LEN/checksum
+  -> salvar frame34 e payload34 em .bin
 ```
 
-O fluxo atual não envia 0A nem 14 e não executa nenhuma escrita.
+O fluxo não envia 0A, 14, 09 nem qualquer operação de escrita.
 
-## 15. Histórico útil de versões do PG Lab
-
-A evolução do laboratório é importante para compreender por que existem scripts de preparação sequenciais no build:
+## 19. Evolução do PG Lab
 
 | Motor | Mudança principal |
 |---|---|
-| 1.7 | matriz pós-handshake do F0 |
-| 1.8 | agente adaptativo com Safety Gate |
-| 1.9 | pesquisa contínua/persistente |
-| 1.10 | repetição de F0 na mesma sessão — estratégia posteriormente abandonada no fluxo focado |
-| 1.11 | varredura READ-ONLY 0A |
-| 1.12 | decodificação básica de respostas 0A |
-| 1.13 | sessão limpa HELLO → F0 → 38 → 34; um F0 por abertura da COM |
-| 1.14 | até 6 HELLOs mantendo a mesma COM aberta |
-| 1.15 | aceitação conservadora dos dois vetores 38 conhecidos naquele momento |
-| 1.16 | validação estrutural do 38, após aparecer o terceiro valor `04` |
+| 1.13 | sessão limpa HELLO -> F0 -> 38 -> 34 |
+| 1.14 | até 6 HELLOs por abertura da COM |
+| 1.15 | aceitação dos dois vetores 38 então conhecidos |
+| 1.16 | validação estrutural do 38 após surgir o terceiro valor `04` |
 
-No build atual, `BuildTp02Lab.bat` aplica os scripts V11–V26 em sequência. A preparação específica da 1.16 é `PreparePgLab38StructuralV26.ps1`.
+O motor permanece 1.16 nesta sincronização. A release v1.04 atualiza documentação, rastreabilidade e versionamento, sem alterar o protocolo transmitido pelo laboratório.
 
-## 16. Releases e commits que marcam a fase atual
-
-Marcos importantes:
-
-- PR #48 / PG Lab 1.13 — sessão limpa para leitura de programa.
-- OpenLadder v1.00 — primeiro bump necessário para o updater reconhecer a nova versão após a integração do PG Lab 1.13.
-- PG Lab 1.14 / OpenLadder v1.01 — múltiplos HELLOs por sessão, F0 único.
-- PG Lab 1.15 / OpenLadder v1.02 — dois vetores 38 observados aceitos.
-- PG Lab 1.16 / OpenLadder v1.03 — 38 validado estruturalmente.
-- `main` de referência deste documento: `840738c34928d2f534f26c42b3adb74d8dff3692`.
-
-A release **v1.03** contém `OpenLadder-Studio-Setup.exe` e corresponde ao PG Lab 1.16.
-
-## 17. Regra do updater do OpenLadder
-
-O updater compara a versão local de `version.txt` com o `tag_name` da última release do GitHub. Alterar somente o motor PG Lab sem aumentar a versão do aplicativo pode deixar o usuário sem perceber a atualização. Por isso, mudanças do PG Lab destinadas à bancada devem, quando apropriado, ser acompanhadas de bump de versão do OpenLadder e nova release.
-
-## 18. Evidências de bancada e arquivos importantes
-
-Logs que marcaram descobertas relevantes nesta campanha:
+## 20. Arquivos centrais
 
 ```text
-TP02-PG-Lab-20260909-191330.txt  -> sessão STOP conhecida; F0/38/34 válidos
-TP02-PG-Lab-20260909-192413.txt  -> PLC em RUN; F0 silencioso; 0A funcional
-TP02-PG-Lab-20260909-194007.txt  -> STOP com F0 silencioso; recuperação posterior de 0A
-TP02-PG-Lab-20260909-205418.txt  -> X0002 fechado, Y0003; 34 válido
-TP02-PG-Lab-20260909-210008.txt  -> X0002 aberto, Y0003; isolou efeito aberto/fechado
-TP02-PG-Lab-20260909-210518.txt  -> X0001 aberto, Y0003; confirmou linearidade local de X
-TP02-PG-Lab-20260909-211032.txt  -> X0001 aberto + X0002 aberto em série; 38 = 00 02 00 04 F9
+docs/TP02_PG_ESTADO_DA_ARTE.md
+docs/tp02-pg-leitura-programa-emulacao.md
+docs/tp02-pg-escrita-mapa-estatico.md
+docs/data/tp02_pg_observations.tsv
+docs/data/tp02_function_map_normalized.csv
+scripts/emulate_pc12_readprog.py
+src/OpenLadderStudio.Core/Tp02TargetCompiler.cs
+src/OpenLadderStudio.Desktop/Tp02PgLab.cs.in
+src/OpenLadderStudio.Desktop/TP02-PG-Tests.json
+src/OpenLadderStudio.Desktop/PreparePgLab38StructuralV26.ps1
 ```
 
-Arquivos binários especialmente úteis quando disponíveis:
+A análise offline de geometria/protocolo roda em CI e deve falhar se as conclusões verificáveis divergirem do `pc12.exe` usado como referência.
+
+## 21. O que está resolvido e o que continua aberto
+
+### Resolvido
+
+- perfil serial funcional conhecido;
+- regra de checksum;
+- HELLO RUN/STOP;
+- bit `0x40` fortemente associado a RUN;
+- resposta conhecida do F0;
+- estrutura variável do 38;
+- primeiro quadro 34;
+- geometria de 240 bytes em 80 passos/2 planos;
+- paginação 34 por contador de passos dependente do conteúdo;
+- limite de 4000 passos para TP02-40/60MR(T);
+- opcodes STR/STR NOT/AND/AND NOT/OR/OR NOT/OUT/TMR/CNT;
+- palavras fixas vazio/AND STR/OR STR;
+- byte HIGH como número da função F-xx no caminho de funções;
+- F-00 como End;
+- uso dos bits 4–6 da Região B no endereço;
+- `0x20` de p002 como HIGH do passo da bobina nos casos observados;
+- primitiva 09 de escrita de memória/registradores;
+- `0F 00 F0` como Clear All Memory.
+
+### Em aberto
+
+- semântica exata do F0;
+- semântica exata de `38 PAYLOAD[1]`;
+- bits 0–3 e 7 da Região B;
+- origem completa da classe do dispositivo no caminho booleano;
+- família de opcodes 0x08–0x0D;
+- fluxo B de leitura que passa por diálogo OWL;
+- orquestração completa do download de programa;
+- confirmação física em X0009 da reconstrução de endereço;
+- captura 34 de dois contatos em série;
+- representação de ramificações/paralelo em bancada.
+
+## 22. Próximos experimentos — ordem recomendada
+
+### 1. Teste discriminante X0009
+
+Gravar:
 
 ```text
-TP02-PG-34-frame-<timestamp>.bin
-TP02-PG-34-payload-<timestamp>.bin
+X0009 aberto -- (Y0003)
 ```
 
-A comparação deve ser sempre feita byte a byte e com registro exato do ladder que estava no PLC naquele momento.
+PLC em STOP, PG Lab 1.16. Este é o teste mais barato e informativo para validar em hardware o modelo de endereço recuperado do PC12.
 
-## 19. O que NÃO está confirmado
-
-Não tratar como fato:
-
-- que F0 seja STOP;
-- que `0x80` no primeiro byte do HELLO tenha um significado específico;
-- que 38 seja definitivamente tamanho de programa;
-- que o byte variável do 38 conte contatos/instruções;
-- que 0A leia o ladder;
-- que o bloco 34 atual seja o programa inteiro;
-- que os bits 0-3 e 7 da região B tenham significado conhecido — os bits 4-6 são endereço (resolvido), o resto não é consumido pelo decodificador do PC12;
-- que se saiba de onde vem a classe do dispositivo (X/Y/C) nas instruções booleanas — o byte alto do passo só é lido pelo decodificador de funções F-xx, nunca no caminho booleano;
-- que as fórmulas candidatas de X/Y sejam válidas para toda a faixa de endereços;
-- que `0x08` seja universalmente “NOT” em qualquer opcode/contexto;
-- que silêncio do PLC signifique falha elétrica; sessões válidas demonstram intermitência de estado/temporização.
-
-## 20. Próximos experimentos recomendados
-
-### Experimento imediato
+### 2. Captura do programa em série
 
 Manter exatamente:
 
@@ -567,19 +477,11 @@ Manter exatamente:
 X0001 aberto -- X0002 aberto -- (Y0003)
 ```
 
-Usar **PG Lab 1.16 / OpenLadder v1.03**, PLC em STOP, e capturar o 34. Não mudar nenhum elemento entre a gravação do programa e a leitura.
+Executar PG Lab 1.16 e capturar o 34.
 
-### Experimento discriminante (mais barato)
+O resultado esperado conceitualmente é uma sequência compatível com `STR X0001`, `AND X0002`, `OUT Y0003`, seguida de `End`, mas a comparação deve ser feita byte a byte antes de promover qualquer interpretação.
 
-Antes ou depois do anterior, capturar:
-
-```text
-X0009 aberto -- (Y0003)
-```
-
-Este teste não acrescenta um sexto ponto: ele **falseia um dos dois modelos**. A aproximação linear da bancada prevê `payload[0x001] = 0x18`; a fórmula do encoder do PC12 prevê `0x10`. Uma única sessão decide, e o resultado vale para toda a faixa de endereços em vez de dois pontos adjacentes.
-
-### Depois da captura série
+### 3. Comparação em paralelo
 
 Construir:
 
@@ -589,71 +491,44 @@ Construir:
       +-- X0002 aberto --+
 ```
 
-Comparar o 34 de série versus paralelo. Objetivo: identificar como o TP02 representa encadeamento booleano, ramificação e/ou opcodes equivalentes a AND/OR.
+Comparar com a captura em série para estudar OR/ramificação e estrutura de rung.
 
-### Validações adicionais importantes
+### 4. Validações posteriores
 
-Depois de entender a estrutura de dois contatos:
+- testar X0001, X0002, X0004, X0008, X0009 e X0016;
+- repetir aberto/fechado em diferentes posições do rung;
+- testar Y/C como contato;
+- testar mais de um rung e mais de uma bobina;
+- capturar a sequência completa do `Read PLC/Upload` do PC12 original para confrontar com a emulação;
+- só depois formalizar decoder completo e qualquer decisão futura sobre escrita.
 
-1. testar X0001, X0002, X0004 e X0016 para validar linearidade e fronteiras de endereço;
-2. repetir aberto/fechado em mais de um endereço e posição no rung;
-3. testar família Y/C/SC como contato para separar família de operando de opcode;
-4. testar duas saídas/rungs distintos para identificar delimitadores de rung/programa;
-5. capturar no PC12 original a sequência completa de TX do comando “Read PLC/Upload” para descobrir a paginação real do 34;
-6. somente depois formalizar um decoder de programa.
+## 23. Regras de segurança permanentes
 
-## 21. Regras de segurança para qualquer continuação
+- usar STOP para o fluxo 34 conhecido;
+- fechar completamente o PC12 antes de abrir a COM no PG Lab;
+- não enviar bytes arbitrários;
+- não testar escrita, download, erase, firmware ou RUN/STOP remoto durante esta fase;
+- `0F 00 F0` permanece bloqueado;
+- 38 somente após F0 válido na mesma sessão;
+- 34 somente após 38 estruturalmente válido;
+- se F0 falhar, fechar a COM e iniciar nova sessão;
+- toda nova regra deve nascer de comparação controlada com uma única variável alterada.
 
-- PLC deve permanecer em **STOP** para o fluxo 34 conhecido.
-- Fechar completamente o PC12 antes de abrir a COM no PG Lab.
-- Não enviar bytes arbitrários.
-- Não testar escrita, download, erase, firmware ou RUN/STOP remoto durante esta fase.
-- `0F 00 F0` permanece bloqueado.
-- 38 só depois de F0 válido na mesma sessão.
-- 34 só depois de 38 estruturalmente válido.
-- Se o F0 falhar, fechar a COM e começar nova sessão; não insistir com uma sequência de F0s na mesma abertura no fluxo focado.
-- Toda nova regra de decodificação deve nascer de comparação controlada em que somente uma variável do ladder muda por vez.
+## 24. Como retomar no futuro
 
-## 22. Como retomar a pesquisa no futuro
-
-Ao abrir uma nova conversa, issue ou sessão de desenvolvimento, fornecer como contexto mínimo:
+Contexto mínimo para uma nova sessão:
 
 ```text
 Leia docs/TP02_PG_ESTADO_DA_ARTE.md.
-Estado de referência: OpenLadder v1.03, PG Lab 1.16.
 Hardware: WEG TP02-60MR / TP02-40/60MR(T) V2.2.4K.
+Software de bancada: PG Lab 1.16.
 Serial conhecido: 19200 8O1, DTR on, RTS off.
-Fluxo conhecido: HELLO -> F0 -> 38 -> 34, um F0 por abertura da COM.
-Ponto de retomada: obter o 34 do ladder X0001 aberto em série com X0002 aberto -> Y0003.
-Não promover hipóteses a fatos e manter a campanha estritamente READ-ONLY.
+Fluxo READ-ONLY: HELLO -> F0 -> 38 -> 34.
+34: paginação por contador de passos, não offset fixo.
+Payload 34: 80 passos, dois planos A/B.
+Próximo teste prioritário: X0009 aberto -> Y0003.
+Depois: capturar X0001 + X0002 em série -> Y0003 e comparar com paralelo.
+Não promover hipóteses a fatos e não habilitar escrita.
 ```
 
-Depois, consultar também `docs/data/tp02_pg_observations.tsv` para uma visão estruturada dos vetores e capturas.
-
-## 23. Arquivos do repositório relacionados
-
-Arquivos centrais da implementação atual:
-
-```text
-src/OpenLadderStudio.Desktop/BuildTp02Lab.bat
-src/OpenLadderStudio.Desktop/Tp02PgLab.cs.in
-src/OpenLadderStudio.Desktop/TP02-PG-Tests.json
-src/OpenLadderStudio.Desktop/PreparePgLabCleanSessionV23.ps1
-src/OpenLadderStudio.Desktop/PreparePgLabHelloRetryV24.ps1
-src/OpenLadderStudio.Desktop/PreparePgLab38VariantsV25.ps1
-src/OpenLadderStudio.Desktop/PreparePgLab38StructuralV26.ps1
-```
-
-Existe um espelho de compatibilidade de `TP02-PG-Tests.json` em:
-
-```text
-PC12_v2.1_Windows7_v3_portatil/TP02-PG-Tests.json
-```
-
-Os dois JSONs devem permanecer sincronizados byte a byte quando o pacote for alterado.
-
-## 24. Síntese técnica em uma página
-
-O TP02 responde ao HELLO `CON-ICB\r` com `80 01 09 75` em STOP e `C0 01 09 35` em RUN. O bit `0x40` está fortemente associado a RUN. Em STOP, algumas sessões permitem `F0 00 0F -> 00 02 10 22 CB`. Depois disso, `38 00 C7` retorna um quadro `00 02 00 XX CS`, com `XX` variável conforme o programa e checksum FF. O PG Lab 1.16 valida essa estrutura sem assumir o significado de `XX`. Em seguida, `34 03 00 00 A0 28` retorna `00 F0 + 240 bytes + checksum`, conteúdo fortemente relacionado ao ladder.
-
-Nos programas mínimos, mudanças controladas mostraram que X e Y aparecem em duas regiões do payload. Para X0001/X0002, o endereço varia linearmente; mudar o contato de aberto para fechado adiciona `0x08` nos dois bytes associados a X. Para Y0002/Y0003, os dois bytes associados à saída também variam linearmente. O próximo ponto experimental é capturar o 34 de dois contatos abertos em série, pois o teste anterior chegou até o 38 e revelou o novo valor `04`, mas a versão 1.15 bloqueou corretamente o 34. A versão 1.16 foi criada exatamente para permitir essa próxima captura de forma ainda READ-ONLY.
+Consultar também `docs/data/tp02_pg_observations.tsv` e `docs/tp02-pg-leitura-programa-emulacao.md`.
