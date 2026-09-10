@@ -1,0 +1,38 @@
+category	observation_id	context	request_hex	response_hex	status	interpretation	confidence
+serial	SERIAL-001	Sessões válidas de bancada	19200 8O1 DTR=ON RTS=OFF	-	observed	Perfil serial funcional conhecido	CONFIRMED
+checksum	CHK-001	Quadros binários conhecidos	-	sum(bytes) mod 256 = FF	observed	Regra de checksum dos quadros observados	CONFIRMED
+hello	HELLO-STOP	PLC em STOP	43 4F 4E 2D 49 43 42 0D	80 01 09 75	observed	Handshake de sessão em STOP	CONFIRMED
+hello	HELLO-RUN	PLC em RUN	43 4F 4E 2D 49 43 42 0D	C0 01 09 35	observed	Handshake de sessão em RUN	CONFIRMED
+state	STATE-40	HELLO e comando 14	-	STOP primeiro byte 00/80; RUN adiciona 40	derived	Bit 0x40 fortemente associado a RUN	STRONG_EVIDENCE
+f0	F0-001	Sessão STOP válida	F0 00 0F	00 02 10 22 CB	observed	Resposta conhecida do F0	CONFIRMED
+f0	F0-002	Diversas sessões STOP	F0 00 0F	NO_RX	observed	STOP não é suficiente para garantir F0	CONFIRMED
+f0	F0-SEM	Semântica exata	F0 00 0F	-	unknown	Não chamar F0 de STOP	UNKNOWN
+38	38-A	Programa mínimo observado	38 00 C7	00 02 00 0A F3	observed	Quadro 38 válido	CONFIRMED
+38	38-B	Programa mínimo observado	38 00 C7	00 02 00 02 FB	observed	Quadro 38 válido	CONFIRMED
+38	38-C	X0001 aberto + X0002 aberto em série -> Y0003	38 00 C7	00 02 00 04 F9	observed	Terceiro quadro 38 válido	CONFIRMED
+38	38-STRUCT	Três respostas conhecidas	38 00 C7	00 02 00 XX CS	derived	FLAGS=00 LEN=02 payload[0]=00 e checksum FF; payload[1] variável	STRONG_EVIDENCE
+38	38-SEM	Byte XX	38 00 C7	-	unknown	Pode depender do programa; significado exato não conhecido	UNKNOWN
+34	34-REQ	Read PLC Program base	34 03 00 00 A0 28	00 F0 [240 payload] [CS]	observed	Primeiro bloco de programa conhecido	CONFIRMED
+34	34-FRAME	Programas mínimos	34 03 00 00 A0 28	243 bytes total	observed	LEN=F0=240 e checksum FF	CONFIRMED
+34	34-SEM	Comparações controladas	34 03 00 00 A0 28	payload muda com ladder	derived	Conteúdo diretamente relacionado ao programa	STRONG_EVIDENCE
+34	34-PAGING	Possíveis blocos seguintes	-	-	unknown	Paginação e fim do programa não conhecidos	UNKNOWN
+0A	0A-FORMAT	Leituras de memória/sistema	0A 03 AH AL LEN CS	[STATE] [LEN] [PAYLOAD] [CS]	observed	AH AL comporta-se como endereço big-endian nos probes usados	CONFIRMED
+0A	0A-RUNSTOP	RUN versus STOP	0A ...	STOP 00... / RUN 40...	observed	Funciona em ambos os estados; reforça bit 0x40	CONFIRMED
+0A	0A-SCOPE	Escopo da memória	0A ...	-	unknown	Não assumir que 0A seja memória ladder	UNKNOWN
+14	14-STOP	PLC em STOP	14 00 EB	00 00 FF	observed	Resposta do comando 14 em STOP	CONFIRMED
+14	14-RUN	PLC em RUN	14 00 EB	40 00 BF	observed	Resposta do comando 14 em RUN	CONFIRMED
+blocked	CLEAR-ALL	Associado a Clear All Memory	0F 00 F0	NEVER_SEND	blocked	Comando perigoso explicitamente bloqueado	CONFIRMED
+payload34	P34-A	X0001 fechado -> Y0002	34 03 00 00 A0 28	p001=18;p002=20;p003=41;p0A0=09;p0A1=07	observed	Baseline de um contato + uma bobina	CONFIRMED
+payload34	P34-B	X0002 fechado -> Y0002	34 03 00 00 A0 28	p001=19;p002=20;p003=41;p0A0=0A;p0A1=07	observed	Mudança somente de X0001 para X0002	CONFIRMED
+payload34	P34-C	X0002 fechado -> Y0003	34 03 00 00 A0 28	p001=19;p002=20;p003=42;p0A0=0A;p0A1=08	observed	Mudança somente de Y0002 para Y0003	CONFIRMED
+payload34	P34-D	X0002 aberto -> Y0003	34 03 00 00 A0 28	p001=11;p002=20;p003=42;p0A0=02;p0A1=08	observed	Mudança somente do tipo fechado para aberto	CONFIRMED
+payload34	P34-E	X0001 aberto -> Y0003	34 03 00 00 A0 28	p001=10;p002=20;p003=42;p0A0=01;p0A1=08	observed	Mudança somente de X0002 para X0001	CONFIRMED
+encoding	ENC-X-LINEAR	X0001/X0002 aberto e fechado	-	-	derived	Endereço X varia linearmente nos pontos observados e aparece em p001 e p0A0	STRONG_EVIDENCE
+encoding	ENC-X-TYPE	X0002 fechado versus aberto	-	19/0A versus 11/02	derived	Fechado adiciona 0x08 nos dois campos X observados	STRONG_EVIDENCE
+encoding	ENC-Y-LINEAR	Y0002 versus Y0003	-	41/07 versus 42/08	derived	Endereço Y varia linearmente nos dois pontos observados e aparece em p003 e p0A1	STRONG_EVIDENCE
+encoding	ENC-X-FORMULA-OPEN	Xn aberto, apenas n=1,2 testados	-	p001≈0F+n;p0A0≈n	hypothesis	Fórmula candidata; precisa de endereços não adjacentes	HYPOTHESIS
+encoding	ENC-X-FORMULA-CLOSED	Xn fechado, apenas n=1,2 testados	-	p001≈17+n;p0A0≈08+n	hypothesis	Fórmula candidata; precisa de endereços não adjacentes	HYPOTHESIS
+encoding	ENC-Y-FORMULA	Yn, apenas n=2,3 testados	-	p003≈3F+n;p0A1≈05+n	hypothesis	Fórmula candidata; precisa de validação adicional	HYPOTHESIS
+encoding	ENC-20	Programas mínimos A-E	-	p002=20	observed	Byte constante nos cinco casos; semântica desconhecida	UNKNOWN
+next	NEXT-001	Retomada imediata	-	-	planned	PG Lab 1.16: capturar 34 de X0001 aberto em série com X0002 aberto -> Y0003	NEXT
+next	NEXT-002	Após NEXT-001	-	-	planned	Comparar dois contatos abertos em paralelo -> Y0003 para isolar série/paralelo e AND/OR	NEXT
