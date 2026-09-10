@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'scripts/analyze_pc12_protocol.py'
+      - 'scripts/emulate_pc12_readprog.py'
       - '.github/workflows/analyze-pc12-protocol.yml'
       - 'src/OpenLadderStudio.Desktop/pc12.exe'
   workflow_dispatch:
@@ -24,6 +25,14 @@ jobs:
           python3 scripts/analyze_pc12_protocol.py \
             src/OpenLadderStudio.Desktop/pc12.exe \
             -o protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Conferir a geometria da leitura de programa
+        # shell: bash traz -o pipefail; sem ele o status do pipe seria o do tee
+        # e a divergencia que este passo existe para barrar passaria batida.
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_readprog.py --so-geometria \
+            | tee -a protocol-analysis/pc12-protocol-analysis.txt
 
       - name: PE headers
         run: |
