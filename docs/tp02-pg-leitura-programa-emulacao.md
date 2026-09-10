@@ -204,16 +204,57 @@ Conferido contra as capturas de bancada:
 Os seis endereços saem certos. Isso também explica por que as fórmulas lineares da bancada
 funcionavam: com `n ≤ 8` os bits altos são todos zero e sobra só `LOW & 7`.
 
+## Palavras fixas e funções F-xx
+
+Se o byte baixo não casa com nenhum opcode booleano, o PC12 o testa **inteiro** contra três
+palavras fixas (`0x4B0183`):
+
+| byte baixo | palavra |
+|---:|---|
+| `0x00` | vazio |
+| `0x01` | AND STR |
+| `0x02` | OR STR |
+
+As três coincidem com as palavras fixas já reconstruídas do encoder (`NOP = 00 00 00`,
+`AND STR = 00 01 00`, `OR STR = 00 02 00`).
+
+Se também não casar, o laço chama o decodificador de funções em `0x4B481C`. **É aqui que o
+byte alto do passo é usado:** a rotina o lê em `0x53022F` — isto é, `payload[2i]` — e
+despacha por uma tabela de saltos de 72 entradas em `0x4B4884`, com 64 handlers distintos.
+
+### O byte alto é o número da função
+
+Cruzando essa tabela com
+[`tp02_function_map_normalized.csv`](data/tp02_function_map_normalized.csv), que já estava no
+repositório:
+
+- 64 índices da tabela têm handler próprio;
+- o mapa tem exatamente 64 números de função (`b0`);
+- os 8 índices sem handler — `0x1C`, `0x1D`, `0x23`–`0x26`, `0x45`, `0x46` — **não têm função
+  no mapa**;
+- nenhum handler sem função, nenhuma função sem handler.
+
+A coincidência é exata nos dois sentidos. Portanto o byte alto de cada passo é o **número da
+função F-xx**, e o mapa de funções extraído do lado do encoder descreve o mesmo conjunto que
+o decodificador reconhece.
+
+### Fim de programa
+
+O índice `0x00` dessa tabela é a função `End`. **É assim que o programa termina** — não por
+um comprimento, mas por uma instrução de fim no fluxo.
+
 ## O que continua em aberto
 
 - **Bits 0-3 e 7 da região B.** Os bits 4-6 são endereço; os demais não são consumidos por
   este caminho. Os valores observados (`01`, `02`, `09`, `0A` para X; `07`, `08` para Y)
   variam, então carregam algo — mas o quê, continua desconhecido.
-- **A classe do dispositivo (X/Y/C) no bloco recebido.** O byte **alto** de cada passo, nos
-  índices pares da região A, **não é lido por nenhum dos dois laços de decodificação** — o
-  cursor começa em 3 e avança de 2, tocando só os índices ímpares. A bancada observou
-  `payload[0x000] = 0x00` e `payload[0x002] = 0x20`, coerentes com as bases de `X` e `Y`,
-  mas de onde o PC12 tira a letra ao montar o programa segue sem resposta.
+- **A classe do dispositivo (X/Y/C) nas instruções booleanas.** O byte alto do passo é lido
+  em exatamente quatro pontos do binário, todos dentro do decodificador de funções — nunca
+  no caminho booleano, que só toca os índices ímpares e a região B. Os fluxos A e B remontam
+  o endereço com código byte a byte idêntico, e nenhum dos dois lê a classe por passo. A
+  bancada observou `payload[0x000] = 0x00` e `payload[0x002] = 0x20`, coerentes com as bases
+  de `X` e `Y`, mas de onde o PC12 tira a letra ao montar um contato ou bobina segue sem
+  resposta.
 - **A família de opcodes `0x08`–`0x0D`.** Mesmos mnemônicos booleanos, sem índice de bit.
   Nenhuma captura de bancada caiu nela.
 - **Fluxo B** (`0x004B0F94`) abre um diálogo antes de transmitir; a emulação atual para no

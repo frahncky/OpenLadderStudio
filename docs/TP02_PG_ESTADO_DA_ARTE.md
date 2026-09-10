@@ -247,7 +247,9 @@ TP02-PG-34-payload-<timestamp>.bin
 
 **EVIDÊNCIA FORTE:** o payload retornado por 34 contém informação diretamente relacionada ao programa ladder, porque mudanças controladas de endereço e tipo de contato alteraram somente bytes específicos e previsíveis desse payload.
 
-**DESCONHECIDO:** semântica completa dos campos, fim do programa e endereços internos.
+**DESCONHECIDO:** semântica completa dos campos e endereços internos.
+
+**Fim do programa (2026-09-10):** o byte alto de cada passo é o número da função F-xx, despachado por uma tabela de 72 entradas em `0x4B4884`; o índice `0x00` é a função `End`. O programa termina por instrução de fim no fluxo, não por comprimento declarado.
 
 **RESOLVIDO POR ANÁLISE ESTÁTICA (2026-09-10):** a paginação e a geometria do bloco foram recuperadas do `pc12.exe` por emulação — ver [`tp02-pg-leitura-programa-emulacao.md`](tp02-pg-leitura-programa-emulacao.md).
 
@@ -550,7 +552,7 @@ Não tratar como fato:
 - que 0A leia o ladder;
 - que o bloco 34 atual seja o programa inteiro;
 - que os bits 0-3 e 7 da região B tenham significado conhecido — os bits 4-6 são endereço (resolvido), o resto não é consumido pelo decodificador do PC12;
-- que se saiba de onde vem a classe do dispositivo (X/Y/C) no bloco recebido — o byte alto de cada passo não é lido por nenhum dos dois laços de decodificação;
+- que se saiba de onde vem a classe do dispositivo (X/Y/C) nas instruções booleanas — o byte alto do passo só é lido pelo decodificador de funções F-xx, nunca no caminho booleano;
 - que as fórmulas candidatas de X/Y sejam válidas para toda a faixa de endereços;
 - que `0x08` seja universalmente “NOT” em qualquer opcode/contexto;
 - que silêncio do PLC signifique falha elétrica; sessões válidas demonstram intermitência de estado/temporização.

@@ -531,6 +531,96 @@ def confere_decoder():
     return ok
 
 
+# ---------------------------------------------------------------------------
+# Palavras fixas e despacho das funcoes F-xx
+# ---------------------------------------------------------------------------
+# Quando o byte baixo nao casa com nenhum opcode booleano, o PC12 o testa
+# inteiro contra as palavras fixas; se tambem nao casar, chama o decodificador
+# de funcao, que le o byte ALTO do passo e despacha por uma tabela de saltos.
+
+PALAVRAS_FIXAS = {0x00: '(vazio)', 0x01: 'AND STR', 0x02: 'OR  STR'}
+
+TABELA_FUNCOES = 0x004B4884       # 0x48 entradas, indexada pelo byte alto
+FUNCOES_MAX = 0x47
+SEM_HANDLER = 0x004B56BD          # destino dos indices sem funcao
+MAPA_FUNCOES = 'docs/data/tp02_function_map_normalized.csv'
+
+SITIOS_FUNCOES = [
+    (0x004B0183, '25 FF 00 00 00', 'palavra fixa: le o byte baixo inteiro'),
+    (0x004B0194, '83 EA 01', 'palavra fixa: primeiro caso (0x00)'),
+    (0x004B0288, 'E8 8F 45 00 00', 'chama o decodificador de funcao 0x4B481C'),
+    (0x004B4836, '8A 80 2F 02 53 00', 'funcao: le o byte ALTO do passo'),
+    (0x004B4874, '83 F8 47', 'funcao: limite da tabela, 0x47'),
+    (0x004B487D, 'FF 24 85 84 48 4B 00', 'funcao: salto indexado pelo byte alto'),
+]
+
+
+def confere_funcoes():
+    """Cruza a tabela de saltos com o mapa de funcoes versionado no repositorio."""
+    import csv
+    import os
+
+    print('=' * 78)
+    print('Despacho das funcoes F-xx')
+    print('=' * 78)
+    ok = True
+    for va, esperado, descr in SITIOS_FUNCOES:
+        alvo = bytes.fromhex(esperado.replace(' ', ''))
+        real = le(va, len(alvo))
+        bate = real == alvo
+        ok &= bate
+        print('  %s 0x%08X  %s' % ('OK  ' if bate else 'FALHA', va, descr))
+        if not bate:
+            print('        esperado %s' % esperado)
+            print('        no arquivo %s' % ' '.join('%02X' % b for b in real))
+    print()
+
+    print('  Palavras fixas, pelo byte baixo inteiro:')
+    for k in sorted(PALAVRAS_FIXAS):
+        print('     0x%02X  %s' % (k, PALAVRAS_FIXAS[k]))
+    print()
+
+    alvos = [struct.unpack('<I', le(TABELA_FUNCOES + 4 * k, 4))[0]
+             for k in range(FUNCOES_MAX + 1)]
+    com_handler = {k for k, a in enumerate(alvos) if a != SEM_HANDLER}
+
+    if not os.path.exists(MAPA_FUNCOES):
+        # O mapa e versionado: se sumiu, o cruzamento nao pode ser dado por bom.
+        print('  FALHA: %s ausente; o cruzamento e parte da conferencia.'
+              % MAPA_FUNCOES)
+        return False
+
+    numeros = set()
+    with open(MAPA_FUNCOES) as fh:
+        for linha in csv.DictReader(fh):
+            try:
+                numeros.add(int(linha['b0']))
+            except (TypeError, ValueError):
+                pass
+
+    orfaos = sorted(com_handler - numeros)
+    ausentes = sorted(numeros - com_handler)
+    print('  Tabela em 0x%08X: %d entradas, %d com handler proprio.'
+          % (TABELA_FUNCOES, FUNCOES_MAX + 1, len(com_handler)))
+    print('  Mapa %s: %d numeros de funcao.' % (MAPA_FUNCOES, len(numeros)))
+    print('  Indices sem handler: %s'
+          % ', '.join('0x%02X' % k for k in sorted(set(range(FUNCOES_MAX + 1)) - com_handler)))
+    print()
+    if orfaos:
+        ok = False
+        print('  FALHA: handler sem funcao no mapa: %s'
+              % ', '.join('0x%02X' % k for k in orfaos))
+    if ausentes:
+        ok = False
+        print('  FALHA: funcao no mapa sem handler: %s'
+              % ', '.join('0x%02X' % k for k in ausentes))
+    if not orfaos and not ausentes:
+        print('  Os dois conjuntos coincidem exatamente: o byte alto do passo e o')
+        print('  numero da funcao F-xx. O indice 0x00 e End -- o fim do programa.')
+    print()
+    return ok
+
+
 def hexs(b):
     return ' '.join('%02X' % x for x in b) if b else '(vazio)'
 
@@ -594,6 +684,9 @@ def main():
         return 1
     if not confere_decoder():
         print('O decodificador nao confere com este pc12.exe. Nao siga adiante.')
+        return 1
+    if not confere_funcoes():
+        print('O despacho de funcoes nao confere. Nao siga adiante.')
         return 1
     if a.so_geometria:
         return 0
