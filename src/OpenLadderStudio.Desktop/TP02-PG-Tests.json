@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.09.13",
-  "title": "TP02 PG - SESSAO LIMPA COM HELLO REPETIDO E 38 OBSERVADO (HELLO -> F0 -> 38 -> 34)",
+  "packageVersion": "2026.09.09.14",
+  "title": "TP02 PG - SESSAO LIMPA COM HELLO REPETIDO E 38 ESTRUTURAL (HELLO -> F0 -> 38 -> 34)",
   "sweeps": 1,
   "passiveCaptureMs": 500,
   "stopOnUnknown": false,
@@ -31,14 +31,8 @@
       "timeoutMs": 1800,
       "passiveAfterMs": 0,
       "expected": [
-        {
-          "name": "HELLO-STOP",
-          "hex": "80 01 09 75"
-        },
-        {
-          "name": "HELLO-RUN",
-          "hex": "C0 01 09 35"
-        }
+        {"name": "HELLO-STOP", "hex": "80 01 09 75"},
+        {"name": "HELLO-RUN", "hex": "C0 01 09 35"}
       ]
     },
     {
@@ -52,15 +46,12 @@
       "timeoutMs": 1600,
       "passiveAfterMs": 0,
       "expected": [
-        {
-          "name": "F0-STOP-OBSERVADO-2026-09-09",
-          "hex": "00 02 10 22 CB"
-        }
+        {"name": "F0-STOP-OBSERVADO-2026-09-09", "hex": "00 02 10 22 CB"}
       ]
     },
     {
       "id": "read-program-preflight-38",
-      "name": "3. Preambulo 38 - aceitar somente vetores observados apos F0 valido",
+      "name": "3. Preambulo 38 - validar estrutura apos F0 valido",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
@@ -69,14 +60,9 @@
       "timeoutMs": 1600,
       "passiveAfterMs": 0,
       "expected": [
-        {
-          "name": "38-OBSERVADO-A-2026-09-09",
-          "hex": "00 02 00 0A F3"
-        },
-        {
-          "name": "38-OBSERVADO-B-2026-09-09",
-          "hex": "00 02 00 02 FB"
-        }
+        {"name": "38-OBSERVADO-02", "hex": "00 02 00 02 FB"},
+        {"name": "38-OBSERVADO-04", "hex": "00 02 00 04 F9"},
+        {"name": "38-OBSERVADO-0A", "hex": "00 02 00 0A F3"}
       ]
     },
     {
@@ -105,22 +91,16 @@
     }
   ],
   "safety": {
-    "readOnlyAllowlist": [
-      "F0 00 0F",
-      "38 00 C7",
-      "34 03 00 00 A0 28"
-    ],
-    "blockedTx": [
-      "0F 00 F0"
-    ],
+    "readOnlyAllowlist": ["F0 00 0F", "38 00 C7", "34 03 00 00 A0 28"],
+    "blockedTx": ["0F 00 F0"],
     "notes": [
       "TESTE FOCADO: o laboratorio executa somente HELLO, F0, 38 e um bloco 34.",
       "O perfil confirmado continua 19200 8O1, DTR=on, RTS=off.",
-      "Cada sessao pode enviar ate 6 HELLOs mantendo a mesma COM aberta, pois a bancada mostrou respostas tardias e intermitentes do enlace.",
+      "Cada sessao pode enviar ate 6 HELLOs mantendo a mesma COM aberta.",
       "O HELLO precisa confirmar STOP com 80 01 09 75. Se retornar C0 01 09 35, o teste termina pedindo STOP.",
-      "F0 00 0F continua sendo enviado apenas UMA vez por abertura da COM. Se nao devolver 00 02 10 22 CB, a porta e fechada, aguarda-se 1500 ms e uma nova sessao comeca desde o HELLO.",
-      "O comando 38 00 C7 apresentou dois vetores validos e observados em bancada: 00 02 00 0A F3 e 00 02 00 02 FB. Como a semantica do payload ainda nao foi decodificada, somente esses dois vetores sao aceitos nesta versao.",
-      "34 03 00 00 A0 28 so e enviado depois de HELLO-STOP, F0 e um dos dois vetores 38 observados. A resposta 34 e validada por LEN e soma modulo 256 = FF e salva em binario.",
+      "F0 00 0F continua sendo enviado apenas UMA vez por abertura da COM e precisa devolver 00 02 10 22 CB.",
+      "O comando 38 00 C7 ja apresentou quadros 00 02 00 02 FB, 00 02 00 04 F9 e 00 02 00 0A F3. Todos compartilham FLAGS=00, LEN=02, payload[0]=00 e checksum FF; por isso o segundo byte do payload passa a ser tratado como variavel do programa, sem semantica presumida.",
+      "34 03 00 00 A0 28 so e enviado depois de HELLO-STOP, F0 valido e quadro 38 estruturalmente valido. A resposta 34 e validada por LEN e soma modulo 256 = FF e salva em binario.",
       "As varreduras 0A e a consulta 14 permanecem fora deste teste focado.",
       "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado.",
       "0F 00 F0 permanece bloqueado por estar associado a Clear All Memory."
