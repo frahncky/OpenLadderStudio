@@ -9,11 +9,11 @@ f0	F0-002	Diversas sessões STOP	F0 00 0F	NO_RX	observed	STOP não é suficiente
 f0	F0-SEM	Semântica exata	F0 00 0F	-	unknown	Não chamar F0 de STOP	UNKNOWN
 38	38-A	Programa mínimo observado	38 00 C7	00 02 00 0A F3	observed	Quadro 38 válido	CONFIRMED
 38	38-B	Programas mínimos de um contato + bobina, inclusive X0009 -> Y0003	38 00 C7	00 02 00 02 FB	observed	Quadro 38 válido	CONFIRMED
-38	38-C	X0001 aberto + X0002 aberto em série -> Y0003	38 00 C7	00 02 00 04 F9	observed	Terceiro quadro 38 válido	CONFIRMED
+38	38-C	X0001 aberto + X0002 aberto em série -> Y0003	38 00 C7	00 02 00 04 F9	observed	Terceiro quadro 38 válido, agora também acompanhado de 34 válido no PG Lab 1.16	CONFIRMED
 38	38-STRUCT	Três respostas conhecidas	38 00 C7	00 02 00 XX CS	derived	FLAGS=00 LEN=02 payload[0]=00 checksum FF; payload[1] variável	STRONG_EVIDENCE
 38	38-SEM	Byte XX	38 00 C7	-	unknown	Semântica exata de payload[1] não conhecida	UNKNOWN
 34	34-REQ	Primeira leitura de programa	34 03 00 00 A0 28	00 F0 [240 payload] [CS]	observed	Primeiro bloco de programa conhecido	CONFIRMED
-34	34-FRAME	Programas mínimos	34 03 00 00 A0 28	243 bytes total	observed	LEN=F0=240 e checksum FF	CONFIRMED
+34	34-FRAME	Programas mínimos e série	34 03 00 00 A0 28	243 bytes total	observed	LEN=F0=240 e checksum FF	CONFIRMED
 34	34-SEM	Comparações controladas	34 03 00 00 A0 28	payload muda com ladder	derived	Conteúdo diretamente relacionado ao programa	STRONG_EVIDENCE
 34	34-PAGING	Análise estática e emulação do pc12.exe	34 03 [step_hi] [step_lo] A0 CS	-	resolved	Endereço é contador de passos; avança 1 a 4 por instrução; paginação depende do conteúdo	CONFIRMED_STATIC
 34	34-PAGING-OLD	Hipótese histórica	-	00F0->01E0->02D0	superseded	Paginação fixa por 0xF0 foi descartada	REJECTED
@@ -34,6 +34,7 @@ opcode	OP-FIXED-00	Palavra fixa	-	00	resolved	Vazio/NOP	CONFIRMED_STATIC
 opcode	OP-FIXED-01	Palavra fixa	-	01	resolved	AND STR	CONFIRMED_STATIC
 opcode	OP-FIXED-02	Palavra fixa	-	02	resolved	OR STR	CONFIRMED_STATIC
 opcode	OP-ALT-08-0D	Segundo ramo do decodificador	-	08..0D	unknown	Família booleana alternativa sem índice de bit observada apenas estaticamente	UNKNOWN
+opcode	OP-AND-BENCH	X0001 aberto + X0002 aberto em série -> Y0003; captura 20260910-115554	-	passo1 LOW=21; LOW&78=20	observed	Opcode AND confirmado fisicamente para X0002 na segunda posição do rung	CONFIRMED
 function	FUNC-DISPATCH	Tabela 0x4B4884	-	72 entries / 64 handlers	resolved	Byte HIGH indexa funções F-xx no caminho de funções; 64 índices coincidem com mapa normalizado	CONFIRMED_STATIC
 function	FUNC-END	F-00	-	HIGH=00	resolved	End termina o programa no fluxo decodificado	CONFIRMED_STATIC
 address	ADDR-REBUILD-STATIC	Decodificador 0x4B036C-0x4B03C6	-	LOW bits0-2 + LOW bit7 + byte segundo cursor bits4-6	resolved	A rotina interna do PC12 reconstrói número usando LOW e um byte do segundo cursor	CONFIRMED_STATIC
@@ -49,11 +50,14 @@ payload34	P34-C	X0002 fechado -> Y0003	34 03 00 00 A0 28	p001=19;p002=20;p003=42
 payload34	P34-D	X0002 aberto -> Y0003	34 03 00 00 A0 28	p001=11;p002=20;p003=42;p0A0=02;p0A1=08	observed	Mudança somente de fechado para aberto	CONFIRMED
 payload34	P34-E	X0001 aberto -> Y0003	34 03 00 00 A0 28	p001=10;p002=20;p003=42;p0A0=01;p0A1=08	observed	Mudança somente de X0002 para X0001	CONFIRMED
 payload34	P34-F	X0009 aberto -> Y0003	34 03 00 00 A0 28	p000=01;p001=10;p002=20;p003=42;p0A0=02;p0A1=08;CS=92	observed	Primeira captura além do grupo X0001-X0008; quadro 34 válido de 243 bytes	CONFIRMED
-payload34	P34-20	Casos A-F	-	p002=20	resolved	É o byte HIGH do passo da bobina Y nos casos observados	CONFIRMED_STATIC
+payload34	P34-G	X0001 aberto + X0002 aberto em série -> Y0003; captura 20260910-115554	34 03 00 00 A0 28	p000=01;p001=10;p002=00;p003=21;p004=20;p005=42;p0A0=02;p0A1=03;p0A2=08;CS=6E	observed	Primeira captura 34 de dois contatos em série; passos LOW=10,21,42	CONFIRMED
+payload34	P34-SERIES-STEPS	Captura P34-G	-	step0=01/10/02;step1=00/21/03;step2=20/42/08	observed	Sequência física compatível com STR X0001, AND X0002, OUT Y0003; metadados HIGH/BRAW do primeiro contato variam com contexto	CONFIRMED
+payload34	P34-20	Casos A-F	-	p002=20	resolved	É o byte HIGH do passo da bobina Y nos programas mínimos de dois passos; no programa série a bobina desloca para p004=20	CONFIRMED_STATIC
 encoding	ENC-X-LINEAR-LOCAL	X0001/X0002	-	-	superseded	Aproximação linear é apenas local e falha em X0009	REJECTED
 encoding	ENC-X-TYPE	X0002 fechado versus aberto	-	19/0A versus 11/02	derived	Mudança de STR para STR NOT aparece como diferença 0x08 no LOW e diferenças correlatas no B bruto	STRONG_EVIDENCE
 encoding	ENC-X-GROUP	X0001 aberto versus X0009 aberto	-	X1 HIGH/LOW=00/10; X9=01/10	observed	Grupo de oito entradas aparece no HIGH do plano A; índice de bit em LOW reinicia em X0009	CONFIRMED
 encoding	ENC-Y-LOCAL	Y0002 versus Y0003	-	41/07 versus 42/08	derived	Variação local observada para saída Y	STRONG_EVIDENCE
+encoding	ENC-CONTEXT	X0001 aberto mínimo versus primeiro contato do programa série	-	min step0=00/10/01;serie step0=01/10/02	observed	HIGH e BRAW do primeiro contato mudam sem mudança do operando; há informação contextual/estrutural ou transformação adicional	CONFIRMED
 0A	0A-FORMAT	Leituras de memória/sistema	0A 03 AH AL LEN CS	[STATE] [LEN] [PAYLOAD] [CS]	observed	AH AL comporta-se como endereço big-endian nos probes usados	CONFIRMED
 0A	0A-RUNSTOP	RUN versus STOP	0A ...	STOP 00... / RUN 40...	observed	Funciona em ambos os estados; reforça bit 0x40	CONFIRMED
 0A	0A-SCOPE	Escopo da memória	0A ...	-	unknown	Não assumir que 0A seja memória ladder	UNKNOWN
@@ -63,6 +67,6 @@ write	WRITE-09	Análise estática pc12.exe	09 [n] [addr_hi] [addr_lo] [qtd] [dat
 write	WRITE-09-BLOCK	Análise estática pc12.exe	09 11 ...	-	resolved	Existe escrita de bloco com 14 bytes de dados	CONFIRMED_STATIC
 write	WRITE-PROGRAM	Download completo	-	-	unknown	Laço/orquestração do Write PLC Program ainda não isolado; não assumir que todo download usa 09	UNKNOWN
 blocked	CLEAR-ALL	Análise estática pc12.exe	0F 00 F0	NEVER_SEND	blocked	Clear All Memory; comando destrutivo explicitamente bloqueado	CONFIRMED_STATIC
-next	NEXT-001	Prioridade imediata após X0009	-	-	planned	PG Lab 1.16: capturar 34 de X0001 aberto em série com X0002 aberto -> Y0003	NEXT
-next	NEXT-002	Após captura série	-	-	planned	Comparar X0001/X0002 abertos em paralelo -> Y0003 para validar OR/ramificação	NEXT
+next	NEXT-001	Prioridade imediata após captura série	-	-	planned	Construir X0001 e X0002 abertos em paralelo -> Y0003 e capturar 34 para validar OR/ramificação	NEXT
+next	NEXT-002	Após paralelo	-	-	planned	Comparar série/paralelo byte a byte e isolar campos estruturais HIGH/BRAW do primeiro contato	NEXT
 next	NEXT-003	Validação posterior de endereçamento	-	-	planned	Testar outra fronteira de grupo, por exemplo X0017, e rastrear transformação da Região B bruta até o decoder interno	NEXT
