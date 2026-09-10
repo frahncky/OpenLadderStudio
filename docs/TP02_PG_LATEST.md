@@ -5,10 +5,11 @@
 ## Leia primeiro
 
 1. `docs/TP02_PG_ESTADO_DA_ARTE.md` — base histórica detalhada.
-2. `docs/TP02_PG_CHECKPOINT_20260910_1255.md` — checkpoint operacional mais recente.
-3. `docs/data/tp02_pg_observations.tsv` — observações estruturadas acumuladas.
+2. `docs/tp02-pg-validacao-x0017-20260910.md` — validação física mais recente.
+3. `docs/TP02_PG_CHECKPOINT_20260910_1255.md` — checkpoint da matriz booleana.
+4. `docs/data/tp02_pg_observations.tsv` — observações estruturadas acumuladas.
 
-## Estado atual em 2026-09-10 12:55 BRT
+## Estado atual em 2026-09-10 13:28 BRT
 
 Hardware:
 
@@ -44,24 +45,46 @@ Nenhuma escrita está habilitada. `0F 00 F0` é Clear All Memory e permanece blo
 Arquivo:
 
 ```text
-TP02-PG-Lab-20260910-125412.txt
+TP02-PG-Lab-20260910-132650.txt
 ```
 
 Programa:
 
 ```text
-X0009 aberto -- X0002 fechado -- (Y0003)
+X0017 aberto -- (Y0003)
 ```
 
 Resultado:
 
 ```text
-STR X0009:      HIGH=01 LOW=10 BRAW=02
-AND NOT X0002:  HIGH=00 LOW=29 BRAW=0B
-OUT Y0003:      HIGH=20 LOW=42 BRAW=08
-checksum 34 = 5E
-38 = 00 02 00 04 F9
+STR X0017: HIGH=02 LOW=10 BRAW=03
+OUT Y0003: HIGH=20 LOW=42 BRAW=08
+checksum 34 = 90
+38 = 00 02 00 02 FB
 ```
+
+## Endereçamento X — fronteiras fisicamente confirmadas
+
+Para contatos STR abertos no primeiro bit de cada grupo:
+
+```text
+X0001: HIGH=00 LOW=10 BRAW=01
+X0009: HIGH=01 LOW=10 BRAW=02
+X0017: HIGH=02 LOW=10 BRAW=03
+```
+
+O plano A confirma:
+
+```text
+group = (n - 1) >> 3
+bit   = (n - 1) & 0x07
+HIGH  = group                 [para classe X nos grupos ensaiados]
+LOW   = opcode | bit
+```
+
+Assim, o segundo salto de grupo em X0017 está confirmado fisicamente e coincide com o encoder atual.
+
+Para BRAW, há a regularidade física `01,02,03` nos inícios dos grupos 0,1,2, mas a semântica completa ainda não deve ser generalizada.
 
 ## Matriz booleana confirmada fisicamente
 
@@ -83,16 +106,35 @@ opcode = LOW & 0x78
 
 A negação/inversão acrescentou `0x08` tanto em LOW quanto em BRAW nos três pares controlados STR/STR NOT, AND/AND NOT e OR/OR NOT.
 
+## Comando 38
+
+Nos programas mínimos de um contato + bobina, X0009 e X0017 retornaram:
+
+```text
+00 02 00 02 FB
+```
+
+Logo, mudar o endereço do contato entre esses grupos não alterou o byte variável do 38 nesse formato mínimo.
+
 ## Próximo teste
 
 Gravar exatamente:
 
 ```text
-X0017 aberto -- (Y0003)
+X0018 aberto -- (Y0003)
 ```
 
 PLC em STOP, PC12 fechado, executar PG Lab 1.16 sem alterar o perfil serial.
 
-Objetivo: observar o segundo salto de grupo de endereço e restringir o modelo de HIGH/BRAW.
+Objetivo: medir o primeiro incremento dentro do grupo 2.
 
-Depois, testar três contatos em série para investigar o significado do byte variável do comando 38.
+Previsão forte do plano A:
+
+```text
+HIGH = 02
+LOW  = 11
+```
+
+BRAW permanece aberto; `04` é uma hipótese discriminatória, não um fato.
+
+Depois disso, testar três contatos em série para investigar o significado do byte variável do comando 38.
