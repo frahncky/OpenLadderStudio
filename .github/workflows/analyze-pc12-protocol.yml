@@ -27,6 +27,9 @@ jobs:
             -o protocol-analysis/pc12-protocol-analysis.txt
 
       - name: Conferir a geometria da leitura de programa
+        # shell: bash traz -o pipefail; sem ele o status do pipe seria o do tee
+        # e a divergencia que este passo existe para barrar passaria batida.
+        shell: bash
         run: |
           python3 scripts/emulate_pc12_readprog.py --so-geometria \
             | tee -a protocol-analysis/pc12-protocol-analysis.txt

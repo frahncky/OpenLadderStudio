@@ -469,7 +469,9 @@ def main():
         return 1
     paginacao()
     geometria()
-    confere_bancada()
+    if not confere_bancada():
+        print('As capturas de bancada divergem do modelo. Nao siga adiante.')
+        return 1
     if a.so_geometria:
         return 0
     if not TEM_UNICORN:
