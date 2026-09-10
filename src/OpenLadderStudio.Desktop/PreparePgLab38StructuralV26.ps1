@@ -48,15 +48,12 @@ $text = Replace-Required $text @'
 '@ @'
                                 byte[] rx38 = CleanTxRx(port, cmd38, "38", 1600, totalWatch);
                                 byte[] frame38;
-                                byte[] payload38;
-                                bool frame38Ok = TryExtractPgLengthFrame(rx38, out frame38, out payload38)
+                                bool frame38Ok = TryExtractPgLengthFrame(rx38, out frame38)
                                     && frame38 != null
                                     && frame38.Length == 5
                                     && frame38[0] == 0x00
                                     && frame38[1] == 0x02
-                                    && payload38 != null
-                                    && payload38.Length == 2
-                                    && payload38[0] == 0x00;
+                                    && frame38[2] == 0x00;
                                 if (!frame38Ok)
                                 {
                                     LogEvent("RETRY", "38 sem quadro estrutural valido (esperado FLAGS=00 LEN=02 payload[0]=00 checksum FF); fechando a sessao sem enviar 34.", string.Empty, null, totalWatch.ElapsedMilliseconds);
@@ -65,7 +62,7 @@ $text = Replace-Required $text @'
                                 else
                                 {
                                     string valid38 = ToHex(frame38);
-                                    LogEvent("ETAPA", "38 VALIDADO ESTRUTURALMENTE: " + valid38 + " | valor_variavel=0x" + payload38[1].ToString("X2", CultureInfo.InvariantCulture), string.Empty, null, totalWatch.ElapsedMilliseconds);
+                                    LogEvent("ETAPA", "38 VALIDADO ESTRUTURALMENTE: " + valid38 + " | valor_variavel=0x" + frame38[3].ToString("X2", CultureInfo.InvariantCulture), string.Empty, null, totalWatch.ElapsedMilliseconds);
                                     Thread.Sleep(120);
 '@ 'Validacao estrutural do 38'
 
