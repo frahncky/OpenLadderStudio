@@ -1,13 +1,13 @@
 # TP02 PG — ponto canônico de retomada
 
-> Estado mais recente da engenharia reversa do WEG TP02 após o teste completo de diagnóstico de 2026-09-10.
+> Estado mais recente da engenharia reversa do WEG TP02 após o teste completo de diagnóstico e a implementação do decoder local do quadro 34.
 
-## Ambiente
+## Ambiente de bancada confirmado
 
 ```text
 PLC: WEG TP02-60MR / TP02-40/60MR(T) V2.2.4K
 OpenLadder Studio: v1.04
-TP02 PG Lab: 1.16
+PG Lab usado nas capturas: 1.16
 Serial: 19200 8O1, DTR ON, RTS OFF
 Estado: STOP
 Fluxo READ-ONLY: HELLO -> F0 -> 38 -> 34
@@ -15,14 +15,33 @@ Fluxo READ-ONLY: HELLO -> F0 -> 38 -> 34
 
 Nenhuma escrita está habilitada. `0F 00 F0` é Clear All Memory e permanece bloqueado.
 
-## Leia primeiro
+## Software após a captura
+
+O código-fonte já contém o **PG Lab 1.17**, ainda sem alterar a versão pública do OpenLadder Studio.
+
+Novidades do 1.17:
+
+```text
+- Tp02Pg34Decoder no Core;
+- separação automática HIGH/LOW/BRAW do primeiro bloco 34;
+- reconstrução de STR, STR NOT, AND, AND NOT, OR, OR NOT e OUT para X/Y/C;
+- validação BRAW pela soma dos nibbles somente no escopo booleano confirmado;
+- uso conservador do 38 apenas como hint de delimitação;
+- registros DECOD34 e IL34 no relatório do PG Lab;
+- nenhum novo TX serial.
+```
+
+O workflow `validate-tp02-compiler` run #11 (`34515659960`) passou integralmente, incluindo autotestes antigos, novo autoteste do decoder e compilação do PG Lab 1.17.
+
+Leia também:
 
 1. `docs/tp02-pg-validacao-programa-completo-20260910.md`
-2. `docs/data/tp02_pg_complete_matrix_20260910.tsv`
-3. `docs/TP02_PG_ESTADO_DA_ARTE.md`
-4. `docs/data/tp02_pg_observations.tsv`
+2. `docs/tp02-pg-decoder-34-v117.md`
+3. `docs/data/tp02_pg_complete_matrix_20260910.tsv`
+4. `docs/TP02_PG_ESTADO_DA_ARTE.md`
+5. `docs/data/tp02_pg_observations.tsv`
 
-## Última captura
+## Última captura física
 
 Arquivo:
 
@@ -51,7 +70,7 @@ HIGH(Y) = 0x20 + group
 LOW     = opcode | bit
 ```
 
-Matriz de opcodes:
+Matriz física:
 
 ```text
 STR      0x10
@@ -71,7 +90,7 @@ opcode = LOW & 0x78
 
 Todos os 26 pares HIGH/LOW do teste completo coincidiram com a previsão.
 
-## Região B — descoberta principal
+## Região B — regra confirmada para o conjunto booleano ensaiado
 
 Nas 26 instruções ativas do teste completo, sem exceção:
 
@@ -82,50 +101,51 @@ BRAW = (HIGH >> 4)
      + (LOW  & 0x0F)
 ```
 
-Ou seja, no escopo booleano ensaiado, BRAW é exatamente a **soma dos quatro nibbles de HIGH e LOW**.
-
-Exemplos:
-
-```text
-STR X0018:      HIGH=02 LOW=11 -> BRAW=04
-OR NOT X0002:   HIGH=00 LOW=39 -> BRAW=0C
-OUT Y0009:      HIGH=21 LOW=40 -> BRAW=07
-```
-
-A mesma regra é compatível com as capturas booleanas anteriores. Não generalizar ainda para TMR, CNT ou funções F-xx sem validação física.
+No escopo booleano ensaiado, BRAW se comporta como soma redundante dos quatro nibbles de HIGH/LOW. Não generalizar ainda para TMR, CNT ou funções F-xx.
 
 ## Comando 38 — relação estrutural forte
 
-O programa completo possui 26 instruções booleanas consecutivas. O último par ativo da Região A começa em:
+Resultados físicos:
 
 ```text
-2 * (26 - 1) = 50 = 0x32
+2 instruções  -> payload[1] = 02
+3 instruções  -> payload[1] = 04
+26 instruções -> payload[1] = 32
 ```
 
-O `38 payload[1]` retornou exatamente `0x32`.
-
-Isso também coincide com os casos anteriores:
+Isto coincide com:
 
 ```text
-2 instruções -> 0x02
-3 instruções -> 0x04
-26 instruções -> 0x32
+2 * (N - 1)
 ```
 
-Classificação atual: **EVIDÊNCIA FORTE** de que esse byte representa o deslocamento/endereço do último par ativo da Região A, ou grandeza equivalente a `2*(N-1)` para instruções booleanas de um passo.
+para os programas booleanos de um passo ensaiados. No decoder 1.17, essa relação é deliberadamente tratada apenas como hint: se o 38 discordar da cauda ativa do payload 34, ele não é usado para truncar o programa.
 
-Ainda falta testar instruções de tamanho variável antes de considerar a semântica do 38 completamente resolvida.
+## Próxima etapa física — um único teste completo
 
-## Próxima etapa
+Não repetir microtestes booleanos. O próximo programa deve reunir instruções de tamanho variável em uma única captura para resolver TMR, CNT, operandos e testar o significado do 38 fora do caso puramente booleano.
 
-Não é necessário repetir os testes booleanos isolados. A prioridade agora é de software:
+Programa-alvo recomendado:
 
 ```text
-1. decodificar automaticamente o quadro 34 em HIGH/LOW/BRAW;
-2. reconstruir X/Y e os opcodes booleanos;
-3. validar BRAW pela soma dos nibbles;
-4. usar o 38 para delimitar o trecho ativo quando a hipótese for aplicável;
-5. depois estender a bancada para TMR, CNT e funções F-xx.
+R1  X0001 aberto -> TMR 1, preset K1000
+R2  X0002 aberto -> CNT 1, preset K10
+R3  X0003 aberto -> SET Y0001
+R4  X0004 aberto -> RST Y0001
+R5  X0005 aberto -> F-13w ADD D0001, K10, D0002
+R6  X0006 aberto -> OUT Y0002
 ```
 
-O próximo ensaio de hardware deve ser novamente um teste completo, não uma sequência de microtestes, e só é necessário quando formos validar instruções de tamanho variável.
+Esse ensaio permanece pequeno o suficiente para caber integralmente no primeiro bloco 34 e contém uma âncora booleana final conhecida.
+
+Objetivos:
+
+```text
+- observar fisicamente TMR e seu preset;
+- observar fisicamente CNT e seu preset;
+- validar F-23 SET e F-24 RST;
+- validar uma F-xx de quatro passos (F-13w ADD);
+- testar BRAW fora do domínio booleano;
+- testar 38 com instruções de múltiplos passos;
+- manter tudo em uma única execução de bancada.
+```
