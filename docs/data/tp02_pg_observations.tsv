@@ -8,7 +8,7 @@ f0	F0-001	Sessão STOP válida	F0 00 0F	00 02 10 22 CB	observed	Resposta conheci
 f0	F0-002	Diversas sessões STOP	F0 00 0F	NO_RX	observed	STOP não é suficiente para garantir F0	CONFIRMED
 f0	F0-SEM	Semântica exata	F0 00 0F	-	unknown	Não chamar F0 de STOP	UNKNOWN
 38	38-A	Programa mínimo observado	38 00 C7	00 02 00 0A F3	observed	Quadro 38 válido	CONFIRMED
-38	38-B	Programa mínimo observado	38 00 C7	00 02 00 02 FB	observed	Quadro 38 válido	CONFIRMED
+38	38-B	Programas mínimos de um contato + bobina, inclusive X0009 -> Y0003	38 00 C7	00 02 00 02 FB	observed	Quadro 38 válido	CONFIRMED
 38	38-C	X0001 aberto + X0002 aberto em série -> Y0003	38 00 C7	00 02 00 04 F9	observed	Terceiro quadro 38 válido	CONFIRMED
 38	38-STRUCT	Três respostas conhecidas	38 00 C7	00 02 00 XX CS	derived	FLAGS=00 LEN=02 payload[0]=00 checksum FF; payload[1] variável	STRONG_EVIDENCE
 38	38-SEM	Byte XX	38 00 C7	-	unknown	Semântica exata de payload[1] não conhecida	UNKNOWN
@@ -19,7 +19,7 @@ f0	F0-SEM	Semântica exata	F0 00 0F	-	unknown	Não chamar F0 de STOP	UNKNOWN
 34	34-PAGING-OLD	Hipótese histórica	-	00F0->01E0->02D0	superseded	Paginação fixa por 0xF0 foi descartada	REJECTED
 34	34-GEOMETRY	Payload LEN=F0	-	240 bytes	resolved	80 passos de 3 bytes organizados em região A 160 B e região B 80 B	CONFIRMED_STATIC
 34	34-PLANE-A	Geometria recuperada	-	payload[0x000..0x09F]	resolved	Dois bytes HIGH/LOW por passo	CONFIRMED_STATIC
-34	34-PLANE-B	Geometria recuperada	-	payload[0x0A0..0x0EF]	resolved	Um byte adicional por passo	CONFIRMED_STATIC
+34	34-PLANE-B	Geometria recuperada	-	payload[0x0A0..0x0EF]	resolved	Um byte bruto adicional por passo; semântica completa ainda não resolvida	CONFIRMED_STATIC
 34	34-MODEL-SIZE	TP02-40/60MR(T)	-	0x0FA0 steps	resolved	PC12 limita programa a 4000 passos para o modelo	CONFIRMED_STATIC
 opcode	OP-STR	Decodificador pc12.exe	-	LOW&78=10	resolved	STR	CONFIRMED_STATIC
 opcode	OP-STRNOT	Decodificador pc12.exe	-	LOW&78=18	resolved	STR NOT	CONFIRMED_STATIC
@@ -34,22 +34,26 @@ opcode	OP-FIXED-00	Palavra fixa	-	00	resolved	Vazio/NOP	CONFIRMED_STATIC
 opcode	OP-FIXED-01	Palavra fixa	-	01	resolved	AND STR	CONFIRMED_STATIC
 opcode	OP-FIXED-02	Palavra fixa	-	02	resolved	OR STR	CONFIRMED_STATIC
 opcode	OP-ALT-08-0D	Segundo ramo do decodificador	-	08..0D	unknown	Família booleana alternativa sem índice de bit observada apenas estaticamente	UNKNOWN
-function	FUNC-DISPATCH	Tabela 0x4B4884	-	72 entries / 64 handlers	resolved	Byte HIGH indexa funções F-xx; 64 índices coincidem com mapa normalizado	CONFIRMED_STATIC
+function	FUNC-DISPATCH	Tabela 0x4B4884	-	72 entries / 64 handlers	resolved	Byte HIGH indexa funções F-xx no caminho de funções; 64 índices coincidem com mapa normalizado	CONFIRMED_STATIC
 function	FUNC-END	F-00	-	HIGH=00	resolved	End termina o programa no fluxo decodificado	CONFIRMED_STATIC
-address	ADDR-REBUILD	Decodificador 0x4B036C-0x4B03C6	-	LOW bits 0-2 + LOW bit7 + B bits4-6	resolved	Número do dispositivo é reconstruído dos dois planos e exibido como valor+1	CONFIRMED_STATIC
-address	ADDR-B-HIGHBITS	Região B	-	B&70	resolved	Bits 4-6 da região B carregam bits altos do número do dispositivo	CONFIRMED_STATIC
-address	ADDR-B-OTHER	Região B	-	B bits0-3,7	unknown	Semântica não resolvida neste caminho	UNKNOWN
+address	ADDR-REBUILD-STATIC	Decodificador 0x4B036C-0x4B03C6	-	LOW bits0-2 + LOW bit7 + byte segundo cursor bits4-6	resolved	A rotina interna do PC12 reconstrói número usando LOW e um byte do segundo cursor	CONFIRMED_STATIC
+address	ADDR-RAW-B-DIRECT	Hipótese de mapeamento do byte interno diretamente para payload bruto B	-	X0009 esperado B&10; observado B=02	contradicted	A captura X0009 mostra que o byte bruto payload[0x0A0+i] não pode ser assumido sem transformação como o byte testado pela rotina estática	REJECTED
+address	ADDR-B-RAW	Região B bruta do quadro 34	-	B bits0-7	unknown	Geometria está confirmada, mas a semântica completa e a transformação até a representação interna do decoder permanecem abertas	UNKNOWN
 address	ADDR-CLASS	Instruções booleanas	-	-	unknown	Origem completa da classe X/Y/C no caminho booleano ainda não isolada	UNKNOWN
-address	ADDR-X0009	Teste discriminante	-	linear=18; decoder=10+B bit alto	planned	Captura X0009 decide entre aproximação linear antiga e reconstrução estática	NEXT
+address	ADDR-X0009	X0009 aberto -> Y0003; captura 20260910-111814	34 03 00 00 A0 28	p000=01;p001=10;p002=20;p003=42;p0A0=02;p0A1=08	observed	Fronteira de grupo validada: LOW reinicia em 10; HIGH do contato passa 00->01; B bruto passa 01->02	CONFIRMED
+address	ADDR-X0009-LINEAR	Comparação com modelo linear antigo	-	linear previa p001=18; hardware=10	observed	Fórmula linear geral 0F+n foi refutada em X0009	REJECTED
+address	ADDR-X0009-ENCODER	Comparação com Tp02TargetCompiler.EncodeBitInstruction(STR,X,9)	-	encoder HIGH=01 LOW=10; hardware HIGH=01 LOW=10	observed	Plano A do encoder é confirmado em hardware no primeiro limite de grupo	CONFIRMED
 payload34	P34-A	X0001 fechado -> Y0002	34 03 00 00 A0 28	p001=18;p002=20;p003=41;p0A0=09;p0A1=07	observed	Baseline de um contato + bobina	CONFIRMED
 payload34	P34-B	X0002 fechado -> Y0002	34 03 00 00 A0 28	p001=19;p002=20;p003=41;p0A0=0A;p0A1=07	observed	Mudança somente de X	CONFIRMED
 payload34	P34-C	X0002 fechado -> Y0003	34 03 00 00 A0 28	p001=19;p002=20;p003=42;p0A0=0A;p0A1=08	observed	Mudança somente de Y	CONFIRMED
 payload34	P34-D	X0002 aberto -> Y0003	34 03 00 00 A0 28	p001=11;p002=20;p003=42;p0A0=02;p0A1=08	observed	Mudança somente de fechado para aberto	CONFIRMED
 payload34	P34-E	X0001 aberto -> Y0003	34 03 00 00 A0 28	p001=10;p002=20;p003=42;p0A0=01;p0A1=08	observed	Mudança somente de X0002 para X0001	CONFIRMED
-payload34	P34-20	Casos A-E	-	p002=20	resolved	É o byte HIGH do passo da bobina Y nos casos observados	CONFIRMED_STATIC
-encoding	ENC-X-LINEAR-LOCAL	X0001/X0002	-	-	superseded	Aproximação linear é válida localmente até n=8, não é fórmula geral	SUPERSEDED
-encoding	ENC-X-TYPE	X0002 fechado versus aberto	-	19/0A versus 11/02	derived	Mudança de STR para STR NOT aparece como diferença 0x08 no LOW e diferenças correlatas em B	STRONG_EVIDENCE
-encoding	ENC-Y-LOCAL	Y0002 versus Y0003	-	41/07 versus 42/08	derived	Variação local compatível com reconstrução do endereço	STRONG_EVIDENCE
+payload34	P34-F	X0009 aberto -> Y0003	34 03 00 00 A0 28	p000=01;p001=10;p002=20;p003=42;p0A0=02;p0A1=08;CS=92	observed	Primeira captura além do grupo X0001-X0008; quadro 34 válido de 243 bytes	CONFIRMED
+payload34	P34-20	Casos A-F	-	p002=20	resolved	É o byte HIGH do passo da bobina Y nos casos observados	CONFIRMED_STATIC
+encoding	ENC-X-LINEAR-LOCAL	X0001/X0002	-	-	superseded	Aproximação linear é apenas local e falha em X0009	REJECTED
+encoding	ENC-X-TYPE	X0002 fechado versus aberto	-	19/0A versus 11/02	derived	Mudança de STR para STR NOT aparece como diferença 0x08 no LOW e diferenças correlatas no B bruto	STRONG_EVIDENCE
+encoding	ENC-X-GROUP	X0001 aberto versus X0009 aberto	-	X1 HIGH/LOW=00/10; X9=01/10	observed	Grupo de oito entradas aparece no HIGH do plano A; índice de bit em LOW reinicia em X0009	CONFIRMED
+encoding	ENC-Y-LOCAL	Y0002 versus Y0003	-	41/07 versus 42/08	derived	Variação local observada para saída Y	STRONG_EVIDENCE
 0A	0A-FORMAT	Leituras de memória/sistema	0A 03 AH AL LEN CS	[STATE] [LEN] [PAYLOAD] [CS]	observed	AH AL comporta-se como endereço big-endian nos probes usados	CONFIRMED
 0A	0A-RUNSTOP	RUN versus STOP	0A ...	STOP 00... / RUN 40...	observed	Funciona em ambos os estados; reforça bit 0x40	CONFIRMED
 0A	0A-SCOPE	Escopo da memória	0A ...	-	unknown	Não assumir que 0A seja memória ladder	UNKNOWN
@@ -59,6 +63,6 @@ write	WRITE-09	Análise estática pc12.exe	09 [n] [addr_hi] [addr_lo] [qtd] [dat
 write	WRITE-09-BLOCK	Análise estática pc12.exe	09 11 ...	-	resolved	Existe escrita de bloco com 14 bytes de dados	CONFIRMED_STATIC
 write	WRITE-PROGRAM	Download completo	-	-	unknown	Laço/orquestração do Write PLC Program ainda não isolado; não assumir que todo download usa 09	UNKNOWN
 blocked	CLEAR-ALL	Análise estática pc12.exe	0F 00 F0	NEVER_SEND	blocked	Clear All Memory; comando destrutivo explicitamente bloqueado	CONFIRMED_STATIC
-next	NEXT-001	Prioridade imediata	-	-	planned	Capturar X0009 aberto -> Y0003 para validar endereçamento em hardware	NEXT
-next	NEXT-002	Após X0009	-	-	planned	PG Lab 1.16: capturar 34 de X0001 aberto em série com X0002 aberto -> Y0003	NEXT
-next	NEXT-003	Após captura série	-	-	planned	Comparar X0001/X0002 abertos em paralelo -> Y0003 para validar OR/ramificação	NEXT
+next	NEXT-001	Prioridade imediata após X0009	-	-	planned	PG Lab 1.16: capturar 34 de X0001 aberto em série com X0002 aberto -> Y0003	NEXT
+next	NEXT-002	Após captura série	-	-	planned	Comparar X0001/X0002 abertos em paralelo -> Y0003 para validar OR/ramificação	NEXT
+next	NEXT-003	Validação posterior de endereçamento	-	-	planned	Testar outra fronteira de grupo, por exemplo X0017, e rastrear transformação da Região B bruta até o decoder interno	NEXT
