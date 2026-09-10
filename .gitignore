@@ -37,3 +37,7 @@ src/OpenLadderStudio.Desktop/lastfile.dir
 
 # Local validation artifacts.
 artifacts/
+
+# Python
+__pycache__/
+*.pyc

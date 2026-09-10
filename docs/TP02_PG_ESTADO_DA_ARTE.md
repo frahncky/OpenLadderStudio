@@ -247,9 +247,22 @@ TP02-PG-34-payload-<timestamp>.bin
 
 **EVIDÊNCIA FORTE:** o payload retornado por 34 contém informação diretamente relacionada ao programa ladder, porque mudanças controladas de endereço e tipo de contato alteraram somente bytes específicos e previsíveis desse payload.
 
-**DESCONHECIDO:** semântica completa dos campos, paginação, fim do programa, endereços internos e existência de blocos seguintes.
+**DESCONHECIDO:** semântica completa dos campos, fim do programa e endereços internos.
 
-Não assumir ainda que `00 00 A0` seja um endereço linear ou que solicitações seguintes sejam `00F0`, `01E0`, `02D0` etc. Essa paginação foi apenas uma hipótese de trabalho anterior e **não está confirmada**.
+**RESOLVIDO POR ANÁLISE ESTÁTICA (2026-09-10):** a paginação e a geometria do bloco foram recuperadas do `pc12.exe` por emulação — ver [`tp02-pg-leitura-programa-emulacao.md`](tp02-pg-leitura-programa-emulacao.md).
+
+Os dois bytes de endereço são o **contador de passos do programa**, formatado com `%04X` e reconvertido para dois bytes; a quantidade é fixa em `0xA0` (160). O contador avança de 1 a 4 por instrução decodificada, portanto **a paginação é determinada pelo conteúdo do programa, não por um passo constante**. A hipótese anterior de incrementos fixos de `0xF0` (`00F0`, `01E0`, `02D0`) está descartada — corretamente, ela nunca havia sido promovida a fato.
+
+O bloco de 240 bytes contém **80 passos de 3 bytes**, em dois planos:
+
+```text
+região A   payload[0x000 .. 0x09F]   160 bytes   2 por passo (alto, baixo)
+região B   payload[0x0A0 .. 0x0EF]    80 bytes   1 por passo
+
+passo i:   A = payload[2i], payload[2i+1]      B = payload[0x0A0 + i]
+```
+
+Isso explica por que a informação aparece em duas regiões: `0x001`/`0x0A0` e `0x003`/`0x0A1` **não são campos duplicados**, são os planos A e B do mesmo passo.
 
 ## 9. Experimentos controlados do payload 34
 
@@ -295,6 +308,8 @@ Contato fechado Xn:
 
 Essas fórmulas ainda devem ser validadas em endereços não adjacentes antes de serem consideradas regras gerais.
 
+**Ponto de quebra previsto:** a fórmula do encoder do PC12 (`LOW = base | ((n-1) & 7)`) coincide com a aproximação linear acima de `n = 1` a `n = 8` e diverge a partir de `X0009` — linear prevê `0x18`, encoder prevê `0x10`. Uma única captura com `X0009` decide entre os dois modelos.
+
 ### 9.3 Tipo do contato aberto/fechado
 
 Comparação mantendo exatamente `X0002` e `Y0003`:
@@ -331,7 +346,9 @@ Yn:
 
 Nos cinco programas mínimos de um contato + uma bobina, `payload[0x002]` permaneceu `0x20`.
 
-**DESCONHECIDO:** significado do `0x20`. Pode pertencer ao opcode/estrutura da instrução de saída, separador, metadado ou outra codificação. Não atribuir significado ainda.
+**RESOLVIDO POR ANÁLISE ESTÁTICA (2026-09-10):** `payload[0x002]` é o byte **alto** do passo da bobina — base do dispositivo `Y`, grupo 0. Pela geometria recuperada, o passo 0 ocupa `payload[0x000]` (alto) e `payload[0x001]` (baixo), e o passo 1 ocupa `payload[0x002]` e `payload[0x003]`. `payload[0x000]` permaneceu zero nas capturas porque é o byte alto do passo do contato, e a base de `X` é `0x00`.
+
+A fórmula do encoder já implementada em `Tp02TargetCompiler.cs` prevê as cinco capturas da seção 9.1 exatamente, incluindo este byte. Ver [`tp02-pg-leitura-programa-emulacao.md`](tp02-pg-leitura-programa-emulacao.md).
 
 ## 10. Novo caso: dois contatos abertos em série
 
@@ -521,8 +538,7 @@ Não tratar como fato:
 - que o byte variável do 38 conte contatos/instruções;
 - que 0A leia o ladder;
 - que o bloco 34 atual seja o programa inteiro;
-- que a paginação de 34 use incrementos de `0xF0`;
-- que os campos duplicados em `0x001/0x0A0` e `0x003/0x0A1` tenham já uma semântica estrutural conhecida;
+- que a semântica da região B (`payload[0x0A0 + i]`) esteja decodificada — a estrutura está confirmada, os valores observados não correspondem ao byte `EXT` do encoder;
 - que as fórmulas candidatas de X/Y sejam válidas para toda a faixa de endereços;
 - que `0x08` seja universalmente “NOT” em qualquer opcode/contexto;
 - que silêncio do PLC signifique falha elétrica; sessões válidas demonstram intermitência de estado/temporização.
@@ -538,6 +554,16 @@ X0001 aberto -- X0002 aberto -- (Y0003)
 ```
 
 Usar **PG Lab 1.16 / OpenLadder v1.03**, PLC em STOP, e capturar o 34. Não mudar nenhum elemento entre a gravação do programa e a leitura.
+
+### Experimento discriminante (mais barato)
+
+Antes ou depois do anterior, capturar:
+
+```text
+X0009 aberto -- (Y0003)
+```
+
+Este teste não acrescenta um sexto ponto: ele **falseia um dos dois modelos**. A aproximação linear da bancada prevê `payload[0x001] = 0x18`; a fórmula do encoder do PC12 prevê `0x10`. Uma única sessão decide, e o resultado vale para toda a faixa de endereços em vez de dois pontos adjacentes.
 
 ### Depois da captura série
 
