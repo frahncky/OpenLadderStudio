@@ -1,6 +1,6 @@
 # TP02 PG — ponto canônico de retomada
 
-> Estado mais recente da engenharia reversa do WEG TP02 após a captura física com instruções de tamanho variável e a ampliação do decoder local do quadro 34.
+> Estado mais recente da engenharia reversa do WEG TP02 após a captura física com instruções de tamanho variável, a ampliação do decoder local do quadro 34 e a preparação controlada do primeiro teste de paginação.
 
 ## Ambiente de bancada confirmado
 
@@ -8,7 +8,7 @@
 PLC: WEG TP02-60MR / TP02-40/60MR(T) V2.2.4K
 OpenLadder Studio: v1.04
 PG Lab usado na captura mista: 1.16
-PG Lab atual no código-fonte: 1.18
+PG Lab atual no código-fonte: 1.19
 Serial: 19200 8O1, DTR ON, RTS OFF
 Estado: STOP
 Fluxo READ-ONLY: HELLO -> F0 -> 38 -> 34
@@ -197,15 +197,16 @@ ou seja, o offset em bytes do primeiro byte do último par HIGH/LOW ativo da Reg
 
 A captura de 23 passos é especialmente importante porque inclui instruções de 2 e 4 passos. Mesmo assim, o decoder permanece conservador: o 38 é usado como hint somente quando coincide com a cauda ativa do próprio quadro 34.
 
-## Software atual — PG Lab 1.18
+## Software atual — PG Lab 1.19
 
 O OpenLadder Studio público permanece **v1.04**.
 
-O código-fonte agora contém o **PG Lab 1.18**, produzido pela cadeia de patches até:
+O código-fonte agora contém o **PG Lab 1.19**, produzido pela cadeia de patches até:
 
 ```text
 PreparePgLabDecode34V27.ps1
 PreparePgLabMixedDecodeV28.ps1
+PreparePgLabPaginationV29.ps1
 ```
 
 O `Tp02Pg34Decoder.cs` reconhece atualmente, no escopo fisicamente confirmado:
@@ -230,19 +231,69 @@ O autoteste do decoder possui dois fixtures físicos independentes:
 - programa misto: 23 passos, 38=2C, checksum 52
 ```
 
-O PG Lab continua READ-ONLY. O V28 apenas amplia a apresentação/identificação do decoder; não acrescenta qualquer TX serial.
+### Sonda de paginação preparada, ainda não confirmada fisicamente
+
+O V29 acrescenta uma única sonda READ-ONLY exata para o segundo bloco candidato:
+
+```text
+34 03 00 50 A0 D8
+```
+
+A sonda só é enviada quando:
+
+```text
+- o operador autorizou READ-ONLY;
+- HELLO confirmou STOP;
+- F0 foi válido;
+- 38 foi estruturalmente válido;
+- a página 0 do 34 foi válida;
+- 38.payload[1] >= A0.
+```
+
+Não há retentativa automática da página 1. O quadro recebido é preservado bruto e o decoder ainda não foi generalizado para `baseStep=80`; isso ficará para depois da confirmação física.
+
+Plano detalhado do ensaio:
+
+```text
+docs/tp02-pg-pagination-34-v119.md
+```
+
+O programa de bancada recomendado usa 18 rungs `STR Xnnnn + F-13w ADD`, totalizando 91 passos com END. A fronteira foi escolhida para que os 16 primeiros rungs ocupem exatamente os passos 0..79 e a página candidata iniciada em `0x0050` comece em `STR X0017`.
+
+A previsão, ainda não confirmada, para o comando 38 nesse programa é:
+
+```text
+00 02 00 B4 49
+```
+
+Se a geometria de paginação também se confirmar, a página 1 deverá conter 11 passos ativos (rungs 17 e 18 + END).
+
+O workflow `validate-tp02-compiler` run #17 (`34535673571`) passou integralmente após a integração do V29, incluindo compilação do PG Lab 1.19.
+
+O PG Lab continua READ-ONLY. Nenhuma escrita, download, erase, firmware ou RUN/STOP remoto foi acrescentado.
 
 ## Próximas prioridades
 
-Não é necessário repetir o mesmo programa misto. Os próximos ensaios úteis devem atacar lacunas específicas:
+A próxima ação útil é física e específica:
 
 ```text
-1. paginação 34: programa com mais de 80 passos;
-2. fronteiras TMR/CNT de índice (por exemplo V0128/V0129), se necessário;
-3. operandos de funções em outras famílias: V, X/Y/C normal, WX/WY/WC;
-4. constantes que exercitem bits externos ainda não observados;
-5. outras F-xx prioritárias para o OpenLadder;
-6. somente depois, estudo separado e deliberado do protocolo de escrita/download.
+1. montar no PC12 o programa de 91 passos descrito em docs/tp02-pg-pagination-34-v119.md;
+2. transferir pelo PC12 normalmente;
+3. colocar o TP02 em STOP;
+4. fechar o PC12;
+5. executar o PG Lab 1.19 com READ-ONLY autorizado;
+6. analisar 38, página 0 e a sonda única da página 1;
+7. somente se a paginação for confirmada, generalizar decoder e leitura multipágina.
+```
+
+Depois disso:
+
+```text
+- fronteiras TMR/CNT de índice (por exemplo V0128/V0129), se necessário;
+- operandos de funções em outras famílias: V, X/Y/C normal, WX/WY/WC;
+- constantes que exercitem bits externos ainda não observados;
+- outras F-xx prioritárias para o OpenLadder;
+- somente depois, estudo separado e deliberado do protocolo de escrita/download.
 ```
 
 A escrita física permanece fora de escopo até haver decisão explícita e validação de segurança.
