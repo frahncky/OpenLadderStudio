@@ -411,6 +411,126 @@ def confere_bancada():
     return tudo
 
 
+# ---------------------------------------------------------------------------
+# Decodificador de instrucoes, recuperado do laco em 0x4AFEDD
+# ---------------------------------------------------------------------------
+# O PC12 mascara o byte baixo do passo com 0x78 (descarta o indice de bit nos
+# tres bits inferiores) e desce uma arvore de subtracoes ate o mnemonico.
+
+TABELA_OPCODES = {
+    0x10: 'STR',     0x18: 'STR NOT',
+    0x20: 'AND',     0x28: 'AND NOT',
+    0x30: 'OR',      0x38: 'OR  NOT',
+    0x40: 'OUT',
+    0x60: 'TMR',     0x68: 'CNT',
+}
+
+# Segunda tabela, por salto indexado em 0x4AFD44, para o byte baixo 0x08-0x0D.
+# Mesmos mnemonicos, sem indice de bit. Familia ainda nao observada em bancada.
+TABELA_OPCODES_08 = {
+    0x08: 'STR',     0x09: 'STR NOT',
+    0x0A: 'AND',     0x0B: 'AND NOT',
+    0x0C: 'OR',      0x0D: 'OR  NOT',
+}
+
+SITIOS_DECODER = [
+    (0x004AFEF3, '83 E1 78', 'mascara de opcode: and ecx, 0x78'),
+    (0x004AFF02, '83 F8 30', 'raiz da arvore de mnemonicos: cmp eax, 0x30'),
+    (0x004AFF0D, '83 E8 10', 'ramo STR: sub eax, 0x10'),
+    (0x004AFF2E, '83 E8 38', 'ramo OR NOT: sub eax, 0x38'),
+    (0x004AFF40, '83 E8 20', 'ramo TMR: sub eax, 0x20'),
+    (0x004B036C, '8A 87 30 02 53 00', 'endereco: le o byte baixo do passo'),
+    (0x004B0372, '24 07', 'endereco bits 0-2: and al, 7'),
+    (0x004B037C, '81 E2 80 00 00 00', 'endereco bit 3: testa 0x80 do byte baixo'),
+    (0x004B038A, '0C 08', 'endereco bit 3: or al, 8'),
+    (0x004B038C, '8B 4B 66', 'cursor da regiao B'),
+    (0x004B038F, '8A 91 30 02 53 00', 'le o byte da regiao B'),
+    (0x004B0399, '83 E1 10', 'endereco bit 4: testa 0x10 da regiao B'),
+    (0x004B03A7, '83 E1 20', 'endereco bit 5: testa 0x20 da regiao B'),
+    (0x004B03B7, '83 E2 40', 'endereco bit 6: testa 0x40 da regiao B'),
+    (0x004B03C6, '40', 'numero do dispositivo = valor + 1'),
+]
+
+# Enderecos de dispositivo observados em bancada: (rotulo, byte baixo, regiao B, n)
+ENDERECOS_BANCADA = [
+    ('A contato X0001 NF', 0x18, 0x09, 1),
+    ('B contato X0002 NF', 0x19, 0x0A, 2),
+    ('D contato X0002 NA', 0x11, 0x02, 2),
+    ('E contato X0001 NA', 0x10, 0x01, 1),
+    ('A bobina  Y0002',    0x41, 0x07, 2),
+    ('C bobina  Y0003',    0x42, 0x08, 3),
+]
+
+
+def mnemonico(baixo):
+    """Mnemonico do passo, a partir do byte baixo, como o PC12 o resolve."""
+    if 0x08 <= (baixo & 0x7F) <= 0x0D:
+        return TABELA_OPCODES_08[baixo & 0x7F]
+    return TABELA_OPCODES.get(baixo & 0x78)
+
+
+def numero_dispositivo(baixo, regiao_b):
+    """Numero do dispositivo, remontado dos dois planos como o PC12 faz.
+
+    Os tres bits inferiores e o bit 0x80 vem do byte baixo do passo; os bits
+    4, 5 e 6 vem do byte correspondente da regiao B. O PC12 soma 1 no fim,
+    porque a numeracao exibida e 1-based.
+    """
+    v = baixo & 0x07
+    if baixo & 0x80:
+        v |= 0x08
+    if regiao_b & 0x10:
+        v |= 0x10
+    if regiao_b & 0x20:
+        v |= 0x20
+    if regiao_b & 0x40:
+        v |= 0x40
+    return (v & 0xFF) + 1
+
+
+def confere_decoder():
+    print('=' * 78)
+    print('Decodificador de instrucoes')
+    print('=' * 78)
+    ok = True
+    for va, esperado, descr in SITIOS_DECODER:
+        alvo = bytes.fromhex(esperado.replace(' ', ''))
+        real = le(va, len(alvo))
+        bate = real == alvo
+        ok &= bate
+        print('  %s 0x%08X  %s' % ('OK  ' if bate else 'FALHA', va, descr))
+        if not bate:
+            print('        esperado %s' % esperado)
+            print('        no arquivo %s' % ' '.join('%02X' % b for b in real))
+    print()
+    print('  Mnemonico: byte baixo do passo mascarado com 0x78.')
+    print()
+    for k in sorted(TABELA_OPCODES):
+        print('     0x%02X  %s' % (k, TABELA_OPCODES[k]))
+    print()
+    print('  Numero do dispositivo, remontado de dois planos:')
+    print('     bits 0-2  <- byte baixo & 0x07')
+    print('     bit  3    <- byte baixo & 0x80')
+    print('     bits 4-6  <- regiao B & 0x10 / 0x20 / 0x40')
+    print('     depois soma 1')
+    print()
+    print('  %-22s %-7s %-7s %-7s %s'
+          % ('captura de bancada', 'baixo', 'regB', 'calc', 'esperado'))
+    print('  ' + '-' * 62)
+    for rotulo, baixo, regb, esperado_n in ENDERECOS_BANCADA:
+        n = numero_dispositivo(baixo, regb)
+        bate = n == esperado_n
+        ok &= bate
+        print('  %-22s 0x%02X    0x%02X    %-7d %d %s'
+              % (rotulo, baixo, regb, n, esperado_n, 'ok' if bate else 'DIVERGE'))
+    print()
+    if ok:
+        print('  A regiao B carrega os bits altos do numero do dispositivo.')
+        print('  Seus bits 0-3 e 7 nao sao consumidos por este caminho: em aberto.')
+    print()
+    return ok
+
+
 def hexs(b):
     return ' '.join('%02X' % x for x in b) if b else '(vazio)'
 
@@ -471,6 +591,9 @@ def main():
     geometria()
     if not confere_bancada():
         print('As capturas de bancada divergem do modelo. Nao siga adiante.')
+        return 1
+    if not confere_decoder():
+        print('O decodificador nao confere com este pc12.exe. Nao siga adiante.')
         return 1
     if a.so_geometria:
         return 0

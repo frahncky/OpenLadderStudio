@@ -148,15 +148,74 @@ fórmula do encoder de `n = 1` a `n = 8` e divergem a partir de `X0009`, porque
 
 Uma única captura com `X0009` decide entre os dois modelos.
 
+## Decodificador de instruções — recuperado
+
+O laço em `0x4AFEDD` mascara o byte **baixo** de cada passo com `0x78` — descartando os
+três bits inferiores, que carregam o índice de bit — e desce uma árvore de subtrações até
+o mnemônico:
+
+| byte baixo `& 0x78` | instrução |
+|---:|---|
+| `0x10` | STR |
+| `0x18` | STR NOT |
+| `0x20` | AND |
+| `0x28` | AND NOT |
+| `0x30` | OR |
+| `0x38` | OR NOT |
+| `0x40` | OUT |
+| `0x60` | TMR |
+| `0x68` | CNT |
+
+As sete primeiras coincidem com as bases já reconstruídas em
+[`Tp02TargetCompiler.cs`](../src/OpenLadderStudio.Core/Tp02TargetCompiler.cs). **`TMR = 0x60`
+e `CNT = 0x68` são novas** — não estavam na tabela de bits do encoder.
+
+`AND STR` e `OR STR` são tratadas em outro ramo (`0x4B01EF` e `0x4B0227`), e há uma segunda
+tabela, por salto indexado em `0x4AFD44`, para o byte baixo `0x08`–`0x0D`, com os mesmos seis
+mnemônicos booleanos sem índice de bit. Essa família não apareceu em nenhuma captura de
+bancada e seu papel continua desconhecido.
+
+## Região B — para que serve
+
+Esta é a resposta ao ponto que estava em aberto. Em `0x4B036C`–`0x4B03C6` o PC12 remonta o
+número do dispositivo **a partir dos dois planos**:
+
+```text
+bits 0-2  <- byte baixo do passo & 0x07
+bit  3    <- byte baixo do passo & 0x80
+bits 4-6  <- byte da região B & 0x10 / 0x20 / 0x40
+depois soma 1        (a numeração exibida é 1-based)
+```
+
+Ou seja: **a região B carrega os bits altos do número do dispositivo.** Ela não é o byte
+`EXT` do encoder — é um plano de extensão de endereço.
+
+Conferido contra as capturas de bancada:
+
+| captura | byte baixo | região B | número | esperado |
+|---|---:|---:|---:|---:|
+| X0001 NF | `18` | `09` | 1 | 1 ✓ |
+| X0002 NF | `19` | `0A` | 2 | 2 ✓ |
+| X0002 NA | `11` | `02` | 2 | 2 ✓ |
+| X0001 NA | `10` | `01` | 1 | 1 ✓ |
+| Y0002 | `41` | `07` | 2 | 2 ✓ |
+| Y0003 | `42` | `08` | 3 | 3 ✓ |
+
+Os seis endereços saem certos. Isso também explica por que as fórmulas lineares da bancada
+funcionavam: com `n ≤ 8` os bits altos são todos zero e sobra só `LOW & 7`.
+
 ## O que continua em aberto
 
-- **Semântica da região B.** A estrutura está confirmada (1 byte por passo a partir de
-  `payload[0x0A0]`), mas os valores observados não correspondem ao byte `EXT` calculado
-  pelo encoder — `EXT` seria 0 para grupo 0, e a bancada observou `01`, `02`, `09`, `0A`
-  para X e `07`, `08` para Y. É um plano distinto, ainda não decodificado.
-- **Tabela de salto do decodificador.** Em `0x004AFD3D` há um `jmp` indexado sobre
-  `(payload[2i+1] & 0x7F) - 8`, para valores 8 a 13. Mapear essa tabela dá o decodificador
-  de instruções completo.
+- **Bits 0-3 e 7 da região B.** Os bits 4-6 são endereço; os demais não são consumidos por
+  este caminho. Os valores observados (`01`, `02`, `09`, `0A` para X; `07`, `08` para Y)
+  variam, então carregam algo — mas o quê, continua desconhecido.
+- **A classe do dispositivo (X/Y/C) no bloco recebido.** O byte **alto** de cada passo, nos
+  índices pares da região A, **não é lido por nenhum dos dois laços de decodificação** — o
+  cursor começa em 3 e avança de 2, tocando só os índices ímpares. A bancada observou
+  `payload[0x000] = 0x00` e `payload[0x002] = 0x20`, coerentes com as bases de `X` e `Y`,
+  mas de onde o PC12 tira a letra ao montar o programa segue sem resposta.
+- **A família de opcodes `0x08`–`0x0D`.** Mesmos mnemônicos booleanos, sem índice de bit.
+  Nenhuma captura de bancada caiu nela.
 - **Fluxo B** (`0x004B0F94`) abre um diálogo antes de transmitir; a emulação atual para no
   preflight `F0` porque os stubs de OWL não preservam a pilha nas chamadas de membro.
 

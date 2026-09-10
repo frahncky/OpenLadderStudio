@@ -308,7 +308,18 @@ Contato fechado Xn:
 
 Essas fórmulas ainda devem ser validadas em endereços não adjacentes antes de serem consideradas regras gerais.
 
-**Ponto de quebra previsto:** a fórmula do encoder do PC12 (`LOW = base | ((n-1) & 7)`) coincide com a aproximação linear acima de `n = 1` a `n = 8` e diverge a partir de `X0009` — linear prevê `0x18`, encoder prevê `0x10`. Uma única captura com `X0009` decide entre os dois modelos.
+**RESOLVIDO POR ANÁLISE ESTÁTICA (2026-09-10):** o decodificador do PC12, em `0x4B036C`–`0x4B03C6`, remonta o número do dispositivo a partir dos **dois planos**:
+
+```text
+bits 0-2  <- byte baixo do passo & 0x07
+bit  3    <- byte baixo do passo & 0x80
+bits 4-6  <- byte da região B & 0x10 / 0x20 / 0x40
+depois soma 1
+```
+
+Essa reconstrução acerta os seis endereços das capturas da seção 9.1. Ela também explica por que a aproximação linear funcionava: para `n ≤ 8` os bits altos são todos zero e sobra apenas `LOW & 7`.
+
+**Ponto de quebra previsto:** a aproximação linear (`0x0F + n`) coincide com o modelo real de `n = 1` a `n = 8` e diverge a partir de `X0009` — linear prevê `payload[0x001] = 0x18`, o decodificador prevê `0x10` com o bit `0x10` aceso na região B. Uma única captura com `X0009` confirma a reconstrução em hardware. Ver [`tp02-pg-leitura-programa-emulacao.md`](tp02-pg-leitura-programa-emulacao.md).
 
 ### 9.3 Tipo do contato aberto/fechado
 
@@ -538,7 +549,8 @@ Não tratar como fato:
 - que o byte variável do 38 conte contatos/instruções;
 - que 0A leia o ladder;
 - que o bloco 34 atual seja o programa inteiro;
-- que a semântica da região B (`payload[0x0A0 + i]`) esteja decodificada — a estrutura está confirmada, os valores observados não correspondem ao byte `EXT` do encoder;
+- que os bits 0-3 e 7 da região B tenham significado conhecido — os bits 4-6 são endereço (resolvido), o resto não é consumido pelo decodificador do PC12;
+- que se saiba de onde vem a classe do dispositivo (X/Y/C) no bloco recebido — o byte alto de cada passo não é lido por nenhum dos dois laços de decodificação;
 - que as fórmulas candidatas de X/Y sejam válidas para toda a faixa de endereços;
 - que `0x08` seja universalmente “NOT” em qualquer opcode/contexto;
 - que silêncio do PLC signifique falha elétrica; sessões válidas demonstram intermitência de estado/temporização.
