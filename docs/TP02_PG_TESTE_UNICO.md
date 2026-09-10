@@ -1,5 +1,7 @@
 # Teste Unico PG - WEG TP02
 
+> **DOCUMENTO HISTÓRICO.** Este arquivo descreve uma fase anterior do laboratório e contém estratégias que já foram substituídas. Para o estado técnico atual, vetores confirmados, hipóteses, codificação parcial do payload 34 e ponto exato de retomada, use **[`TP02_PG_ESTADO_DA_ARTE.md`](TP02_PG_ESTADO_DA_ARTE.md)**. O snapshot canônico atual é OpenLadder Studio v1.03 / TP02 PG Lab 1.16.
+
 O Teste Unico concentra a campanha de descoberta do protocolo PG do TP02 em uma unica execucao. O operador seleciona a porta COM e pressiona `EXECUTAR TESTE UNICO TP02`. Nao e necessario rodar F0, 38, leitura de programa ou leitura de sistema separadamente.
 
 ## Fluxo

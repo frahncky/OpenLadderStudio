@@ -1,5 +1,7 @@
 # Pesquisa Continua IA - WEG TP02
 
+> **DOCUMENTO HISTÓRICO DE ARQUITETURA.** Este arquivo descreve o modo de pesquisa contínua do motor 1.9 e não representa o fluxo experimental focado atual. Para retomar a engenharia reversa, consulte primeiro **[`TP02_PG_ESTADO_DA_ARTE.md`](TP02_PG_ESTADO_DA_ARTE.md)** e **[`data/tp02_pg_observations.tsv`](data/tp02_pg_observations.tsv)**. O snapshot canônico atual é OpenLadder Studio v1.03 / TP02 PG Lab 1.16.
+
 A Pesquisa Continua IA foi criada para manter uma unica sessao de bancada aberta enquanto o OpenLadder Studio investiga o protocolo PG do WEG TP02-60MR.
 
 ## Objetivo
