@@ -1,16 +1,10 @@
-# Validação física — dois contatos abertos em série (2026-09-10 11:55 BRT)
+# Validação física — captura com dois contatos em série (2026-09-10 11:55 BRT)
 
 ## Objetivo
 
-Registrar de forma permanente a captura física do programa:
+Registrar de forma permanente a captura `TP02-PG-Lab-20260910-115554.txt`, obtida com **OpenLadder Studio v1.04 / TP02 PG Lab 1.16**, PLC em STOP e fluxo estritamente READ-ONLY.
 
-```text
-X0001 aberto -- X0002 aberto -- (Y0003)
-```
-
-usando **OpenLadder Studio v1.04 / TP02 PG Lab 1.16**, PLC em STOP e fluxo estritamente READ-ONLY.
-
-Arquivo de bancada: `TP02-PG-Lab-20260910-115554.txt`.
+A intenção experimental anterior era testar dois contatos abertos em série antes da bobina `Y0003`. O log serial, porém, não registra textualmente os endereços presentes no ladder. Por isso, a identificação exata do primeiro contato deve ser inferida com cautela a partir dos bytes e, idealmente, confirmada pelo operador.
 
 ## Sessão válida
 
@@ -57,9 +51,9 @@ passo 1: HIGH=00 LOW=21 BRAW=03
 passo 2: HIGH=20 LOW=42 BRAW=08
 ```
 
-## Interpretação controlada
+## Interpretação segura
 
-### Passo 1 — AND X0002 confirmado fisicamente
+### Passo 1 — opcode AND confirmado fisicamente
 
 `LOW=0x21` satisfaz:
 
@@ -67,7 +61,7 @@ passo 2: HIGH=20 LOW=42 BRAW=08
 0x21 & 0x78 = 0x20
 ```
 
-portanto confirma em hardware o opcode **AND** recuperado do `pc12.exe`. Os três bits inferiores valem `1`, coerentes com o segundo endereço dentro do grupo para X0002.
+Isso confirma em hardware o opcode **AND** recuperado do `pc12.exe`. Os três bits inferiores valem `1`, compatíveis com o segundo endereço dentro do grupo caso o contato seja `X0002`.
 
 ### Passo 2 — OUT Y0003 permanece estável
 
@@ -77,50 +71,95 @@ A bobina aparece como:
 HIGH=20 LOW=42 BRAW=08
 ```
 
-exatamente como nos programas mínimos anteriores com Y0003. Isso mostra que a inserção de um segundo contato desloca a bobina para o passo seguinte sem alterar seu par HIGH/LOW observado.
+exatamente como nas capturas mínimas anteriores com `Y0003`. A inserção de um segundo contato desloca a bobina para o passo seguinte sem alterar seu triplo observado.
 
-### Passo 0 — STR X0001 com metadados contextuais
+### Passo 0 — forte evidência de que o primeiro contato continua X0009
 
-O primeiro contato conserva `LOW=0x10`, portanto continua sendo **STR**. Entretanto, comparado ao programa mínimo `X0001 aberto -> Y0003`, seus outros campos mudam:
+O primeiro passo desta captura é:
 
 ```text
-programa mínimo: HIGH=00 LOW=10 BRAW=01
-programa em série: HIGH=01 LOW=10 BRAW=02
+HIGH=01 LOW=10 BRAW=02
 ```
 
-Como o operando X0001 não mudou, `HIGH` e `BRAW` não podem ser tratados como campos puramente independentes contendo apenas endereço do dispositivo. Há informação contextual/estrutural ou transformação adicional ainda não isolada.
+Esse triplo é **idêntico** ao obtido imediatamente antes no teste controlado `X0009 aberto -> Y0003`:
 
-Esse resultado reforça a correção feita após X0009: `BRAW` bruto não deve ser interpretado diretamente como o byte interno consumido pela rotina estática do decoder.
+```text
+X0009 aberto: HIGH=01 LOW=10 BRAW=02
+```
+
+Já o teste mínimo `X0001 aberto -> Y0003` havia produzido:
+
+```text
+X0001 aberto: HIGH=00 LOW=10 BRAW=01
+```
+
+Portanto, a explicação mais simples e atualmente mais forte é que o primeiro contato do ladder desta captura permaneceu **X0009 aberto**, e que foi adicionado um segundo contato compatível com `AND X0002` antes de `Y0003`.
+
+Não se deve usar esta captura como prova de que `X0001` muda contextualmente para `HIGH=01/BRAW=02`, a menos que o operador confirme explicitamente que o ladder realmente continha X0001 como primeiro contato. Sem essa confirmação, promover tal interpretação seria confundir identidade de operando com contexto estrutural.
+
+## Sequência física recuperada
+
+Independentemente da identificação final do primeiro operando, a sequência de LOWs é:
+
+```text
+10 21 42
+```
+
+que corresponde a:
+
+```text
+STR
+AND
+OUT
+```
+
+Portanto, a estrutura serial de **dois contatos em série seguidos de bobina** está agora fisicamente demonstrada no TP02 no nível de opcode.
+
+Se o primeiro contato for de fato X0009 e o segundo X0002, a leitura é:
+
+```text
+STR X0009
+AND X0002
+OUT Y0003
+```
 
 ## O que esta captura confirma
 
-- o retorno `38 = 00 02 00 04 F9` é reproduzível para o programa com dois contatos em série;
+- o retorno `38 = 00 02 00 04 F9` é reproduzível para um programa com dois contatos em série;
 - o PG Lab 1.16 aceita corretamente esse retorno por validação estrutural e chega ao 34;
 - o `34` é válido com 240 bytes de payload e checksum FF;
-- a sequência de LOWs `10 21 42` é compatível exatamente com `STR`, `AND`, `OUT`;
-- `AND X0002` está agora confirmado fisicamente no TP02;
-- a bobina Y0003 permanece codificada como `20/42` no plano A;
-- HIGH/BRAW do primeiro contato são dependentes do contexto do programa e não podem ser tratados como endereço isolado sem análise adicional.
+- a sequência de LOWs `10 21 42` confirma fisicamente `STR`, `AND`, `OUT`;
+- `LOW=21` confirma o opcode AND em bancada;
+- a bobina `Y0003` permanece `HIGH=20 LOW=42 BRAW=08`;
+- o triplo do primeiro passo coincide exatamente com o X0009 previamente capturado.
 
 ## O que NÃO está confirmado
 
-- o significado exato de `HIGH=01` no primeiro contato desta captura;
-- o significado exato de `BRAW=02` e `BRAW=03` nos dois contatos;
-- se esses campos codificam posição, ligação, estrutura de rung, índice interno ou outra transformação;
+- que o primeiro contato desta captura era X0001; os bytes indicam fortemente X0009;
+- a semântica completa de BRAW;
 - a representação física de OR/paralelo;
-- a posição/representação explícita de `End` dentro deste primeiro bloco.
+- a posição/representação explícita de `End` dentro deste primeiro bloco;
+- se há campos estruturais adicionais além dos três bytes por passo já observados.
 
 ## Próximo experimento recomendado
 
-Construir os mesmos contatos em paralelo, sem mudar endereços nem a bobina:
+Antes de usar esta captura como baseline série/paralelo, confirmar visualmente qual foi o primeiro contato gravado no PC12.
+
+Se ele era `X0009`, manter exatamente os mesmos operandos e converter apenas a ligação série para paralelo:
 
 ```text
-      +-- X0001 aberto --+
+      +-- X0009 aberto --+
 ------|                  |------(Y0003)
       +-- X0002 aberto --+
 ```
 
-Objetivo principal: comparar byte a byte com esta captura em série. A análise estática prevê que o caminho booleano deverá expor **OR** (`LOW & 0x78 = 0x30`) ou palavras/estruturas auxiliares equivalentes, mas a bancada deve decidir a representação real.
+Se a intenção for comparar `X0001` e `X0002`, primeiro repetir a captura série garantindo explicitamente:
+
+```text
+X0001 aberto -- X0002 aberto -- (Y0003)
+```
+
+e só depois construir o paralelo equivalente.
 
 ## Segurança
 
