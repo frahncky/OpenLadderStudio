@@ -1,92 +1,57 @@
 # TP02 PG — ponto canônico de retomada
 
-> Arquivo curto e estável para recuperação rápida do estado mais recente da engenharia reversa.
+> Estado mais recente da engenharia reversa do WEG TP02 após o teste completo de diagnóstico de 2026-09-10.
 
-## Leia primeiro
-
-1. `docs/TP02_PG_ESTADO_DA_ARTE.md` — base histórica detalhada.
-2. `docs/tp02-pg-validacao-x0017-20260910.md` — validação física mais recente.
-3. `docs/TP02_PG_CHECKPOINT_20260910_1255.md` — checkpoint da matriz booleana.
-4. `docs/data/tp02_pg_observations.tsv` — observações estruturadas acumuladas.
-
-## Estado atual em 2026-09-10 13:28 BRT
-
-Hardware:
+## Ambiente
 
 ```text
-WEG TP02-60MR / TP02-40/60MR(T) V2.2.4K
-```
-
-Software de bancada:
-
-```text
-OpenLadder Studio v1.04
-TP02 PG Lab 1.16
-```
-
-Serial:
-
-```text
-19200 8O1
-DTR ON
-RTS OFF
-```
-
-Fluxo READ-ONLY conhecido:
-
-```text
-HELLO -> F0 -> 38 -> 34
+PLC: WEG TP02-60MR / TP02-40/60MR(T) V2.2.4K
+OpenLadder Studio: v1.04
+TP02 PG Lab: 1.16
+Serial: 19200 8O1, DTR ON, RTS OFF
+Estado: STOP
+Fluxo READ-ONLY: HELLO -> F0 -> 38 -> 34
 ```
 
 Nenhuma escrita está habilitada. `0F 00 F0` é Clear All Memory e permanece bloqueado.
 
-## Última captura física
+## Leia primeiro
+
+1. `docs/tp02-pg-validacao-programa-completo-20260910.md`
+2. `docs/data/tp02_pg_complete_matrix_20260910.tsv`
+3. `docs/TP02_PG_ESTADO_DA_ARTE.md`
+4. `docs/data/tp02_pg_observations.tsv`
+
+## Última captura
 
 Arquivo:
 
 ```text
-TP02-PG-Lab-20260910-132650.txt
+TP02-PG-Lab-20260910-135502.txt
 ```
 
-Programa:
+Foi gravado um único programa com 11 rungs e 26 instruções booleanas, cobrindo STR, STR NOT, AND, AND NOT, OR, OR NOT, OUT e as fronteiras X0008/X0009, X0016/X0017 e Y0008/Y0009.
+
+O quadro 34 foi válido, com 240 bytes de payload e checksum final `0x98`.
+
+O comando 38 retornou:
 
 ```text
-X0017 aberto -- (Y0003)
+00 02 00 32 CB
 ```
 
-Resultado:
-
-```text
-STR X0017: HIGH=02 LOW=10 BRAW=03
-OUT Y0003: HIGH=20 LOW=42 BRAW=08
-checksum 34 = 90
-38 = 00 02 00 02 FB
-```
-
-## Endereçamento X — fronteiras fisicamente confirmadas
-
-Para contatos STR abertos no primeiro bit de cada grupo:
-
-```text
-X0001: HIGH=00 LOW=10 BRAW=01
-X0009: HIGH=01 LOW=10 BRAW=02
-X0017: HIGH=02 LOW=10 BRAW=03
-```
-
-O plano A confirma:
+## Plano A — regra fisicamente confirmada no escopo ensaiado
 
 ```text
 group = (n - 1) >> 3
 bit   = (n - 1) & 0x07
-HIGH  = group                 [para classe X nos grupos ensaiados]
-LOW   = opcode | bit
+
+HIGH(X) = 0x00 + group
+HIGH(Y) = 0x20 + group
+LOW     = opcode | bit
 ```
 
-Assim, o segundo salto de grupo em X0017 está confirmado fisicamente e coincide com o encoder atual.
-
-Para BRAW, há a regularidade física `01,02,03` nos inícios dos grupos 0,1,2, mas a semântica completa ainda não deve ser generalizada.
-
-## Matriz booleana confirmada fisicamente
+Matriz de opcodes:
 
 ```text
 STR      0x10
@@ -104,37 +69,63 @@ Identificação:
 opcode = LOW & 0x78
 ```
 
-A negação/inversão acrescentou `0x08` tanto em LOW quanto em BRAW nos três pares controlados STR/STR NOT, AND/AND NOT e OR/OR NOT.
+Todos os 26 pares HIGH/LOW do teste completo coincidiram com a previsão.
 
-## Comando 38
+## Região B — descoberta principal
 
-Nos programas mínimos de um contato + bobina, X0009 e X0017 retornaram:
-
-```text
-00 02 00 02 FB
-```
-
-Logo, mudar o endereço do contato entre esses grupos não alterou o byte variável do 38 nesse formato mínimo.
-
-## Próximo teste
-
-Gravar exatamente:
+Nas 26 instruções ativas do teste completo, sem exceção:
 
 ```text
-X0018 aberto -- (Y0003)
+BRAW = (HIGH >> 4)
+     + (HIGH & 0x0F)
+     + (LOW  >> 4)
+     + (LOW  & 0x0F)
 ```
 
-PLC em STOP, PC12 fechado, executar PG Lab 1.16 sem alterar o perfil serial.
+Ou seja, no escopo booleano ensaiado, BRAW é exatamente a **soma dos quatro nibbles de HIGH e LOW**.
 
-Objetivo: medir o primeiro incremento dentro do grupo 2.
-
-Previsão forte do plano A:
+Exemplos:
 
 ```text
-HIGH = 02
-LOW  = 11
+STR X0018:      HIGH=02 LOW=11 -> BRAW=04
+OR NOT X0002:   HIGH=00 LOW=39 -> BRAW=0C
+OUT Y0009:      HIGH=21 LOW=40 -> BRAW=07
 ```
 
-BRAW permanece aberto; `04` é uma hipótese discriminatória, não um fato.
+A mesma regra é compatível com as capturas booleanas anteriores. Não generalizar ainda para TMR, CNT ou funções F-xx sem validação física.
 
-Depois disso, testar três contatos em série para investigar o significado do byte variável do comando 38.
+## Comando 38 — relação estrutural forte
+
+O programa completo possui 26 instruções booleanas consecutivas. O último par ativo da Região A começa em:
+
+```text
+2 * (26 - 1) = 50 = 0x32
+```
+
+O `38 payload[1]` retornou exatamente `0x32`.
+
+Isso também coincide com os casos anteriores:
+
+```text
+2 instruções -> 0x02
+3 instruções -> 0x04
+26 instruções -> 0x32
+```
+
+Classificação atual: **EVIDÊNCIA FORTE** de que esse byte representa o deslocamento/endereço do último par ativo da Região A, ou grandeza equivalente a `2*(N-1)` para instruções booleanas de um passo.
+
+Ainda falta testar instruções de tamanho variável antes de considerar a semântica do 38 completamente resolvida.
+
+## Próxima etapa
+
+Não é necessário repetir os testes booleanos isolados. A prioridade agora é de software:
+
+```text
+1. decodificar automaticamente o quadro 34 em HIGH/LOW/BRAW;
+2. reconstruir X/Y e os opcodes booleanos;
+3. validar BRAW pela soma dos nibbles;
+4. usar o 38 para delimitar o trecho ativo quando a hipótese for aplicável;
+5. depois estender a bancada para TMR, CNT e funções F-xx.
+```
+
+O próximo ensaio de hardware deve ser novamente um teste completo, não uma sequência de microtestes, e só é necessário quando formos validar instruções de tamanho variável.
