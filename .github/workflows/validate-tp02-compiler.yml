@@ -13,6 +13,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/PrepareTp02DryRunV83.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabDecode34V27.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabMixedDecodeV28.ps1'
+      - 'src/OpenLadderStudio.Desktop/PreparePgLabPaginationV29.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Lab.bat'
       - 'src/OpenLadderStudio.Desktop/Build.bat'
       - 'docs/tp02-machine-code-reverse-engineering.md'
@@ -33,6 +34,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/PrepareTp02DryRunV83.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabDecode34V27.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabMixedDecodeV28.ps1'
+      - 'src/OpenLadderStudio.Desktop/PreparePgLabPaginationV29.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Lab.bat'
       - '.github/workflows/validate-tp02-compiler.yml'
 
