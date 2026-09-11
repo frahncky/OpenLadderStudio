@@ -10,22 +10,28 @@ namespace OpenLadderStudio.Core
     ///   TX[0] = 0x33
     ///   TX[1] = 3*N + 4
     ///   TX[2] = 0x00
-    ///   TX[3..4] = endereço inicial de passo
+    ///   TX[3..4] = endereço inicial de passo do primeiro registro do bloco
     ///   TX[5] = 2*N
-    ///   corpo = 2*N bytes do plano HIGH/LOW + N bytes externos
+    ///   corpo = 2*N bytes HIGH/LOW + N bytes EXTERNAL
     ///   checksum fecha a soma do quadro em 0xFF.
     ///
-    /// A geometria de 3 bytes por passo é compatível com a representação
-    /// HIGH/LOW/external já recuperada do comando 34. A identificação de 0x33
-    /// como escrita de programa é, neste ponto, uma reconstrução estática forte,
-    /// ainda NÃO uma confirmação física de bancada.
+    /// N é o número de REGISTROS de código de máquina acumulados no bloco,
+    /// não necessariamente a diferença entre endereços de passo. O PC12
+    /// incrementa separadamente o cursor de passo em 1..4 conforme a instrução
+    /// e encerra a coleta do bloco quando o contador de registros chega a 20.
+    ///
+    /// O caminho estático também mostra que os dois bytes HIGH/LOW de cada
+    /// registro são gravados diretamente no buffer TX, enquanto o byte EXTERNAL
+    /// é acumulado separadamente e anexado depois. Assim, a geometria 2*N + N
+    /// do corpo é reconstruída diretamente do binário; o significado físico do
+    /// comando 0x33 ainda não foi confirmado em bancada.
     ///
     /// IMPORTANTE: esta classe não abre serial, não transmite quadros e não é
     /// ligada a nenhuma rotina de download. Serve somente para dry-run/testes.
     /// </summary>
     internal static class Tp02Pg33DryRunFrame
     {
-        internal const int MaxStepsPerFrame = 80;
+        internal const int MaxRecordsPerFrame = 20;
         internal const int MaxProgramSteps = 4000;
         internal const byte Command = 0x33;
 
@@ -43,14 +49,15 @@ namespace OpenLadderStudio.Core
             if ((highLowPlane.Length & 1) != 0)
                 throw new ArgumentException("Plano HIGH/LOW deve ter quantidade par de bytes.", "highLowPlane");
 
-            int steps = highLowPlane.Length / 2;
-            if (steps < 1 || steps > MaxStepsPerFrame)
-                throw new ArgumentOutOfRangeException("highLowPlane", "Quadro candidato PG33 aceita 1..80 passos.");
-            if (externalPlane.Length != steps)
-                throw new ArgumentException("Plano externo deve conter exatamente 1 byte por passo.", "externalPlane");
-            if (startStep + steps > MaxProgramSteps)
-                throw new ArgumentOutOfRangeException("startStep", "Quadro ultrapassa o limite de 4000 passos.");
+            int records = highLowPlane.Length / 2;
+            if (records < 1 || records > MaxRecordsPerFrame)
+                throw new ArgumentOutOfRangeException("highLowPlane", "Quadro candidato PG33 aceita 1..20 registros de código de máquina.");
+            if (externalPlane.Length != records)
+                throw new ArgumentException("Plano EXTERNAL deve conter exatamente 1 byte por registro.", "externalPlane");
 
+            // Não validar startStep + records: instruções do TP02 podem consumir
+            // 1..4 passos de endereço por registro. O span real pertence ao
+            // empacotador/orquestrador, não ao formato bruto deste quadro.
             int bodyLength = highLowPlane.Length + externalPlane.Length; // 3*N
             int bytesAfterLengthBeforeChecksum = bodyLength + 4;         // 3*N + 4
             int frameLength = 2 + bytesAfterLengthBeforeChecksum + 1;    // cmd,len,...,chk
@@ -82,12 +89,12 @@ namespace OpenLadderStudio.Core
             if (!HasValidChecksum(frame)) return false;
             if (frame[0] != Command || frame[2] != 0x00) return false;
 
-            int stepsTimes2 = frame[5];
-            if (stepsTimes2 == 0 || (stepsTimes2 & 1) != 0) return false;
-            int steps = stepsTimes2 / 2;
-            if (steps < 1 || steps > MaxStepsPerFrame) return false;
+            int recordsTimes2 = frame[5];
+            if (recordsTimes2 == 0 || (recordsTimes2 & 1) != 0) return false;
+            int records = recordsTimes2 / 2;
+            if (records < 1 || records > MaxRecordsPerFrame) return false;
 
-            int expectedAfterLength = (3 * steps) + 4;
+            int expectedAfterLength = (3 * records) + 4;
             if (frame[1] != expectedAfterLength) return false;
             return frame.Length == expectedAfterLength + 3;
         }
