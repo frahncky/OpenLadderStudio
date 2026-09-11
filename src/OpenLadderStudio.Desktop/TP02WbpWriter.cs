@@ -11,8 +11,8 @@ namespace ModernPC12
     /// <summary>
     /// Gravador de programa TP02 pela interface Computer Link documentada (WBP/RBP).
     ///
-    /// Padrao e DRY-RUN. A transmissao real exige --write, PSR valido em STOP e
-    /// leitura RBP de volta igual ao bloco transmitido.
+    /// Padrao e DRY-RUN. A transmissao real exige --write, PSR valido em STOP,
+    /// backup RBP previo da faixa e leitura RBP de volta igual ao bloco transmitido.
     /// </summary>
     internal static class TP02WbpWriterProgram
     {
@@ -47,6 +47,9 @@ namespace ModernPC12
                 if (options.Start + words.Count - 1 > Tp02ComputerLinkProgramCodec.MaxProgramAddress)
                     throw new ArgumentOutOfRangeException("start", "Programa ultrapassa o passo 4000.");
 
+                bool finalEnd = words.Count > 0 && string.Equals(
+                    words[words.Count - 1].ToHex(), "007000", StringComparison.OrdinalIgnoreCase);
+
                 Console.WriteLine("OpenLadder - TP02 Computer Link WBP Writer");
                 Console.WriteLine(new string('=', 58));
                 Console.WriteLine("Arquivo        : " + Path.GetFullPath(options.File));
@@ -55,7 +58,8 @@ namespace ModernPC12
                     + ".." + (options.Start + words.Count - 1).ToString("0000", CultureInfo.InvariantCulture));
                 Console.WriteLine("Estacao        : " + options.Station.ToString("00", CultureInfo.InvariantCulture));
                 Console.WriteLine("Resp. code     : " + options.ResponseCode.ToString("X1", CultureInfo.InvariantCulture));
-                Console.WriteLine("Modo           : " + (options.Write ? "WRITE REAL + RBP VERIFY" : "DRY-RUN"));
+                Console.WriteLine("END final      : " + (finalEnd ? "SIM (007000)" : "NAO DETECTADO"));
+                Console.WriteLine("Modo           : " + (options.Write ? "WRITE REAL + BACKUP + RBP VERIFY" : "DRY-RUN"));
                 Console.WriteLine();
 
                 List<string> frames = Tp02ComputerLinkProgramCodec.BuildWbpProgramFrames(
@@ -64,6 +68,12 @@ namespace ModernPC12
                 int i;
                 for (i = 0; i < frames.Count; i++)
                     Console.WriteLine("WBP[" + i.ToString(CultureInfo.InvariantCulture) + "] " + Escape(frames[i]));
+
+                if (!finalEnd)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("AVISO: o ultimo passo nao e F-00 END (007000). Verifique se a escrita e parcial/intencional.");
+                }
 
                 if (!options.Write)
                 {
@@ -79,6 +89,7 @@ namespace ModernPC12
                 Console.WriteLine();
                 Console.WriteLine("ATENCAO: Computer Link pela MMI exige PG/COM em LOW (pino 4 ligado ao pino 5).");
                 Console.WriteLine("A ferramenta recusara WBP se PSR nao confirmar STOP.");
+                Console.WriteLine("Antes do primeiro WBP, a faixa atual sera salva por RBP em tp02-wbp-backups.");
                 Console.WriteLine();
 
                 return WriteAndVerify(options, words);
@@ -116,6 +127,11 @@ namespace ModernPC12
                 Console.WriteLine("Estado PLC     : " + state.ToString().ToUpperInvariant());
                 if (state != Tp02ComputerLinkState.Stop)
                     throw new InvalidOperationException("WBP BLOQUEADO: o TP02 precisa estar em STOP/PROGRAM.");
+
+                string backupPath = BackupCurrentRange(port, options, words.Count);
+                Console.WriteLine("Backup previo  : " + backupPath);
+                Console.WriteLine("Backup OK. Somente agora a escrita WBP sera iniciada.");
+                Console.WriteLine();
 
                 int offset = 0;
                 int blockIndex = 0;
@@ -166,8 +182,58 @@ namespace ModernPC12
 
                 Console.WriteLine();
                 Console.WriteLine("GRAVACAO CONFIRMADA: todos os blocos WBP foram relidos por RBP sem diferencas.");
+                Console.WriteLine("Backup anterior preservado em: " + backupPath);
                 return 0;
             }
+        }
+
+        private static string BackupCurrentRange(SerialPort port, Options options, int totalCount)
+        {
+            StringBuilder backup = new StringBuilder(totalCount * 8);
+            int offset = 0;
+            int blockIndex = 0;
+
+            while (offset < totalCount)
+            {
+                int count = Math.Min(Tp02ComputerLinkProgramCodec.MaxStepsPerFrame, totalCount - offset);
+                int address = options.Start + offset;
+                string rbpFrame = Tp02ComputerLinkProgramCodec.BuildRbp(
+                    options.Station, address, count, options.ResponseCode);
+                string rbpResponse = Exchange(port, rbpFrame, options.TimeoutMs,
+                    "RBP backup " + blockIndex.ToString(CultureInfo.InvariantCulture));
+
+                Tp02ComputerLinkResponse parsed = Tp02ComputerLinkProgramCodec.ParseResponse(rbpResponse, "RBP");
+                if (!parsed.ChecksumOk || parsed.IsError || parsed.Command != "RBP")
+                    throw new InvalidDataException("BACKUP ABORTADO: resposta RBP invalida no bloco "
+                        + blockIndex.ToString(CultureInfo.InvariantCulture) + ". Nenhum WBP foi enviado.");
+
+                string data = NormalizeHex(parsed.Data);
+                int expectedChars = count * 6;
+                if (data.Length != expectedChars)
+                    throw new InvalidDataException("BACKUP ABORTADO: RBP retornou "
+                        + data.Length.ToString(CultureInfo.InvariantCulture)
+                        + " caracteres hex; esperado=" + expectedChars.ToString(CultureInfo.InvariantCulture)
+                        + ". Nenhum WBP foi enviado.");
+
+                int i;
+                for (i = 0; i < data.Length; i += 6)
+                    backup.AppendLine(data.Substring(i, 6));
+
+                offset += count;
+                blockIndex++;
+            }
+
+            string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tp02-wbp-backups");
+            Directory.CreateDirectory(directory);
+            string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+            string fileName = "TP02-st"
+                + options.Station.ToString("00", CultureInfo.InvariantCulture)
+                + "-addr" + options.Start.ToString("0000", CultureInfo.InvariantCulture)
+                + "-count" + totalCount.ToString("0000", CultureInfo.InvariantCulture)
+                + "-" + stamp + ".hex";
+            string path = Path.Combine(directory, fileName);
+            File.WriteAllText(path, backup.ToString(), Encoding.ASCII);
+            return path;
         }
 
         private static string Exchange(SerialPort port, string frame, int timeoutMs, string label)
@@ -291,6 +357,7 @@ namespace ModernPC12
             Console.WriteLine();
             Console.WriteLine("Padrao Computer Link: station=1, response=5, start=0, 19200 7N1.");
             Console.WriteLine("Sem --write, a ferramenta apenas mostra os quadros WBP e nao abre a COM.");
+            Console.WriteLine("Com --write: exige PSR=STOP, faz backup RBP antes da escrita e verifica cada bloco por RBP.");
         }
     }
 }
