@@ -9,6 +9,7 @@ on:
       - 'scripts/analyze_pc12_write_tx.py'
       - 'scripts/analyze_pc12_write_fields.py'
       - 'scripts/emulate_pc12_pg33_builder.py'
+      - 'scripts/emulate_pc12_pg33_success_tail.py'
       - 'scripts/emulate_pc12_readprog.py'
       - '.github/workflows/analyze-pc12-protocol.yml'
       - 'src/OpenLadderStudio.Desktop/pc12.exe'
@@ -94,6 +95,19 @@ jobs:
             cat protocol-analysis/pc12-pg33-builder-emulation.txt
           } >> protocol-analysis/pc12-protocol-analysis.txt
 
+      - name: Emular transição de blocos PG33 sem hardware
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_pg33_success_tail.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-pg33-success-tail-emulation.txt
+          {
+            echo
+            echo 'PG33 SUCCESS TAIL - UNICORN OFFLINE EMULATION'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-pg33-success-tail-emulation.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+
       - name: Emular Read PLC Program sem hardware
         shell: bash
         run: |
@@ -136,13 +150,15 @@ jobs:
             docs/data/pc12-write-fields-analysis.txt
           cp protocol-analysis/pc12-pg33-builder-emulation.txt \
             docs/data/pc12-pg33-builder-emulation.txt
-          if [ -z "$(git status --porcelain -- docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-pg33-builder-emulation.txt)" ]; then
+          cp protocol-analysis/pc12-pg33-success-tail-emulation.txt \
+            docs/data/pc12-pg33-success-tail-emulation.txt
+          if [ -z "$(git status --porcelain -- docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt)" ]; then
             echo 'Relatórios offline sem alterações.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-pg33-builder-emulation.txt
+          git add docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt
           git commit -m 'Atualizar relatórios offline PC12 Write PLC Program'
           git push origin HEAD:main
 
@@ -156,4 +172,5 @@ jobs:
             protocol-analysis/pc12-write-tx-analysis.txt
             protocol-analysis/pc12-write-fields-analysis.txt
             protocol-analysis/pc12-pg33-builder-emulation.txt
+            protocol-analysis/pc12-pg33-success-tail-emulation.txt
           retention-days: 30
