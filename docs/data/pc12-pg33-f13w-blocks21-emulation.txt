@@ -1,0 +1,13 @@
+PC12 PG33 21 x F-13w / 20+1 BLOCK SPLIT - UNICORN OFFLINE EMULATION
+====================================================================================================
+mode=OFFLINE; TX routine intercepted before I/O; no COM/PLC
+
+block1: bytes=247 LEN=F4 start=0000 HL=A0 checksum=8C
+success-tail reset (+56,+5E,+62,+76,+7A,+7E)=(0, 6, 0, 80, 0, 80)
+block2: bytes=19 LEN=10 start=0050 HL=08 checksum=75
+final cursor=84 logical_count_in_block2=1
+
+RESULT=PASS
+O PC12 foi reproduzido offline como dois blocos: 20 instruções/80 palavras em start 0000,
+seguido de 1 instrução/4 palavras em start 0050 após a cauda original de sucesso.
+Nenhum byte foi transmitido fora do Unicorn.
