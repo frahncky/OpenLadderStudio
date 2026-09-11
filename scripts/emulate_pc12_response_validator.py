@@ -17,7 +17,7 @@ import sys
 
 try:
     from unicorn import Uc, UcError, UC_ARCH_X86, UC_MODE_32, UC_HOOK_CODE
-    from unicorn.x86_const import UC_X86_REG_EIP, UC_X86_REG_ESP
+    from unicorn.x86_const import UC_X86_REG_ESP
 except ImportError:
     print('ERRO: unicorn não instalado. Use: pip install unicorn==2.1.4', file=sys.stderr)
     raise
@@ -54,10 +54,12 @@ def emulate(exe, frame, bypass=0):
 
     mu.mem_write(RX_BUF, bytes(frame))
     put32(mu, RX_LEN, len(frame))
+
+    # Estado equivalente à inicialização feita no início de 0x0046F5E6.
     mu.mem_write(F_TIMEOUT, b'\x00')
-    mu.mem_write(F_ERROR, b'\x55')
-    mu.mem_write(F_CHECKSUM, b'\x55')
-    mu.mem_write(F_BIT20, b'\x55')
+    mu.mem_write(F_ERROR, b'\x00')
+    mu.mem_write(F_CHECKSUM, b'\x00')
+    mu.mem_write(F_BIT20, b'\x00')
     mu.mem_write(CHECKSUM_BYPASS, bytes([bypass & 0xFF]))
     mu.reg_write(UC_X86_REG_ESP, STACK)
 
@@ -104,9 +106,12 @@ def main():
         # Soma ainda fecha FF, mas bit 7 do primeiro byte marca resposta de erro.
         ('status-bit80', bytes.fromhex('80 00 7F'), 0,
          {'timeout': 0, 'checksum': 0, 'error': 1, 'bit20': 0}),
-        # Checksum inválido deve ligar apenas a flag correspondente antes de STOP.
+        # Checksum inválido deve ligar a flag correspondente e encerrar o validador cedo.
         ('bad-checksum', bytes.fromhex('00 00 FE'), 0,
-         {'timeout': 0, 'checksum': 1, 'error': 0x55, 'bit20': 0x55}),
+         {'timeout': 0, 'checksum': 1, 'error': 0, 'bit20': 0}),
+        # O global 0x5301AE desvia da rejeição de checksum nesta rotina.
+        ('bad-checksum-with-bypass', bytes.fromhex('00 00 FE'), 1,
+         {'timeout': 0, 'checksum': 0, 'error': 0, 'bit20': 0}),
         # Bit 0x20 é armazenado em flag separada; PG33 não a consulta no gate de sucesso.
         ('status-bit20', bytes.fromhex('20 00 DF'), 0,
          {'timeout': 0, 'checksum': 0, 'error': 0, 'bit20': 1}),
@@ -118,7 +123,7 @@ def main():
         got = emulate(args.exe, frame, bypass)
         ok = got == expected
         overall &= ok
-        rows.append((name, frame, got, expected, ok))
+        rows.append((name, frame, bypass, got, expected, ok))
 
     lines = []
     lines.append('PC12 RX VALIDATOR - UNICORN OFFLINE EMULATION')
@@ -126,8 +131,9 @@ def main():
     lines.append('entry=0x%08X stop=0x%08X' % (ENTRY, STOP))
     lines.append('mode=OFFLINE; nenhum helper de recepção, COM ou TX é executado')
     lines.append('')
-    for name, frame, got, expected, ok in rows:
-        lines.append('%s: %s RX=[%s]' % ('OK' if ok else 'FALHA', name, hx(frame)))
+    for name, frame, bypass, got, expected, ok in rows:
+        lines.append('%s: %s bypass=%d RX=[%s]' %
+                     ('OK' if ok else 'FALHA', name, bypass, hx(frame)))
         lines.append('  got      timeout=%02X checksum=%02X error=%02X bit20=%02X' %
                      (got['timeout'], got['checksum'], got['error'], got['bit20']))
         lines.append('  expected timeout=%02X checksum=%02X error=%02X bit20=%02X' %
@@ -137,6 +143,8 @@ def main():
     lines.append('Conclusão: o validador é genérico; ele não identifica um ACK PG33 único.')
     lines.append('Um quadro como 00 00 FF ser aceito aqui significa apenas que satisfaz as regras')
     lines.append('genéricas do parser, NÃO que esse seja o payload realmente devolvido pelo TP02 ao 0x33.')
+    lines.append('O efeito de 0x5301AE como desvio da rejeição de checksum é fato deste caminho,')
+    lines.append('mas a semântica de alto nível desse global permanece não classificada.')
     lines.append('Nenhum byte foi transmitido fora do Unicorn.')
 
     report = '\n'.join(lines) + '\n'
