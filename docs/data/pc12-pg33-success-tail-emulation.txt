@@ -1,0 +1,22 @@
+PC12 PG33 SUCCESS TAIL - UNICORN OFFLINE EMULATION
+============================================================================================
+entry=0x004B7C50 next=0x004B7893 complete=0x004B7D96
+mode=OFFLINE; nenhuma rotina TX é executada
+
+OK: middle-of-program cursor=0x0123 size=4000 path=next-block expected=next-block
+  reset: +56=0 +5E=6 +62=0 +7A=0
+  cursor: +76=0x0123 +7E=0x0123 trace=0x0123
+  flags: d7=1 d8=1
+OK: last-step-reached cursor=0x0FA0 size=4000 path=complete expected=complete
+  reset: +56=0 +5E=6 +62=0 +7A=0
+  cursor: +76=0x0FA0 +7E=0x0FA0 trace=0x0FA0
+  flags: d7=0 d8=1
+OK: cursor-past-limit cursor=0x0FA1 size=4000 path=complete expected=complete
+  reset: +56=0 +5E=6 +62=0 +7A=0
+  cursor: +76=0x0FA1 +7E=0x0FA1 trace=0x0FA1
+  flags: d7=0 d8=1
+
+RESULT=PASS
+Conclusão: após sucesso, o próximo bloco começa no cursor REAL de passos (+0x76),
+não em start+N. Quando cursor >= tamanho do programa, o PC12 entra no caminho de conclusão.
+Nenhum byte foi transmitido fora do Unicorn.
