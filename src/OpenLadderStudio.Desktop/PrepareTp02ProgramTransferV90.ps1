@@ -23,16 +23,26 @@ function Replace-First([string]$text, [string]$needle, [string]$replacement, [st
 
 $shell = [System.IO.File]::ReadAllText($shellPath)
 
-$menuNeedle = '            plc.DropDownItems.Add(DropItem("Ler programa", delegate { ShowReader(); }));'
-$menuReplacement = @'
-            plc.DropDownItems.Add(DropItem("Transferir programa TP02...", delegate { ShowTp02ProgramTransfer(); }));
-            plc.DropDownItems.Add(DropItem("Leitor PG experimental...", delegate { ShowReader(); }));
-'@
-$shell = Replace-Required $shell $menuNeedle $menuReplacement.TrimEnd() 'menu PLC TP02'
+# As revisoes V66/V73 podem renomear ou mover o item visual. O handler ShowReader()
+# e a ancora semantica estavel; por isso nao dependemos mais do texto "Ler programa".
+$menuPattern = '(?m)^(?<indent>[ \t]*)(?<owner>[A-Za-z_][A-Za-z0-9_]*)\.DropDownItems\.Add\(DropItem\("[^"\r\n]*",\s*delegate\s*\{\s*ShowReader\(\);\s*\}\)\);\s*$'
+$menuMatch = [System.Text.RegularExpressions.Regex]::Match($shell, $menuPattern)
+if (-not $menuMatch.Success) { throw 'Ancora semantica ShowReader() nao encontrada em nenhum menu.' }
+$indent = $menuMatch.Groups['indent'].Value
+$owner = $menuMatch.Groups['owner'].Value
+$menuReplacement = $indent + $owner + '.DropDownItems.Add(DropItem("Transferir programa TP02...", delegate { ShowTp02ProgramTransfer(); }));' + "`r`n" +
+                   $indent + $owner + '.DropDownItems.Add(DropItem("Leitor PG experimental...", delegate { ShowReader(); }));'
+$shell = $shell.Substring(0, $menuMatch.Index) + $menuReplacement + $shell.Substring($menuMatch.Index + $menuMatch.Length)
 
-$toolbarNeedle = '            AddToolButton(bar, "Ler PLC", StudioIcon.Download, false, delegate { ShowReader(); });'
-$toolbarReplacement = '            AddToolButton(bar, "Transferir TP02", StudioIcon.Download, false, delegate { ShowTp02ProgramTransfer(); });'
-$shell = Replace-Required $shell $toolbarNeedle $toolbarReplacement 'toolbar TP02'
+# Toolbar: substitui qualquer botao que ainda aponte para ShowReader(), independentemente
+# do rotulo/iconografia escolhidos pelas camadas de UI anteriores. Se nao houver esse botao,
+# o menu acima continua sendo o ponto oficial de entrada e o build nao e bloqueado.
+$toolbarPattern = '(?m)^(?<indent>[ \t]*)AddToolButton\(bar,\s*"[^"\r\n]*",\s*StudioIcon\.[A-Za-z0-9_]+,\s*(?:true|false),\s*delegate\s*\{\s*ShowReader\(\);\s*\}\);\s*$'
+$toolbarMatch = [System.Text.RegularExpressions.Regex]::Match($shell, $toolbarPattern)
+if ($toolbarMatch.Success) {
+    $toolbarReplacement = $toolbarMatch.Groups['indent'].Value + 'AddToolButton(bar, "Transferir TP02", StudioIcon.Download, false, delegate { ShowTp02ProgramTransfer(); });'
+    $shell = $shell.Substring(0, $toolbarMatch.Index) + $toolbarReplacement + $shell.Substring($toolbarMatch.Index + $toolbarMatch.Length)
+}
 
 $methodNeedle = '        private void ShowReader()'
 $methodInsert = @'
