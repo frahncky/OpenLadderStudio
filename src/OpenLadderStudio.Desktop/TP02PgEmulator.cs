@@ -8,13 +8,42 @@ using System.Threading;
 
 namespace ModernPC12
 {
+    internal struct Pg33MachineWord
+    {
+        public byte High;
+        public byte Low;
+        public byte External;
+
+        public Pg33MachineWord(byte high, byte low, byte external)
+        {
+            High = high;
+            Low = low;
+            External = external;
+        }
+
+        public override string ToString()
+        {
+            return High.ToString("X2", CultureInfo.InvariantCulture) + " "
+                + Low.ToString("X2", CultureInfo.InvariantCulture) + " "
+                + External.ToString("X2", CultureInfo.InvariantCulture);
+        }
+    }
+
     /// <summary>
-    /// Emulador PG mínimo do WEG TP02 para engenharia reversa do PC12.
-    /// Deve ser ligado a uma porta COM VIRTUAL pareada com a porta usada pelo PC12.
-    /// Nunca use a mesma porta física do PLC para este executável.
+    /// Emulador PG de laboratorio do WEG TP02 para engenharia reversa controlada
+    /// do PC12 original. Use somente em uma porta COM virtual pareada.
+    ///
+    /// O comando 0x33 (Write PLC Program) foi reconstruido estaticamente no
+    /// pc12.exe e confirmado por emulacao Unicorn offline do construtor original.
+    /// O ACK 00 00 FF usado aqui para 0x33 e SINTETICO: o parser generico do PC12
+    /// o aceita, mas o payload exato devolvido pelo TP02 fisico ainda precisa ser
+    /// confirmado em captura real.
     /// </summary>
     internal static class TP02PgEmulatorProgram
     {
+        private const int MaxProgramSteps = 4000;
+        private const int MaxPg33Words = 80;
+
         private static readonly byte[] HelloRequest = new byte[]
         {
             0x43, 0x4F, 0x4E, 0x2D, 0x49, 0x43, 0x42, 0x0D
@@ -40,11 +69,13 @@ namespace ModernPC12
             0x00, 0x02, 0x00, 0x0A, 0xF3
         };
 
-        private static readonly byte[] Response14 = new byte[]
+        // Tambem e usado como ACK sintetico PG33 no emulador.
+        private static readonly byte[] EmptySuccessResponse = new byte[]
         {
             0x00, 0x00, 0xFF
         };
 
+        // Fixture real capturado de uma resposta 34 na pagina inicial.
         private static readonly byte[] ProgramPage0000 = new byte[]
         {
             0x00, 0x18, 0x20, 0x41, 0x00, 0x1A, 0x20, 0x44, 0x00, 0x14, 0x20, 0x45, 0x00, 0x00, 0x00, 0x00,
@@ -76,23 +107,29 @@ namespace ModernPC12
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
 
         private static readonly byte[] Memory = new byte[65536];
+        private static readonly Pg33MachineWord[] ProgramWords = new Pg33MachineWord[MaxProgramSteps];
+        private static readonly bool[] ProgramWordValid = new bool[MaxProgramSteps];
         private static readonly List<byte> RxBuffer = new List<byte>();
         private static readonly object LogSync = new object();
 
         private static SerialPort Port;
         private static bool StopRequested;
         private static bool AutoAckUnknown = true;
+        private static bool Pg33SyntheticAck = true;
         private static bool FastMode;
         private static bool HelloC0;
         private static string CaptureDirectory;
         private static string LogPath;
         private static string RawPath;
+        private static string Pg33DumpPath;
         private static int UnknownCounter;
         private static int BinaryCounter;
+        private static int Pg33FrameCounter;
+        private static int HighestProgramStep = -1;
 
         [STAThread]
         private static void Main(string[] args)
@@ -176,7 +213,8 @@ namespace ModernPC12
                 }
             }
 
-            Log("FIM", "Emulador encerrado.");
+            Log("FIM", "Emulador encerrado. PG33 frames=" + Pg33FrameCounter.ToString(CultureInfo.InvariantCulture)
+                + " highestStep=" + HighestProgramStep.ToString(CultureInfo.InvariantCulture) + ".");
             Console.WriteLine();
             Console.WriteLine("Capturas: " + CaptureDirectory);
         }
@@ -197,6 +235,16 @@ namespace ModernPC12
                 if (a.Equals("--no-auto-ack", StringComparison.OrdinalIgnoreCase))
                 {
                     AutoAckUnknown = false;
+                    continue;
+                }
+                if (a.Equals("--pg33-ack", StringComparison.OrdinalIgnoreCase))
+                {
+                    Pg33SyntheticAck = true;
+                    continue;
+                }
+                if (a.Equals("--no-pg33-ack", StringComparison.OrdinalIgnoreCase))
+                {
+                    Pg33SyntheticAck = false;
                     continue;
                 }
                 if (a.Equals("--fast", StringComparison.OrdinalIgnoreCase))
@@ -247,12 +295,14 @@ namespace ModernPC12
             Console.WriteLine("============================================================");
             Console.WriteLine(" OpenLadder - WEG TP02 PG Emulator");
             Console.WriteLine("============================================================");
-            Console.WriteLine(" Porta     : " + portName);
-            Console.WriteLine(" Serial    : 19200 8O1 / DTR on / RTS off");
-            Console.WriteLine(" HELLO RX  : " + (HelloC0 ? "C0 01 09 35" : "80 01 09 75"));
-            Console.WriteLine(" Auto-ACK  : " + (AutoAckUnknown ? "ON" : "OFF"));
-            Console.WriteLine(" Timing    : " + (FastMode ? "FAST" : "TP02 aproximado"));
-            Console.WriteLine(" ATENCAO   : use uma COM virtual pareada, nao a COM fisica do PLC.");
+            Console.WriteLine(" Porta       : " + portName);
+            Console.WriteLine(" Serial      : 19200 8O1 / DTR on / RTS off");
+            Console.WriteLine(" HELLO RX    : " + (HelloC0 ? "C0 01 09 35" : "80 01 09 75"));
+            Console.WriteLine(" PG33        : Write Program CONFIRMADO offline");
+            Console.WriteLine(" PG33 ACK    : " + (Pg33SyntheticAck ? "00 00 FF SINTETICO" : "SEM RESPOSTA"));
+            Console.WriteLine(" Unknown ACK : " + (AutoAckUnknown ? "ON" : "OFF"));
+            Console.WriteLine(" Timing      : " + (FastMode ? "FAST" : "TP02 aproximado"));
+            Console.WriteLine(" ATENCAO     : use COM virtual; nao use a COM fisica do PLC.");
             Console.WriteLine("============================================================");
             Console.WriteLine();
         }
@@ -265,11 +315,13 @@ namespace ModernPC12
             string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
             LogPath = Path.Combine(CaptureDirectory, "TP02-Emulator-" + stamp + ".txt");
             RawPath = Path.Combine(CaptureDirectory, "TP02-Emulator-" + stamp + "-raw.bin");
+            Pg33DumpPath = Path.Combine(CaptureDirectory, "TP02-Emulator-" + stamp + "-pg33-program.bin");
         }
 
         private static void SeedMemory()
         {
             Array.Clear(Memory, 0, Memory.Length);
+            Array.Clear(ProgramWordValid, 0, ProgramWordValid.Length);
 
             CopyToMemory(0x6000, System6000);
 
@@ -417,7 +469,11 @@ namespace ModernPC12
 
                 case 0x14:
                     SleepFor(240);
-                    Send("EMU -> PC12 14", Response14);
+                    Send("EMU -> PC12 14", EmptySuccessResponse);
+                    break;
+
+                case 0x33:
+                    HandlePg33WriteProgram(frame);
                     break;
 
                 default:
@@ -425,11 +481,10 @@ namespace ModernPC12
                     if (AutoAckUnknown)
                     {
                         SleepFor(150);
-                        byte[] ack = BuildResponse(new byte[0]);
                         Send(
                             "EMU -> PC12 ACK GENERICO para CMD=0x"
                             + command.ToString("X2", CultureInfo.InvariantCulture),
-                            ack);
+                            EmptySuccessResponse);
                     }
                     else
                     {
@@ -440,6 +495,194 @@ namespace ModernPC12
                             + " foi apenas capturado.");
                     }
                     break;
+            }
+        }
+
+        private static void HandlePg33WriteProgram(byte[] frame)
+        {
+            int startStep;
+            Pg33MachineWord[] words;
+            string reason;
+
+            if (!TryDecodePg33(frame, out startStep, out words, out reason))
+            {
+                Log("PG33 INVALIDO", reason);
+                SaveNamedFrame(frame, "pg33-invalid");
+                return;
+            }
+
+            Pg33FrameCounter++;
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                int step = startStep + i;
+                ProgramWords[step] = words[i];
+                ProgramWordValid[step] = true;
+                if (step > HighestProgramStep) HighestProgramStep = step;
+            }
+
+            SaveProgramDump();
+
+            string preview = BuildWordPreview(words, 12);
+            Log(
+                "PG33 WRITE PROGRAM",
+                "frame=" + Pg33FrameCounter.ToString(CultureInfo.InvariantCulture)
+                + " start=0x" + startStep.ToString("X4", CultureInfo.InvariantCulture)
+                + " words=" + words.Length.ToString(CultureInfo.InvariantCulture)
+                + " next=0x" + (startStep + words.Length).ToString("X4", CultureInfo.InvariantCulture)
+                + " | " + preview);
+
+            if (LooksLikeW1A(words))
+                Log("PG33 W1A", "Assinatura STR X001 / OUT Y001 / END reconhecida apos reconstruir os planos HL+EX.");
+
+            if (Pg33SyntheticAck)
+            {
+                SleepFor(150);
+                Send("EMU -> PC12 ACK SINTETICO PG33 (nao confirmado no PLC fisico)", EmptySuccessResponse);
+            }
+            else
+            {
+                Log("PG33 SEM ACK", "Quadro valido armazenado; resposta desabilitada por --no-pg33-ack.");
+            }
+        }
+
+        private static bool TryDecodePg33(
+            byte[] frame,
+            out int startStep,
+            out Pg33MachineWord[] words,
+            out string reason)
+        {
+            startStep = 0;
+            words = new Pg33MachineWord[0];
+            reason = string.Empty;
+
+            if (frame == null || frame.Length < 10)
+            {
+                reason = "quadro curto";
+                return false;
+            }
+            if (frame[0] != 0x33)
+            {
+                reason = "opcode diferente de 0x33";
+                return false;
+            }
+            if (frame[2] != 0x00)
+            {
+                reason = "TX[2] esperado 00, recebido " + frame[2].ToString("X2", CultureInfo.InvariantCulture);
+                return false;
+            }
+
+            int highLowBytes = frame[5];
+            if (highLowBytes <= 0 || (highLowBytes & 1) != 0)
+            {
+                reason = "TX[5] precisa ser 2*W e portanto par";
+                return false;
+            }
+
+            int wordCount = highLowBytes / 2;
+            if (wordCount < 1 || wordCount > MaxPg33Words)
+            {
+                reason = "quantidade de words fora de 1..80";
+                return false;
+            }
+
+            int expectedLen = (3 * wordCount) + 4;
+            if (frame[1] != expectedLen)
+            {
+                reason = "LEN inconsistente: recebido " + frame[1].ToString(CultureInfo.InvariantCulture)
+                    + ", esperado " + expectedLen.ToString(CultureInfo.InvariantCulture);
+                return false;
+            }
+
+            if (frame.Length != expectedLen + 3)
+            {
+                reason = "comprimento total inconsistente";
+                return false;
+            }
+
+            startStep = (frame[3] << 8) | frame[4];
+            if (startStep < 0 || startStep >= MaxProgramSteps || startStep + wordCount > MaxProgramSteps)
+            {
+                reason = "faixa de passos fora de 0..3999";
+                return false;
+            }
+
+            int highLowStart = 6;
+            int externalStart = highLowStart + highLowBytes;
+            int checksumIndex = frame.Length - 1;
+            if (externalStart + wordCount != checksumIndex)
+            {
+                reason = "planos HIGH/LOW e EXTERNAL nao fecham na posicao do checksum";
+                return false;
+            }
+
+            Pg33MachineWord[] decoded = new Pg33MachineWord[wordCount];
+            for (int i = 0; i < wordCount; i++)
+            {
+                decoded[i] = new Pg33MachineWord(
+                    frame[highLowStart + (2 * i)],
+                    frame[highLowStart + (2 * i) + 1],
+                    frame[externalStart + i]);
+            }
+
+            words = decoded;
+            return true;
+        }
+
+        private static bool LooksLikeW1A(Pg33MachineWord[] words)
+        {
+            if (words == null || words.Length < 3) return false;
+            return words[0].High == 0x00 && words[0].Low == 0x10 && words[0].External == 0x00
+                && words[1].High == 0x20 && words[1].Low == 0x40 && words[1].External == 0x00
+                && words[2].High == 0x00 && words[2].Low == 0x70 && words[2].External == 0x00;
+        }
+
+        private static string BuildWordPreview(Pg33MachineWord[] words, int max)
+        {
+            if (words == null || words.Length == 0) return "(sem words)";
+            StringBuilder sb = new StringBuilder();
+            int n = Math.Min(words.Length, max);
+            for (int i = 0; i < n; i++)
+            {
+                if (i > 0) sb.Append(" | ");
+                sb.Append("#");
+                sb.Append(i.ToString(CultureInfo.InvariantCulture));
+                sb.Append("=");
+                sb.Append(words[i].ToString());
+            }
+            if (words.Length > n) sb.Append(" | ...");
+            return sb.ToString();
+        }
+
+        private static void SaveProgramDump()
+        {
+            try
+            {
+                if (HighestProgramStep < 0 || string.IsNullOrEmpty(Pg33DumpPath)) return;
+
+                using (FileStream stream = new FileStream(Pg33DumpPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                {
+                    for (int step = 0; step <= HighestProgramStep; step++)
+                    {
+                        Pg33MachineWord word = ProgramWords[step];
+                        if (!ProgramWordValid[step])
+                        {
+                            stream.WriteByte(0x00);
+                            stream.WriteByte(0x00);
+                            stream.WriteByte(0x00);
+                        }
+                        else
+                        {
+                            stream.WriteByte(word.High);
+                            stream.WriteByte(word.Low);
+                            stream.WriteByte(word.External);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("ERRO PG33 DUMP", ex.Message);
             }
         }
 
@@ -463,7 +706,8 @@ namespace ModernPC12
                 "DECOD 34",
                 "addr=0x" + requestedAddress.ToString("X4", CultureInfo.InvariantCulture)
                 + " hint=0x" + requestedHint.ToString("X2", CultureInfo.InvariantCulture)
-                + " -> resposta de 240 bytes.");
+                + " -> fixture de 240 bytes."
+                + (Pg33FrameCounter > 0 ? " ATENCAO: readback 34 ainda nao deriva do banco PG33 escrito." : string.Empty));
 
             return BuildResponse(payload);
         }
@@ -553,22 +797,23 @@ namespace ModernPC12
 
         private static void SaveUnknownFrame(byte[] frame)
         {
+            UnknownCounter++;
+            SaveNamedFrame(frame, "unknown-" + UnknownCounter.ToString("000", CultureInfo.InvariantCulture)
+                + "-cmd-" + frame[0].ToString("X2", CultureInfo.InvariantCulture));
+            Log(
+                "DESCONHECIDO",
+                "CMD=0x" + frame[0].ToString("X2", CultureInfo.InvariantCulture)
+                + " capturado. Candidato a comando ainda nao classificado.");
+        }
+
+        private static void SaveNamedFrame(byte[] frame, string suffix)
+        {
             try
             {
-                UnknownCounter++;
                 string name = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture)
-                    + "-unknown-"
-                    + UnknownCounter.ToString("000", CultureInfo.InvariantCulture)
-                    + "-cmd-"
-                    + frame[0].ToString("X2", CultureInfo.InvariantCulture)
-                    + ".bin";
+                    + "-" + suffix + ".bin";
                 string path = Path.Combine(CaptureDirectory, name);
                 File.WriteAllBytes(path, frame);
-                Log(
-                    "DESCONHECIDO",
-                    "CMD=0x" + frame[0].ToString("X2", CultureInfo.InvariantCulture)
-                    + " salvo em " + name
-                    + ". Candidato a comando ainda nao documentado/escrita.");
             }
             catch (Exception ex)
             {
@@ -601,7 +846,7 @@ namespace ModernPC12
             string line = "["
                 + DateTime.Now.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture)
                 + "] "
-                + kind.PadRight(24)
+                + kind.PadRight(32)
                 + " "
                 + text;
 
