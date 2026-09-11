@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Emula OFFLINE a lógica de avanço/limite de um registro PG33 do PC12.
+"""Emula OFFLINE a lógica de avanço/limite de uma INSTRUÇÃO PG33 do PC12.
 
-O trecho 0x004B7799..0x004B7893 é o ramo genérico que recebe em +0x176
-o tamanho da instrução (1..4 passos), avança o cursor real +0x76, incrementa
-o contador de registros +0x7A e encerra o bloco quando o contador chega a 20.
+O trecho 0x004B7799..0x004B7893 recebe em +0x176 o StepSpan da instrução
+lógica (1..4 passos), avança o cursor real +0x76, incrementa +0x7A UMA vez
+e encerra o bloco quando +0x7A chega a 20.
+
+A análise do helper 0x004BCA65 mostrou que uma instrução de StepSpan 2..4
+pode emitir 2..4 palavras de máquina no quadro. Portanto +0x7A é contador de
+INSTRUÇÕES LÓGICAS, não contador de palavras de máquina.
 
 A emulação para antes de retornar ao coletor ou antes da preparação do quadro.
 Nenhuma rotina TX, API, COM ou PLC é acessada.
@@ -47,11 +51,11 @@ def get8(mu, addr):
     return bytes(mu.mem_read(addr, 1))[0]
 
 
-def emulate(exe, step_span, start_cursor, start_records):
+def emulate(exe, step_span, start_cursor, start_instructions):
     if step_span not in (1, 2, 3, 4):
         raise ValueError('step_span deve ser 1..4')
-    if not (0 <= start_records < 20):
-        raise ValueError('start_records deve ser 0..19')
+    if not (0 <= start_instructions < 20):
+        raise ValueError('start_instructions deve ser 0..19')
 
     data, image_base, sections = load_pe(exe)
     mu = Uc(UC_ARCH_X86, UC_MODE_32)
@@ -61,11 +65,11 @@ def emulate(exe, step_span, start_cursor, start_records):
 
     put32(mu, OBJ + 0x176, step_span)
     put32(mu, OBJ + 0x76, start_cursor)
-    put32(mu, OBJ + 0x7A, start_records)
+    put32(mu, OBJ + 0x7A, start_instructions)
     mu.mem_write(OBJ + 0xD7, b'\x01')
     mu.mem_write(OBJ + 0xD8, b'\x01')
 
-    # Deixar folga para que somente o limite de 20 registros decida o bloco.
+    # Folga para que somente o limite de 20 instruções decida o bloco.
     put32(mu, PROGRAM_SIZE, 4000)
     put32(mu, LAST_PROGRAM_STEP, 3999)
 
@@ -76,7 +80,7 @@ def emulate(exe, step_span, start_cursor, start_records):
 
     def hook(uc, address, size, _user):
         if address == NEXT_COLLECTOR:
-            state['path'] = 'next-record'
+            state['path'] = 'next-instruction'
             uc.emu_stop()
         elif address == BUILD_PREP:
             state['path'] = 'build-frame'
@@ -95,9 +99,9 @@ def emulate(exe, step_span, start_cursor, start_records):
         'path': state['path'],
         'span': step_span,
         'start_cursor': start_cursor,
-        'start_records': start_records,
+        'start_instructions': start_instructions,
         'cursor': get32(mu, OBJ + 0x76),
-        'records': get32(mu, OBJ + 0x7A),
+        'instructions': get32(mu, OBJ + 0x7A),
         'd7': get8(mu, OBJ + 0xD7),
         'd8': get8(mu, OBJ + 0xD8),
     }
@@ -107,9 +111,9 @@ def verify(row, expected_path):
     return (
         row['path'] == expected_path
         and row['cursor'] == row['start_cursor'] + row['span']
-        and row['records'] == row['start_records'] + 1
+        and row['instructions'] == row['start_instructions'] + 1
         and row['d7'] == 1
-        and row['d8'] == (1 if expected_path == 'next-record' else 0)
+        and row['d8'] == (1 if expected_path == 'next-instruction' else 0)
     )
 
 
@@ -120,12 +124,12 @@ def main():
     args = ap.parse_args()
 
     fixtures = [
-        ('span-1', 1, 0x0100, 0, 'next-record'),
-        ('span-2', 2, 0x0100, 3, 'next-record'),
-        ('span-3', 3, 0x0100, 7, 'next-record'),
-        ('span-4', 4, 0x0100, 12, 'next-record'),
-        ('record-20-span-1', 1, 0x0200, 19, 'build-frame'),
-        ('record-20-span-4', 4, 0x0300, 19, 'build-frame'),
+        ('span-1', 1, 0x0100, 0, 'next-instruction'),
+        ('span-2', 2, 0x0100, 3, 'next-instruction'),
+        ('span-3', 3, 0x0100, 7, 'next-instruction'),
+        ('span-4', 4, 0x0100, 12, 'next-instruction'),
+        ('instruction-20-span-1', 1, 0x0200, 19, 'build-frame'),
+        ('instruction-20-span-4', 4, 0x0300, 19, 'build-frame'),
     ]
 
     rows = []
@@ -139,7 +143,7 @@ def main():
         overall &= row['ok']
 
     lines = []
-    lines.append('PC12 PG33 RECORD STEP/BLOCK BOUNDARY - UNICORN OFFLINE EMULATION')
+    lines.append('PC12 PG33 INSTRUCTION STEP/BLOCK BOUNDARY - UNICORN OFFLINE EMULATION')
     lines.append('=' * 96)
     lines.append('entry=0x%08X collector=0x%08X build_prep=0x%08X' %
                  (ENTRY, NEXT_COLLECTOR, BUILD_PREP))
@@ -147,17 +151,18 @@ def main():
     lines.append('')
 
     for row in rows:
-        lines.append('%s: %s span=%d cursor %04X->%04X records %d->%d path=%s' %
+        lines.append('%s: %s span=%d cursor %04X->%04X instructions %d->%d path=%s' %
                      ('OK' if row['ok'] else 'FALHA', row['name'], row['span'],
-                      row['start_cursor'], row['cursor'], row['start_records'],
-                      row['records'], row['path']))
+                      row['start_cursor'], row['cursor'], row['start_instructions'],
+                      row['instructions'], row['path']))
         lines.append('  flags d7=%d d8=%d expected_path=%s' %
                      (row['d7'], row['d8'], row['expected_path']))
 
     lines.append('')
     lines.append('RESULT=' + ('PASS' if overall else 'FAIL'))
-    lines.append('Conclusão esperada: +0x176=1..4 avança +0x76 pelo mesmo número de passos,')
-    lines.append('+0x7A conta um registro, e o 20º registro encerra o bloco independentemente do span.')
+    lines.append('Conclusão: +0x176=1..4 avança +0x76 pelo mesmo número de passos,')
+    lines.append('+0x7A conta UMA instrução lógica, e a 20ª instrução encerra o bloco.')
+    lines.append('A quantidade de palavras HIGH/LOW/EXTERNAL é contabilizada separadamente.')
     lines.append('Nenhum byte foi transmitido fora do Unicorn.')
 
     report = '\n'.join(lines) + '\n'
