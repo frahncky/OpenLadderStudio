@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulator.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgReadback.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgReadbackSelfTest.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
@@ -44,6 +45,15 @@ jobs:
         shell: cmd
         working-directory: src/OpenLadderStudio.Desktop
         run: BuildTp02Emulator.bat
+
+      - name: Build and run PG readback self-test
+        shell: cmd
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          "%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe" /nologo /target:exe /main:ModernPC12.TP02PgReadbackSelfTest /out:"TP02PgReadbackSelfTest.exe" /reference:System.dll "TP02PgEmulator.cs" "TP02PgReadback.cs" "TP02PgReadbackSelfTest.cs"
+          if errorlevel 1 exit /b 1
+          TP02PgReadbackSelfTest.exe
+          if errorlevel 1 exit /b 1
 
       - name: Confirm executable
         shell: powershell
