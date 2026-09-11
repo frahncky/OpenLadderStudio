@@ -156,4 +156,9 @@ $section = $section.Substring(0, $descStart) + $newDescription + $section.Substr
 
 $plc = $before + $section + $after
 [System.IO.File]::WriteAllText($plcPath, $plc, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 Program Transfer V90 + Physical Validation aplicada ao Studio.'
+
+# A validacao fisica ja foi incorporada ao shell; agora aplicamos o auto-retry
+# de inicializacao do TP-232PG diretamente sobre a fonte temporaria compilada.
+& (Join-Path (Get-Location) 'PrepareTp02PgRecoveryV93.ps1')
+
+Write-Host 'TP02 Program Transfer V90 + Physical Validation + PG Recovery V93 aplicada ao Studio.'
