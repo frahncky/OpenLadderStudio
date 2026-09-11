@@ -7,6 +7,10 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# Assinatura conhecida do programa minimo W1A, derivada do encoder PC12 ja
+# reverso no projeto: STR X001 / OUT Y001 / END.
+[byte[]]$W1ASignature = 0x00,0x10,0x00,0x20,0x40,0x00,0x00,0x70,0x00
+
 function New-FrameObject {
     param(
         [int]$Seq,
@@ -16,7 +20,8 @@ function New-FrameObject {
         [int]$Total,
         [string]$Checksum,
         [string]$Kind,
-        [string]$Hex
+        [string]$Hex,
+        [int]$SignatureOffset = -1
     )
     $o = New-Object PSObject
     $o | Add-Member NoteProperty Seq $Seq
@@ -26,6 +31,7 @@ function New-FrameObject {
     $o | Add-Member NoteProperty Total $Total
     $o | Add-Member NoteProperty Checksum $Checksum
     $o | Add-Member NoteProperty Kind $Kind
+    $o | Add-Member NoteProperty SignatureOffset $SignatureOffset
     $o | Add-Member NoteProperty Hex $Hex
     return $o
 }
@@ -64,6 +70,29 @@ function Test-SumFF {
         $sum = ($sum + [int]$Data[$Offset + $i]) -band 0xFF
     }
     return ($sum -eq 0xFF)
+}
+
+function Find-BytePattern {
+    param(
+        [byte[]]$Data,
+        [int]$Offset,
+        [int]$Length,
+        [byte[]]$Pattern
+    )
+    if ($Pattern -eq $null -or $Pattern.Length -eq 0) { return -1 }
+    $last = $Offset + $Length - $Pattern.Length
+    if ($last -lt $Offset) { return -1 }
+    for ($p = $Offset; $p -le $last; $p++) {
+        $ok = $true
+        for ($j = 0; $j -lt $Pattern.Length; $j++) {
+            if ($Data[$p + $j] -ne $Pattern[$j]) {
+                $ok = $false
+                break
+            }
+        }
+        if ($ok) { return ($p - $Offset) }
+    }
+    return -1
 }
 
 function Format-Hex {
@@ -119,7 +148,17 @@ function Parse-Capture {
                 if (Test-SumFF -Data $data -Offset $i -Length $total) {
                     $seq++
                     $cmd = $data[$i]
-                    $frames.Add((New-FrameObject -Seq $seq -Offset $i -Cmd ('0x{0:X2}' -f $cmd) -Len $payloadLen -Total $total -Checksum 'FF OK' -Kind (Get-KnownName -Cmd $cmd) -Hex (Format-Hex -Data $data -Offset $i -Length $total)))
+                    $kind = Get-KnownName -Cmd $cmd
+                    $sig = Find-BytePattern -Data $data -Offset $i -Length $total -Pattern $W1ASignature
+                    if ($sig -ge 0) {
+                        if ($kind -eq 'DESCONHECIDO') {
+                            $kind = 'CANDIDATO WRITE PROGRAM - contem assinatura W1A'
+                        }
+                        else {
+                            $kind += ' | contem assinatura W1A'
+                        }
+                    }
+                    $frames.Add((New-FrameObject -Seq $seq -Offset $i -Cmd ('0x{0:X2}' -f $cmd) -Len $payloadLen -Total $total -Checksum 'FF OK' -Kind $kind -Hex (Format-Hex -Data $data -Offset $i -Length $total) -SignatureOffset $sig))
                     $i += $total
                     continue
                 }
@@ -149,7 +188,7 @@ function Show-Analysis {
         return
     }
 
-    $Result.Frames | Format-Table Seq,Offset,Cmd,Len,Total,Checksum,Kind -AutoSize
+    $Result.Frames | Format-Table Seq,Offset,Cmd,Len,Total,Checksum,SignatureOffset,Kind -AutoSize
 
     Write-Host ''
     Write-Host 'Frames desconhecidos:'
@@ -160,6 +199,19 @@ function Show-Analysis {
     else {
         foreach ($f in $unknown) {
             Write-Host ('  #{0} offset={1} cmd={2} len={3}  {4}' -f $f.Seq,$f.Offset,$f.Cmd,$f.Len,$f.Hex) -ForegroundColor Cyan
+        }
+    }
+
+    Write-Host ''
+    Write-Host 'Candidatos a Write Program Data pela assinatura W1A:'
+    $w1a = @($Result.Frames | Where-Object { $_.SignatureOffset -ge 0 })
+    if ($w1a.Count -eq 0) {
+        Write-Host '  nenhum frame contem a sequencia 00 10 00 20 40 00 00 70 00.' -ForegroundColor Yellow
+    }
+    else {
+        foreach ($f in $w1a) {
+            Write-Host ('  #{0} cmd={1} len={2} assinatura_no_offset_do_frame={3}' -f $f.Seq,$f.Cmd,$f.Len,$f.SignatureOffset) -ForegroundColor Green
+            Write-Host ('     {0}' -f $f.Hex)
         }
     }
 
