@@ -1,6 +1,6 @@
 # TP02 PG — ponto canônico de retomada
 
-> Estado canônico em 2026-09-11 após a captura física de instruções variáveis, paginação READ-ONLY do `34`, reconstrução OFFLINE do `Write PLC Program`/PG33, emulação completa de F-13w/F-23, blocos máximos e gate de resposta/retry.
+> Estado canônico em 2026-09-11 após a captura física de instruções variáveis, paginação READ-ONLY do `34`, reconstrução OFFLINE do `Write PLC Program`/PG33 e auditoria do procedimento físico controlado preparado na PG Lab 1.20.
 
 ## Ambiente e segurança
 
@@ -8,13 +8,20 @@
 PLC: WEG TP02-60MR / TP02-40/60MR(T) V2.2.4K
 OpenLadder Studio público: v1.04
 PG Lab no código-fonte: 1.20
-Serial de bancada: 19200 8O1, DTR ON, RTS OFF
+Serial de leitura já observado: 19200 8O1, com respostas em perfis de DTR/RTS distintos
+Sessão exigida pela PG Lab 1.20 para escrita: DTR OFF, RTS OFF, mantida aberta
 Fluxo READ-ONLY: HELLO -> F0 -> 38 -> 34
+Fluxo controlado preparado: HELLO -> F0 -> 38 -> backup 34 -> PG33 TESTE -> readback 34 -> PG33 RESTORE -> readback 34
 ```
 
-A bancada permanece **READ-ONLY**. Nenhuma escrita, download, apagamento, firmware ou RUN/STOP remoto foi habilitado no PG Lab. `0F 00 F0` = Clear All Memory e permanece bloqueado.
+A PG Lab possui dois escopos distintos:
 
-A pesquisa do `0x33` é feita por análise estática e emulação Unicorn do `pc12.exe`, sem COM, sem PLC e com a rotina TX interceptada antes de qualquer I/O.
+- a paginação do `34` e os ensaios ordinários permanecem **READ-ONLY**;
+- a PG Lab 1.20 contém um procedimento físico separado de alteração mínima e restauração por `0x33`, acionado somente após confirmação explícita do operador.
+
+O procedimento de escrita exige PLC em STOP, sessão `19200 8O1` com DTR/RTS OFF desde o HELLO, resposta F0 conhecida, backup prévio, uma única transmissão do PG33 de teste e, se necessário, uma única transmissão do PG33 de restauração. Nenhum RUN remoto, Clear All, WBP, apagamento ou firmware faz parte desse fluxo. `0F 00 F0` = Clear All Memory e permanece bloqueado.
+
+A geometria do `0x33` foi obtida por análise estática e emulação Unicorn do `pc12.exe`, sem I/O físico. A presença do procedimento na v1.20 não comprova, por si só, que ele já tenha sido executado com sucesso no PLC.
 
 ## Leitura física consolidada
 
@@ -167,7 +174,7 @@ A leitura termina ao encontrar `F-00 END = 00 70` ou no limite de 4000 passos.
 
 **Ainda falta confirmação física cruzando a fronteira 79/80.** O ensaio de 91 passos em `docs/tp02-pg-pagination-34-v119.md` continua sendo o próximo teste de bancada READ-ONLY recomendado.
 
-# Escrita de programa `0x33` — somente OFFLINE
+# Escrita de programa `0x33` — modelo offline e procedimento físico controlado
 
 O caminho `Write PLC Program...` do PC12 usa quadro dedicado `0x33`; `0x09` permanece uma família separada de escrita de memória/registradores.
 
@@ -410,10 +417,11 @@ Consequência epistemicamente importante:
 
 ```text
 conhecemos a condição de sucesso do PC12,
-mas NÃO conhecemos ainda o payload físico exato do ACK do 0x33.
+mas o payload físico exato do ACK do 0x33 só pode ser promovido a fato confirmado
+quando houver captura de bancada preservada no repositório.
 ```
 
-Um quadro genérico como `00 00 FF` satisfazer o parser não prova que seja o ACK real do TP02.
+A PG Lab 1.20 exige `00 00 FF` como ACK do teste e da restauração. Esse valor é uma hipótese operacional restritiva: satisfaz o parser genérico e impede aceitar respostas diferentes, mas o código e as notas de versão não substituem a captura física.
 
 Evidência:
 
@@ -464,9 +472,79 @@ parser RX genérico
 
 ```text
 paginação 34 >80 passos
-aceitação do 0x33 pelo TP02
-ACK exato do 0x33
+execução documentada do ciclo v1.20 completo
+aceitação do 0x33 pelo TP02 com captura RAW preservada
+ACK exato do 0x33 observado no fio
+readback da sentinela e readback final idêntico ao backup
 sequência completa de sessão/handshake de escrita observada no fio
+```
+
+## Auditoria da PG Lab 1.20
+
+O código preparado implementa as travas essenciais:
+
+```text
+somente OFF/OFF qualifica a sessão de escrita
+HELLO RUN bloqueia antes do PG33
+F0 precisa retornar 00 02 10 22 CB
+backup 34 é salvo antes da alteração
+PG33 TESTE é transmitido no máximo uma vez
+PG33 RESTORE é transmitido no máximo uma vez
+não existe retransmissão cega após um PG33 duvidoso
+falha após escrita manda manter o PLC em STOP
+readback final precisa ser idêntico ao backup
+nenhum RUN remoto é enviado
+```
+
+Limites constatados na auditoria:
+
+```text
+a v1.20 foi preparada especificamente para o programa conhecido de 23 passos
+o ACK 00 00 FF ainda precisa de evidência física arquivada
+o sucesso não pode ser inferido de mensagens, comentários ou release notes
+a ausência de energia durante a janela teste/restauração pode deixar a sentinela gravada
+o operador precisa preservar todos os arquivos da sessão antes de considerar o caminho fechado
+```
+
+### Protocolo do próximo teste físico
+
+Pré-condições obrigatórias:
+
+```text
+PLC desacoplado de máquina/cargas perigosas
+seletor físico em STOP durante todo o procedimento
+fonte estável e cabo TP-232PG já validado
+programa original conhecido com 23 passos / END=0022
+porta COM exclusiva para a PG Lab
+proibição de RUN até o readback final aprovado
+```
+
+Critério único de aprovação:
+
+```text
+HELLO STOP em OFF/OFF
+F0 = 00 02 10 22 CB
+backup 34 salvo e validado
+PG33 TESTE TX única
+ACK TESTE = 00 00 FF
+readback 34 = sentinela exata de 3 passos
+PG33 RESTORE TX única, salvo se o original já estiver presente
+ACK RESTORE = 00 00 FF, quando houver restore
+readback final = backup original byte a byte
+```
+
+Artefatos mínimos a preservar:
+
+```text
+log completo da sessão
+backup original
+quadro PG33 TESTE transmitido
+RX bruto do ACK TESTE
+readback da sentinela
+quadro PG33 RESTORE transmitido
+RX bruto do ACK RESTORE
+readback final
+relatório PASS/FAIL
 ```
 
 ## Próximas prioridades
@@ -476,7 +554,7 @@ OFFLINE:
 ```text
 1. repetir o coletor completo para F-24 RST e, se útil, TMR/CNT;
 2. mapear o preâmbulo e a finalização da sessão Write PLC Program sem executar I/O;
-3. manter o ACK físico classificado como desconhecido até existir observação real.
+3. manter o ACK físico como pendente até existir captura real arquivada.
 ```
 
 Bancada READ-ONLY:
@@ -485,4 +563,12 @@ Bancada READ-ONLY:
 4. confirmar paginação do 34 com programa >80 passos.
 ```
 
-Qualquer ensaio físico de escrita continua fora de escopo até decisão explícita e validação de segurança separada.
+Bancada de escrita controlada:
+
+```text
+5. executar uma única vez o ciclo v1.20 conforme o protocolo acima;
+6. arquivar TX/RX, backup, sentinela e readback final;
+7. somente então atualizar o estado de evidência do ACK e da aceitação física do PG33.
+```
+
+Se qualquer etapa posterior ao PG33 TESTE falhar, manter o PLC em STOP e verificar por leitura `34` qual programa está armazenado antes de qualquer nova ação.
