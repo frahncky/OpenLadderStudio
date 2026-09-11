@@ -6,6 +6,8 @@ Ferramenta para fechar o protocolo de programação do TP02 usando o PC12 origin
 
 O emulador responde aos quadros PG já confirmados e registra integralmente qualquer comando ainda desconhecido enviado pelo PC12. Isso permite descobrir a sequência de gravação sem transmitir comandos experimentais ao PLC físico.
 
+O protocolo PG observado até agora usa `19200 8O1`, DTR ligado e RTS desligado. Os quadros binários confirmados seguem a regra de checksum em que a soma módulo 256 do frame completo resulta em `FF`.
+
 ## Ligação
 
 Use um par de portas COM virtuais, por exemplo:
@@ -64,17 +66,137 @@ F0 00 0F    -> 00 02 10 22 CB
 14 00 EB     -> 00 00 FF
 ```
 
-O checksum mantém a soma módulo 256 do frame em `FF`.
+`14` continua classificado apenas como consulta auxiliar; sua semântica ainda não deve ser presumida.
 
-## Descoberta da escrita
+## Captura bruta
 
-1. Abra o emulador na segunda COM virtual.
-2. Configure o PC12 original na primeira COM virtual.
-3. Abra um projeto mínimo no PC12.
-4. Faça primeiro uma leitura para validar o diálogo.
-5. Mande o PC12 gravar o programa no PLC emulado.
-6. Todo comando não conhecido será salvo em `tp02-emulator-captures` como `.bin` e também aparecerá no log.
-7. Repita alterando apenas uma variável por vez: uma instrução, um endereço, um valor ou um rung.
-8. Compare os frames desconhecidos para identificar comando, endereço, tamanho, payload e confirmação.
+Além do log textual, o emulador grava o fluxo bruto recebido do PC12 em:
 
-O ACK genérico existe apenas para permitir que o PC12 avance enquanto a resposta real do novo comando ainda não foi identificada. Se ele mascarar o comportamento, execute com `--no-auto-ack`.
+```text
+tp02-emulator-captures\TP02-Emulator-AAAAMMDD-HHMMSS-raw.bin
+```
+
+A captura RAW é importante porque preserva bytes mesmo se um futuro comando de escrita usar estrutura diferente da atualmente conhecida.
+
+## Analisador automático
+
+Depois de uma sessão, execute:
+
+```bat
+AnalyzeLatestTp02Capture.bat
+```
+
+Ou diretamente:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\AnalyzeTp02Capture.ps1 -Path .\tp02-emulator-captures\captura-raw.bin
+```
+
+O analisador:
+
+- detecta `CON-ICB<CR>`;
+- procura frames no formato `[CMD][LEN][PAYLOAD][CHECKSUM]`;
+- aceita somente candidatos cuja soma módulo 256 seja `FF`;
+- identifica `F0`, `38`, `34`, `0A` e `14`;
+- destaca opcodes desconhecidos;
+- gera um arquivo `.frames.csv` ao lado da captura.
+
+Para comparar duas gravações:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\AnalyzeTp02Capture.ps1 -Path captura-A-raw.bin -Compare captura-B-raw.bin
+```
+
+Isso mostra exatamente quais frames mudaram entre duas operações.
+
+## Campanha para descobrir a escrita
+
+Use sempre um projeto mínimo e altere apenas uma variável por teste.
+
+### Teste 0 - controle
+
+1. Inicie o emulador em `COM11`.
+2. Configure o PC12 em `COM10`.
+3. Faça `Read` no PC12.
+4. Confirme no log a sequência conhecida, tipicamente `CON-ICB -> F0 -> 38 -> 34/0A`.
+
+Se a leitura não passar pelo emulador, não avance para a escrita: primeiro corrija COM virtual, parâmetros ou estado do handshake.
+
+### Teste 1 - primeira escrita
+
+1. Reinicie o emulador para gerar uma captura limpa.
+2. Abra no PC12 um programa mínimo.
+3. Execute `Write` para o PLC emulado.
+4. Rode `AnalyzeLatestTp02Capture.bat`.
+5. Anote o primeiro `CMD=0xXX` classificado como `DESCONHECIDO`.
+
+Esse opcode passa a ser o principal candidato ao início do download.
+
+### Teste 2 - endereço de operando
+
+Faça duas gravações alterando somente um operando, por exemplo:
+
+```text
+A: contato X000
+B: contato X001
+```
+
+Compare as duas capturas. Os bytes que mudarem no mesmo frame são candidatos à codificação de endereço.
+
+### Teste 3 - tipo de dispositivo
+
+Repita mantendo a estrutura e trocando somente o tipo:
+
+```text
+X000
+Y000
+M000
+C000
+T000
+D000
+```
+
+Isso ajuda a separar opcode da instrução, classe de dispositivo e endereço.
+
+### Teste 4 - constante
+
+Compare duas escritas alterando apenas um valor numérico, por exemplo `K1` para `K2`, depois `K255` para `K256`. Isso permite determinar largura, endianess e possíveis campos BCD/binários.
+
+### Teste 5 - tamanho do programa
+
+Grave projetos com 1, 2 e 3 rungs, mantendo instruções simples. Compare quantidade de frames, comprimentos e bytes de término. O objetivo é localizar tamanho total, paginação, END e confirmação final.
+
+### Teste 6 - ACK real
+
+O modo padrão responde `00 00 FF` para comandos desconhecidos somente dentro do emulador. Se o PC12 parar ou acusar erro, repita a mesma sessão com:
+
+```bat
+StartTp02Emulator.bat COM11 --no-auto-ack
+```
+
+Assim conseguimos distinguir entre:
+
+- comando que não exige resposta;
+- comando que exige ACK específico;
+- comando cuja resposta depende de estado ou payload.
+
+## Operações adicionais do PC12
+
+O PC12 possui operações separadas de leitura, escrita, RUN, STOP, EEPROM e limpeza de áreas de memória. Elas devem ser estudadas individualmente contra o emulador. Não use comandos de limpeza, gravação experimental ou RUN/STOP contra o PLC físico até que os respectivos frames e respostas estejam identificados.
+
+`0F 00 F0` permanece tratado como candidato destrutivo associado a limpeza de memória e não deve ser enviado ao equipamento físico durante esta fase.
+
+## Resultado esperado
+
+A meta desta campanha é transformar cada operação do PC12 em uma sequência determinística documentada:
+
+```text
+handshake
+preflight
+inicio de download
+paginas/blocos de programa
+metadados
+confirmacao/finalizacao
+```
+
+Depois que a sequência de `Write` estiver fechada no emulador, ela pode ser implementada no OpenLadder e somente então validada de forma controlada em um TP02 real.
