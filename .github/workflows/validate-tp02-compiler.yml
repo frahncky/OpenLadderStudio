@@ -8,11 +8,13 @@ on:
       - 'src/OpenLadderStudio.Core/Tp02Pg34Decoder.cs'
       - 'src/OpenLadderStudio.Core/Tp02Pg34Pager.cs'
       - 'src/OpenLadderStudio.Core/Tp02Pg33DryRunFrame.cs'
+      - 'src/OpenLadderStudio.Core/Tp02Pg33DryRunProgram.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg34DecoderSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg34PagerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg33DryRunFrameSelfTest.cs'
+      - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg33DryRunProgramSelfTest.cs'
       - 'src/OpenLadderStudio.Desktop/Tp02DryRunPreview.cs'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02DryRunV83.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabDecode34V27.ps1'
@@ -34,11 +36,13 @@ on:
       - 'src/OpenLadderStudio.Core/Tp02Pg34Decoder.cs'
       - 'src/OpenLadderStudio.Core/Tp02Pg34Pager.cs'
       - 'src/OpenLadderStudio.Core/Tp02Pg33DryRunFrame.cs'
+      - 'src/OpenLadderStudio.Core/Tp02Pg33DryRunProgram.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg34DecoderSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg34PagerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg33DryRunFrameSelfTest.cs'
+      - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg33DryRunProgramSelfTest.cs'
       - 'src/OpenLadderStudio.Desktop/Tp02DryRunPreview.cs'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02DryRunV83.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabDecode34V27.ps1'
@@ -126,6 +130,22 @@ jobs:
       - name: Executar autoteste quadro PG33 dry-run
         shell: cmd
         run: Tp02Pg33DryRunFrameSelfTest.exe
+
+      - name: Compilar autoteste programa PG33 dry-run
+        shell: cmd
+        run: >-
+          C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
+          /nologo
+          /target:exe
+          /out:Tp02Pg33DryRunProgramSelfTest.exe
+          src\OpenLadderStudio.Core\Tp02TargetCompiler.cs
+          src\OpenLadderStudio.Core\Tp02Pg33DryRunFrame.cs
+          src\OpenLadderStudio.Core\Tp02Pg33DryRunProgram.cs
+          tests\OpenLadderStudio.Core.Tests\Tp02Pg33DryRunProgramSelfTest.cs
+
+      - name: Executar autoteste programa PG33 dry-run
+        shell: cmd
+        run: Tp02Pg33DryRunProgramSelfTest.exe
 
       - name: Compilar PG Lab TP02
         shell: cmd
