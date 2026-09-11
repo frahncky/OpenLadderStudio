@@ -88,7 +88,7 @@ jobs:
           mkdir -p docs/data
           cp protocol-analysis/pc12-write-program-analysis.txt \
             docs/data/pc12-write-program-analysis.txt
-          if git diff --quiet -- docs/data/pc12-write-program-analysis.txt; then
+          if [ -z "$(git status --porcelain -- docs/data/pc12-write-program-analysis.txt)" ]; then
             echo 'Relatório estático sem alterações.'
             exit 0
           fi
