@@ -24,41 +24,142 @@ DIRECT TX CALL SITES
 14. callsite=0x004B7C23 file+0x000B7223 bytes=[E8 BE 79 FB FF]
 15. callsite=0x004B7C4A file+0x000B724A bytes=[E8 97 79 FB FF]
 
-PRE-TX BUFFER/LENGTH STORES
+FRAME BUILDER 0x33 - DIRECT TX STORES
 ----------------------------------------------------------------------------------------------------
-TX#01 callsite=0x004B7A1A window=0x004B797A..0x004B7A1A stores=4
+window=0x004B7940..0x004B7A20 stores=7
+  0x004B7958  TX[00][0x004FA7A8]   MOV8_IMM   value=0x33 bytes=[C6 05 A8 A7 4F 00 33]
+  0x004B7970  TX[01][0x004FA7A9]   MOV8_AL    value=? bytes=[A2 A9 A7 4F 00]
+  0x004B7975  TX[02][0x004FA7AA]   MOV8_IMM   value=0x0 bytes=[C6 05 AA A7 4F 00 00]
   0x004B797F  TX[03][0x004FA7AB]   MOV8_REG   value=? bytes=[88 0D AB A7 4F 00]
   0x004B7988  TX[04][0x004FA7AC]   MOV8_AL    value=? bytes=[A2 AC A7 4F 00]
   0x004B7990  TX[05][0x004FA7AD]   MOV8_REG   value=? bytes=[88 15 AD A7 4F 00]
   0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
-TX#02 callsite=0x004B7A41 window=0x004B79A1..0x004B7A41 stores=1
+
+STATIC FRAME SKELETON
+  TX[0] = 0x33 is an immediate constant in the Write PLC Program builder.
+  TX[1], TX[3], TX[4], TX[5] are runtime-derived in this path; TX[2] = 0x00.
+  A checksum byte is appended after the runtime payload and TX_LEN is set to payload_length + 1.
+  This establishes a 0x33 family frame in the write path, not yet its semantic name.
+
+PRE-TX BUFFER/LENGTH STORES
+----------------------------------------------------------------------------------------------------
+TX#01 callsite=0x004B7A1A window=0x004B793A..0x004B7A1A stores=7
+  0x004B7958  TX[00][0x004FA7A8]   MOV8_IMM   value=0x33 bytes=[C6 05 A8 A7 4F 00 33]
+  0x004B7970  TX[01][0x004FA7A9]   MOV8_AL    value=? bytes=[A2 A9 A7 4F 00]
+  0x004B7975  TX[02][0x004FA7AA]   MOV8_IMM   value=0x0 bytes=[C6 05 AA A7 4F 00 00]
+  0x004B797F  TX[03][0x004FA7AB]   MOV8_REG   value=? bytes=[88 0D AB A7 4F 00]
+  0x004B7988  TX[04][0x004FA7AC]   MOV8_AL    value=? bytes=[A2 AC A7 4F 00]
+  0x004B7990  TX[05][0x004FA7AD]   MOV8_REG   value=? bytes=[88 15 AD A7 4F 00]
   0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
-TX#03 callsite=0x004B7A68 window=0x004B79C8..0x004B7A68 stores=1
+TX#02 callsite=0x004B7A41 window=0x004B7961..0x004B7A41 stores=6
+  0x004B7970  TX[01][0x004FA7A9]   MOV8_AL    value=? bytes=[A2 A9 A7 4F 00]
+  0x004B7975  TX[02][0x004FA7AA]   MOV8_IMM   value=0x0 bytes=[C6 05 AA A7 4F 00 00]
+  0x004B797F  TX[03][0x004FA7AB]   MOV8_REG   value=? bytes=[88 0D AB A7 4F 00]
+  0x004B7988  TX[04][0x004FA7AC]   MOV8_AL    value=? bytes=[A2 AC A7 4F 00]
+  0x004B7990  TX[05][0x004FA7AD]   MOV8_REG   value=? bytes=[88 15 AD A7 4F 00]
   0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
-TX#04 callsite=0x004B7A9D window=0x004B79FD..0x004B7A9D stores=0
+TX#03 callsite=0x004B7A68 window=0x004B7988..0x004B7A68 stores=3
+  0x004B7988  TX[04][0x004FA7AC]   MOV8_AL    value=? bytes=[A2 AC A7 4F 00]
+  0x004B7990  TX[05][0x004FA7AD]   MOV8_REG   value=? bytes=[88 15 AD A7 4F 00]
+  0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
+TX#04 callsite=0x004B7A9D window=0x004B79BD..0x004B7A9D stores=1
+  0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
+TX#05 callsite=0x004B7AC4 window=0x004B79E4..0x004B7AC4 stores=1
+  0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
+TX#06 callsite=0x004B7AEB window=0x004B7A0B..0x004B7AEB stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#05 callsite=0x004B7AC4 window=0x004B7A24..0x004B7AC4 stores=0
+TX#07 callsite=0x004B7B12 window=0x004B7A32..0x004B7B12 stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#06 callsite=0x004B7AEB window=0x004B7A4B..0x004B7AEB stores=0
+TX#08 callsite=0x004B7B39 window=0x004B7A59..0x004B7B39 stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#07 callsite=0x004B7B12 window=0x004B7A72..0x004B7B12 stores=0
+TX#09 callsite=0x004B7B60 window=0x004B7A80..0x004B7B60 stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#08 callsite=0x004B7B39 window=0x004B7A99..0x004B7B39 stores=0
+TX#10 callsite=0x004B7B87 window=0x004B7AA7..0x004B7B87 stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#09 callsite=0x004B7B60 window=0x004B7AC0..0x004B7B60 stores=0
+TX#11 callsite=0x004B7BAE window=0x004B7ACE..0x004B7BAE stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#10 callsite=0x004B7B87 window=0x004B7AE7..0x004B7B87 stores=0
+TX#12 callsite=0x004B7BD5 window=0x004B7AF5..0x004B7BD5 stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#11 callsite=0x004B7BAE window=0x004B7B0E..0x004B7BAE stores=0
+TX#13 callsite=0x004B7BFC window=0x004B7B1C..0x004B7BFC stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#12 callsite=0x004B7BD5 window=0x004B7B35..0x004B7BD5 stores=0
+TX#14 callsite=0x004B7C23 window=0x004B7B43..0x004B7C23 stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#13 callsite=0x004B7BFC window=0x004B7B5C..0x004B7BFC stores=0
+TX#15 callsite=0x004B7C4A window=0x004B7B6A..0x004B7C4A stores=0
   (nenhum MOV absoluto simples ao TX no recorte)
-TX#14 callsite=0x004B7C23 window=0x004B7B83..0x004B7C23 stores=0
-  (nenhum MOV absoluto simples ao TX no recorte)
-TX#15 callsite=0x004B7C4A window=0x004B7BAA..0x004B7C4A stores=0
-  (nenhum MOV absoluto simples ao TX no recorte)
+
+FRAME BUILDER OBJDUMP
+----------------------------------------------------------------------------------------------------
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7940 <.text+0xb6940>:
+  4b7940:	ff                   	(bad)
+  4b7941:	ff 88 97 6e 12 00    	dec    DWORD PTR [eax+0x126e97]
+  4b7947:	00 57 e8             	add    BYTE PTR [edi-0x18],dl
+  4b794a:	b6 64                	mov    dh,0x64
+  4b794c:	00 00                	add    BYTE PTR [eax],al
+  4b794e:	59                   	pop    ecx
+  4b794f:	8b 8f 82 01 00 00    	mov    ecx,DWORD PTR [edi+0x182]
+  4b7955:	01 4f 6e             	add    DWORD PTR [edi+0x6e],ecx
+  4b7958:	c6 05 a8 a7 4f 00 33 	mov    BYTE PTR ds:0x4fa7a8,0x33
+  4b795f:	8b 47 56             	mov    eax,DWORD PTR [edi+0x56]
+  4b7962:	d1 f8                	sar    eax,1
+  4b7964:	79 03                	jns    0x4b7969
+  4b7966:	83 d0 00             	adc    eax,0x0
+  4b7969:	8a 57 56             	mov    dl,BYTE PTR [edi+0x56]
+  4b796c:	02 c2                	add    al,dl
+  4b796e:	04 04                	add    al,0x4
+  4b7970:	a2 a9 a7 4f 00       	mov    ds:0x4fa7a9,al
+  4b7975:	c6 05 aa a7 4f 00 00 	mov    BYTE PTR ds:0x4fa7aa,0x0
+  4b797c:	8a 4f 6a             	mov    cl,BYTE PTR [edi+0x6a]
+  4b797f:	88 0d ab a7 4f 00    	mov    BYTE PTR ds:0x4fa7ab,cl
+  4b7985:	8a 47 6e             	mov    al,BYTE PTR [edi+0x6e]
+  4b7988:	a2 ac a7 4f 00       	mov    ds:0x4fa7ac,al
+  4b798d:	8a 57 56             	mov    dl,BYTE PTR [edi+0x56]
+  4b7990:	88 15 ad a7 4f 00    	mov    BYTE PTR ds:0x4fa7ad,dl
+  4b7996:	33 c0                	xor    eax,eax
+  4b7998:	eb 14                	jmp    0x4b79ae
+  4b799a:	8a 94 07 e0 00 00 00 	mov    dl,BYTE PTR [edi+eax*1+0xe0]
+  4b79a1:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b79a4:	88 91 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],dl
+  4b79aa:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b79ad:	40                   	inc    eax
+  4b79ae:	8b 57 62             	mov    edx,DWORD PTR [edi+0x62]
+  4b79b1:	3b c2                	cmp    eax,edx
+  4b79b3:	7c e5                	jl     0x4b799a
+  4b79b5:	33 c0                	xor    eax,eax
+  4b79b7:	89 87 82 00 00 00    	mov    DWORD PTR [edi+0x82],eax
+  4b79bd:	33 c0                	xor    eax,eax
+  4b79bf:	eb 0f                	jmp    0x4b79d0
+  4b79c1:	33 d2                	xor    edx,edx
+  4b79c3:	8a 90 a8 a7 4f 00    	mov    dl,BYTE PTR [eax+0x4fa7a8]
+  4b79c9:	01 97 82 00 00 00    	add    DWORD PTR [edi+0x82],edx
+  4b79cf:	40                   	inc    eax
+  4b79d0:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b79d3:	3b c1                	cmp    eax,ecx
+  4b79d5:	7c ea                	jl     0x4b79c1
+  4b79d7:	b0 ff                	mov    al,0xff
+  4b79d9:	8a 97 82 00 00 00    	mov    dl,BYTE PTR [edi+0x82]
+  4b79df:	2a c2                	sub    al,dl
+  4b79e1:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b79e4:	88 81 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],al
+  4b79ea:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b79ed:	40                   	inc    eax
+  4b79ee:	a3 ac a8 4f 00       	mov    ds:0x4fa8ac,eax
+  4b79f3:	c7 05 64 03 56 00 03 	mov    DWORD PTR ds:0x560364,0x3
+  4b79fa:	00 00 00 
+  4b79fd:	c7 05 60 03 56 00 32 	mov    DWORD PTR ds:0x560360,0x32
+  4b7a04:	00 00 00 
+  4b7a07:	e8 3c 44 01 00       	call   0x4cbe48
+  4b7a0c:	05 f4 01 00 00       	add    eax,0x1f4
+  4b7a11:	a3 64 a7 4f 00       	mov    ds:0x4fa764,eax
+  4b7a16:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7a19:	52                   	push   edx
+  4b7a1a:	e8 c7 7b fb ff       	call   0x46f5e6
+  4b7a1f:	59                   	pop    ecx
 
 FOCUSED OBJDUMP WINDOWS
 ----------------------------------------------------------------------------------------------------
@@ -956,6 +1057,8 @@ Disassembly of section .text:
 STATIC INTERPRETATION
 ----------------------------------------------------------------------------------------------------
 * CALL direto Write PLC Program -> rotina TX é correlação estática forte do caminho de envio.
+* Os vários CALLs consecutivos são cercados por testes de flags de comunicação; não devem ser contados como 15 quadros distintos sem execução do fluxo.
+* O construtor 0x33 e o cálculo de checksum estão no mesmo caminho que antecede os CALLs de TX.
 * O conteúdo mostrado antes de cada CALL continua sendo estático: branches podem selecionar caminhos diferentes.
 * Nenhuma ocorrência 09/0F deve ser tratada como download completo sem reconstruir a ordem efetiva dos quadros.
 * 0F 00 F0 (Clear All Memory) continua bloqueado e este script nunca executa TX.
