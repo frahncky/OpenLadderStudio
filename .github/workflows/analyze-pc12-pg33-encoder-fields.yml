@@ -8,6 +8,7 @@ on:
       - 'scripts/analyze_pc12_pg33_function_parser.py'
       - 'scripts/emulate_pc12_pg33_operand_helper.py'
       - 'scripts/emulate_pc12_pg33_f13w_full.py'
+      - 'scripts/emulate_pc12_pg33_f23_full.py'
       - '.github/workflows/analyze-pc12-pg33-encoder-fields.yml'
       - 'src/OpenLadderStudio.Desktop/pc12.exe'
   workflow_dispatch:
@@ -61,6 +62,17 @@ jobs:
           cat protocol-analysis/pc12-pg33-f13w-full-emulation.txt
           exit $rc
 
+      - name: Emular F-23 completo no coletor PG33
+        shell: bash
+        run: |
+          set +e
+          python3 scripts/emulate_pc12_pg33_f23_full.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-pg33-f23-full-emulation.txt
+          rc=$?
+          cat protocol-analysis/pc12-pg33-f23-full-emulation.txt
+          exit $rc
+
       - name: Persistir relatórios
         if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
         shell: bash
@@ -74,13 +86,15 @@ jobs:
              docs/data/pc12-pg33-operand-helper-emulation.txt
           cp protocol-analysis/pc12-pg33-f13w-full-emulation.txt \
              docs/data/pc12-pg33-f13w-full-emulation.txt
-          if [ -z "$(git status --porcelain -- docs/data/pc12-pg33-encoder-fields-analysis.txt docs/data/pc12-pg33-function-parser-analysis.txt docs/data/pc12-pg33-operand-helper-emulation.txt docs/data/pc12-pg33-f13w-full-emulation.txt)" ]; then
+          cp protocol-analysis/pc12-pg33-f23-full-emulation.txt \
+             docs/data/pc12-pg33-f23-full-emulation.txt
+          if [ -z "$(git status --porcelain -- docs/data/pc12-pg33-encoder-fields-analysis.txt docs/data/pc12-pg33-function-parser-analysis.txt docs/data/pc12-pg33-operand-helper-emulation.txt docs/data/pc12-pg33-f13w-full-emulation.txt docs/data/pc12-pg33-f23-full-emulation.txt)" ]; then
             echo 'Relatórios sem alterações.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/data/pc12-pg33-encoder-fields-analysis.txt docs/data/pc12-pg33-function-parser-analysis.txt docs/data/pc12-pg33-operand-helper-emulation.txt docs/data/pc12-pg33-f13w-full-emulation.txt
+          git add docs/data/pc12-pg33-encoder-fields-analysis.txt docs/data/pc12-pg33-function-parser-analysis.txt docs/data/pc12-pg33-operand-helper-emulation.txt docs/data/pc12-pg33-f13w-full-emulation.txt docs/data/pc12-pg33-f23-full-emulation.txt
           git commit -m 'Atualizar análise offline dos encoders PG33'
           git push origin HEAD:main
 
@@ -94,4 +108,5 @@ jobs:
             protocol-analysis/pc12-pg33-function-parser-analysis.txt
             protocol-analysis/pc12-pg33-operand-helper-emulation.txt
             protocol-analysis/pc12-pg33-f13w-full-emulation.txt
+            protocol-analysis/pc12-pg33-f23-full-emulation.txt
           retention-days: 30
