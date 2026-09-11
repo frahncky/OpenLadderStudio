@@ -3,10 +3,17 @@ using System;
 namespace OpenLadderStudio.Core
 {
     /// <summary>
-    /// Reconstrução OFFLINE do quadro 0x33 encontrado no caminho
+    /// Modelo OFFLINE do quadro 0x33 encontrado no caminho
     /// "Write PLC Program" do PC12.
     ///
-    /// Evidência estática no pc12.exe:
+    /// A geometria foi primeiro reconstruída estaticamente no pc12.exe e depois
+    /// conferida executando o construtor original 0x004B7958 dentro do Unicorn,
+    /// com a rotina TX interceptada antes de qualquer I/O. Os casos de 1, 2, 3
+    /// e 20 registros produziram, byte a byte, o mesmo quadro deste modelo.
+    /// Isso é confirmação dinâmica OFFLINE do construtor do PC12, não confirmação
+    /// física do comando em um PLC TP02.
+    ///
+    /// Formato confirmado no construtor:
     ///   TX[0] = 0x33
     ///   TX[1] = 3*N + 4
     ///   TX[2] = 0x00
@@ -19,12 +26,8 @@ namespace OpenLadderStudio.Core
     /// não necessariamente a diferença entre endereços de passo. O PC12
     /// incrementa separadamente o cursor de passo em 1..4 conforme a instrução
     /// e encerra a coleta do bloco quando o contador de registros chega a 20.
-    ///
-    /// O caminho estático também mostra que os dois bytes HIGH/LOW de cada
-    /// registro são gravados diretamente no buffer TX, enquanto o byte EXTERNAL
-    /// é acumulado separadamente e anexado depois. Assim, a geometria 2*N + N
-    /// do corpo é reconstruída diretamente do binário; o significado físico do
-    /// comando 0x33 ainda não foi confirmado em bancada.
+    /// A transição de sucesso também foi emulada offline e inicia o próximo bloco
+    /// no cursor real de passos, não em startStep + N.
     ///
     /// IMPORTANTE: esta classe não abre serial, não transmite quadros e não é
     /// ligada a nenhuma rotina de download. Serve somente para dry-run/testes.
