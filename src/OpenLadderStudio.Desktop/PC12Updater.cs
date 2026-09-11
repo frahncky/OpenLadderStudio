@@ -64,7 +64,6 @@ namespace ModernPC12
             AutoScaleMode = AutoScaleMode.Dpi;
             currentVersion = ReadCurrentVersion();
             BuildUi();
-            FormClosed += delegate { DisposeDownloadClient(); };
         }
 
         private void BuildUi()
