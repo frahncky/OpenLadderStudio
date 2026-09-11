@@ -1,0 +1,18 @@
+PC12 PG33 F-13w FULL COLLECTOR - UNICORN OFFLINE EMULATION
+====================================================================================================
+program=F-13w ADD D0002,D0001,00010
+entry=0x004B758D stop=0x004B7869 mode=OFFLINE; no COM, no TX routine, no PLC
+synthetic guards: program_size=4000 last_program_step=3999
+
+OK HIGH/LOW=[0D 77 F0 01 F0 00 80 0A]
+expected       =[0D 77 F0 01 F0 00 80 0A]
+EXTERNAL=[00 00 00 00] expected=[00 00 00 00]
+counters HL=8 TX=14 EXT=4 StepSpan=4 cursor=4 instructions=1 mode=2
+atoi=[('513', 513)]
+CRT strcpy=9 sprintf=3 progress_hooks=4 machine_instructions=2544
+
+RESULT=PASS
+O coletor original do PC12 expandiu F-13w em exatamente 4 palavras:
+0D 77 | F0 01 | F0 00 | 80 0A, todas com EXTERNAL=00.
+Isso coincide byte a byte com a leitura física PG34 do mesmo ADD.
+Nenhum byte foi transmitido fora do Unicorn.
