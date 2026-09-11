@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulator.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgReadback.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
@@ -19,18 +20,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Parse PowerShell analyzer
+      - name: Parse PowerShell tools
         shell: powershell
         run: |
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'),
-            [ref]$null,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors -and $errors.Count -gt 0) {
-            $errors | Format-List | Out-String | Write-Error
-            exit 1
+          $files = @(
+            'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1',
+            'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
+          )
+          foreach ($file in $files) {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file),
+              [ref]$null,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors -and $errors.Count -gt 0) {
+              $errors | Format-List | Out-String | Write-Error
+              exit 1
+            }
           }
 
       - name: Build TP02 emulator
