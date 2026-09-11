@@ -20,42 +20,42 @@ Este documento descreve o que o `pc12.exe` monta no caminho `Write PLC Program`.
 | `0x33` | escrita de programa | quadro dedicado encontrado em `Write PLC Program` |
 | `0x0F` | escrita destrutiva | `0F 00 F0` = Clear All Memory |
 
-## Comando dedicado `0x33`
+# Comando dedicado `0x33`
 
-A string `Write PLC Program...` leva ao caminho que monta o quadro em `0x004B7958` e, depois, chama a rotina de comunicação `0x0046F5E6`. O primeiro byte do buffer TX é fixado em `0x33`.
+A string `Write PLC Program...` leva ao caminho que monta o quadro em `0x004B7958` e, depois, chama a rotina genérica de comunicação `0x0046F5E6`. O primeiro byte do buffer TX é fixado em `0x33`.
 
-O construtor final usa estes campos do objeto:
+Campos do coletor/construtor:
 
 ```text
 +0x56 = quantidade de bytes HIGH/LOW acumulados
-+0x5E = próximo índice do plano HIGH/LOW no TX
++0x5E = próximo índice HIGH/LOW no TX
 +0x62 = quantidade de bytes EXTERNAL acumulados
 +0x6A = byte alto do endereço inicial
 +0x6E = byte baixo do endereço inicial
-+0x76 = cursor real de passos do programa
++0x76 = cursor real de passos
 +0x7A = contador de INSTRUÇÕES LÓGICAS do bloco
 +0x7E = passo inicial do bloco
 ```
 
-### Correção importante: instrução lógica != palavra de máquina
+## Instrução lógica x palavra de máquina
 
-A análise inicial confundia `+0x7A` com quantidade de palavras/registros transmitidos. O rastreamento completo do helper `0x004BCA65` corrigiu essa interpretação.
-
-O PC12 trabalha com duas unidades distintas:
+O PC12 trabalha com duas unidades:
 
 ```text
 instrução lógica
-    -> ocupa StepSpan = 1..4 passos
-    -> produz 1..4 palavras de máquina HIGH/LOW/EXTERNAL
+    StepSpan = 1..4 passos
+    produz 1..4 palavras de máquina
+    incrementa +0x7A uma única vez
 
 palavra de máquina
-    -> 1 HIGH + 1 LOW + 1 EXTERNAL
-    -> é a unidade efetivamente armazenada no corpo do PG33
+    HIGH + LOW + EXTERNAL
+    ocupa um passo expandido
+    é a unidade colocada no corpo do PG33
 ```
 
-A primeira palavra de uma instrução é emitida pelo chamador. Quando `StepSpan > 1`, o helper `0x004BCA65` é chamado uma vez para cada passo adicional. No caminho genérico aparecem chamadas sucessivas antes dos testes `StepSpan <= 2`, `<= 3` e antes do switch final.
+A primeira palavra é emitida pelo chamador. Para cada passo adicional, o helper `0x004BCA65` gera e acrescenta outra palavra.
 
-No final comum do helper, o PC12 executa:
+Final comum do helper:
 
 ```text
 TX[+0x5E] = HIGH
@@ -67,39 +67,31 @@ TX[+0x5E] = LOW
 +0x56 += 2
 ```
 
-O helper **não incrementa `+0x7A`**. Depois de toda a expansão da instrução, o caminho comum avança:
+Depois da expansão completa:
 
 ```text
 +0x76 += StepSpan
 +0x7A += 1
 ```
 
-Portanto `+0x7A` conta instruções lógicas, enquanto `+0x56/+0x62` contam as palavras efetivamente destinadas ao quadro.
+## Limite de bloco
 
-## Limite de bloco corrigido
-
-Em `0x004B7869` existe:
+Em `0x004B7869`:
 
 ```text
 cmp +0x7A, 0x14
 ```
 
-Logo, o limite é **20 instruções lógicas por bloco**.
-
-Como cada instrução pode ocupar até quatro passos/palavras, um bloco pode conter:
+Logo:
 
 ```text
-1..20 instruções lógicas
-1..80 palavras de máquina
+máximo = 20 instruções lógicas por bloco
+máximo = 80 palavras de máquina quando todas têm StepSpan=4
 ```
-
-Esse resultado substitui a interpretação antiga “20 palavras por quadro”.
 
 ## Geometria do quadro `0x33`
 
-Defina `W` como a quantidade total de **palavras de máquina já expandidas** no bloco.
-
-O construtor em `0x004B7958` produz:
+Defina `W` como a quantidade total de palavras já expandidas:
 
 ```text
 TX[0] = 33
@@ -109,146 +101,297 @@ TX[3] = step_hi
 TX[4] = step_lo
 TX[5] = 2*W
 
-corpo:
 [2*W bytes HIGH/LOW]
 [W bytes EXTERNAL]
-
-TX[last] = FF - soma(TX[0..last-1])
+[checksum]
 ```
 
-ou, de forma compacta:
+Forma compacta:
 
 ```text
 33 [3*W+4] 00 [step_hi] [step_lo] [2*W]
    [2*W bytes HIGH/LOW]
    [W bytes EXTERNAL]
    [checksum]
-```
 
-com:
-
-```text
 1 <= W <= 80
 sum(quadro) mod 256 = FF
 ```
 
-### Quadro máximo reconstruído
+## Quadro máximo confirmado no código original
 
-Vinte instruções de quatro passos podem gerar `W=80`:
+`scripts/emulate_pc12_pg33_f13w_batch20.py` executou o coletor e o builder originais para:
 
 ```text
-TX[1] = 3*80 + 4 = 244 = F4h
-TX[5] = 2*80     = 160 = A0h
+20 x F-13w ADD D0002,D0001,10
+```
+
+Resultado:
+
+```text
+logical_instructions = 20
+cursor = 80
 HIGH/LOW = 160 bytes
 EXTERNAL = 80 bytes
-quadro total = 247 bytes incluindo checksum
+frame = 247 bytes
+CMD = 33
+LEN = F4
+start = 0000
+TX[5] = A0
+checksum = 8C
+RESULT = PASS
 ```
 
-Portanto o maior quadro reconstruído é estruturalmente:
+Evidência:
 
 ```text
-33 F4 00 [step_hi] [step_lo] A0
-   [160 bytes HIGH/LOW]
-   [80 bytes EXTERNAL]
-   [checksum]
+docs/data/pc12-pg33-f13w-batch20-emulation.txt
 ```
 
-## Endereço inicial e avanço
+## Endereço inicial e divisão entre blocos
 
-No início de um novo bloco, `+0x7E` recebe o cursor `+0x76`. Esse valor é convertido em `step_hi/step_lo` para `TX[3..4]`.
+A cauda de sucesso do PC12 reinicializa os contadores de corpo, preserva o cursor real e usa esse cursor como início do bloco seguinte.
 
-O cursor avança pelo número real de passos da instrução, isto é, 1, 2, 3 ou 4. Após sucesso do quadro anterior, o próximo bloco inicia no cursor resultante, não em `start + 20` nem em `start + W` calculado externamente.
-
-A emulação offline da cauda de sucesso já confirmou que:
+A emulação de **21 F-13w** reproduziu exatamente:
 
 ```text
-cursor < program_size  -> inicia novo bloco nesse cursor
-cursor >= program_size -> conclui o fluxo
+bloco 1:
+  20 instruções / 80 palavras
+  start=0000
+  LEN=F4
+  HIGH/LOW=A0
+  total=247 bytes
+
+após sucesso:
+  +56=0
+  +5E=6
+  +62=0
+  +76=80
+  +7A=0
+  +7E=80
+
+bloco 2:
+  1 instrução / 4 palavras
+  start=0050
+  LEN=10
+  HIGH/LOW=08
+  total=19 bytes
 ```
 
-## O que a emulação do construtor já confirma
-
-`scripts/emulate_pc12_pg33_builder.py` executa o construtor original `0x004B7958` no Unicorn e intercepta a chamada TX. Casos sintéticos de `W=1`, `W=2`, `W=3` e `W=20` coincidiram byte a byte com o modelo independente.
-
-Esses casos confirmam a fórmula do quadro para uma quantidade fornecida de palavras. O caso `W=20` **não prova um limite de 20 palavras**; o limite real de bloco é definido por `+0x7A`, agora classificado como contador de instruções lógicas.
-
-O novo relatório:
+Evidência:
 
 ```text
-docs/data/pc12-pg33-encoder-fields-analysis.txt
+docs/data/pc12-pg33-f13w-blocks21-emulation.txt
 ```
 
-rastreia o chamador, `StepSpan`, o helper `0x004BCA65`, as escritas adicionais em TX e a contabilidade de HIGH/LOW/EXTERNAL.
+## Operand helper confirmado OFFLINE
 
-## Relação com as instruções multistep já conhecidas
-
-A correção resolve a aparente incompatibilidade com o código de máquina observado na leitura `0x34`:
+`0x004BCA65` produziu:
 
 ```text
-F-23 SET   -> 2 palavras/passos
-F-24 RST   -> 2 palavras/passos
-F-13w ADD  -> 4 palavras/passos
-TMR+preset -> 2 palavras/passos no trecho correspondente
-CNT+preset -> múltiplos passos conforme a estrutura do programa
+D0002 -> F0 01 / EXTERNAL 00
+D0001 -> F0 00 / EXTERNAL 00
+00010 -> 80 0A / EXTERNAL 00
+00000 -> 80 00 / EXTERNAL 00
+01000 -> 87 68 / EXTERNAL 00
 ```
 
-O PG33 não precisa comprimir uma função multistep em uma única palavra. O caminho de escrita expande a instrução e acrescenta as palavras seguintes por meio do helper.
-
-Isso não significa que o byte `BRAW` da Região B do `0x34` seja o mesmo que `EXTERNAL` do PG33. São campos observados em caminhos diferentes e devem continuar separados epistemicamente.
-
-## Resposta/ACK do PLC
-
-Depois das tentativas de envio, o chamador testa as flags genéricas:
+A normalização interna mostrou também:
 
 ```text
-0x4FA8B7  timeout/falha de comunicação
-0x4FA8B9  checksum inválido
-0x4FA8B8  resposta marcada como erro
+D0002 -> 0001
+D0001 -> 0000
+00010 -> 000A
+01000 -> 03E8
 ```
 
-O validador RX emulado offline confirmou que essas flags decorrem de regras genéricas de checksum/status. Um quadro como `00 00 FF` satisfazer o parser **não prova** que ele seja o ACK físico do `0x33`.
+Evidência:
 
-Permanece desconhecido:
+```text
+docs/data/pc12-pg33-operand-helper-emulation.txt
+```
 
-- payload/ACK real retornado pelo TP02 ao `0x33`;
-- sequência completa de sessão de escrita observada no fio;
-- aceitação física do `0x33` no controlador.
+# Correlação com instruções físicas lidas pelo `0x34`
 
-## Implementação segura no repositório
+## F-13w ADD
 
-O dry-run foi separado em duas camadas:
+O parser `0x004BA69E`, para `internal=513`, usa o case `0x004BAD14`:
+
+```text
+HIGH = 0D
+LOW = 77
+EXTERNAL = 00
+StepSpan = 4
+mode = 2
+```
+
+Para:
+
+```text
+F-13w ADD D0002,D0001,10
+```
+
+O coletor original gerou:
+
+```text
+0D 77 | F0 01 | F0 00 | 80 0A
+EXTERNAL = 00 | 00 | 00 | 00
+```
+
+Os pares HIGH/LOW coincidem byte a byte com a captura física PG34.
+
+Evidências:
+
+```text
+docs/data/pc12-pg33-f13w-full-emulation.txt
+docs/tp02-pg-f13w-offline-confirmation.md
+```
+
+## F-23 SET
+
+Para:
+
+```text
+F-23 SET Y0001
+```
+
+O coletor original produziu:
+
+```text
+17 71 | C8 80
+EXTERNAL = 00 | 00
+StepSpan = 2
+```
+
+Os pares HIGH/LOW também coincidem byte a byte com a captura física PG34.
+
+Evidência:
+
+```text
+docs/data/pc12-pg33-f23-full-emulation.txt
+```
+
+Essas correlações tornam forte a hipótese de que o PG33 transporta a representação expandida armazenada no programa. Ainda assim, **não provam aceitação física do `0x33` pelo PLC**.
+
+# Resposta / ACK / retentativas
+
+## Validador RX genérico
+
+A rotina genérica de comunicação classifica a resposta através de:
+
+```text
+0x4FA8B7 = timeout/falha de comunicação
+0x4FA8B9 = checksum inválido
+0x4FA8B8 = resposta marcada como erro pelo bit 7 do primeiro byte
+```
+
+O validador exige que a soma da resposta feche em `FF`. Um quadro sintético como `00 00 FF` satisfazer o parser **não prova** que seja o ACK físico do `0x33`.
+
+## Gate PG33 confirmado OFFLINE
+
+A faixa `0x004B7A07..0x004B7C50` foi executada no Unicorn substituindo a comunicação real somente pelas três flags acima.
+
+Resultado:
+
+```text
+sucesso na 1ª tentativa -> 1 chamada
+falha + sucesso         -> 2 chamadas
+2 falhas + sucesso      -> 3 chamadas
+falha permanente        -> 3 chamadas
+```
+
+O máximo confirmado é, portanto, **3 tentativas por quadro**.
+
+Foram ensaiadas separadamente falhas de:
+
+```text
+timeout
+checksum
+status/error
+```
+
+Todas seguem a mesma política de retentativa.
+
+A faixa do chamador possui **zero referências diretas a RX_BUF/RX_LEN**. Logo, a lógica específica de retry só enxerga a classificação genérica feita por `0x0046F5E6`.
+
+Consequência:
+
+```text
+conhecemos a condição de sucesso do PC12:
+  timeout=0 AND checksum=0 AND error=0
+
+mas o payload físico exato do ACK do 0x33 continua desconhecido.
+```
+
+Evidência:
+
+```text
+docs/data/pc12-pg33-retry-gate-emulation.txt
+```
+
+## Implementação segura no Core
 
 ```text
 Tp02Pg33DryRunFrame
-  -> recebe palavras de máquina já expandidas
-  -> aceita 1..80 palavras
-  -> monta apenas a geometria do quadro
+  recebe palavras já expandidas
+  aceita 1..80 palavras
+  monta somente a geometria do quadro
 
 Tp02Pg33DryRunProgram
-  -> recebe instruções lógicas de 1..4 palavras
-  -> limita 20 instruções por bloco
-  -> concatena as palavras expandidas
-  -> avança o cursor pelo StepSpan real
+  recebe instruções lógicas de 1..4 palavras
+  limita 20 instruções por bloco
+  concatena as palavras
+  avança o cursor pelo StepSpan real
 ```
 
 Nenhuma dessas classes conhece `SerialPort` ou transmite bytes.
 
 ## `0x09` continua separado
 
-O `0x09` permanece classificado como primitiva de escrita de memória/registradores. A associação principal para `Write PLC Program` é o quadro dedicado `0x33`; as duas famílias não devem ser misturadas.
+O `0x09` permanece classificado como escrita de memória/registradores. Não deve ser confundido com o quadro dedicado `0x33` de `Write PLC Program`.
 
 ## Comando destrutivo
 
-`0F 00 F0` é Clear All Memory. Continua bloqueado no PG Lab e não foi utilizado em nenhuma análise ou emulação desta etapa.
+`0F 00 F0` é Clear All Memory. Continua bloqueado no PG Lab e não foi utilizado nos ensaios offline.
 
-## Próximas validações offline
+## Estado atual
 
-1. Emular uma instrução real de 2 passos pelo caminho completo e capturar as duas palavras que chegam ao construtor.
-2. Repetir para uma função de 4 passos, preferencialmente `F-13w ADD`, e comparar com o vetor já confirmado fisicamente pelo `0x34`.
-3. Emular um bloco com 20 instruções de quatro passos e confirmar no construtor real `W=80`, `LEN=F4`, `TX[5]=A0`.
-4. Emular 21 instruções lógicas para verificar a divisão `20 + 1` e o endereço real do segundo quadro.
-5. Somente depois considerar qualquer estudo físico de escrita, mediante decisão explícita separada.
+Confirmado por análise + emulação OFFLINE:
 
-## Estado de segurança
+```text
+0x33 no caminho Write PLC Program
+geometria/checksum
+StepSpan 1..4
+20 instruções lógicas por bloco
+até 80 palavras por quadro
+helper de operandos
+F-13w completo
+F-23 completo
+quadro máximo de 247 bytes
+divisão 20+1 / segundo start=0050
+cauda de sucesso entre blocos
+máximo de 3 tentativas por quadro
+condição genérica de sucesso do chamador
+```
 
-Mapear e emular não é habilitar escrita. O `0x33` está confirmado no caminho de escrita do PC12 e sua montagem está confirmada dinamicamente offline para os casos já ensaiados, mas **não está fisicamente confirmado no TP02**. A bancada continua READ-ONLY.
+Ainda não confirmado fisicamente:
+
+```text
+aceitação do 0x33 pelo TP02
+payload/ACK real do 0x33
+sequência completa da sessão de escrita observada no fio
+```
+
+## Próximas validações
+
+OFFLINE:
+
+1. Repetir o coletor completo para F-24 RST e, se necessário, TMR/CNT.
+2. Mapear preâmbulo e finalização de `Write PLC Program` sem executar I/O.
+3. Não promover um ACK sintético a protocolo físico sem observação real.
+
+Bancada:
+
+4. A próxima validação continua READ-ONLY: paginação `0x34` atravessando 80 passos.
+
+Qualquer escrita física permanece fora de escopo até decisão explícita separada.
