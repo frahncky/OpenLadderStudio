@@ -27,7 +27,7 @@ namespace OpenLadderStudio.Core
     /// Codec do protocolo Computer Link/Host Protocol documentado do WEG TP02.
     ///
     /// Esta classe nao abre porta serial. Ela apenas monta e valida quadros ASCII.
-    /// O enquadramento documentado inicia com um unico ':' e termina com CR.
+    /// O formato de comunicacao documentado usa dois ':' consecutivos no inicio e CR no final.
     /// O checksum e o complemento de dois da soma ASCII do corpo, de modo que
     /// corpo + dois digitos de checksum fecha modulo 256 em zero.
     /// </summary>
@@ -58,7 +58,7 @@ namespace OpenLadderStudio.Core
                 + command.ToUpperInvariant()
                 + (data ?? string.Empty);
 
-            return ":" + body + ChecksumAscii(body) + "\r";
+            return "::" + body + ChecksumAscii(body) + "\r";
         }
 
         public static string BuildPsr(int station, int responseCode)
