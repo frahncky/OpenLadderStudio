@@ -1,0 +1,20 @@
+PC12 PG33 BUILDER - UNICORN OFFLINE EMULATION
+============================================================================================
+entry=0x004B7958 tx_hook=0x0046F5E6
+mode=OFFLINE; rotina TX interceptada antes de qualquer I/O
+
+OK: one-boolean  start=0x0000 records=1 clock_calls=1
+  PC12 : 33 07 00 00 00 02 00 10 01 B2
+  model: 33 07 00 00 00 02 00 10 01 B2
+OK: two-known-records  start=0x0050 records=2 clock_calls=1
+  PC12 : 33 0A 00 00 50 04 00 10 20 41 01 07 F5
+  model: 33 0A 00 00 50 04 00 10 20 41 01 07 F5
+OK: address-0E34  start=0x0E34 records=3 clock_calls=1
+  PC12 : 33 0D 00 0E 34 06 02 11 21 40 00 39 04 07 0C B3
+  model: 33 0D 00 0E 34 06 02 11 21 40 00 39 04 07 0C B3
+OK: max-20-records  start=0x0F00 records=20 clock_calls=1
+  PC12 : 33 40 00 0F 00 28 03 0A 11 18 1F 26 2D 34 3B 42 49 50 57 5E 65 6C 73 7A 81 88 8F 96 9D A4 AB B2 B9 C0 C7 CE D5 DC E3 EA F1 F8 FF 06 0D 14 01 06 0B 10 15 1A 1F 24 29 2E 33 38 3D 42 47 4C 51 56 5B 60 BF
+  model: 33 40 00 0F 00 28 03 0A 11 18 1F 26 2D 34 3B 42 49 50 57 5E 65 6C 73 7A 81 88 8F 96 9D A4 AB B2 B9 C0 C7 CE D5 DC E3 EA F1 F8 FF 06 0D 14 01 06 0B 10 15 1A 1F 24 29 2E 33 38 3D 42 47 4C 51 56 5B 60 BF
+
+RESULT=PASS
+Nenhum byte foi transmitido fora do Unicorn.
