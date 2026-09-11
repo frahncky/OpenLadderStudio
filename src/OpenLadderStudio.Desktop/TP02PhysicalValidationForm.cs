@@ -13,11 +13,15 @@ using OpenLadderStudio.Core;
 namespace ModernPC12
 {
     /// <summary>
-    /// Bateria final de validacao do TP02 real pela porta MMI / Computer Link.
-    /// Fase 1 e somente leitura: PSR + duas leituras completas RBP e comparacao.
-    /// Fase 2 e destrutiva e so pode ser iniciada explicitamente pelo usuario:
-    /// exige STOP, compila o projeto Ladder atual, faz backup, WBP e verificacao RBP.
-    /// Todos os artefatos da sessao sao salvos em Meus Documentos.
+    /// Validacao fisica final do WEG TP02 com autodeteccao de transporte.
+    ///
+    /// PG/PC12 (TP-232PG): 19200 8O1. A fase 1 transmite SOMENTE CON-ICB<CR>
+    /// e aceita as duas respostas HELLO observadas fisicamente. Nenhum comando
+    /// de escrita, RUN/STOP, limpeza ou transferencia e transmitido nesse modo.
+    ///
+    /// Computer Link: 19200 7N1. A fase 1 faz PSR e duas leituras RBP completas.
+    /// A fase 2 somente e habilitada neste transporte, com PLC em STOP, e executa
+    /// backup, WBP e verificacao integral por releitura.
     /// </summary>
     internal sealed class TP02PhysicalValidationForm : Form
     {
@@ -39,6 +43,9 @@ namespace ModernPC12
         private bool busy;
         private bool readPassed;
         private bool writePassed;
+        private bool pgLinkDetected;
+        private string pgHelloVariant = string.Empty;
+        private string pgProfile = string.Empty;
         private Tp02ComputerLinkState lastState = Tp02ComputerLinkState.Unknown;
         private string sessionDirectory;
         private string sessionLogPath;
@@ -60,8 +67,8 @@ namespace ModernPC12
 
             Text = "Validacao fisica final - WEG TP02";
             StartPosition = FormStartPosition.CenterParent;
-            MinimumSize = new Size(940, 690);
-            Size = new Size(1100, 790);
+            MinimumSize = new Size(960, 700);
+            Size = new Size(1120, 800);
             BackColor = Shell;
             ForeColor = Fore;
             Font = new Font("Segoe UI", 9.0f);
@@ -98,7 +105,9 @@ namespace ModernPC12
             title.Location = new Point(20, 14);
             header.Controls.Add(title);
 
-            Label sub = NewLabel("Porta MMI | Computer Link | 19200 7N1 | fase 1 somente leitura; fase 2 exige STOP e confirmacao explicita", 8.7f, FontStyle.Regular, Muted);
+            Label sub = NewLabel(
+                "AUTO: PG/PC12 19200 8O1 (TP-232PG) ou Computer Link 19200 7N1 | fase 1 sem comandos destrutivos",
+                8.7f, FontStyle.Regular, Muted);
             sub.Location = new Point(22, 47);
             header.Controls.Add(sub);
 
@@ -106,7 +115,7 @@ namespace ModernPC12
             stateLabel.AutoSize = false;
             stateLabel.TextAlign = ContentAlignment.MiddleRight;
             stateLabel.Dock = DockStyle.Right;
-            stateLabel.Width = 245;
+            stateLabel.Width = 255;
             header.Controls.Add(stateLabel);
 
             Panel setup = new Panel();
@@ -129,7 +138,7 @@ namespace ModernPC12
             refreshButton.Click += delegate { RefreshPorts(); };
             setup.Controls.Add(refreshButton);
 
-            Label stationLabel = NewLabel("Estacao", 8.0f, FontStyle.Bold, Muted);
+            Label stationLabel = NewLabel("Estacao (Computer Link)", 8.0f, FontStyle.Bold, Muted);
             stationLabel.Location = new Point(302, 12);
             setup.Controls.Add(stationLabel);
 
@@ -142,7 +151,7 @@ namespace ModernPC12
             setup.Controls.Add(stationBox);
 
             projectLabel = NewLabel("Projeto atual: -", 8.5f, FontStyle.Regular, Muted);
-            projectLabel.Location = new Point(404, 36);
+            projectLabel.Location = new Point(410, 36);
             projectLabel.MaximumSize = new Size(650, 40);
             setup.Controls.Add(projectLabel);
 
@@ -151,31 +160,31 @@ namespace ModernPC12
             folder.MaximumSize = new Size(850, 24);
             setup.Controls.Add(folder);
 
-            openFolderButton = NewButton("ABRIR PASTA", 890, 70, 130, false);
+            openFolderButton = NewButton("ABRIR PASTA", 910, 70, 130, false);
             openFolderButton.Click += delegate { OpenSessionFolder(); };
             setup.Controls.Add(openFolderButton);
 
             Panel stages = new Panel();
             stages.Dock = DockStyle.Top;
-            stages.Height = 142;
+            stages.Height = 150;
             stages.BackColor = Chrome;
             Controls.Add(stages);
 
-            readValidationButton = NewButton("1. VALIDAR LEITURA", 20, 18, 210, true);
+            readValidationButton = NewButton("1. DETECTAR / VALIDAR LINK", 20, 18, 220, true);
             readValidationButton.Click += delegate { RunReadValidation(); };
             stages.Controls.Add(readValidationButton);
 
-            readLabel = NewLabel("PENDENTE - PSR + RBP duas vezes + comparacao integral", 8.8f, FontStyle.Bold, Warning);
-            readLabel.Location = new Point(252, 28);
+            readLabel = NewLabel("PENDENTE - tenta PG/PC12 seguro primeiro; depois Computer Link", 8.8f, FontStyle.Bold, Warning);
+            readLabel.Location = new Point(260, 28);
             stages.Controls.Add(readLabel);
 
-            writeValidationButton = NewButton("2. VALIDAR GRAVACAO", 20, 78, 210, false);
+            writeValidationButton = NewButton("2. VALIDAR GRAVACAO", 20, 82, 220, false);
             writeValidationButton.Enabled = false;
             writeValidationButton.Click += delegate { RunWriteValidation(); };
             stages.Controls.Add(writeValidationButton);
 
-            writeLabel = NewLabel("BLOQUEADA - primeiro a leitura precisa passar; depois o PLC deve estar em STOP", 8.8f, FontStyle.Bold, Muted);
-            writeLabel.Location = new Point(252, 88);
+            writeLabel = NewLabel("BLOQUEADA - somente Computer Link + leitura aprovada + STOP libera WBP", 8.8f, FontStyle.Bold, Muted);
+            writeLabel.Location = new Point(260, 92);
             stages.Controls.Add(writeLabel);
 
             Panel logPanel = new Panel();
@@ -198,8 +207,9 @@ namespace ModernPC12
             logPanel.Controls.Add(logBox);
 
             AppendLog("Sessao de validacao criada.");
-            AppendLog("FASE 1 nao grava nada no PLC.");
-            AppendLog("FASE 2 somente e habilitada depois da leitura e requer STOP + confirmacao explicita.");
+            AppendLog("FASE 1: primeiro tenta o link PG/PC12 usando somente CON-ICB<CR> em 19200 8O1.");
+            AppendLog("Se PG nao responder, tenta Computer Link: PSR + duas leituras RBP completas.");
+            AppendLog("FASE 2: WBP somente em Computer Link, depois de leitura aprovada e PLC em STOP.");
         }
 
         private Label NewLabel(string text, float size, FontStyle style, Color color)
@@ -295,7 +305,8 @@ namespace ModernPC12
         {
             LadderProjectDocument document = LadderProjectCodec.Deserialize(CaptureProjectText());
             Tp02LadderCompilationResult result = Tp02LadderTargetCompiler.Compile(document);
-            if (!result.Success) throw new InvalidDataException("compilacao TP02 possui " + result.Errors.Count.ToString(CultureInfo.InvariantCulture) + " erro(s)");
+            if (!result.Success)
+                throw new InvalidDataException("compilacao TP02 possui " + result.Errors.Count.ToString(CultureInfo.InvariantCulture) + " erro(s)");
             if (result.Words.Count < 1) throw new InvalidDataException("projeto sem passos TP02");
             if (!string.Equals(result.Words[result.Words.Count - 1].ToHex(), "007000", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("ultimo passo nao e F-00 END (007000)");
@@ -327,33 +338,54 @@ namespace ModernPC12
             SetBusy(true);
             readPassed = false;
             writePassed = false;
+            pgLinkDetected = false;
+            pgHelloVariant = string.Empty;
+            pgProfile = string.Empty;
+            lastState = Tp02ComputerLinkState.Unknown;
             UpdateStageLabels();
             AppendLog(new string('-', 78));
-            AppendLog("FASE 1 iniciada: validacao de leitura real em " + port + ".");
+            AppendLog("FASE 1 iniciada: autodeteccao segura em " + port + ".");
 
             ThreadPool.QueueUserWorkItem(delegate
             {
                 Exception failure = null;
                 try
                 {
-                    using (TP02ComputerLinkClient client = new TP02ComputerLinkClient(port, station, AppendLogSafe))
+                    string hello;
+                    string profileName;
+                    if (TryProbePgLink(port, out hello, out profileName))
                     {
-                        lastState = client.ReadState();
-                        SetStateSafe(lastState);
+                        pgLinkDetected = true;
+                        pgHelloVariant = hello;
+                        pgProfile = profileName;
+                        SetPgStateSafe();
+                        AppendLogSafe("PASS LINK PG/PC12: HELLO " + hello + " confirmado com checksum FF.");
+                        AppendLogSafe("Perfil confirmado: " + profileName + ".");
+                        AppendLogSafe("SEGURANCA: nenhum comando PG posterior ao CON-ICB foi transmitido.");
+                        AppendLogSafe("GRAVACAO: bloqueada em PG. WBP pertence ao Computer Link; escrita PG proprietaria ainda nao habilitada.");
+                    }
+                    else
+                    {
+                        AppendLogSafe("PG/PC12 nao confirmou HELLO. Tentando Computer Link 19200 7N1...");
+                        using (TP02ComputerLinkClient client = new TP02ComputerLinkClient(port, station, AppendLogSafe))
+                        {
+                            lastState = client.ReadState();
+                            SetStateSafe(lastState);
 
-                        AppendLogSafe("RBP #1: leitura completa ate F-00 END...");
-                        List<Tp02MachineWord> first = client.ReadProgram();
-                        TP02ComputerLinkFiles.SaveHex(Path.Combine(sessionDirectory, "read-1.tp02.hex"), first);
-                        TP02ComputerLinkFiles.SaveDump(Path.Combine(sessionDirectory, "read-1.rbpdump"), first);
+                            AppendLogSafe("RBP #1: leitura completa ate F-00 END...");
+                            List<Tp02MachineWord> first = client.ReadProgram();
+                            TP02ComputerLinkFiles.SaveHex(Path.Combine(sessionDirectory, "read-1.tp02.hex"), first);
+                            TP02ComputerLinkFiles.SaveDump(Path.Combine(sessionDirectory, "read-1.rbpdump"), first);
 
-                        AppendLogSafe("RBP #2: repetindo a leitura para verificar estabilidade...");
-                        List<Tp02MachineWord> second = client.ReadProgram();
-                        TP02ComputerLinkFiles.SaveHex(Path.Combine(sessionDirectory, "read-2.tp02.hex"), second);
-                        TP02ComputerLinkFiles.SaveDump(Path.Combine(sessionDirectory, "read-2.rbpdump"), second);
+                            AppendLogSafe("RBP #2: repetindo a leitura para verificar estabilidade...");
+                            List<Tp02MachineWord> second = client.ReadProgram();
+                            TP02ComputerLinkFiles.SaveHex(Path.Combine(sessionDirectory, "read-2.tp02.hex"), second);
+                            TP02ComputerLinkFiles.SaveDump(Path.Combine(sessionDirectory, "read-2.rbpdump"), second);
 
-                        EnsureEqual(first, second, "RBP #1 x RBP #2");
-                        AppendLogSafe("PASS: duas leituras RBP identicas, " + first.Count.ToString(CultureInfo.InvariantCulture) + " passo(s).");
-                        readPassed = true;
+                            EnsureEqual(first, second, "RBP #1 x RBP #2");
+                            readPassed = true;
+                            AppendLogSafe("PASS COMPUTER LINK: duas leituras RBP identicas, " + first.Count.ToString(CultureInfo.InvariantCulture) + " passo(s).");
+                        }
                     }
                 }
                 catch (Exception ex) { failure = ex; }
@@ -364,33 +396,194 @@ namespace ModernPC12
                     {
                         AppendLog("FAIL FASE 1: " + failure.Message);
                         readPassed = false;
+                        pgLinkDetected = false;
+                    }
+                    else if (pgLinkDetected)
+                    {
+                        AppendLog("FASE 1 APROVADA: link PG/PC12 confirmado de forma nao destrutiva.");
                     }
                     else
                     {
-                        AppendLog("FASE 1 APROVADA.");
+                        AppendLog("FASE 1 APROVADA: Computer Link + leitura RBP confirmados.");
                     }
+
                     SetBusy(false);
                     UpdateStageLabels();
                     WriteReport();
-                    if (failure == null)
+
+                    if (failure != null)
+                    {
+                        MessageBox.Show(this, failure.Message, "TP02 - Fase 1 falhou", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    else if (pgLinkDetected)
                     {
                         MessageBox.Show(this,
-                            lastState == Tp02ComputerLinkState.Stop
-                                ? "Leitura fisica aprovada. O PLC esta em STOP; a validacao de gravacao foi liberada."
-                                : "Leitura fisica aprovada. Coloque o PLC em STOP e execute novamente a fase 1 para liberar a gravacao.",
-                            "TP02 - Fase 1", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            "Link PG/PC12 confirmado pelo TP-232PG.\r\n\r\n"
+                            + "HELLO: " + pgHelloVariant + "\r\n"
+                            + "Perfil: " + pgProfile + "\r\n\r\n"
+                            + "O OpenLadderStudio confirmou o cabo, a COM e o link com o TP02. Nenhum comando destrutivo foi enviado.\r\n\r\n"
+                            + "A gravacao permanece bloqueada neste modo porque a escrita PG proprietaria ainda nao esta habilitada.",
+                            "TP02 - LINK PG APROVADO", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        MessageBox.Show(this, failure.Message, "TP02 - Fase 1 falhou", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this,
+                            lastState == Tp02ComputerLinkState.Stop
+                                ? "Computer Link e leitura fisica aprovados. O PLC esta em STOP; a validacao de gravacao foi liberada."
+                                : "Computer Link e leitura fisica aprovados. Coloque o PLC em STOP e execute novamente a fase 1 para liberar a gravacao.",
+                            "TP02 - Fase 1", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }));
             });
         }
 
+        private bool TryProbePgLink(string portName, out string helloVariant, out string profileName)
+        {
+            helloVariant = string.Empty;
+            profileName = string.Empty;
+            byte[] hello = new byte[] { 0x43, 0x4F, 0x4E, 0x2D, 0x49, 0x43, 0x42, 0x0D };
+            byte[] helloC0 = new byte[] { 0xC0, 0x01, 0x09, 0x35 };
+            byte[] hello80 = new byte[] { 0x80, 0x01, 0x09, 0x75 };
+
+            string[] names = new string[]
+            {
+                "19200 8O1 DTR=on RTS=off",
+                "19200 8O1 DTR=on RTS=on",
+                "19200 8O1 DTR=off RTS=off"
+            };
+            bool[] dtr = new bool[] { true, true, false };
+            bool[] rts = new bool[] { false, true, false };
+
+            for (int p = 0; p < names.Length; p++)
+            {
+                SerialPort serial = null;
+                try
+                {
+                    serial = new SerialPort(portName, 19200, Parity.Odd, 8, StopBits.One);
+                    serial.Handshake = Handshake.None;
+                    serial.DtrEnable = dtr[p];
+                    serial.RtsEnable = rts[p];
+                    serial.ReadTimeout = 80;
+                    serial.WriteTimeout = 1000;
+                    serial.Open();
+                    serial.DiscardInBuffer();
+                    serial.DiscardOutBuffer();
+                    Thread.Sleep(140);
+                    AppendLogSafe("PG PERFIL: " + names[p]);
+
+                    for (int attempt = 1; attempt <= 3; attempt++)
+                    {
+                        serial.DiscardInBuffer();
+                        AppendLogSafe("PG HELLO TX " + attempt.ToString(CultureInfo.InvariantCulture) + ": 43 4F 4E 2D 49 43 42 0D");
+                        serial.Write(hello, 0, hello.Length);
+                        byte[] raw = ReadPgBurst(serial, 1700);
+                        AppendLogSafe("PG HELLO RX: " + (raw.Length == 0 ? "[]" : PgHex(raw)));
+
+                        if (PgContains(raw, helloC0) && PgSum8(helloC0) == 0xFF)
+                        {
+                            helloVariant = "C0 01 09 35";
+                            profileName = names[p];
+                            return true;
+                        }
+                        if (PgContains(raw, hello80) && PgSum8(hello80) == 0xFF)
+                        {
+                            helloVariant = "80 01 09 75";
+                            profileName = names[p];
+                            return true;
+                        }
+                        Thread.Sleep(130);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppendLogSafe("PG PERFIL sem confirmacao: " + names[p] + " - " + ex.Message);
+                }
+                finally
+                {
+                    if (serial != null)
+                    {
+                        try { if (serial.IsOpen) serial.Close(); } catch { }
+                        serial.Dispose();
+                    }
+                    Thread.Sleep(180);
+                }
+            }
+            return false;
+        }
+
+        private static byte[] ReadPgBurst(SerialPort port, int timeoutMs)
+        {
+            List<byte> bytes = new List<byte>();
+            DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            DateTime lastData = DateTime.MinValue;
+            while (DateTime.UtcNow < deadline)
+            {
+                int available = port.BytesToRead;
+                if (available > 0)
+                {
+                    byte[] buffer = new byte[available];
+                    int got = port.Read(buffer, 0, buffer.Length);
+                    for (int i = 0; i < got; i++) bytes.Add(buffer[i]);
+                    lastData = DateTime.UtcNow;
+                }
+                else if (bytes.Count > 0 && lastData != DateTime.MinValue && (DateTime.UtcNow - lastData).TotalMilliseconds >= 180)
+                {
+                    break;
+                }
+                Thread.Sleep(15);
+            }
+            return bytes.ToArray();
+        }
+
+        private static bool PgContains(byte[] value, byte[] sequence)
+        {
+            if (value == null || sequence == null || sequence.Length == 0 || value.Length < sequence.Length) return false;
+            for (int i = 0; i <= value.Length - sequence.Length; i++)
+            {
+                bool same = true;
+                for (int j = 0; j < sequence.Length; j++)
+                {
+                    if (value[i + j] != sequence[j]) { same = false; break; }
+                }
+                if (same) return true;
+            }
+            return false;
+        }
+
+        private static byte PgSum8(byte[] value)
+        {
+            int sum = 0;
+            if (value != null)
+                for (int i = 0; i < value.Length; i++) sum = (sum + value[i]) & 0xFF;
+            return (byte)sum;
+        }
+
+        private static string PgHex(byte[] value)
+        {
+            if (value == null || value.Length == 0) return string.Empty;
+            StringBuilder text = new StringBuilder(value.Length * 3);
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (i > 0) text.Append(' ');
+                text.Append(value[i].ToString("X2", CultureInfo.InvariantCulture));
+            }
+            return text.ToString();
+        }
+
+        private void SetPgStateSafe()
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new MethodInvoker(delegate { SetPgStateSafe(); }));
+                return;
+            }
+            stateLabel.Text = "PLC: LINK PG/PC12";
+            stateLabel.ForeColor = Success;
+        }
+
         private void RunWriteValidation()
         {
-            if (busy || !readPassed || lastState != Tp02ComputerLinkState.Stop) return;
+            if (busy || pgLinkDetected || !readPassed || lastState != Tp02ComputerLinkState.Stop) return;
 
             string port;
             int station;
@@ -408,7 +601,7 @@ namespace ModernPC12
             }
 
             DialogResult confirm = MessageBox.Show(this,
-                "TESTE FISICO DE GRAVACAO REAL\r\n\r\n"
+                "TESTE FISICO DE GRAVACAO REAL - COMPUTER LINK\r\n\r\n"
                 + "Porta: " + port + "\r\n"
                 + "Estacao: " + station.ToString("00", CultureInfo.InvariantCulture) + "\r\n"
                 + "Passos do projeto atual: " + words.Count.ToString(CultureInfo.InvariantCulture) + "\r\n\r\n"
@@ -421,7 +614,7 @@ namespace ModernPC12
             writePassed = false;
             UpdateStageLabels();
             AppendLog(new string('-', 78));
-            AppendLog("FASE 2 iniciada: gravacao e verificacao real.");
+            AppendLog("FASE 2 iniciada: gravacao e verificacao real via Computer Link.");
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -465,7 +658,7 @@ namespace ModernPC12
                     UpdateStageLabels();
                     WriteReport();
                     if (failure == null)
-                        MessageBox.Show(this, "Leitura e gravacao fisicas aprovadas. O protocolo RBP/WBP passou na validacao real.", "TP02 - VALIDACAO APROVADA", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(this, "Leitura e gravacao fisicas aprovadas via Computer Link.", "TP02 - VALIDACAO APROVADA", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     else
                         MessageBox.Show(this, failure.Message, "TP02 - Fase 2 falhou", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
@@ -495,19 +688,29 @@ namespace ModernPC12
             portCombo.Enabled = !value;
             stationBox.Enabled = !value;
             openFolderButton.Enabled = !value;
-            writeValidationButton.Enabled = !value && readPassed && lastState == Tp02ComputerLinkState.Stop;
+            writeValidationButton.Enabled = !value && !pgLinkDetected && readPassed && lastState == Tp02ComputerLinkState.Stop;
         }
 
         private void UpdateStageLabels()
         {
+            if (pgLinkDetected)
+            {
+                readLabel.Text = "PASS - link PG/PC12 confirmado por HELLO seguro (TP-232PG)";
+                readLabel.ForeColor = Success;
+                writeLabel.Text = "BLOQUEADA EM PG - escrita proprietaria PG ainda nao habilitada";
+                writeLabel.ForeColor = Warning;
+                writeValidationButton.Enabled = false;
+                return;
+            }
+
             if (readPassed)
             {
-                readLabel.Text = "PASS - PSR e duas leituras RBP completas e identicas";
+                readLabel.Text = "PASS - Computer Link: PSR + duas leituras RBP completas e identicas";
                 readLabel.ForeColor = Success;
             }
             else
             {
-                readLabel.Text = "PENDENTE - PSR + RBP duas vezes + comparacao integral";
+                readLabel.Text = "PENDENTE - tenta PG/PC12 seguro primeiro; depois Computer Link";
                 readLabel.ForeColor = Warning;
             }
 
@@ -518,7 +721,7 @@ namespace ModernPC12
             }
             else if (readPassed && lastState == Tp02ComputerLinkState.Stop)
             {
-                writeLabel.Text = "LIBERADA - PLC em STOP; exige confirmacao antes do WBP";
+                writeLabel.Text = "LIBERADA - Computer Link + PLC em STOP; exige confirmacao";
                 writeLabel.ForeColor = Warning;
             }
             else if (readPassed)
@@ -528,10 +731,10 @@ namespace ModernPC12
             }
             else
             {
-                writeLabel.Text = "BLOQUEADA - primeiro a leitura precisa passar";
+                writeLabel.Text = "BLOQUEADA - primeiro o transporte precisa ser validado";
                 writeLabel.ForeColor = Muted;
             }
-            writeValidationButton.Enabled = !busy && readPassed && lastState == Tp02ComputerLinkState.Stop;
+            writeValidationButton.Enabled = !busy && !pgLinkDetected && readPassed && lastState == Tp02ComputerLinkState.Stop;
         }
 
         private void SetStateSafe(Tp02ComputerLinkState state)
@@ -541,7 +744,7 @@ namespace ModernPC12
                 BeginInvoke(new MethodInvoker(delegate { SetStateSafe(state); }));
                 return;
             }
-            stateLabel.Text = "PLC: " + state.ToString().ToUpperInvariant();
+            stateLabel.Text = "PLC: " + state.ToString().ToUpperInvariant() + " (COMPUTER LINK)";
             stateLabel.ForeColor = state == Tp02ComputerLinkState.Stop ? Warning
                 : state == Tp02ComputerLinkState.Run ? Success : Danger;
         }
@@ -574,15 +777,26 @@ namespace ModernPC12
             try
             {
                 StringBuilder report = new StringBuilder();
+                string mode = pgLinkDetected ? "PG/PC12" : (readPassed ? "COMPUTER LINK" : "NAO CONFIRMADO");
                 report.AppendLine("OpenLadder Studio - Validacao fisica WEG TP02");
                 report.AppendLine("Data: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
                 report.AppendLine("Sessao: " + sessionDirectory);
                 report.AppendLine("Porta: " + (portCombo != null && portCombo.SelectedItem != null ? portCombo.SelectedItem.ToString() : "-"));
-                report.AppendLine("Estacao: " + (stationBox == null ? "-" : ((int)stationBox.Value).ToString("00", CultureInfo.InvariantCulture)));
-                report.AppendLine("Estado PLC: " + lastState.ToString().ToUpperInvariant());
-                report.AppendLine("FASE 1 - leitura: " + (readPassed ? "PASS" : "PENDENTE/FAIL"));
-                report.AppendLine("FASE 2 - gravacao: " + (writePassed ? "PASS" : "PENDENTE/FAIL"));
-                report.AppendLine("Resultado protocolo RBP/WBP: " + (readPassed && writePassed ? "APROVADO EM HARDWARE REAL" : "AINDA NAO FECHADO"));
+                report.AppendLine("Transporte detectado: " + mode);
+                if (pgLinkDetected)
+                {
+                    report.AppendLine("HELLO PG: " + pgHelloVariant);
+                    report.AppendLine("Perfil PG: " + pgProfile);
+                }
+                report.AppendLine("Estacao Computer Link: " + (stationBox == null ? "-" : ((int)stationBox.Value).ToString("00", CultureInfo.InvariantCulture)));
+                report.AppendLine("Estado via Computer Link: " + lastState.ToString().ToUpperInvariant());
+                report.AppendLine("FASE 1: " + (pgLinkDetected
+                    ? "PASS LINK PG/PC12 (HELLO seguro; programa ainda nao lido pelo caminho PG)"
+                    : (readPassed ? "PASS COMPUTER LINK + RBP" : "PENDENTE/FAIL")));
+                report.AppendLine("FASE 2 - gravacao: " + (writePassed ? "PASS" : (pgLinkDetected ? "BLOQUEADA EM PG" : "PENDENTE/FAIL")));
+                report.AppendLine("Resultado: " + (pgLinkDetected
+                    ? "LINK PG/PC12 APROVADO; ESCRITA PG PROPRIETARIA AINDA NAO HABILITADA"
+                    : (readPassed && writePassed ? "RBP/WBP APROVADO EM HARDWARE REAL" : "AINDA NAO FECHADO")));
                 File.WriteAllText(Path.Combine(sessionDirectory, "validation-report.txt"), report.ToString(), Encoding.UTF8);
             }
             catch { }
