@@ -49,6 +49,7 @@ namespace ModernPC12
         private string setupUrl;
         private string hashUrl;
         private string downloadedSetup;
+        private WebClient downloadClient;
 
         public PC12UpdaterForm()
         {
@@ -63,6 +64,7 @@ namespace ModernPC12
             AutoScaleMode = AutoScaleMode.Dpi;
             currentVersion = ReadCurrentVersion();
             BuildUi();
+            FormClosed += delegate { DisposeDownloadClient(); };
         }
 
         private void BuildUi()
@@ -183,35 +185,64 @@ namespace ModernPC12
             try
             {
                 EnableTls12();
-                using (WebClient wc = NewClient())
+                DisposeDownloadClient();
+                downloadClient = NewClient();
+                WebClient wc = downloadClient;
+
+                wc.DownloadProgressChanged += delegate(object sender, DownloadProgressChangedEventArgs e)
                 {
-                    wc.DownloadProgressChanged += delegate(object sender, DownloadProgressChangedEventArgs e)
+                    if (IsDisposed) return;
+                    int value = Math.Max(0, Math.Min(100, e.ProgressPercentage));
+                    progress.Value = value;
+                    statusLabel.Text = "Baixando... " + value.ToString(CultureInfo.InvariantCulture) + "%";
+                };
+                wc.DownloadFileCompleted += delegate(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+                {
+                    WebClient completedClient = downloadClient;
+                    downloadClient = null;
+                    try
                     {
-                        int value = Math.Max(0, Math.Min(100, e.ProgressPercentage));
-                        progress.Value = value;
-                        statusLabel.Text = "Baixando... " + value.ToString(CultureInfo.InvariantCulture) + "%";
-                    };
-                    wc.DownloadFileCompleted += delegate(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
-                    {
+                        if (IsDisposed) return;
                         if (e.Cancelled || e.Error != null)
                         {
                             statusLabel.ForeColor = Warning;
-                            statusLabel.Text = "Falha na transferência.";
+                            statusLabel.Text = e.Error == null ? "Transferência cancelada." : "Falha na transferência: " + e.Error.Message;
                             checkButton.Enabled = true;
+                            updateButton.Enabled = true;
                             return;
                         }
                         VerifyAndLaunch(hashFile);
-                    };
-                    using (WebClient hashClient = NewClient()) hashClient.DownloadFile(hashUrl, hashFile);
-                    wc.DownloadFileAsync(new Uri(setupUrl), downloadedSetup);
-                }
+                    }
+                    finally
+                    {
+                        if (completedClient != null) completedClient.Dispose();
+                    }
+                };
+
+                using (WebClient hashClient = NewClient()) hashClient.DownloadFile(hashUrl, hashFile);
+
+                // O WebClient precisa permanecer vivo ate DownloadFileCompleted.
+                // Na v1.23 ele era criado dentro de using e podia ser descartado
+                // imediatamente apos DownloadFileAsync, interrompendo o download.
+                wc.DownloadFileAsync(new Uri(setupUrl), downloadedSetup);
             }
             catch (Exception ex)
             {
+                DisposeDownloadClient();
                 statusLabel.ForeColor = Warning;
                 statusLabel.Text = "Falha: " + ex.Message;
                 checkButton.Enabled = true;
+                updateButton.Enabled = true;
             }
+        }
+
+        private void DisposeDownloadClient()
+        {
+            WebClient wc = downloadClient;
+            downloadClient = null;
+            if (wc == null) return;
+            try { if (wc.IsBusy) wc.CancelAsync(); } catch { }
+            try { wc.Dispose(); } catch { }
         }
 
         private void VerifyAndLaunch(string hashFile)
