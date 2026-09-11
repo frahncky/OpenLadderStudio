@@ -1,0 +1,46 @@
+name: Validate TP02 PG emulator
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/OpenLadderStudio.Desktop/TP02PgEmulator.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
+      - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
+      - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
+      - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
+      - '.github/workflows/validate-tp02-emulator.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse PowerShell analyzer
+        shell: powershell
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors -and $errors.Count -gt 0) {
+            $errors | Format-List | Out-String | Write-Error
+            exit 1
+          }
+
+      - name: Build TP02 emulator
+        shell: cmd
+        working-directory: src/OpenLadderStudio.Desktop
+        run: BuildTp02Emulator.bat
+
+      - name: Confirm executable
+        shell: powershell
+        run: |
+          $exe = 'src/OpenLadderStudio.Desktop/OpenLadderTP02Emulator.exe'
+          if (-not (Test-Path $exe)) { throw "Executavel nao foi gerado: $exe" }
+          Write-Host "OK: $exe"
