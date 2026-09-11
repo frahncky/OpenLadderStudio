@@ -25,27 +25,56 @@ function Replace-First([string]$text, [string]$needle, [string]$replacement, [st
 
 $shell = [System.IO.File]::ReadAllText($shellPath)
 
-$menuNeedle = '            plc.DropDownItems.Add(DropItem("Ler programa", delegate { ShowReader(); }));'
-if ($shell.Contains($menuNeedle)) {
-    $menuReplacement = @'
-            plc.DropDownItems.Add(DropItem("Transferir programa TP02...", delegate { ShowTp02ProgramTransfer(); }));
-            plc.DropDownItems.Add(DropItem("Leitor PG experimental...", delegate { ShowReader(); }));
-'@
-    $shell = Replace-Required $shell $menuNeedle $menuReplacement.TrimEnd() 'menu PLC TP02'
-}
-elseif (-not $shell.Contains('ShowTp02ProgramTransfer();')) {
-    throw 'Ancora nao encontrada (menu PLC TP02).'
-}
+# As revisoes de UI podem renomear ou mover o item. ShowReader() e a ancora
+# semantica estavel para localizar a entrada de leitura TP02.
+$menuPattern = '(?m)^(?<indent>[ \t]*)(?<owner>[A-Za-z_][A-Za-z0-9_]*)\.DropDownItems\.Add\(DropItem\("[^"\r\n]*",\s*delegate\s*\{\s*ShowReader\(\);\s*\}\)\);\s*$'
+$menuMatch = [System.Text.RegularExpressions.Regex]::Match($shell, $menuPattern)
+if (-not $menuMatch.Success) { throw 'Ancora semantica ShowReader() nao encontrada em nenhum menu.' }
+$indent = $menuMatch.Groups['indent'].Value
+$owner = $menuMatch.Groups['owner'].Value
+$menuReplacement = $indent + $owner + '.DropDownItems.Add(DropItem("Transferir programa TP02...", delegate { ShowTp02ProgramTransfer(); }));' + "`r`n" +
+                   $indent + $owner + '.DropDownItems.Add(DropItem("Validacao fisica final TP02...", delegate { ShowTp02PhysicalValidation(); }));' + "`r`n" +
+                   $indent + $owner + '.DropDownItems.Add(DropItem("Leitor PG experimental...", delegate { ShowReader(); }));'
+$shell = $shell.Substring(0, $menuMatch.Index) + $menuReplacement + $shell.Substring($menuMatch.Index + $menuMatch.Length)
 
-$toolbarNeedle = '            AddToolButton(bar, "Ler PLC", StudioIcon.Download, false, delegate { ShowReader(); });'
-if ($shell.Contains($toolbarNeedle)) {
-    $toolbarReplacement = '            AddToolButton(bar, "Transferir TP02", StudioIcon.Download, false, delegate { ShowTp02ProgramTransfer(); });'
-    $shell = Replace-Required $shell $toolbarNeedle $toolbarReplacement 'toolbar TP02'
+# Se existir um botao de toolbar apontando para ShowReader(), ele vira a entrada
+# principal de transferencia. A validacao final permanece no menu PLC.
+$toolbarPattern = '(?m)^(?<indent>[ \t]*)AddToolButton\(bar,\s*"[^"\r\n]*",\s*StudioIcon\.[A-Za-z0-9_]+,\s*(?:true|false),\s*delegate\s*\{\s*ShowReader\(\);\s*\}\);\s*$'
+$toolbarMatch = [System.Text.RegularExpressions.Regex]::Match($shell, $toolbarPattern)
+if ($toolbarMatch.Success) {
+    $toolbarReplacement = $toolbarMatch.Groups['indent'].Value + 'AddToolButton(bar, "Transferir TP02", StudioIcon.Download, false, delegate { ShowTp02ProgramTransfer(); });'
+    $shell = $shell.Substring(0, $toolbarMatch.Index) + $toolbarReplacement + $shell.Substring($toolbarMatch.Index + $toolbarMatch.Length)
 }
 
 $methodNeedle = '        private void ShowReader()'
-if (-not $shell.Contains('private void ShowTp02ProgramTransfer()')) {
-    $methodInsert = @'
+$methodInsert = @'
+        private void ShowTp02PhysicalValidation()
+        {
+            RefreshProfileUi();
+            if (currentProfile == null || currentDriver == null ||
+                !string.Equals(currentProfile.DriverId, "weg.tp02.serial", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show(this,
+                    "Selecione o controlador WEG TP02-60MR antes da validacao fisica.",
+                    "OpenLadder Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (ladderForm == null || ladderForm.IsDisposed) ShowLadder();
+            if (ladderForm == null || ladderForm.IsDisposed)
+            {
+                MessageBox.Show(this, "O editor Ladder nao esta disponivel.", "OpenLadder Studio",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (TP02PhysicalValidationForm dialog = new TP02PhysicalValidationForm(currentProfile, ladderForm))
+            {
+                dialog.ShowDialog(this);
+            }
+            statusText.Text = "Validacao fisica TP02 encerrada";
+        }
+
         private void ShowTp02ProgramTransfer()
         {
             RefreshProfileUi();
@@ -74,56 +103,10 @@ if (-not $shell.Contains('private void ShowTp02ProgramTransfer()')) {
         }
 
 '@
-    $shell = Replace-First $shell $methodNeedle ($methodInsert + $methodNeedle) 'metodo ShowTp02ProgramTransfer'
-}
+$shell = Replace-First $shell $methodNeedle ($methodInsert + $methodNeedle) 'metodos TP02 transfer/validation'
 
-$validationMenuNeedle = '            plc.DropDownItems.Add(DropItem("Transferir programa TP02...", delegate { ShowTp02ProgramTransfer(); }));'
-if (-not $shell.Contains('ShowTp02PhysicalValidation();')) {
-    $validationMenuReplacement = @'
-            plc.DropDownItems.Add(DropItem("Transferir programa TP02...", delegate { ShowTp02ProgramTransfer(); }));
-            plc.DropDownItems.Add(DropItem("Validacao fisica final TP02...", delegate { ShowTp02PhysicalValidation(); }));
-'@
-    $shell = Replace-Required $shell $validationMenuNeedle $validationMenuReplacement.TrimEnd() 'menu Validacao fisica TP02'
-}
-
-if (-not $shell.Contains('private void ShowTp02PhysicalValidation()')) {
-    $validationMethodNeedle = '        private void ShowTp02ProgramTransfer()'
-    $validationMethodInsert = @'
-        private void ShowTp02PhysicalValidation()
-        {
-            RefreshProfileUi();
-            if (currentProfile == null || currentDriver == null ||
-                !string.Equals(currentProfile.DriverId, "weg.tp02.serial", StringComparison.OrdinalIgnoreCase))
-            {
-                MessageBox.Show(this,
-                    "Selecione o controlador WEG TP02-60MR antes da validacao fisica.",
-                    "OpenLadder Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            if (ladderForm == null || ladderForm.IsDisposed) ShowLadder();
-            if (ladderForm == null || ladderForm.IsDisposed)
-            {
-                MessageBox.Show(this, "O editor Ladder nao esta disponivel.", "OpenLadder Studio",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            using (TP02PhysicalValidationForm dialog = new TP02PhysicalValidationForm(currentProfile, ladderForm))
-            {
-                dialog.ShowDialog(this);
-            }
-            statusText.Text = "Validacao fisica TP02 encerrada";
-        }
-
-'@
-    $shell = Replace-First $shell $validationMethodNeedle ($validationMethodInsert + $validationMethodNeedle) 'metodo ShowTp02PhysicalValidation'
-}
-
-# O Build.bat ja compila UniversalStudioShell.build.cs. Para manter a lista de fontes
-# estavel, incorporamos a classe de validacao a esse arquivo de build. Os using do
-# formulario sao colocados antes do shell e o restante e anexado como uma segunda
-# declaracao do mesmo namespace ModernPC12.
+# O Build.bat ja compila UniversalStudioShell.build.cs. Mantemos a lista de fontes
+# estavel incorporando a classe de validacao nesse arquivo temporario de build.
 $physical = [System.IO.File]::ReadAllText($physicalPath)
 $physicalLines = $physical -split "`r?`n"
 $usingLines = New-Object System.Collections.Generic.List[string]
