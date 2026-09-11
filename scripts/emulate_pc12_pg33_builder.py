@@ -210,7 +210,8 @@ def main():
         ('two-known-records', 0x0050,
          bytes([0x00, 0x10, 0x20, 0x41]),
          bytes([0x01, 0x07])),
-        ('address-1234', 0x1234,
+        # Endereço alto não nulo, mas ainda dentro do limite físico de 4000 passos.
+        ('address-0E34', 0x0E34,
          bytes([0x02, 0x11, 0x21, 0x40, 0x00, 0x39]),
          bytes([0x04, 0x07, 0x0C])),
         ('max-20-records', 0x0F00,
