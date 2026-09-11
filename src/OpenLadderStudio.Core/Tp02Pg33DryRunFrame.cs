@@ -6,35 +6,34 @@ namespace OpenLadderStudio.Core
     /// Modelo OFFLINE do quadro 0x33 encontrado no caminho
     /// "Write PLC Program" do PC12.
     ///
-    /// A geometria foi primeiro reconstruída estaticamente no pc12.exe e depois
-    /// conferida executando o construtor original 0x004B7958 dentro do Unicorn,
-    /// com a rotina TX interceptada antes de qualquer I/O. Os casos de 1, 2, 3
-    /// e 20 registros produziram, byte a byte, o mesmo quadro deste modelo.
-    /// Isso é confirmação dinâmica OFFLINE do construtor do PC12, não confirmação
-    /// física do comando em um PLC TP02.
+    /// A geometria foi reconstruída estaticamente no pc12.exe e conferida
+    /// executando o construtor original 0x004B7958 dentro do Unicorn, com a
+    /// rotina TX interceptada antes de qualquer I/O.
     ///
-    /// Formato confirmado no construtor:
+    /// A análise posterior do helper 0x004BCA65 esclareceu a unidade do corpo:
+    /// cada instrução lógica ocupa 1..4 PALAVRAS DE MÁQUINA e o helper acrescenta
+    /// uma palavra HIGH/LOW/EXTERNAL para cada passo adicional. O limite de 20
+    /// observado em +0x7A pertence às instruções lógicas do bloco, não às palavras.
+    /// Portanto um bloco pode conter até 80 palavras de máquina.
+    ///
+    /// Para W palavras de máquina:
     ///   TX[0] = 0x33
-    ///   TX[1] = 3*N + 4
+    ///   TX[1] = 3*W + 4
     ///   TX[2] = 0x00
-    ///   TX[3..4] = endereço inicial de passo do primeiro registro do bloco
-    ///   TX[5] = 2*N
-    ///   corpo = 2*N bytes HIGH/LOW + N bytes EXTERNAL
+    ///   TX[3..4] = endereço inicial de passo do bloco
+    ///   TX[5] = 2*W
+    ///   corpo = 2*W bytes HIGH/LOW + W bytes EXTERNAL
     ///   checksum fecha a soma do quadro em 0xFF.
     ///
-    /// N é o número de REGISTROS de código de máquina acumulados no bloco,
-    /// não necessariamente a diferença entre endereços de passo. O PC12
-    /// incrementa separadamente o cursor de passo em 1..4 conforme a instrução
-    /// e encerra a coleta do bloco quando o contador de registros chega a 20.
-    /// A transição de sucesso também foi emulada offline e inicia o próximo bloco
-    /// no cursor real de passos, não em startStep + N.
+    /// O maior quadro possível no modelo reconstruído contém 80 palavras:
+    ///   TX[1] = 0xF4, TX[5] = 0xA0, total = 247 bytes.
     ///
     /// IMPORTANTE: esta classe não abre serial, não transmite quadros e não é
     /// ligada a nenhuma rotina de download. Serve somente para dry-run/testes.
     /// </summary>
     internal static class Tp02Pg33DryRunFrame
     {
-        internal const int MaxRecordsPerFrame = 20;
+        internal const int MaxMachineWordsPerFrame = 80;
         internal const int MaxProgramSteps = 4000;
         internal const byte Command = 0x33;
 
@@ -52,17 +51,17 @@ namespace OpenLadderStudio.Core
             if ((highLowPlane.Length & 1) != 0)
                 throw new ArgumentException("Plano HIGH/LOW deve ter quantidade par de bytes.", "highLowPlane");
 
-            int records = highLowPlane.Length / 2;
-            if (records < 1 || records > MaxRecordsPerFrame)
-                throw new ArgumentOutOfRangeException("highLowPlane", "Quadro candidato PG33 aceita 1..20 registros de código de máquina.");
-            if (externalPlane.Length != records)
-                throw new ArgumentException("Plano EXTERNAL deve conter exatamente 1 byte por registro.", "externalPlane");
+            int machineWords = highLowPlane.Length / 2;
+            if (machineWords < 1 || machineWords > MaxMachineWordsPerFrame)
+                throw new ArgumentOutOfRangeException("highLowPlane", "Quadro candidato PG33 aceita 1..80 palavras de máquina.");
+            if (externalPlane.Length != machineWords)
+                throw new ArgumentException("Plano EXTERNAL deve conter exatamente 1 byte por palavra de máquina.", "externalPlane");
 
-            // Não validar startStep + records: instruções do TP02 podem consumir
-            // 1..4 passos de endereço por registro. O span real pertence ao
-            // empacotador/orquestrador, não ao formato bruto deste quadro.
-            int bodyLength = highLowPlane.Length + externalPlane.Length; // 3*N
-            int bytesAfterLengthBeforeChecksum = bodyLength + 4;         // 3*N + 4
+            // O quadro bruto recebe um endereço inicial e os planos já expandidos.
+            // A regra de no máximo 20 instruções lógicas por bloco pertence ao
+            // orquestrador, que também conhece os spans de 1..4 passos.
+            int bodyLength = highLowPlane.Length + externalPlane.Length; // 3*W
+            int bytesAfterLengthBeforeChecksum = bodyLength + 4;         // 3*W + 4
             int frameLength = 2 + bytesAfterLengthBeforeChecksum + 1;    // cmd,len,...,chk
 
             byte[] frame = new byte[frameLength];
@@ -92,12 +91,12 @@ namespace OpenLadderStudio.Core
             if (!HasValidChecksum(frame)) return false;
             if (frame[0] != Command || frame[2] != 0x00) return false;
 
-            int recordsTimes2 = frame[5];
-            if (recordsTimes2 == 0 || (recordsTimes2 & 1) != 0) return false;
-            int records = recordsTimes2 / 2;
-            if (records < 1 || records > MaxRecordsPerFrame) return false;
+            int highLowBytes = frame[5];
+            if (highLowBytes == 0 || (highLowBytes & 1) != 0) return false;
+            int machineWords = highLowBytes / 2;
+            if (machineWords < 1 || machineWords > MaxMachineWordsPerFrame) return false;
 
-            int expectedAfterLength = (3 * records) + 4;
+            int expectedAfterLength = (3 * machineWords) + 4;
             if (frame[1] != expectedAfterLength) return false;
             return frame.Length == expectedAfterLength + 3;
         }
