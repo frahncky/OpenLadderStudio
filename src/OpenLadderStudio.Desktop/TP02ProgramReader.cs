@@ -1,13 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.IO.Ports;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace ModernPC12
 {
+    /// <summary>
+    /// Entrada standalone mantida por compatibilidade com builds/ferramentas antigas.
+    /// A tela atual e um leitor PG/PC12 SOMENTE LEITURA.
+    /// </summary>
     internal static class TP02RbpProgram
     {
         [STAThread]
@@ -20,258 +26,475 @@ namespace ModernPC12
         }
     }
 
+    /// <summary>
+    /// Leitor fisico READ-ONLY do programa do WEG TP02 via PG/PC12.
+    ///
+    /// Fluxo usado em bancada:
+    ///   HELLO (CON-ICB CR) -> F0 -> 38 -> 34
+    ///
+    /// Perfil confirmado no conjunto TP-232PG do laboratorio:
+    ///   19200 8O1, DTR=OFF, RTS=OFF.
+    ///
+    /// Esta classe NAO implementa WBP, RUN, STOP, CLEAR nem qualquer comando
+    /// de escrita. A unica finalidade e coletar e decodificar o programa.
+    /// </summary>
     internal sealed class TP02ProgramReaderForm : Form
     {
-        private Color Navy { get { return OpenLadderPalette.Fore; } }
-        private Color Accent { get { return OpenLadderPalette.Accent; } }
-        private Color Canvas { get { return OpenLadderPalette.Shell; } }
-        private Color TextPrimary { get { return OpenLadderPalette.Fore; } }
-        private Color TextSecondary { get { return OpenLadderPalette.Muted; } }
-        private Color Success { get { return OpenLadderPalette.Ok; } }
+        private sealed class ReadResult
+        {
+            public string Hello = string.Empty;
+            public string PlcState = string.Empty;
+            public string Frame38 = string.Empty;
+            public int Pages;
+            public int Steps;
+            public int EndStep = -1;
+            public bool CrossedPageBoundary;
+            public int BrawChecked;
+            public int BrawMismatches;
+            public readonly List<string> Words = new List<string>();
+            public readonly List<string> Il = new List<string>();
+        }
+
+        private const int StepsPerPage = 80;
+        private const int MaxProgramSteps = 4000;
+        private const int PagePayloadLength = 0xF0;
+        private const int PageFrameLength = PagePayloadLength + 3;
+        private const int PageABLength = 0xA0;
+
+        private static readonly byte[] HelloRequest = new byte[]
+        {
+            0x43, 0x4F, 0x4E, 0x2D, 0x49, 0x43, 0x42, 0x0D
+        };
+
+        private static readonly byte[] HelloRun = new byte[] { 0xC0, 0x01, 0x09, 0x35 };
+        private static readonly byte[] HelloStop = new byte[] { 0x80, 0x01, 0x09, 0x75 };
+        private static readonly byte[] F0Request = new byte[] { 0xF0, 0x00, 0x0F };
+        private static readonly byte[] F0KnownResponse = new byte[] { 0x00, 0x02, 0x10, 0x22, 0xCB };
+        private static readonly byte[] Frame38Request = new byte[] { 0x38, 0x00, 0xC7 };
 
         private ComboBox portCombo;
-        private ComboBox baudCombo;
-        private ComboBox parityCombo;
-        private ComboBox dataBitsCombo;
-        private ComboBox stopBitsCombo;
-        private NumericUpDown stationBox;
-        private NumericUpDown responseTimeBox;
-        private NumericUpDown addressBox;
-        private NumericUpDown stepsBox;
-        private CheckBox doubleColonCheck;
-        private CheckBox dtrCheck;
-        private CheckBox rtsCheck;
+        private Button refreshButton;
+        private Button readButton;
+        private Button openFolderButton;
         private TextBox outputBox;
-        private string lastDump = string.Empty;
+        private TextBox logBox;
+        private Label statusLabel;
+        private Label sessionLabel;
+        private bool busy;
+        private string sessionDirectory = string.Empty;
+        private string sessionLogPath = string.Empty;
+
+        private readonly Color Shell = Color.FromArgb(18, 24, 31);
+        private readonly Color Chrome = Color.FromArgb(27, 36, 46);
+        private readonly Color Border = Color.FromArgb(55, 68, 82);
+        private readonly Color Accent = Color.FromArgb(38, 166, 154);
+        private readonly Color Fore = Color.FromArgb(226, 230, 234);
+        private readonly Color Muted = Color.FromArgb(158, 169, 180);
+        private readonly Color Warning = Color.FromArgb(224, 170, 64);
+        private readonly Color Danger = Color.FromArgb(214, 87, 87);
+        private readonly Color Success = Color.FromArgb(74, 190, 119);
 
         public TP02ProgramReaderForm()
         {
-            Text = "TP02 Program Reader - RBP";
+            Text = "TP02 - Leitura de programa PG/PC12";
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(980, 650);
-            Size = new Size(1160, 760);
-            BackColor = Canvas;
+            Size = new Size(1160, 780);
+            BackColor = Shell;
+            ForeColor = Fore;
             Font = new Font("Segoe UI", 9.0f);
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
+
             BuildUi();
             RefreshPorts();
+            LoadPreferredPort();
         }
 
         private void BuildUi()
         {
             Panel header = new Panel();
             header.Dock = DockStyle.Top;
-            header.Height = 72;
-            header.BackColor = OpenLadderPalette.Chrome;
+            header.Height = 86;
+            header.BackColor = Chrome;
             Controls.Add(header);
 
-            Label title = LabelAt("LEITOR DE PROGRAMA TP02 — RBP", 15.0f, FontStyle.Bold, Navy, 22, 13);
+            Label title = NewLabel("TP02 - LEITURA DE PROGRAMA PG/PC12", 14.0f, FontStyle.Bold, Fore);
+            title.Location = new Point(20, 13);
             header.Controls.Add(title);
-            Label sub = LabelAt("Leitura da memória de programa em linguagem de máquina, sem alterar o PLC.", 8.8f, FontStyle.Regular, TextSecondary, 24, 43);
+
+            Label sub = NewLabel(
+                "SOMENTE LEITURA | TP-232PG | 19200 8O1 | DTR=OFF | RTS=OFF | HELLO -> F0 -> 38 -> 34",
+                8.8f, FontStyle.Regular, Muted);
+            sub.Location = new Point(22, 47);
             header.Controls.Add(sub);
 
-            Label safe = new Label();
-            safe.Text = "SOMENTE LEITURA";
-            safe.Dock = DockStyle.Right;
-            safe.Width = 190;
-            safe.TextAlign = ContentAlignment.MiddleCenter;
-            safe.Font = new Font("Segoe UI Semibold", 9.0f, FontStyle.Bold);
-            safe.ForeColor = Success;
-            header.Controls.Add(safe);
+            statusLabel = NewLabel("AGUARDANDO", 9.0f, FontStyle.Bold, Muted);
+            statusLabel.AutoSize = false;
+            statusLabel.TextAlign = ContentAlignment.MiddleRight;
+            statusLabel.Dock = DockStyle.Right;
+            statusLabel.Width = 250;
+            header.Controls.Add(statusLabel);
 
             Panel config = new Panel();
             config.Dock = DockStyle.Top;
-            config.Height = 150;
-            config.BackColor = OpenLadderPalette.Chrome;
+            config.Height = 116;
+            config.BackColor = Shell;
             Controls.Add(config);
 
-            config.Controls.Add(LabelAt("Configuração serial", 12.0f, FontStyle.Bold, TextPrimary, 18, 14));
+            Label portLabel = NewLabel("Porta COM", 8.0f, FontStyle.Bold, Muted);
+            portLabel.Location = new Point(18, 13);
+            config.Controls.Add(portLabel);
 
-            AddField(config, "Porta", 18);
-            portCombo = ComboAt(18, 72, 104);
+            portCombo = new ComboBox();
+            portCombo.DropDownStyle = ComboBoxStyle.DropDownList;
+            portCombo.Location = new Point(18, 36);
+            portCombo.Size = new Size(145, 25);
             config.Controls.Add(portCombo);
-            Button refresh = ButtonAt("ATUALIZAR", 130, 70, 96, false);
-            refresh.Click += delegate { RefreshPorts(); };
-            config.Controls.Add(refresh);
 
-            AddField(config, "Baud", 242);
-            baudCombo = ComboAt(242, 72, 92);
-            baudCombo.Items.AddRange(new object[] { "38400", "19200", "9600", "4800", "2400", "1200", "600", "300" });
-            baudCombo.SelectedItem = "19200";
-            config.Controls.Add(baudCombo);
+            refreshButton = NewButton("ATUALIZAR", 176, 34, 105, false);
+            refreshButton.Click += delegate { RefreshPorts(); };
+            config.Controls.Add(refreshButton);
 
-            AddField(config, "Paridade", 350);
-            parityCombo = ComboAt(350, 72, 92);
-            parityCombo.Items.AddRange(new object[] { "Even", "Odd", "None" });
-            parityCombo.SelectedItem = "Odd";
-            config.Controls.Add(parityCombo);
+            readButton = NewButton("LER PROGRAMA PG", 310, 27, 190, true);
+            readButton.Click += delegate { StartRead(); };
+            config.Controls.Add(readButton);
 
-            AddField(config, "Bits", 458);
-            dataBitsCombo = ComboAt(458, 72, 66);
-            dataBitsCombo.Items.AddRange(new object[] { "7", "8" });
-            dataBitsCombo.SelectedItem = "8";
-            config.Controls.Add(dataBitsCombo);
+            openFolderButton = NewButton("ABRIR PASTA", 520, 27, 130, false);
+            openFolderButton.Enabled = false;
+            openFolderButton.Click += delegate { OpenSessionFolder(); };
+            config.Controls.Add(openFolderButton);
 
-            AddField(config, "Stop", 540);
-            stopBitsCombo = ComboAt(540, 72, 66);
-            stopBitsCombo.Items.AddRange(new object[] { "2", "1" });
-            stopBitsCombo.SelectedItem = "1";
-            config.Controls.Add(stopBitsCombo);
+            Label safety = NewLabel(
+                "Nao envia RUN, STOP, limpeza ou escrita. Se ultrapassar 80 passos, a paginacao continua marcada como experimental.",
+                8.3f, FontStyle.Regular, Warning);
+            safety.Location = new Point(680, 35);
+            safety.MaximumSize = new Size(430, 42);
+            config.Controls.Add(safety);
 
-            AddField(config, "Estação", 622);
-            stationBox = NumericAt(622, 72, 68, 1, 99, 1);
-            config.Controls.Add(stationBox);
+            sessionLabel = NewLabel("Sessao: -", 8.0f, FontStyle.Regular, Muted);
+            sessionLabel.Location = new Point(18, 82);
+            sessionLabel.MaximumSize = new Size(1080, 24);
+            config.Controls.Add(sessionLabel);
 
-            AddField(config, "Resposta", 706);
-            responseTimeBox = NumericAt(706, 72, 68, 0, 15, 5);
-            config.Controls.Add(responseTimeBox);
+            TabControl tabs = new TabControl();
+            tabs.Dock = DockStyle.Fill;
+            tabs.Font = new Font("Segoe UI", 9.0f);
+            Controls.Add(tabs);
+            tabs.BringToFront();
 
-            doubleColonCheck = new CheckBox();
-            doubleColonCheck.Text = "Prefixo ::";
-            doubleColonCheck.AutoSize = true;
-            doubleColonCheck.Location = new Point(792, 74);
-            doubleColonCheck.ForeColor = TextSecondary;
-            config.Controls.Add(doubleColonCheck);
+            TabPage programTab = new TabPage("Programa lido");
+            programTab.BackColor = Shell;
+            tabs.TabPages.Add(programTab);
 
-            dtrCheck = new CheckBox();
-            dtrCheck.Text = "DTR";
-            dtrCheck.AutoSize = true;
-            dtrCheck.Checked = true;
-            dtrCheck.Location = new Point(792, 96);
-            dtrCheck.ForeColor = TextSecondary;
-            config.Controls.Add(dtrCheck);
-
-            rtsCheck = new CheckBox();
-            rtsCheck.Text = "RTS";
-            rtsCheck.AutoSize = true;
-            rtsCheck.Checked = true;
-            rtsCheck.Location = new Point(862, 96);
-            rtsCheck.ForeColor = TextSecondary;
-            config.Controls.Add(rtsCheck);
-
-            Label configNote = LabelAt("Padrão inicial: 19200 / 8 / ODD / 1 (8O1), estação 01. O RBP pode ler até 100 passos por comando.", 8.4f, FontStyle.Regular, TextSecondary, 18, 112);
-            config.Controls.Add(configNote);
-
-            Panel read = new Panel();
-            read.Dock = DockStyle.Top;
-            read.Height = 130;
-            read.BackColor = Canvas;
-            Controls.Add(read);
-
-            read.Controls.Add(LabelAt("Leitura da memória de programa", 11.0f, FontStyle.Bold, TextPrimary, 18, 14));
-
-            Label a = LabelAt("Endereço inicial", 8.2f, FontStyle.Bold, TextSecondary, 18, 48);
-            read.Controls.Add(a);
-            addressBox = NumericAt(18, 70, 110, 0, 4000, 0);
-            addressBox.Increment = 1;
-            read.Controls.Add(addressBox);
-
-            Label s = LabelAt("Passos", 8.2f, FontStyle.Bold, TextSecondary, 148, 48);
-            read.Controls.Add(s);
-            stepsBox = NumericAt(148, 70, 80, 1, 100, 10);
-            read.Controls.Add(stepsBox);
-
-            Button readBlock = ButtonAt("LER BLOCO RBP", 250, 66, 160, true);
-            readBlock.Click += delegate { ReadBlock(); };
-            read.Controls.Add(readBlock);
-
-            Button first100 = ButtonAt("LER 0000–0099", 424, 66, 150, false);
-            first100.Click += delegate { addressBox.Value = 0; stepsBox.Value = 100; ReadBlock(); };
-            read.Controls.Add(first100);
-
-            Button save = ButtonAt("SALVAR DUMP", 588, 66, 130, false);
-            save.Click += delegate { SaveDump(); };
-            read.Controls.Add(save);
-
-            Button clear = ButtonAt("LIMPAR", 732, 66, 100, false);
-            clear.Click += delegate { outputBox.Clear(); lastDump = string.Empty; };
-            read.Controls.Add(clear);
-
-            Label warning = LabelAt("O comando RBP apenas lê o programa. WBP, RUN, STOP e comandos de limpeza permanecem fora desta ferramenta.", 8.4f, FontStyle.Regular, TextSecondary, 18, 106);
-            read.Controls.Add(warning);
-
-            outputBox = new TextBox();
+            outputBox = NewTextBox();
             outputBox.Dock = DockStyle.Fill;
-            outputBox.Multiline = true;
-            outputBox.ReadOnly = true;
-            outputBox.WordWrap = false;
-            outputBox.ScrollBars = ScrollBars.Both;
-            outputBox.Font = new Font("Consolas", 9.4f);
-            outputBox.BackColor = OpenLadderPalette.Canvas;
-            outputBox.ForeColor = OpenLadderPalette.Fore;
-            Controls.Add(outputBox);
-            outputBox.BringToFront();
-            DockOrder.Apply(this, outputBox, read, config, header);
+            programTab.Controls.Add(outputBox);
 
+            TabPage logTab = new TabPage("Log bruto");
+            logTab.BackColor = Shell;
+            tabs.TabPages.Add(logTab);
+
+            logBox = NewTextBox();
+            logBox.Dock = DockStyle.Fill;
+            logTab.Controls.Add(logBox);
         }
 
-        private void ReadBlock()
+        private TextBox NewTextBox()
         {
+            TextBox box = new TextBox();
+            box.Multiline = true;
+            box.ReadOnly = true;
+            box.WordWrap = false;
+            box.ScrollBars = ScrollBars.Both;
+            box.Font = new Font("Consolas", 9.0f);
+            box.BackColor = Color.FromArgb(16, 22, 29);
+            box.ForeColor = Fore;
+            box.BorderStyle = BorderStyle.FixedSingle;
+            return box;
+        }
+
+        private Label NewLabel(string text, float size, FontStyle style, Color color)
+        {
+            Label label = new Label();
+            label.Text = text;
+            label.AutoSize = true;
+            label.Font = new Font("Segoe UI", size, style);
+            label.ForeColor = color;
+            return label;
+        }
+
+        private Button NewButton(string text, int left, int top, int width, bool primary)
+        {
+            Button button = new Button();
+            button.Text = text;
+            button.Location = new Point(left, top);
+            button.Size = new Size(width, 38);
+            button.FlatStyle = FlatStyle.Flat;
+            button.Cursor = Cursors.Hand;
+            button.Font = new Font("Segoe UI Semibold", 8.5f, FontStyle.Bold);
+            if (primary)
+            {
+                button.BackColor = Accent;
+                button.ForeColor = Color.White;
+                button.FlatAppearance.BorderSize = 0;
+            }
+            else
+            {
+                button.BackColor = Chrome;
+                button.ForeColor = Fore;
+                button.FlatAppearance.BorderColor = Border;
+            }
+            return button;
+        }
+
+        private void RefreshPorts()
+        {
+            string selected = portCombo == null || portCombo.SelectedItem == null
+                ? string.Empty : portCombo.SelectedItem.ToString();
+            string[] ports = SerialPort.GetPortNames();
+            Array.Sort(ports, StringComparer.OrdinalIgnoreCase);
+            portCombo.Items.Clear();
+            for (int i = 0; i < ports.Length; i++) portCombo.Items.Add(ports[i]);
+
+            if (!string.IsNullOrEmpty(selected) && portCombo.Items.Contains(selected))
+                portCombo.SelectedItem = selected;
+            else if (portCombo.Items.Count > 0)
+                portCombo.SelectedIndex = 0;
+        }
+
+        private void LoadPreferredPort()
+        {
+            try
+            {
+                PlcDeviceProfile profile = PlcProfileStore.Load();
+                if (profile == null) return;
+                PlcConnectionSettings settings = PlcConnectionSettingsStore.Load(profile);
+                if (settings == null || string.IsNullOrEmpty(settings.PortName)) return;
+                if (!portCombo.Items.Contains(settings.PortName)) portCombo.Items.Add(settings.PortName);
+                portCombo.SelectedItem = settings.PortName;
+            }
+            catch { }
+        }
+
+        private void StartRead()
+        {
+            if (busy) return;
             if (portCombo.SelectedItem == null)
             {
-                MessageBox.Show("Nenhuma porta COM selecionada.", "TP02 Program Reader", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, "Selecione a porta COM usada pelo TP-232PG.",
+                    "TP02 PG", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            int start = (int)addressBox.Value;
-            int count = (int)stepsBox.Value;
-            if (start + count - 1 > 4000)
+            string portName = portCombo.SelectedItem.ToString();
+            CreateSessionDirectory();
+            outputBox.Clear();
+            logBox.Clear();
+            AppendLog("Sessao READ-ONLY iniciada.");
+            AppendLog("Porta escolhida: " + portName + ".");
+            AppendLog("Perfil fixo: 19200 8O1 DTR=off RTS=off.");
+            AppendLog("Sequencia: HELLO -> F0 -> 38 -> 34.");
+            AppendLog("SEGURANCA: nao existe comando de escrita/RUN/STOP/limpeza nesta ferramenta.");
+            SetBusy(true);
+            SetStatusSafe("LENDO...", Warning);
+
+            ThreadPool.QueueUserWorkItem(delegate
             {
-                MessageBox.Show("O bloco ultrapassa o endereço 4000 do TP02-40/60. Reduza o endereço inicial ou a quantidade.", "Faixa inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                ReadResult result = null;
+                Exception failure = null;
+                try
+                {
+                    result = ReadProgramWithSessionRetry(portName);
+                }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                }
+
+                if (IsDisposed) return;
+                BeginInvoke(new MethodInvoker(delegate
+                {
+                    if (failure != null)
+                    {
+                        AppendLog("FALHA FINAL: " + failure.Message);
+                        SetStatusSafe("FALHA", Danger);
+                        MessageBox.Show(this, failure.Message,
+                            "TP02 - leitura PG falhou", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    else
+                    {
+                        ShowProgram(result);
+                        SetStatusSafe("LEITURA PG APROVADA", Success);
+                        string pageNotice = result.CrossedPageBoundary
+                            ? "\r\n\r\nATENCAO: a leitura cruzou 80 passos. Os dados foram preservados, mas essa paginacao ainda e experimental ate comparacao fisica adicional."
+                            : string.Empty;
+                        MessageBox.Show(this,
+                            "Programa lido pelo PG/PC12.\r\n\r\n"
+                            + "PLC no HELLO: " + result.PlcState + "\r\n"
+                            + "Passos ate F-00 END: " + result.Steps.ToString(CultureInfo.InvariantCulture) + "\r\n"
+                            + "END global: " + result.EndStep.ToString("0000", CultureInfo.InvariantCulture) + "\r\n"
+                            + "Paginas 34: " + result.Pages.ToString(CultureInfo.InvariantCulture) + "\r\n"
+                            + "BRAW: " + result.BrawChecked.ToString(CultureInfo.InvariantCulture)
+                            + " verificado(s), " + result.BrawMismatches.ToString(CultureInfo.InvariantCulture) + " divergencia(s)."
+                            + pageNotice,
+                            "TP02 - LEITURA PG APROVADA", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    SetBusy(false);
+                }));
+            });
+        }
+
+        private void CreateSessionDirectory()
+        {
+            string root = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "OpenLadder Studio", "TP02 PG Reads");
+            sessionDirectory = Path.Combine(root,
+                DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture));
+            Directory.CreateDirectory(sessionDirectory);
+            sessionLogPath = Path.Combine(sessionDirectory, "session.log");
+            sessionLabel.Text = "Sessao: " + sessionDirectory;
+            openFolderButton.Enabled = true;
+        }
+
+        private ReadResult ReadProgramWithSessionRetry(string portName)
+        {
+            Exception last = null;
+            for (int session = 1; session <= 2; session++)
+            {
+                try
+                {
+                    if (session == 2)
+                    {
+                        AppendLogSafe("PG SESSION RETRY: primeira sessao falhou; fechando/reabrindo a COM automaticamente.");
+                        Thread.Sleep(1100);
+                    }
+                    return ReadProgramSession(portName, session);
+                }
+                catch (Exception ex)
+                {
+                    last = ex;
+                    AppendLogSafe("PG sessao " + session.ToString(CultureInfo.InvariantCulture)
+                        + " falhou: " + ex.Message);
+                }
             }
 
-            string payload = start.ToString("0000", CultureInfo.InvariantCulture) + (count == 100 ? "00" : count.ToString("00", CultureInfo.InvariantCulture));
-            string frame = BuildFrame("RBP", payload);
-            Append("TX", Escape(frame));
+            throw new IOException("Duas sessoes PG de leitura falharam. Ultimo erro: "
+                + (last == null ? "desconhecido" : last.Message));
+        }
 
+        private ReadResult ReadProgramSession(string portName, int sessionNumber)
+        {
+            ReadResult result = new ReadResult();
             SerialPort port = null;
             try
             {
-                port = new SerialPort(portCombo.SelectedItem.ToString());
-                port.BaudRate = int.Parse(baudCombo.SelectedItem.ToString(), CultureInfo.InvariantCulture);
-                port.DataBits = int.Parse(dataBitsCombo.SelectedItem.ToString(), CultureInfo.InvariantCulture);
-                port.Parity = (Parity)Enum.Parse(typeof(Parity), parityCombo.SelectedItem.ToString());
-                port.StopBits = stopBitsCombo.SelectedItem.ToString() == "2" ? StopBits.Two : StopBits.One;
-                port.Encoding = Encoding.ASCII;
-                port.ReadTimeout = 3500;
-                port.WriteTimeout = 1500;
-                port.NewLine = "\r";
-                port.DtrEnable = dtrCheck.Checked;
-                port.RtsEnable = rtsCheck.Checked;
+                port = new SerialPort(portName, 19200, Parity.Odd, 8, StopBits.One);
                 port.Handshake = Handshake.None;
+                port.DtrEnable = false;
+                port.RtsEnable = false;
+                port.ReadTimeout = 100;
+                port.WriteTimeout = 1500;
                 port.Open();
                 port.DiscardInBuffer();
                 port.DiscardOutBuffer();
-                Append("PORTA", port.PortName + "  DTR=" + (port.DtrEnable ? "on" : "off")
-                    + "  RTS=" + (port.RtsEnable ? "on" : "off"));
-                port.Write(frame);
 
-                bool complete;
-                string response = ReadUntilCarriageReturn(port, 3500, out complete);
+                Thread.Sleep(sessionNumber == 1 ? 900 : 1300);
+                AppendLogSafe("COM aberta: " + portName + " 19200 8O1 DTR=off RTS=off | sessao "
+                    + sessionNumber.ToString(CultureInfo.InvariantCulture) + ".");
 
-                if (complete)
+                result.Hello = PerformHello(port);
+                result.PlcState = result.Hello.StartsWith("80", StringComparison.Ordinal)
+                    ? "STOP" : "RUN";
+                AppendLogSafe("HELLO confirmado: " + result.Hello + " => " + result.PlcState + ".");
+                Thread.Sleep(220);
+
+                byte[] f0Frame = PerformF0(port);
+                SaveHex("f0-response.hex", f0Frame);
+                Thread.Sleep(240);
+
+                byte[] frame38 = SendAndReadFrame(port, Frame38Request, 0x02, 3, 3200, "38");
+                result.Frame38 = ToHex(frame38);
+                SaveHex("frame38.hex", frame38);
+                AppendLogSafe("38 valido: " + result.Frame38 + ".");
+                Thread.Sleep(260);
+
+                int startStep = 0;
+                bool foundEnd = false;
+                while (startStep < MaxProgramSteps)
                 {
-                    Append("RX", Escape(response));
-                    DecodeRbpResponse(response, start, count);
+                    if (startStep > 0)
+                    {
+                        result.CrossedPageBoundary = true;
+                        AppendLogSafe("PAGINACAO EXPERIMENTAL: solicitando pagina a partir do passo "
+                            + startStep.ToString("0000", CultureInfo.InvariantCulture) + ".");
+                    }
+
+                    byte[] request34 = Build34Request(startStep);
+                    byte[] frame34 = SendAndReadFrame(port, request34, PagePayloadLength, 3, 5000,
+                        "34@" + startStep.ToString("0000", CultureInfo.InvariantCulture));
+                    result.Pages++;
+                    SaveHex("page-" + startStep.ToString("0000", CultureInfo.InvariantCulture) + ".hex", frame34);
+
+                    int activeCount = DetectPageTailCount(frame34);
+                    int localEnd;
+                    bool hasEnd = TryFindEnd(frame34, out localEnd);
+                    int countToStore = activeCount;
+                    if (hasEnd && localEnd + 1 < countToStore) countToStore = localEnd + 1;
+
+                    AppendLogSafe("34 pagina " + startStep.ToString("0000", CultureInfo.InvariantCulture)
+                        + ": ativos=" + activeCount.ToString(CultureInfo.InvariantCulture)
+                        + (hasEnd ? ", END local=" + localEnd.ToString("00", CultureInfo.InvariantCulture) : ", END ausente") + ".");
+
+                    for (int i = 0; i < countToStore; i++)
+                    {
+                        byte high;
+                        byte low;
+                        byte braw;
+                        GetStep(frame34, i, out high, out low, out braw);
+                        string word = high.ToString("X2", CultureInfo.InvariantCulture)
+                            + low.ToString("X2", CultureInfo.InvariantCulture)
+                            + braw.ToString("X2", CultureInfo.InvariantCulture);
+                        int global = startStep + i;
+                        byte expectedBraw = CalculateBraw(high, low);
+                        bool brawOk = expectedBraw == braw;
+                        result.BrawChecked++;
+                        if (!brawOk) result.BrawMismatches++;
+
+                        result.Words.Add(word);
+                        result.Il.Add(global.ToString("0000", CultureInfo.InvariantCulture)
+                            + "  " + word + "  " + DecodeStep(high, low, braw)
+                            + (brawOk ? string.Empty : "  [BRAW esperado=" + expectedBraw.ToString("X2", CultureInfo.InvariantCulture) + "]"));
+                        result.Steps++;
+                    }
+
+                    if (hasEnd)
+                    {
+                        result.EndStep = startStep + localEnd;
+                        foundEnd = true;
+                        AppendLogSafe("F-00 END encontrado no passo global "
+                            + result.EndStep.ToString("0000", CultureInfo.InvariantCulture) + ".");
+                        break;
+                    }
+
+                    if (activeCount < StepsPerPage)
+                    {
+                        throw new InvalidDataException("Pagina 34 parcial sem F-00 END. A leitura foi interrompida para nao inferir o fim do programa.");
+                    }
+
+                    startStep += StepsPerPage;
+                    Thread.Sleep(300);
                 }
-                else if (response.Length > 0)
-                {
-                    Append("RX", Escape(response));
-                    Append("ERRO", "Resposta incompleta: " + response.Length.ToString(CultureInfo.InvariantCulture)
-                        + " byte(s) sem <CR>. Chegou sinal, então cabo e porta estão vivos; verifique taxa de transmissão, "
-                        + "paridade e bits contra WS041/WS042 do PLC.");
-                }
-                else
-                {
-                    Append("ERRO", "Timeout: nenhum byte recebido. Confirme porta COM, estação, configuração serial e cabo. "
-                        + "Cabo opto-isolado costuma depender de DTR/RTS ativos.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Append("ERRO", ex.Message);
+
+                if (!foundEnd)
+                    throw new InvalidDataException("F-00 END nao encontrado antes do limite de 4000 passos.");
+
+                SaveProgramFiles(result);
+                AppendLogSafe("LEITURA CONCLUIDA: " + result.Steps.ToString(CultureInfo.InvariantCulture)
+                    + " passo(s), END=" + result.EndStep.ToString("0000", CultureInfo.InvariantCulture)
+                    + ", paginas=" + result.Pages.ToString(CultureInfo.InvariantCulture) + ".");
+                return result;
             }
             finally
             {
@@ -283,230 +506,388 @@ namespace ModernPC12
             }
         }
 
-        private void DecodeRbpResponse(string response, int requestedStart, int requestedCount)
+        private string PerformHello(SerialPort port)
         {
-            string clean = (response ?? string.Empty).TrimEnd('\r', '\n');
-            while (clean.StartsWith(":")) clean = clean.Substring(1);
-            if (clean.Length < 8)
+            for (int attempt = 1; attempt <= 5; attempt++)
             {
-                Append("ERRO", "Resposta curta demais para decodificar.");
-                return;
+                port.DiscardInBuffer();
+                AppendLogSafe("HELLO TX " + attempt.ToString(CultureInfo.InvariantCulture) + ": " + ToHex(HelloRequest));
+                port.Write(HelloRequest, 0, HelloRequest.Length);
+                byte[] raw = ReadBurst(port, attempt == 1 ? 2300 : 2800, 230);
+                AppendLogSafe("HELLO RX: " + (raw.Length == 0 ? "[]" : ToHex(raw)));
+
+                if (Contains(raw, HelloStop)) return ToHex(HelloStop);
+                if (Contains(raw, HelloRun)) return ToHex(HelloRun);
+                Thread.Sleep(280);
             }
-
-            bool checksumOk = VerifyChecksum(clean);
-            if (clean.IndexOf('%') >= 0)
-            {
-                Append("ERRO", "O TP02 retornou uma resposta de erro. Checksum " + (checksumOk ? "OK" : "não validado") + ".");
-                return;
-            }
-
-            int marker = clean.IndexOf('#');
-            if (marker < 0)
-            {
-                Append("ERRO", "Resposta sem marcador #.");
-                return;
-            }
-
-            string body = clean.Substring(marker + 1, clean.Length - marker - 1 - 2); // sem checksum
-            int rbp = body.IndexOf("RBP", StringComparison.OrdinalIgnoreCase);
-            if (rbp >= 0) body = body.Substring(rbp + 3);
-            else if (body.Length >= 4 && char.IsLetter(body[0]) && char.IsLetter(body[1]) && char.IsLetter(body[2])) body = body.Substring(3);
-
-            string returnedCount = string.Empty;
-            if (body.Length >= 2 && ((body.Length - 2) % 6 == 0))
-            {
-                returnedCount = body.Substring(body.Length - 2, 2);
-                body = body.Substring(0, body.Length - 2);
-            }
-
-            int words = body.Length / 6;
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine();
-            sb.AppendLine("RBP — DUMP DE PROGRAMA");
-            sb.AppendLine(new string('=', 72));
-            sb.AppendLine("Solicitado: endereço " + requestedStart.ToString("0000") + ", " + requestedCount.ToString() + " passo(s)");
-            sb.AppendLine("Checksum: " + (checksumOk ? "OK" : "NÃO VALIDADO"));
-            if (returnedCount.Length > 0) sb.AppendLine("Contagem informada na resposta: " + returnedCount + (returnedCount == "00" ? " (100)" : string.Empty));
-            sb.AppendLine("Palavras de máquina detectadas: " + words.ToString());
-            sb.AppendLine();
-            sb.AppendLine("PASSO  WORD    BYTE-H BYTE-L EXT");
-            sb.AppendLine("-----  ------  ------ ------ ---");
-
-            int i;
-            for (i = 0; i < words; i++)
-            {
-                string word = body.Substring(i * 6, 6).ToUpperInvariant();
-                sb.Append((requestedStart + i).ToString("0000")).Append("   ")
-                  .Append(word).Append("  ")
-                  .Append(word.Substring(0, 2)).Append("     ")
-                  .Append(word.Substring(2, 2)).Append("     ")
-                  .Append(word.Substring(4, 2)).AppendLine();
-            }
-
-            if (body.Length % 6 != 0)
-            {
-                sb.AppendLine();
-                sb.AppendLine("Dados residuais não agrupados: " + body.Substring(words * 6));
-            }
-
-            sb.AppendLine();
-            sb.AppendLine("Observação: cada passo RBP é retornado em 3 bytes (6 caracteres hexadecimais). A tradução destes bytes para STR/AND/OR/OUT/TMR/CNT será a próxima camada de decodificação.");
-
-            lastDump = sb.ToString();
-            outputBox.AppendText(lastDump + Environment.NewLine);
+            throw new TimeoutException("HELLO PG nao confirmado em 5 tentativas.");
         }
 
-        private string BuildFrame(string command, string payload)
+        private byte[] PerformF0(SerialPort port)
         {
-            string station = ((int)stationBox.Value).ToString("00", CultureInfo.InvariantCulture);
-            const string codes = "0123456789ABCDEF";
-            char responseCode = codes[(int)responseTimeBox.Value];
-            string core = station + "?" + responseCode + command + payload;
-            string prefix = doubleColonCheck.Checked ? "::" : ":";
-            return prefix + core + Checksum(core) + "\r";
-        }
-
-        private static string Checksum(string core)
-        {
-            int sum = 0;
-            int i;
-            for (i = 0; i < core.Length; i++) sum = (sum + (byte)core[i]) & 0xFF;
-            return (((~sum) + 1) & 0xFF).ToString("X2", CultureInfo.InvariantCulture);
-        }
-
-        private static bool VerifyChecksum(string clean)
-        {
-            if (clean.Length < 3) return false;
-            int parsed;
-            if (!int.TryParse(clean.Substring(clean.Length - 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out parsed)) return false;
-            int sum = 0;
-            int i;
-            for (i = 0; i < clean.Length - 2; i++) sum = (sum + (byte)clean[i]) & 0xFF;
-            return ((sum + parsed) & 0xFF) == 0;
-        }
-
-        private void SaveDump()
-        {
-            if (string.IsNullOrEmpty(lastDump))
+            for (int attempt = 1; attempt <= 3; attempt++)
             {
-                MessageBox.Show("Faça uma leitura RBP antes de salvar.", "TP02 Program Reader", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                byte[] raw = SendAndReadBurst(port, F0Request, 3200, 230,
+                    "F0 #" + attempt.ToString(CultureInfo.InvariantCulture));
+                if (Contains(raw, F0KnownResponse))
+                {
+                    AppendLogSafe("F0 conhecido confirmado: " + ToHex(F0KnownResponse) + ".");
+                    return F0KnownResponse;
+                }
+                Thread.Sleep(280);
             }
-            SaveFileDialog dlg = new SaveFileDialog();
-            dlg.Filter = "Dump RBP (*.rbpdump)|*.rbpdump|Texto (*.txt)|*.txt";
-            dlg.FileName = "TP02_RBP_" + ((int)addressBox.Value).ToString("0000") + ".rbpdump";
-            if (dlg.ShowDialog(this) != DialogResult.OK) return;
-            File.WriteAllText(dlg.FileName, lastDump, Encoding.UTF8);
+            throw new InvalidDataException("F0 nao retornou o quadro conhecido 00 02 10 22 CB.");
         }
 
-        private void RefreshPorts()
+        private byte[] SendAndReadBurst(SerialPort port, byte[] request, int timeoutMs, int quietMs, string label)
         {
-            string previous = portCombo == null || portCombo.SelectedItem == null ? string.Empty : portCombo.SelectedItem.ToString();
-            string[] ports = SerialPort.GetPortNames();
-            Array.Sort(ports);
-            portCombo.Items.Clear();
-            portCombo.Items.AddRange(ports);
-            if (ports.Length == 0) return;
-            int idx = Array.IndexOf(ports, previous);
-            portCombo.SelectedIndex = idx >= 0 ? idx : 0;
+            port.DiscardInBuffer();
+            AppendLogSafe(label + " TX: " + ToHex(request));
+            port.Write(request, 0, request.Length);
+            byte[] raw = ReadBurst(port, timeoutMs, quietMs);
+            AppendLogSafe(label + " RX RAW: " + (raw.Length == 0 ? "[]" : ToHex(raw)));
+            return raw;
         }
 
-        private void Append(string kind, string text)
+        private byte[] SendAndReadFrame(SerialPort port, byte[] request, int expectedLenByte,
+            int attempts, int timeoutMs, string label)
         {
-            outputBox.AppendText("[" + DateTime.Now.ToString("HH:mm:ss") + "] " + kind + "  " + text + Environment.NewLine);
+            for (int attempt = 1; attempt <= attempts; attempt++)
+            {
+                byte[] raw = SendAndReadBurst(port, request, timeoutMs, 260,
+                    label + " #" + attempt.ToString(CultureInfo.InvariantCulture));
+                byte[] frame = FindFrame(raw, expectedLenByte);
+                if (frame != null)
+                {
+                    AppendLogSafe(label + " FRAME OK: " + ToHex(frame) + ".");
+                    return frame;
+                }
+                Thread.Sleep(300);
+            }
+
+            throw new InvalidDataException(label + " nao retornou quadro valido LEN="
+                + expectedLenByte.ToString("X2", CultureInfo.InvariantCulture) + " e checksum FF.");
         }
 
-        private static string ReadUntilCarriageReturn(SerialPort port, int timeoutMs, out bool complete)
+        private static byte[] FindFrame(byte[] raw, int expectedLenByte)
         {
-            StringBuilder received = new StringBuilder();
-            complete = false;
-            port.ReadTimeout = 150;
+            if (raw == null) return null;
+            int total = expectedLenByte + 3;
+            if (total < 3 || raw.Length < total) return null;
+
+            for (int i = 0; i <= raw.Length - total; i++)
+            {
+                if (raw[i + 1] != (byte)expectedLenByte) continue;
+                int sum = 0;
+                for (int j = 0; j < total; j++) sum = (sum + raw[i + j]) & 0xFF;
+                if (sum != 0xFF) continue;
+
+                byte[] frame = new byte[total];
+                Buffer.BlockCopy(raw, i, frame, 0, total);
+                return frame;
+            }
+            return null;
+        }
+
+        private static byte[] ReadBurst(SerialPort port, int timeoutMs, int quietMs)
+        {
+            List<byte> bytes = new List<byte>();
             DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            DateTime lastData = DateTime.MinValue;
+
             while (DateTime.UtcNow < deadline)
             {
-                int value;
-                try
+                int available = port.BytesToRead;
+                if (available > 0)
                 {
-                    value = port.ReadByte();
+                    byte[] buffer = new byte[available];
+                    int got = port.Read(buffer, 0, buffer.Length);
+                    for (int i = 0; i < got; i++) bytes.Add(buffer[i]);
+                    lastData = DateTime.UtcNow;
                 }
-                catch (TimeoutException)
+                else if (bytes.Count > 0 && lastData != DateTime.MinValue
+                    && (DateTime.UtcNow - lastData).TotalMilliseconds >= quietMs)
                 {
-                    continue;
-                }
-                if (value < 0) continue;
-                received.Append((char)value);
-                if (value == 13)
-                {
-                    complete = true;
                     break;
                 }
+                Thread.Sleep(15);
             }
-            return received.ToString();
+            return bytes.ToArray();
         }
 
-        private static string Escape(string value)
+        private static byte[] Build34Request(int startStep)
         {
-            return (value ?? string.Empty).Replace("\r", "<CR>").Replace("\n", "<LF>");
+            if (startStep < 0 || startStep >= MaxProgramSteps)
+                throw new ArgumentOutOfRangeException("startStep");
+            if ((startStep % StepsPerPage) != 0)
+                throw new ArgumentException("Inicio da pagina 34 deve ser multiplo de 80.", "startStep");
+
+            byte[] frame = new byte[6];
+            frame[0] = 0x34;
+            frame[1] = 0x03;
+            frame[2] = (byte)(startStep & 0xFF);
+            frame[3] = (byte)((startStep >> 8) & 0xFF);
+            frame[4] = 0xA0;
+            int sum = 0;
+            for (int i = 0; i < 5; i++) sum = (sum + frame[i]) & 0xFF;
+            frame[5] = (byte)((0xFF - sum) & 0xFF);
+            return frame;
         }
 
-        private void AddField(Control parent, string text, int left)
+        private static int DetectPageTailCount(byte[] frame34)
         {
-            parent.Controls.Add(LabelAt(text, 8.1f, FontStyle.Bold, TextSecondary, left, 50));
-        }
-
-        private ComboBox ComboAt(int left, int top, int width)
-        {
-            ComboBox c = new ComboBox();
-            c.DropDownStyle = ComboBoxStyle.DropDownList;
-            c.Location = new Point(left, top);
-            c.Size = new Size(width, 25);
-            return c;
-        }
-
-        private NumericUpDown NumericAt(int left, int top, int width, int min, int max, int value)
-        {
-            NumericUpDown n = new NumericUpDown();
-            n.Location = new Point(left, top);
-            n.Size = new Size(width, 25);
-            n.Minimum = min;
-            n.Maximum = max;
-            n.Value = value;
-            return n;
-        }
-
-        private Button ButtonAt(string text, int left, int top, int width, bool primary)
-        {
-            Button b = new Button();
-            b.Text = text;
-            b.Location = new Point(left, top);
-            b.Size = new Size(width, 34);
-            b.FlatStyle = FlatStyle.Flat;
-            b.Font = new Font("Segoe UI Semibold", 8.4f, FontStyle.Bold);
-            b.Cursor = Cursors.Hand;
-            if (primary)
+            Validate34Frame(frame34);
+            for (int i = StepsPerPage - 1; i >= 0; i--)
             {
-                b.BackColor = Accent;
-                b.ForeColor = OpenLadderPalette.OnAccent;
-                b.FlatAppearance.BorderSize = 0;
+                byte high;
+                byte low;
+                byte braw;
+                GetStep(frame34, i, out high, out low, out braw);
+                if (high != 0 || low != 0 || braw != 0) return i + 1;
             }
-            else
-            {
-                b.BackColor = OpenLadderPalette.Chrome;
-                b.ForeColor = Navy;
-                b.FlatAppearance.BorderColor = OpenLadderPalette.Border;
-            }
-            return b;
+            return 0;
         }
 
-        private Label LabelAt(string text, float size, FontStyle style, Color color, int left, int top)
+        private static bool TryFindEnd(byte[] frame34, out int localStep)
         {
-            Label l = new Label();
-            l.Text = text;
-            l.AutoSize = true;
-            l.Font = new Font("Segoe UI", size, style);
-            l.ForeColor = color;
-            l.Location = new Point(left, top);
-            return l;
+            Validate34Frame(frame34);
+            for (int i = 0; i < StepsPerPage; i++)
+            {
+                byte high;
+                byte low;
+                byte braw;
+                GetStep(frame34, i, out high, out low, out braw);
+                if (high == 0x00 && low == 0x70)
+                {
+                    localStep = i;
+                    return true;
+                }
+            }
+            localStep = -1;
+            return false;
+        }
+
+        private static void GetStep(byte[] frame34, int index, out byte high, out byte low, out byte braw)
+        {
+            Validate34Frame(frame34);
+            if (index < 0 || index >= StepsPerPage) throw new ArgumentOutOfRangeException("index");
+            int payload = 2;
+            high = frame34[payload + (2 * index)];
+            low = frame34[payload + (2 * index) + 1];
+            braw = frame34[payload + PageABLength + index];
+        }
+
+        private static void Validate34Frame(byte[] frame34)
+        {
+            if (frame34 == null || frame34.Length != PageFrameLength)
+                throw new InvalidDataException("Quadro 34 deve ter 243 bytes.");
+            if (frame34[1] != PagePayloadLength)
+                throw new InvalidDataException("Quadro 34 deve ter LEN=F0.");
+            int sum = 0;
+            for (int i = 0; i < frame34.Length; i++) sum = (sum + frame34[i]) & 0xFF;
+            if (sum != 0xFF)
+                throw new InvalidDataException("Checksum do quadro 34 diferente de FF.");
+        }
+
+        private static byte CalculateBraw(byte high, byte low)
+        {
+            int sum = (high >> 4) + (high & 0x0F) + (low >> 4) + (low & 0x0F);
+            return (byte)(sum & 0x0F);
+        }
+
+        private static string DecodeStep(byte high, byte low, byte braw)
+        {
+            if (high == 0x00 && low == 0x70) return "F-00 END";
+            if (high == 0x00 && low == 0x00 && braw == 0x00) return "NOP";
+            if (high == 0x00 && low == 0x01) return "AND STR";
+            if (high == 0x00 && low == 0x02) return "OR STR";
+
+            string instruction = DecodeBooleanInstruction(low);
+            string device;
+            int number;
+            if (!string.IsNullOrEmpty(instruction)
+                && TryDecodeBitDevice(high, low, out device, out number))
+            {
+                return instruction + " " + device
+                    + number.ToString("0000", CultureInfo.InvariantCulture);
+            }
+
+            return "RAW " + high.ToString("X2", CultureInfo.InvariantCulture)
+                + low.ToString("X2", CultureInfo.InvariantCulture)
+                + " B=" + braw.ToString("X2", CultureInfo.InvariantCulture);
+        }
+
+        private static string DecodeBooleanInstruction(byte low)
+        {
+            switch (low & 0x78)
+            {
+                case 0x10: return "STR";
+                case 0x18: return "STR NOT";
+                case 0x20: return "AND";
+                case 0x28: return "AND NOT";
+                case 0x30: return "OR";
+                case 0x38: return "OR NOT";
+                case 0x40: return "OUT";
+                default: return string.Empty;
+            }
+        }
+
+        private static bool TryDecodeBitDevice(byte high, byte low, out string device, out int number)
+        {
+            device = string.Empty;
+            number = 0;
+            if ((high & 0x80) != 0) return false;
+
+            int deviceBase = high & 0x60;
+            if (deviceBase == 0x00) device = "X";
+            else if (deviceBase == 0x20) device = "Y";
+            else if (deviceBase == 0x40) device = "C";
+            else return false;
+
+            int group = high & 0x1F;
+            int bit = low & 0x07;
+            number = (group * 8) + bit + 1;
+            return number > 0;
+        }
+
+        private static bool Contains(byte[] value, byte[] sequence)
+        {
+            if (value == null || sequence == null || sequence.Length == 0 || value.Length < sequence.Length)
+                return false;
+            for (int i = 0; i <= value.Length - sequence.Length; i++)
+            {
+                bool same = true;
+                for (int j = 0; j < sequence.Length; j++)
+                {
+                    if (value[i + j] != sequence[j])
+                    {
+                        same = false;
+                        break;
+                    }
+                }
+                if (same) return true;
+            }
+            return false;
+        }
+
+        private static string ToHex(byte[] value)
+        {
+            if (value == null || value.Length == 0) return string.Empty;
+            StringBuilder text = new StringBuilder(value.Length * 3);
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (i > 0) text.Append(' ');
+                text.Append(value[i].ToString("X2", CultureInfo.InvariantCulture));
+            }
+            return text.ToString();
+        }
+
+        private void SaveHex(string fileName, byte[] frame)
+        {
+            File.WriteAllText(Path.Combine(sessionDirectory, fileName),
+                ToHex(frame) + Environment.NewLine, Encoding.ASCII);
+        }
+
+        private void SaveProgramFiles(ReadResult result)
+        {
+            File.WriteAllLines(Path.Combine(sessionDirectory, "program-words.txt"),
+                result.Words.ToArray(), Encoding.ASCII);
+            File.WriteAllLines(Path.Combine(sessionDirectory, "program-il.txt"),
+                result.Il.ToArray(), Encoding.UTF8);
+
+            StringBuilder summary = new StringBuilder();
+            summary.AppendLine("OpenLadder Studio - TP02 PG/PC12 READ-ONLY");
+            summary.AppendLine("Data: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+            summary.AppendLine("Perfil: 19200 8O1 DTR=off RTS=off");
+            summary.AppendLine("HELLO: " + result.Hello + " (" + result.PlcState + ")");
+            summary.AppendLine("38: " + result.Frame38);
+            summary.AppendLine("Paginas 34: " + result.Pages.ToString(CultureInfo.InvariantCulture));
+            summary.AppendLine("Passos ate END: " + result.Steps.ToString(CultureInfo.InvariantCulture));
+            summary.AppendLine("END global: " + result.EndStep.ToString("0000", CultureInfo.InvariantCulture));
+            summary.AppendLine("BRAW verificados: " + result.BrawChecked.ToString(CultureInfo.InvariantCulture));
+            summary.AppendLine("BRAW divergentes: " + result.BrawMismatches.ToString(CultureInfo.InvariantCulture));
+            summary.AppendLine("Cruzou 80 passos: "
+                + (result.CrossedPageBoundary ? "SIM - paginacao ainda experimental" : "NAO"));
+            summary.AppendLine("Seguranca: nenhum comando de escrita/RUN/STOP/limpeza foi enviado.");
+            File.WriteAllText(Path.Combine(sessionDirectory, "read-summary.txt"),
+                summary.ToString(), Encoding.UTF8);
+        }
+
+        private void ShowProgram(ReadResult result)
+        {
+            StringBuilder text = new StringBuilder();
+            text.AppendLine("TP02 PG/PC12 - PROGRAMA LIDO");
+            text.AppendLine("HELLO: " + result.Hello + "   PLC: " + result.PlcState);
+            text.AppendLine("Passos: " + result.Steps.ToString(CultureInfo.InvariantCulture)
+                + "   END: " + result.EndStep.ToString("0000", CultureInfo.InvariantCulture)
+                + "   Paginas: " + result.Pages.ToString(CultureInfo.InvariantCulture));
+            text.AppendLine("BRAW: " + result.BrawChecked.ToString(CultureInfo.InvariantCulture)
+                + " verificados / " + result.BrawMismatches.ToString(CultureInfo.InvariantCulture) + " divergencias");
+            if (result.CrossedPageBoundary)
+                text.AppendLine("ATENCAO: leitura cruzou 80 passos; paginacao permanece experimental.");
+            text.AppendLine(new string('-', 92));
+            text.AppendLine("PASSO  WORD    IL / DECODIFICACAO");
+            text.AppendLine("-----  ------  ---------------------------------------------------------------");
+            for (int i = 0; i < result.Il.Count; i++) text.AppendLine(result.Il[i]);
+            outputBox.Text = text.ToString();
+            outputBox.SelectionStart = 0;
+        }
+
+        private void SetBusy(bool value)
+        {
+            busy = value;
+            portCombo.Enabled = !value;
+            refreshButton.Enabled = !value;
+            readButton.Enabled = !value;
+            openFolderButton.Enabled = !value && !string.IsNullOrEmpty(sessionDirectory);
+        }
+
+        private void SetStatusSafe(string text, Color color)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new MethodInvoker(delegate { SetStatusSafe(text, color); }));
+                return;
+            }
+            statusLabel.Text = text;
+            statusLabel.ForeColor = color;
+        }
+
+        private void AppendLog(string text)
+        {
+            string line = "[" + DateTime.Now.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture) + "] " + text;
+            if (logBox != null)
+            {
+                logBox.AppendText(line + Environment.NewLine);
+                logBox.SelectionStart = logBox.TextLength;
+                logBox.ScrollToCaret();
+            }
+            if (!string.IsNullOrEmpty(sessionLogPath))
+            {
+                try { File.AppendAllText(sessionLogPath, line + Environment.NewLine, Encoding.UTF8); }
+                catch { }
+            }
+        }
+
+        private void AppendLogSafe(string text)
+        {
+            if (IsDisposed) return;
+            if (InvokeRequired)
+            {
+                BeginInvoke(new MethodInvoker(delegate { AppendLog(text); }));
+                return;
+            }
+            AppendLog(text);
+        }
+
+        private void OpenSessionFolder()
+        {
+            if (string.IsNullOrEmpty(sessionDirectory) || !Directory.Exists(sessionDirectory)) return;
+            try { System.Diagnostics.Process.Start("explorer.exe", sessionDirectory); }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Abrir pasta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
     }
 }
