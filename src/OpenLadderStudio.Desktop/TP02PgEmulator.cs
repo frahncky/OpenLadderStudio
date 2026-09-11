@@ -90,6 +90,7 @@ namespace ModernPC12
         private static bool HelloC0;
         private static string CaptureDirectory;
         private static string LogPath;
+        private static string RawPath;
         private static int UnknownCounter;
         private static int BinaryCounter;
 
@@ -150,6 +151,11 @@ namespace ModernPC12
                     byte[] chunk = new byte[Math.Min(available, 512)];
                     int read = Port.Read(chunk, 0, chunk.Length);
                     if (read <= 0) continue;
+
+                    byte[] received = new byte[read];
+                    Buffer.BlockCopy(chunk, 0, received, 0, read);
+                    SaveRawChunk(received);
+                    LogFrame("PC12 RAW", received, false);
 
                     for (int i = 0; i < read; i++)
                         RxBuffer.Add(chunk[i]);
@@ -256,9 +262,9 @@ namespace ModernPC12
             string root = AppDomain.CurrentDomain.BaseDirectory;
             CaptureDirectory = Path.Combine(root, "tp02-emulator-captures");
             Directory.CreateDirectory(CaptureDirectory);
-            LogPath = Path.Combine(
-                CaptureDirectory,
-                "TP02-Emulator-" + DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + ".txt");
+            string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+            LogPath = Path.Combine(CaptureDirectory, "TP02-Emulator-" + stamp + ".txt");
+            RawPath = Path.Combine(CaptureDirectory, "TP02-Emulator-" + stamp + "-raw.bin");
         }
 
         private static void SeedMemory()
@@ -267,7 +273,6 @@ namespace ModernPC12
 
             CopyToMemory(0x6000, System6000);
 
-            // Padroes observados no TP02 real: região de texto preenchida com 0x20.
             for (int address = 0x62B0; address < 0x6810; address += 2)
             {
                 Memory[address] = 0x00;
@@ -528,6 +533,22 @@ namespace ModernPC12
         {
             if (!FastMode && milliseconds > 0)
                 Thread.Sleep(milliseconds);
+        }
+
+        private static void SaveRawChunk(byte[] data)
+        {
+            if (data == null || data.Length == 0 || string.IsNullOrEmpty(RawPath)) return;
+            try
+            {
+                using (FileStream stream = new FileStream(RawPath, FileMode.Append, FileAccess.Write, FileShare.Read))
+                {
+                    stream.Write(data, 0, data.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("ERRO RAW", ex.Message);
+            }
         }
 
         private static void SaveUnknownFrame(byte[] frame)
