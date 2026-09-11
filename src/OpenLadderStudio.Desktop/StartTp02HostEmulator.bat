@@ -2,14 +2,16 @@
 setlocal
 cd /d "%~dp0"
 
-if not exist "OpenLadderTP02HostEmulator.exe" (
-    echo OpenLadderTP02HostEmulator.exe nao encontrado. Execute BuildTp02WbpWriter.bat.
-    exit /b 1
+set "EMU=OpenLadderTP02HostEmulator"
+
+if not exist "%EMU%.exe" (
+    call BuildTp02WbpWriter.bat
+    if errorlevel 1 exit /b 1
 )
 
 if "%~1"=="" goto :uso
 
-".\OpenLadderTP02HostEmulator.exe" --port=%~1
+".\%EMU%.exe" --port=%~1
 exit /b %ERRORLEVEL%
 
 :uso
