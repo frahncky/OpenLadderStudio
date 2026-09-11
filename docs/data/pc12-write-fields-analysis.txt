@@ -65,6 +65,30 @@ FIELD +0x6E : 3 write candidate(s)
   0x004B7939  MOV32_REG    value=?          bytes=[89 47 6E]
   0x004B7955  ADD32_REG    value=?          bytes=[01 4F 6E]
 
+DIRECT BRANCHES INTO KNOWN CONTROL POINTS
+--------------------------------------------------------------------------------------------
+0x004B6B8F collector-loop           incoming=1
+  from 0x004B789B JCC32_85   bytes=[0F 85 EE F2 FF FF]
+0x004B7799 generic-span-switch      incoming=1
+  from 0x004B7756 JCC8_7E    bytes=[7E 41]
+0x004B7869 record-count-boundary    incoming=6
+  from 0x004B7587 JCC32_85   bytes=[0F 85 DC 02 00 00]
+  from 0x004B77AF JMP32      bytes=[E9 B5 00 00 00]
+  from 0x004B77C5 JCC32_8C   bytes=[0F 8C 9E 00 00 00]
+  from 0x004B77F2 JCC8_7C    bytes=[7C 75]
+  from 0x004B7820 JCC8_7C    bytes=[7C 47]
+  from 0x004B784E JCC8_7C    bytes=[7C 19]
+0x004B7878 program-tail-check       incoming=1
+  from 0x004B786F JCC8_7C    bytes=[7C 07]
+0x004B7893 post-record-decision     incoming=3
+  from 0x004B6B8A JMP32      bytes=[E9 04 0D 00 00]
+  from 0x004B7883 JCC8_7E    bytes=[7E 0E]
+  from 0x004B7D90 JCC32_85   bytes=[0F 85 FD FA FF FF]
+0x004B78A1 frame-preparation        incoming=0
+0x004B7958 pg33-builder             incoming=0
+0x004B7D22 success-next-block-init  incoming=1
+  from 0x004B7CFE JCC8_74    bytes=[74 22]
+
 CHUNK INITIALIZATION
 --------------------------------------------------------------------------------------------
 
@@ -972,4 +996,4 @@ KNOWN CONSUMERS AT 0x004B7958
   +0x6A -> TX[3]
   +0x6E -> TX[4]
 
-GUARDRAIL: this trace establishes static data flow only; it never executes a write.
+GUARDRAIL: this trace establishes static data/control flow only; it never executes a write.
