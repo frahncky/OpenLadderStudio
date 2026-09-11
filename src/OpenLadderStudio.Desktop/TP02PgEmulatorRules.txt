@@ -1,0 +1,11 @@
+# TP02 PG Emulator - regras externas de resposta
+# Formato:
+#   CMD_HEX|DELAY_MS|RESPONSE_HEX|LABEL
+# Exemplo:
+#   A1|150|00 00 FF|ACK temporario para candidato A1
+#
+# Regras so devem ser adicionadas depois que o opcode aparecer em captura do PC12.
+# O build injeta estas regras no switch do emulador sem alterar TP02PgEmulator.cs.
+#
+# Comandos ja tratados nativamente e portanto proibidos aqui:
+#   F0 38 34 0A 14
