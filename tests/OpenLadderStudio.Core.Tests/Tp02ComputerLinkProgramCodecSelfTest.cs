@@ -14,11 +14,11 @@ namespace OpenLadderStudio.Core.Tests
             Console.WriteLine("Autoteste TP02 Computer Link RBP/WBP");
             Console.WriteLine();
 
-            Check("SCS do manual usa prefixo :",
-                Tp02ComputerLinkProgramCodec.BuildFrame(1, 5, "SCS", "Y00011") == ":01?5SCSY00011F7\r");
+            Check("SCS do manual usa prefixo ::",
+                Tp02ComputerLinkProgramCodec.BuildFrame(1, 5, "SCS", "Y00011") == "::01?5SCSY00011F7\r");
 
-            Check("RBP usa prefixo :",
-                Tp02ComputerLinkProgramCodec.BuildRbp(1, 0, 3, 5) == ":01?5RBP00000324\r");
+            Check("RBP do manual usa prefixo ::",
+                Tp02ComputerLinkProgramCodec.BuildRbp(1, 0, 3, 5) == "::01?5RBP00000324\r");
 
             List<Tp02MachineWord> three = new List<Tp02MachineWord>();
             three.Add(new Tp02MachineWord(0x00, 0x10, 0x00));
@@ -26,7 +26,7 @@ namespace OpenLadderStudio.Core.Tests
             three.Add(new Tp02MachineWord(0x20, 0x40, 0x00));
             Check("WBP 3 passos",
                 Tp02ComputerLinkProgramCodec.BuildWbp(1, 0, three, 5)
-                == ":01?5WBP000003001000002100204000B5\r");
+                == "::01?5WBP000003001000002100204000B5\r");
 
             List<Tp02MachineWord> hundred = new List<Tp02MachineWord>();
             int i;
