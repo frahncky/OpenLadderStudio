@@ -1,6 +1,25 @@
-# Campanha de descoberta da escrita PG do WEG TP02
+# Campanha de validação da escrita PG do WEG TP02
 
-Objetivo: descobrir de forma determinística a sequência de comandos usada pelo PC12 para gravar cada classe de dados no TP02, usando somente o emulador PG e portas COM virtuais.
+Objetivo: validar no PC12 e, por último, no TP02 físico a sequência de gravação já reconstruída offline, e descobrir separadamente as demais classes de escrita.
+
+## Estado já confirmado offline
+
+`Write Program Data` usa o comando **`0x33`**. O construtor original do PC12 foi executado dentro do Unicorn com a rotina TX interceptada, produzindo frames idênticos ao modelo independente.
+
+Estrutura:
+
+```text
+33 | LEN | 00 | START_H | START_L | 2*W | HIGH/LOW... | EXTERNAL... | CHK
+LEN = 3*W + 4
+1 <= W <= 80
+soma(frame) mod 256 = FF
+```
+
+O PC12 fecha um bloco normal ao atingir 20 instruções lógicas. Cada instrução ocupa 1..4 machine words, portanto um bloco pode chegar a 80 words.
+
+Depois de sucesso, o próximo bloco começa no cursor real de passos. O PC12 tenta cada frame até três vezes em caso de timeout, erro de checksum ou erro de status.
+
+O quadro `00 00 FF` é aceito pelo validador genérico do PC12 e é usado pelo emulador como **ACK sintético de laboratório**. Isso não prova que seja o ACK físico real do TP02 para `0x33`.
 
 ## Regras da campanha
 
@@ -9,155 +28,124 @@ Objetivo: descobrir de forma determinística a sequência de comandos usada pelo
 - Não conectar o emulador à COM física do PLC.
 - Reiniciar o emulador antes de cada caso para gerar captura RAW independente.
 - Marcar somente uma opção de `PLC > Write` por caso.
-- Alterar apenas um valor entre A e B.
+- Alterar apenas uma variável entre A e B.
 - Rodar `AnalyzeLatestTp02Capture.bat` após cada sessão.
-- Preservar os arquivos `*-raw.bin`, `*.frames.csv` e o log textual.
+- Preservar `*-raw.bin`, `*.frames.csv`, `*-pg33-program.bin` e o log textual.
 
 ## Classes de escrita expostas pelo PC12
 
-O PC12 permite transferir separadamente:
+1. `Write Program Data` — **PG33 já identificado**.
+2. `Write System Data` — memória `WSxxx`.
+3. `Write Vxxx Data`.
+4. `Write Dxxx Data`.
+5. `Write WCxxx Data`.
+6. `Write FLxxx Data`.
 
-1. `Write Program Data` — programa executável.
-2. `Write System Data` — memória de sistema `WSxxx`.
-3. `Write Vxxx Data` — registradores `Vxxx`.
-4. `Write Dxxx Data` — registradores `Dxxx`.
-5. `Write WCxxx Data` — registradores `WCxxx`.
-6. `Write FLxxx Data` — arquivos de texto `FL001..FL130`.
+## Matriz atualizada
 
-Isso permite identificar o protocolo por classe, sem misturar áreas de memória.
-
-## Matriz mínima
-
-| ID | Operação PC12 | Variação controlada | O que procurar |
+| ID | Operação | Variação | Objetivo atual |
 |---|---|---|---|
-| R0 | Read Program Data | nenhuma | sequência-base já conhecida |
-| W1A | Write Program Data | programa mínimo A | primeiro opcode desconhecido e sequência de download |
-| W1B | Write Program Data | mudar X000 para X001 | bytes de endereço do operando |
-| W1C | Write Program Data | mudar X000 para Y000 | código de tipo de dispositivo |
-| W1D | Write Program Data | acrescentar 1 rung | tamanho/paginação/END |
-| W2A | Write System Data | WS sem alteração adicional | opcode da área WS |
-| W2B | Write System Data | alterar somente 1 WS | endereço e formato da System Memory |
-| W3A | Write Vxxx Data | V001=1 | opcode/endereço de V |
-| W3B | Write Vxxx Data | V001=2 | posição e endianess do valor |
-| W4A | Write Dxxx Data | D001=1 | opcode/endereço de D |
-| W4B | Write Dxxx Data | D001=2 | posição e endianess do valor |
-| W5A | Write WCxxx Data | WC001=1 | opcode/endereço de WC |
-| W5B | Write WCxxx Data | WC001=2 | posição e endianess do valor |
-| W6A | Write FLxxx Data | FL001="A" | opcode/formato de texto |
-| W6B | Write FLxxx Data | FL001="B" | byte de caractere e tamanho |
+| R0 | Read Program Data | nenhuma | controle da sessão de leitura |
+| W1A | Write Program Data | programa mínimo | confirmar `0x33` via PC12 real contra emulador |
+| W1B | Write Program Data | mudar só o endereço X | validar bytes do machine word |
+| W1C | Write Program Data | mudar só o tipo X/Y | validar classe de dispositivo |
+| W1D | Write Program Data | >20 instruções | confirmar divisão em múltiplos PG33 |
+| W1E | Write Program Data | `--no-pg33-ack` | observar retries/timeout do PC12 |
+| W2A/B | Write System Data | 1 WS controlado | descobrir opcode e formato WS |
+| W3A/B | Write Vxxx Data | V001=1/2 | opcode/endereço/endianess V |
+| W4A/B | Write Dxxx Data | D001=1/2 | opcode/endereço/endianess D |
+| W5A/B | Write WCxxx Data | WC001=1/2 | opcode/endereço/endianess WC |
+| W6A/B | Write FLxxx Data | FL001=A/B | opcode/formato FL |
 
-## Ordem recomendada
+## W1A - controle do PG33
 
-Executar primeiro:
+Use o programa mínimo cuja codificação reversa já é conhecida:
 
 ```text
-R0
-W1A
-W1B
-W1C
-W1D
+STR X001  -> 00 10 00
+OUT Y001  -> 20 40 00
+END       -> 00 70 00
 ```
 
-Com isso deve ser possível fechar o fluxo de `Write Program Data`, que é a prioridade do OpenLadder.
-
-Depois executar:
+No PG33 os planos ficam:
 
 ```text
-W2A/W2B
-W3A/W3B
-W4A/W4B
-W5A/W5B
-W6A/W6B
+HIGH/LOW: 00 10 20 40 00 70
+EXTERNAL: 00 00 00
 ```
 
-Esses casos fecham as demais áreas de dados do PC12.
-
-## Programa mínimo recomendado
-
-Caso A:
+Para `start=0000`, a geometria esperada é:
 
 ```text
-STR X000
-OUT Y000
-END
+33 0D 00 00 00 06
+00 10 20 40 00 70
+00 00 00
+CHK
 ```
 
-Caso B:
+O checksum exato depende dos bytes anteriores e deve fechar a soma em `FF`.
 
-```text
-STR X001
-OUT Y000
-END
+O analisador reconstruirá os três machine words e marcará `W1A=True`.
+
+## W1D - paginação
+
+Faça um programa com 21 instruções lógicas simples. O comportamento previsto pelo PC12 reconstruído é:
+
+- primeiro frame: 20 instruções lógicas;
+- segundo frame: restante;
+- `START` do segundo frame = cursor real de passos após as palavras do primeiro bloco, não simplesmente `START + 20`.
+
+Essa diferença importa quando uma instrução ocupa 2, 3 ou 4 machine words.
+
+## W1E - retry
+
+Execute contra o emulador com:
+
+```bat
+StartTp02Emulator.bat COM11 --no-pg33-ack
 ```
 
-Caso C:
+A expectativa reconstruída é até três transmissões do mesmo frame antes da falha. Depois repita com o ACK sintético habilitado; o PC12 deve avançar após a primeira resposta aceita.
 
-```text
-STR Y000
-OUT Y001
-END
-```
-
-O objetivo não é testar a lógica, e sim gerar diferenças pequenas e localizadas no payload de gravação.
-
-## Comparação
-
-Exemplo:
+## Captura e comparação
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\AnalyzeTp02Capture.ps1 `
-  -Path .\captures\W1A-raw.bin `
-  -Compare .\captures\W1B-raw.bin
+  -Path .\tp02-emulator-captures\W1A-raw.bin `
+  -Compare .\tp02-emulator-captures\W1B-raw.bin
 ```
 
-Interpretação:
+Para frames `0x33`, o analisador mostra diretamente:
 
-- mesmo `CMD`, mesmo `LEN`, poucos bytes diferentes: provavelmente payload/endereço;
-- `CMD` diferente entre classes: provável opcode específico da área;
-- `LEN` cresce com o número de rungs: provável bloco de programa variável;
-- quantidade de frames cresce: provável paginação;
-- frame curto somente no início/fim: provável comando de abertura/finalização;
-- resposta genérica `00 00 FF` aceita e PC12 continua: forte candidato a ACK simples, ainda não prova a resposta real do PLC.
+- `START`;
+- quantidade de machine words;
+- words reconstruídos `(HIGH LOW EXTERNAL)`;
+- reconhecimento de W1A.
 
 ## Estado STOP
 
-O PC12 documenta que o aplicativo só pode ser transferido quando o controlador está em STOP. No emulador, a resposta padrão do handshake deve portanto ser o estado observado correspondente ao TP02 parado:
+A transferência de programa deve ocorrer com o controlador em STOP. No emulador, o handshake padrão continua:
 
 ```text
 CON-ICB<CR>
 <- 80 01 09 75
 ```
 
-A resposta `C0 01 09 35` deve ser usada apenas em testes específicos de estado.
+`C0 01 09 35` fica reservado para testes específicos de estado RUN.
+
+## Critério para fechar Write Program Data
+
+Já temos: opcode `0x33`, geometria, endereço inicial, quantidade de words, planos HIGH/LOW e EXTERNAL, checksum, limite de bloco, regra de paginação e retry.
+
+Restam para considerar o caminho físico fechado:
+
+1. capturar a resposta real do TP02 ao `0x33`;
+2. confirmar a sequência completa de abertura/conclusão em uma gravação real controlada;
+3. confirmar erros/NAK físicos;
+4. obter readback/compare consistente entre o programa escrito por PG33 e o lido por `34`.
+
+Somente depois dessa validação o envio PG33 deve ser habilitado contra um TP02 físico pelo OpenLadder.
 
 ## Fases posteriores
 
-Somente depois de fechar `Write Program Data` estudar, ainda contra o emulador:
-
-- RUN;
-- STOP;
-- Password;
-- EEPROM -> PLC;
-- PLC -> EEPROM;
-- Compare Program;
-- Clear System;
-- Clear Data;
-- Clear Program;
-- Clear All Memory.
-
-Os comandos `Clear*` permanecem proibidos contra o PLC físico durante a engenharia reversa.
-
-## Critério para considerar Write Program Data fechado
-
-O fluxo será considerado suficientemente fechado para implementação no OpenLadder quando conhecermos:
-
-1. pré-condições e estado exigido;
-2. comando de início;
-3. formato de endereço e tamanho;
-4. formato de cada bloco de programa;
-5. paginação;
-6. checksum;
-7. resposta esperada a cada etapa;
-8. indicação de erro/NAK;
-9. comando de finalização;
-10. forma de validar a gravação por leitura/compare.
+Depois de `Write Program Data`, estudar contra o emulador as classes WS, V, D, WC e FL e, separadamente, RUN, STOP, Password, EEPROM e operações Clear. Comandos de limpeza permanecem proibidos contra o PLC físico durante a engenharia reversa.
