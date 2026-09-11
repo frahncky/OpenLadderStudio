@@ -1,9 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
 $shellPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
-$probePath = Join-Path (Get-Location) 'TP02Pg33NoOpProbeForm.cs'
+$probePath = Join-Path (Get-Location) 'TP02Pg33NoOpProbeForm.cs.in'
 if (-not (Test-Path $shellPath)) { throw 'UniversalStudioShell.build.cs nao encontrado.' }
-if (-not (Test-Path $probePath)) { throw 'TP02Pg33NoOpProbeForm.cs nao encontrado.' }
+if (-not (Test-Path $probePath)) { throw 'TP02Pg33NoOpProbeForm.cs.in nao encontrado.' }
 
 function Replace-Required([string]$text, [string]$needle, [string]$replacement, [string]$label) {
     $needleLf = $needle.Replace("`r`n", "`n")
@@ -60,13 +60,19 @@ $idx = $shell.IndexOf($methodNeedle, [System.StringComparison]::Ordinal)
 if ($idx -lt 0) { throw 'Metodo ShowReader nao encontrado para inserir PG33 probe.' }
 $shell = $shell.Substring(0, $idx) + $methodInsert + $shell.Substring($idx)
 
-# Carrega a fonte da sonda e aplica um gate de seguranca especifico para o
-# primeiro ensaio fisico: somente o programa misto de 23 passos ja lido e
+# Carrega o template da sonda e aplica todos os guardrails antes de incorpora-lo
+# ao shell temporario. O template usa .cs.in para nao ser tratado como unidade
+# standalone pelo validador de projeto.
+$probe = [System.IO.File]::ReadAllText($probePath)
+
+$dpiNeedle = '            AutoScaleMode = AutoScaleMode.Dpi;'
+$dpiReplacement = '            AutoScaleDimensions = new SizeF(96F, 96F);' + "`r`n" + $dpiNeedle
+$probe = Replace-Required $probe $dpiNeedle $dpiReplacement 'AutoScaleDimensions PG33 probe'
+
+# Primeiro ensaio fisico: somente o programa misto de 23 passos ja lido e
 # confirmado em bancada pode ser reenviado. BRAW do 34 NAO e reutilizado como
 # EXTERNAL do 33; para essa assinatura canonica todos os EXTERNAL confirmados
 # offline sao 00.
-$probe = [System.IO.File]::ReadAllText($probePath)
-
 $gateAnchor = @'
                     if (before.Count > 80)
                         throw new InvalidOperationException("Esta primeira prova física aceita somente programas de até 80 passos. O programa atual tem "
@@ -146,4 +152,4 @@ $body = [string]::Join("`r`n", $bodyLines.ToArray()).Trim()
 $shell = $prefix + $shell.TrimStart([char]0xFEFF) + "`r`n`r`n" + $body + "`r`n"
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 PG33 Physical No-Op Probe V111 aplicado com gate de assinatura e EXTERNAL seguro.'
+Write-Host 'TP02 PG33 Physical No-Op Probe V111 aplicado com gate de assinatura, DPI e EXTERNAL seguro.'
