@@ -147,7 +147,6 @@ $acqReplacement = @'
                 recovery.DiscardInBuffer();
                 recovery.DiscardOutBuffer();
 
-                // Nenhum byte e transmitido: apenas condicionamento das linhas.
                 Thread.Sleep(700);
                 recovery.DtrEnable = true;
                 recovery.RtsEnable = false;
@@ -174,7 +173,6 @@ $acqReplacement = @'
 
 $shell = $shell.Substring(0, $start) + $acqReplacement + $shell.Substring($end)
 
-# Dar mais margem antes de desistir, sempre SEM escrita se o link nao foi adquirido.
 $shell = $shell.Replace('for (int round = 1; round <= 3 && !testWritten; round++)',
     'for (int round = 1; round <= 5 && !testWritten; round++)')
 $shell = $shell.Replace('for (int round = 1; round <= 3 && !restored; round++)',
@@ -194,3 +192,8 @@ $shell = $shell.Replace('PASS PG33 CHANGE+RESTORE v1.18', 'PASS PG33 CHANGE+REST
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
 Write-Host 'TP02 PG33 Link Recovery V119 aplicado: full 8O1 DTR/RTS sweep, line recovery sem TX e 5 rodadas pre-escrita.'
+
+# v1.20 e uma especializacao posterior: somente OFF/OFF pode qualificar a sessao
+# binaria; os demais perfis ficam restritos a condicionamento do enlace.
+& (Join-Path (Get-Location) 'PrepareTp02Pg33QualifiedWriteV120.ps1')
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
