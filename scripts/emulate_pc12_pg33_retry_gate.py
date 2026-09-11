@@ -73,7 +73,12 @@ def emulate(exe, outcomes):
     Depois do fim da lista, repete a última tripla.
     """
     data, image_base, sections = load_pe(exe)
-    direct_rx_refs = scan_direct_rx_refs(data, sections, image_base)
+
+    # load_pe() usa tuplas de seção enxutas para mapear o Unicorn; as rotinas
+    # va_to_offset/offset_to_va do analisador estático usam a forma com nome da
+    # seção. Gere a segunda visão do mesmo PE apenas para a varredura de refs.
+    static_image_base, static_sections = pe_info(data)
+    direct_rx_refs = scan_direct_rx_refs(data, static_sections, static_image_base)
 
     mu = Uc(UC_ARCH_X86, UC_MODE_32)
     map_image(mu, data, image_base, sections)
