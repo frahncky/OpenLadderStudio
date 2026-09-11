@@ -81,7 +81,7 @@ if errorlevel 1 goto :erro
 ".\OpenLadderCoreTest.exe"
 if errorlevel 1 goto :erro
 
-"%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:OpenLadderStudio.Core.Tests.Tp02ComputerLinkProgramCodecSelfTest /out:"OpenLadderTP02ComputerLinkTest.exe" /reference:System.dll "..\..\src\OpenLadderStudio.Core\Tp02TargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02ComputerLinkProgramCodec.cs" "..\..\tests\OpenLadderStudio.Core.Tests\Tp02ComputerLinkProgramCodecSelfTest.cs"
+"%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:OpenLadderStudio.Core.Tests.Tp02ComputerLinkProgramCodecSelfTest /out:"OpenLadderTP02ComputerLinkTest.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\Tp02TargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02ComputerLinkProgramCodec.cs" "..\..\tests\OpenLadderStudio.Core.Tests\Tp02ComputerLinkProgramCodecSelfTest.cs"
 if errorlevel 1 goto :erro
 
 ".\OpenLadderTP02ComputerLinkTest.exe"
