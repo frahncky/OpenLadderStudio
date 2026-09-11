@@ -7,9 +7,14 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Assinatura conhecida do programa minimo W1A, derivada do encoder PC12 ja
-# reverso no projeto: STR X001 / OUT Y001 / END.
-[byte[]]$W1ASignature = 0x00,0x10,0x00,0x20,0x40,0x00,0x00,0x70,0x00
+function New-ObjectCompat {
+    param([hashtable]$Properties)
+    $o = New-Object PSObject
+    foreach ($key in $Properties.Keys) {
+        $o | Add-Member NoteProperty $key $Properties[$key]
+    }
+    return $o
+}
 
 function New-FrameObject {
     param(
@@ -21,34 +26,43 @@ function New-FrameObject {
         [string]$Checksum,
         [string]$Kind,
         [string]$Hex,
-        [int]$SignatureOffset = -1
+        [string]$Pg33Start = '-',
+        [int]$Pg33Words = -1,
+        [bool]$W1A = $false,
+        [string]$WordsHex = ''
     )
-    $o = New-Object PSObject
-    $o | Add-Member NoteProperty Seq $Seq
-    $o | Add-Member NoteProperty Offset $Offset
-    $o | Add-Member NoteProperty Cmd $Cmd
-    $o | Add-Member NoteProperty Len $Len
-    $o | Add-Member NoteProperty Total $Total
-    $o | Add-Member NoteProperty Checksum $Checksum
-    $o | Add-Member NoteProperty Kind $Kind
-    $o | Add-Member NoteProperty SignatureOffset $SignatureOffset
-    $o | Add-Member NoteProperty Hex $Hex
-    return $o
+    return (New-ObjectCompat @{
+        Seq = $Seq
+        Offset = $Offset
+        Cmd = $Cmd
+        Len = $Len
+        Total = $Total
+        Checksum = $Checksum
+        Kind = $Kind
+        Pg33Start = $Pg33Start
+        Pg33Words = $Pg33Words
+        W1A = $W1A
+        WordsHex = $WordsHex
+        Hex = $Hex
+    })
 }
 
 function New-AnalysisObject {
     param([string]$ResolvedPath, [int]$Bytes, [object[]]$Frames)
-    $o = New-Object PSObject
-    $o | Add-Member NoteProperty Path $ResolvedPath
-    $o | Add-Member NoteProperty Bytes $Bytes
-    $o | Add-Member NoteProperty Frames $Frames
-    return $o
+    return (New-ObjectCompat @{
+        Path = $ResolvedPath
+        Bytes = $Bytes
+        Frames = $Frames
+    })
 }
 
 function Get-LatestCapture {
     $dir = Join-Path $ScriptDir 'tp02-emulator-captures'
     if (-not (Test-Path $dir)) { return $null }
-    $file = Get-ChildItem -Path $dir -Filter '*-raw.bin' | Where-Object { -not $_.PSIsContainer } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $file = Get-ChildItem -Path $dir -Filter '*-raw.bin' |
+        Where-Object { -not $_.PSIsContainer } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
     if ($file -eq $null) { return $null }
     return $file.FullName
 }
@@ -72,29 +86,6 @@ function Test-SumFF {
     return ($sum -eq 0xFF)
 }
 
-function Find-BytePattern {
-    param(
-        [byte[]]$Data,
-        [int]$Offset,
-        [int]$Length,
-        [byte[]]$Pattern
-    )
-    if ($Pattern -eq $null -or $Pattern.Length -eq 0) { return -1 }
-    $last = $Offset + $Length - $Pattern.Length
-    if ($last -lt $Offset) { return -1 }
-    for ($p = $Offset; $p -le $last; $p++) {
-        $ok = $true
-        for ($j = 0; $j -lt $Pattern.Length; $j++) {
-            if ($Data[$p + $j] -ne $Pattern[$j]) {
-                $ok = $false
-                break
-            }
-        }
-        if ($ok) { return ($p - $Offset) }
-    }
-    return -1
-}
-
 function Format-Hex {
     param([byte[]]$Data, [int]$Offset, [int]$Length, [int]$Max = 96)
     $n = [Math]::Min($Length, $Max)
@@ -110,6 +101,7 @@ function Format-Hex {
 function Get-KnownName {
     param([byte]$Cmd)
     switch ($Cmd) {
+        0x33 { return '33 Write Program Data (confirmado offline PC12)' }
         0xF0 { return 'F0 preflight/status' }
         0x38 { return '38 preambulo leitura' }
         0x34 { return '34 leitura de programa' }
@@ -118,6 +110,93 @@ function Get-KnownName {
         0x0F { return '0F candidato destrutivo/clear - NAO usar em PLC fisico' }
         default { return 'DESCONHECIDO' }
     }
+}
+
+function Decode-Pg33 {
+    param([byte[]]$Data, [int]$Offset, [int]$Total)
+
+    $bad = {
+        param([string]$Reason)
+        return (New-ObjectCompat @{
+            Valid = $false
+            Reason = $Reason
+            Start = 0
+            WordCount = 0
+            WordsHex = ''
+            W1A = $false
+        })
+    }
+
+    if ($Total -lt 10) { return (& $bad 'quadro curto') }
+    if ($Data[$Offset] -ne 0x33) { return (& $bad 'opcode != 33') }
+    if ($Data[$Offset + 2] -ne 0x00) { return (& $bad 'TX[2] != 00') }
+
+    $hlBytes = [int]$Data[$Offset + 5]
+    if ($hlBytes -le 0 -or (($hlBytes -band 1) -ne 0)) {
+        return (& $bad 'TX[5] nao e 2*W par')
+    }
+
+    $wordCount = [int]($hlBytes / 2)
+    if ($wordCount -lt 1 -or $wordCount -gt 80) {
+        return (& $bad 'W fora de 1..80')
+    }
+
+    $expectedLen = (3 * $wordCount) + 4
+    if ([int]$Data[$Offset + 1] -ne $expectedLen) {
+        return (& $bad ('LEN={0}, esperado={1}' -f [int]$Data[$Offset + 1],$expectedLen))
+    }
+
+    if ($Total -ne ($expectedLen + 3)) {
+        return (& $bad 'comprimento total inconsistente')
+    }
+
+    $start = ([int]$Data[$Offset + 3] * 256) + [int]$Data[$Offset + 4]
+    if ($start -lt 0 -or $start -ge 4000 -or ($start + $wordCount) -gt 4000) {
+        return (& $bad 'faixa de passos fora de 0..3999')
+    }
+
+    $hlStart = $Offset + 6
+    $exStart = $hlStart + $hlBytes
+    $checksumIndex = $Offset + $Total - 1
+    if (($exStart + $wordCount) -ne $checksumIndex) {
+        return (& $bad 'planos HL/EX nao fecham antes do checksum')
+    }
+
+    $words = New-Object System.Collections.Generic.List[string]
+    $w1aBytes = New-Object System.Collections.Generic.List[int]
+
+    for ($i = 0; $i -lt $wordCount; $i++) {
+        $h = [int]$Data[$hlStart + (2 * $i)]
+        $l = [int]$Data[$hlStart + (2 * $i) + 1]
+        $e = [int]$Data[$exStart + $i]
+        $words.Add(('{0:X2} {1:X2} {2:X2}' -f $h,$l,$e))
+        if ($i -lt 3) {
+            $w1aBytes.Add($h)
+            $w1aBytes.Add($l)
+            $w1aBytes.Add($e)
+        }
+    }
+
+    $isW1A = $false
+    if ($wordCount -ge 3 -and $w1aBytes.Count -ge 9) {
+        [int[]]$expected = 0x00,0x10,0x00,0x20,0x40,0x00,0x00,0x70,0x00
+        $isW1A = $true
+        for ($j = 0; $j -lt 9; $j++) {
+            if ($w1aBytes[$j] -ne $expected[$j]) {
+                $isW1A = $false
+                break
+            }
+        }
+    }
+
+    return (New-ObjectCompat @{
+        Valid = $true
+        Reason = ''
+        Start = $start
+        WordCount = $wordCount
+        WordsHex = [string]::Join(' | ', $words.ToArray())
+        W1A = $isW1A
+    })
 }
 
 function Parse-Capture {
@@ -147,18 +226,40 @@ function Parse-Capture {
             if ($total -ge 3 -and ($i + $total) -le $data.Length) {
                 if (Test-SumFF -Data $data -Offset $i -Length $total) {
                     $seq++
-                    $cmd = $data[$i]
+                    $cmd = [byte]$data[$i]
                     $kind = Get-KnownName -Cmd $cmd
-                    $sig = Find-BytePattern -Data $data -Offset $i -Length $total -Pattern $W1ASignature
-                    if ($sig -ge 0) {
-                        if ($kind -eq 'DESCONHECIDO') {
-                            $kind = 'CANDIDATO WRITE PROGRAM - contem assinatura W1A'
+                    $pgStart = '-'
+                    $pgWords = -1
+                    $w1a = $false
+                    $wordsHex = ''
+
+                    if ($cmd -eq 0x33) {
+                        $pg = Decode-Pg33 -Data $data -Offset $i -Total $total
+                        if ($pg.Valid) {
+                            $pgStart = ('0x{0:X4}' -f $pg.Start)
+                            $pgWords = $pg.WordCount
+                            $w1a = $pg.W1A
+                            $wordsHex = $pg.WordsHex
+                            if ($w1a) { $kind += ' | W1A reconhecido' }
                         }
                         else {
-                            $kind += ' | contem assinatura W1A'
+                            $kind += ' | GEOMETRIA INVALIDA: ' + $pg.Reason
                         }
                     }
-                    $frames.Add((New-FrameObject -Seq $seq -Offset $i -Cmd ('0x{0:X2}' -f $cmd) -Len $payloadLen -Total $total -Checksum 'FF OK' -Kind $kind -Hex (Format-Hex -Data $data -Offset $i -Length $total) -SignatureOffset $sig))
+
+                    $frames.Add((New-FrameObject `
+                        -Seq $seq `
+                        -Offset $i `
+                        -Cmd ('0x{0:X2}' -f $cmd) `
+                        -Len $payloadLen `
+                        -Total $total `
+                        -Checksum 'FF OK' `
+                        -Kind $kind `
+                        -Hex (Format-Hex -Data $data -Offset $i -Length $total) `
+                        -Pg33Start $pgStart `
+                        -Pg33Words $pgWords `
+                        -W1A $w1a `
+                        -WordsHex $wordsHex))
                     $i += $total
                     continue
                 }
@@ -188,7 +289,22 @@ function Show-Analysis {
         return
     }
 
-    $Result.Frames | Format-Table Seq,Offset,Cmd,Len,Total,Checksum,SignatureOffset,Kind -AutoSize
+    $Result.Frames | Format-Table Seq,Offset,Cmd,Len,Total,Checksum,Pg33Start,Pg33Words,W1A,Kind -AutoSize
+
+    Write-Host ''
+    Write-Host 'Write Program Data / PG33:'
+    $pg33 = @($Result.Frames | Where-Object { $_.Cmd -eq '0x33' })
+    if ($pg33.Count -eq 0) {
+        Write-Host '  nenhum quadro 0x33 encontrado.' -ForegroundColor Yellow
+    }
+    else {
+        foreach ($f in $pg33) {
+            Write-Host ('  #{0} start={1} words={2} W1A={3}' -f $f.Seq,$f.Pg33Start,$f.Pg33Words,$f.W1A) -ForegroundColor Green
+            if (-not [string]::IsNullOrWhiteSpace($f.WordsHex)) {
+                Write-Host ('     words: {0}' -f $f.WordsHex)
+            }
+        }
+    }
 
     Write-Host ''
     Write-Host 'Frames desconhecidos:'
@@ -203,23 +319,14 @@ function Show-Analysis {
     }
 
     Write-Host ''
-    Write-Host 'Candidatos a Write Program Data pela assinatura W1A:'
-    $w1a = @($Result.Frames | Where-Object { $_.SignatureOffset -ge 0 })
-    if ($w1a.Count -eq 0) {
-        Write-Host '  nenhum frame contem a sequencia 00 10 00 20 40 00 00 70 00.' -ForegroundColor Yellow
-    }
-    else {
-        foreach ($f in $w1a) {
-            Write-Host ('  #{0} cmd={1} len={2} assinatura_no_offset_do_frame={3}' -f $f.Seq,$f.Cmd,$f.Len,$f.SignatureOffset) -ForegroundColor Green
-            Write-Host ('     {0}' -f $f.Hex)
-        }
-    }
-
-    Write-Host ''
     Write-Host 'Resumo por opcode:'
-    $Result.Frames | Where-Object { $_.Cmd -ne 'ASCII' } | Group-Object Cmd | Sort-Object Name | ForEach-Object {
-        Write-Host ('  {0}: {1} frame(s)' -f $_.Name,$_.Count)
-    }
+    $Result.Frames |
+        Where-Object { $_.Cmd -ne 'ASCII' } |
+        Group-Object Cmd |
+        Sort-Object Name |
+        ForEach-Object {
+            Write-Host ('  {0}: {1} frame(s)' -f $_.Name,$_.Count)
+        }
 }
 
 function Compare-Analysis {
@@ -249,8 +356,18 @@ function Compare-Analysis {
 
         if ($fa.Hex -ne $fb.Hex) {
             Write-Host ('* frame #{0} mudou' -f ($i + 1)) -ForegroundColor Cyan
-            Write-Host ('  A {0} {1}  {2}' -f $fa.Cmd,$fa.Kind,$fa.Hex)
-            Write-Host ('  B {0} {1}  {2}' -f $fb.Cmd,$fb.Kind,$fb.Hex)
+            Write-Host ('  A {0} {1}' -f $fa.Cmd,$fa.Kind)
+            if ($fa.Cmd -eq '0x33') {
+                Write-Host ('    start={0} words={1}: {2}' -f $fa.Pg33Start,$fa.Pg33Words,$fa.WordsHex)
+            } else {
+                Write-Host ('    {0}' -f $fa.Hex)
+            }
+            Write-Host ('  B {0} {1}' -f $fb.Cmd,$fb.Kind)
+            if ($fb.Cmd -eq '0x33') {
+                Write-Host ('    start={0} words={1}: {2}' -f $fb.Pg33Start,$fb.Pg33Words,$fb.WordsHex)
+            } else {
+                Write-Host ('    {0}' -f $fb.Hex)
+            }
         }
     }
 }
