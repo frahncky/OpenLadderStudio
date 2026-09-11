@@ -1,0 +1,961 @@
+PC12 WRITE PLC PROGRAM - FOCUSED TX STATIC ANALYSIS
+====================================================================================================
+mode=OFFLINE ONLY; no serial port, no PLC, no TX
+write_range=0x004B6A00..0x004B7E20
+tx_routine=0x0046F5E6
+tx_buffer=0x004FA7A8..0x004FA80F tx_len=0x004FA8AC
+direct_tx_calls=15
+
+DIRECT TX CALL SITES
+----------------------------------------------------------------------------------------------------
+01. callsite=0x004B7A1A file+0x000B701A bytes=[E8 C7 7B FB FF]
+02. callsite=0x004B7A41 file+0x000B7041 bytes=[E8 A0 7B FB FF]
+03. callsite=0x004B7A68 file+0x000B7068 bytes=[E8 79 7B FB FF]
+04. callsite=0x004B7A9D file+0x000B709D bytes=[E8 44 7B FB FF]
+05. callsite=0x004B7AC4 file+0x000B70C4 bytes=[E8 1D 7B FB FF]
+06. callsite=0x004B7AEB file+0x000B70EB bytes=[E8 F6 7A FB FF]
+07. callsite=0x004B7B12 file+0x000B7112 bytes=[E8 CF 7A FB FF]
+08. callsite=0x004B7B39 file+0x000B7139 bytes=[E8 A8 7A FB FF]
+09. callsite=0x004B7B60 file+0x000B7160 bytes=[E8 81 7A FB FF]
+10. callsite=0x004B7B87 file+0x000B7187 bytes=[E8 5A 7A FB FF]
+11. callsite=0x004B7BAE file+0x000B71AE bytes=[E8 33 7A FB FF]
+12. callsite=0x004B7BD5 file+0x000B71D5 bytes=[E8 0C 7A FB FF]
+13. callsite=0x004B7BFC file+0x000B71FC bytes=[E8 E5 79 FB FF]
+14. callsite=0x004B7C23 file+0x000B7223 bytes=[E8 BE 79 FB FF]
+15. callsite=0x004B7C4A file+0x000B724A bytes=[E8 97 79 FB FF]
+
+PRE-TX BUFFER/LENGTH STORES
+----------------------------------------------------------------------------------------------------
+TX#01 callsite=0x004B7A1A window=0x004B797A..0x004B7A1A stores=4
+  0x004B797F  TX[03][0x004FA7AB]   MOV8_REG   value=? bytes=[88 0D AB A7 4F 00]
+  0x004B7988  TX[04][0x004FA7AC]   MOV8_AL    value=? bytes=[A2 AC A7 4F 00]
+  0x004B7990  TX[05][0x004FA7AD]   MOV8_REG   value=? bytes=[88 15 AD A7 4F 00]
+  0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
+TX#02 callsite=0x004B7A41 window=0x004B79A1..0x004B7A41 stores=1
+  0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
+TX#03 callsite=0x004B7A68 window=0x004B79C8..0x004B7A68 stores=1
+  0x004B79EE  TX_LEN[0x004FA8AC]   MOV32_EAX  value=? bytes=[A3 AC A8 4F 00]
+TX#04 callsite=0x004B7A9D window=0x004B79FD..0x004B7A9D stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#05 callsite=0x004B7AC4 window=0x004B7A24..0x004B7AC4 stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#06 callsite=0x004B7AEB window=0x004B7A4B..0x004B7AEB stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#07 callsite=0x004B7B12 window=0x004B7A72..0x004B7B12 stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#08 callsite=0x004B7B39 window=0x004B7A99..0x004B7B39 stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#09 callsite=0x004B7B60 window=0x004B7AC0..0x004B7B60 stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#10 callsite=0x004B7B87 window=0x004B7AE7..0x004B7B87 stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#11 callsite=0x004B7BAE window=0x004B7B0E..0x004B7BAE stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#12 callsite=0x004B7BD5 window=0x004B7B35..0x004B7BD5 stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#13 callsite=0x004B7BFC window=0x004B7B5C..0x004B7BFC stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#14 callsite=0x004B7C23 window=0x004B7B83..0x004B7C23 stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+TX#15 callsite=0x004B7C4A window=0x004B7BAA..0x004B7C4A stores=0
+  (nenhum MOV absoluto simples ao TX no recorte)
+
+FOCUSED OBJDUMP WINDOWS
+----------------------------------------------------------------------------------------------------
+### TX#01 0x004B7A1A ; disasm 0x004B79AA..0x004B7A42
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b79aa <.text+0xb69aa>:
+  4b79aa:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b79ad:	40                   	inc    eax
+  4b79ae:	8b 57 62             	mov    edx,DWORD PTR [edi+0x62]
+  4b79b1:	3b c2                	cmp    eax,edx
+  4b79b3:	7c e5                	jl     0x4b799a
+  4b79b5:	33 c0                	xor    eax,eax
+  4b79b7:	89 87 82 00 00 00    	mov    DWORD PTR [edi+0x82],eax
+  4b79bd:	33 c0                	xor    eax,eax
+  4b79bf:	eb 0f                	jmp    0x4b79d0
+  4b79c1:	33 d2                	xor    edx,edx
+  4b79c3:	8a 90 a8 a7 4f 00    	mov    dl,BYTE PTR [eax+0x4fa7a8]
+  4b79c9:	01 97 82 00 00 00    	add    DWORD PTR [edi+0x82],edx
+  4b79cf:	40                   	inc    eax
+  4b79d0:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b79d3:	3b c1                	cmp    eax,ecx
+  4b79d5:	7c ea                	jl     0x4b79c1
+  4b79d7:	b0 ff                	mov    al,0xff
+  4b79d9:	8a 97 82 00 00 00    	mov    dl,BYTE PTR [edi+0x82]
+  4b79df:	2a c2                	sub    al,dl
+  4b79e1:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b79e4:	88 81 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],al
+  4b79ea:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b79ed:	40                   	inc    eax
+  4b79ee:	a3 ac a8 4f 00       	mov    ds:0x4fa8ac,eax
+  4b79f3:	c7 05 64 03 56 00 03 	mov    DWORD PTR ds:0x560364,0x3
+  4b79fa:	00 00 00 
+  4b79fd:	c7 05 60 03 56 00 32 	mov    DWORD PTR ds:0x560360,0x32
+  4b7a04:	00 00 00 
+  4b7a07:	e8 3c 44 01 00       	call   0x4cbe48
+  4b7a0c:	05 f4 01 00 00       	add    eax,0x1f4
+  4b7a11:	a3 64 a7 4f 00       	mov    ds:0x4fa764,eax
+  4b7a16:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7a19:	52                   	push   edx
+  4b7a1a:	e8 c7 7b fb ff       	call   0x46f5e6
+  4b7a1f:	59                   	pop    ecx
+  4b7a20:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7a26:	84 c9                	test   cl,cl
+  4b7a28:	75 13                	jne    0x4b7a3d
+  4b7a2a:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7a2f:	84 c0                	test   al,al
+  4b7a31:	75 0a                	jne    0x4b7a3d
+  4b7a33:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7a39:	84 d2                	test   dl,dl
+  4b7a3b:	74 0a                	je     0x4b7a47
+  4b7a3d:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7a40:	51                   	push   ecx
+  4b7a41:	e8           	call   0x46f5e6
+
+### TX#02 0x004B7A41 ; disasm 0x004B79D1..0x004B7A69
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b79d1 <.text+0xb69d1>:
+  4b79d1:	4f                   	dec    edi
+  4b79d2:	5e                   	pop    esi
+  4b79d3:	3b c1                	cmp    eax,ecx
+  4b79d5:	7c ea                	jl     0x4b79c1
+  4b79d7:	b0 ff                	mov    al,0xff
+  4b79d9:	8a 97 82 00 00 00    	mov    dl,BYTE PTR [edi+0x82]
+  4b79df:	2a c2                	sub    al,dl
+  4b79e1:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b79e4:	88 81 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],al
+  4b79ea:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b79ed:	40                   	inc    eax
+  4b79ee:	a3 ac a8 4f 00       	mov    ds:0x4fa8ac,eax
+  4b79f3:	c7 05 64 03 56 00 03 	mov    DWORD PTR ds:0x560364,0x3
+  4b79fa:	00 00 00 
+  4b79fd:	c7 05 60 03 56 00 32 	mov    DWORD PTR ds:0x560360,0x32
+  4b7a04:	00 00 00 
+  4b7a07:	e8 3c 44 01 00       	call   0x4cbe48
+  4b7a0c:	05 f4 01 00 00       	add    eax,0x1f4
+  4b7a11:	a3 64 a7 4f 00       	mov    ds:0x4fa764,eax
+  4b7a16:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7a19:	52                   	push   edx
+  4b7a1a:	e8 c7 7b fb ff       	call   0x46f5e6
+  4b7a1f:	59                   	pop    ecx
+  4b7a20:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7a26:	84 c9                	test   cl,cl
+  4b7a28:	75 13                	jne    0x4b7a3d
+  4b7a2a:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7a2f:	84 c0                	test   al,al
+  4b7a31:	75 0a                	jne    0x4b7a3d
+  4b7a33:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7a39:	84 d2                	test   dl,dl
+  4b7a3b:	74 0a                	je     0x4b7a47
+  4b7a3d:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7a40:	51                   	push   ecx
+  4b7a41:	e8 a0 7b fb ff       	call   0x46f5e6
+  4b7a46:	59                   	pop    ecx
+  4b7a47:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7a4c:	84 c0                	test   al,al
+  4b7a4e:	75 14                	jne    0x4b7a64
+  4b7a50:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7a56:	84 d2                	test   dl,dl
+  4b7a58:	75 0a                	jne    0x4b7a64
+  4b7a5a:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7a60:	84 c9                	test   cl,cl
+  4b7a62:	74 0a                	je     0x4b7a6e
+  4b7a64:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7a67:	50                   	push   eax
+  4b7a68:	e8           	call   0x46f5e6
+
+### TX#03 0x004B7A68 ; disasm 0x004B79F8..0x004B7A90
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b79f8 <.text+0xb69f8>:
+  4b79f8:	00 03                	add    BYTE PTR [ebx],al
+  4b79fa:	00 00                	add    BYTE PTR [eax],al
+  4b79fc:	00 c7                	add    bh,al
+  4b79fe:	05 60 03 56 00       	add    eax,0x560360
+  4b7a03:	32 00                	xor    al,BYTE PTR [eax]
+  4b7a05:	00 00                	add    BYTE PTR [eax],al
+  4b7a07:	e8 3c 44 01 00       	call   0x4cbe48
+  4b7a0c:	05 f4 01 00 00       	add    eax,0x1f4
+  4b7a11:	a3 64 a7 4f 00       	mov    ds:0x4fa764,eax
+  4b7a16:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7a19:	52                   	push   edx
+  4b7a1a:	e8 c7 7b fb ff       	call   0x46f5e6
+  4b7a1f:	59                   	pop    ecx
+  4b7a20:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7a26:	84 c9                	test   cl,cl
+  4b7a28:	75 13                	jne    0x4b7a3d
+  4b7a2a:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7a2f:	84 c0                	test   al,al
+  4b7a31:	75 0a                	jne    0x4b7a3d
+  4b7a33:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7a39:	84 d2                	test   dl,dl
+  4b7a3b:	74 0a                	je     0x4b7a47
+  4b7a3d:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7a40:	51                   	push   ecx
+  4b7a41:	e8 a0 7b fb ff       	call   0x46f5e6
+  4b7a46:	59                   	pop    ecx
+  4b7a47:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7a4c:	84 c0                	test   al,al
+  4b7a4e:	75 14                	jne    0x4b7a64
+  4b7a50:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7a56:	84 d2                	test   dl,dl
+  4b7a58:	75 0a                	jne    0x4b7a64
+  4b7a5a:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7a60:	84 c9                	test   cl,cl
+  4b7a62:	74 0a                	je     0x4b7a6e
+  4b7a64:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7a67:	50                   	push   eax
+  4b7a68:	e8 79 7b fb ff       	call   0x46f5e6
+  4b7a6d:	59                   	pop    ecx
+  4b7a6e:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  4b7a74:	84 d2                	test   dl,dl
+  4b7a76:	0f 84 d4 01 00 00    	je     0x4b7c50
+  4b7a7c:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7a82:	84 c9                	test   cl,cl
+  4b7a84:	75 13                	jne    0x4b7a99
+  4b7a86:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7a8b:	84 c0                	test   al,al
+  4b7a8d:	75 0a                	jne    0x4b7a99
+  4b7a8f:	8a         	mov    dl,BYTE PTR ds:0x4fa8b8
+
+### TX#04 0x004B7A9D ; disasm 0x004B7A2D..0x004B7AC5
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7a2d <.text+0xb6a2d>:
+  4b7a2d:	4f                   	dec    edi
+  4b7a2e:	00 84 c0 75 0a 8a 15 	add    BYTE PTR [eax+eax*8+0x158a0a75],al
+  4b7a35:	b8 a8 4f 00 84       	mov    eax,0x84004fa8
+  4b7a3a:	d2 74 0a 8d          	shl    BYTE PTR [edx+ecx*1-0x73],cl
+  4b7a3e:	4f                   	dec    edi
+  4b7a3f:	14 51                	adc    al,0x51
+  4b7a41:	e8 a0 7b fb ff       	call   0x46f5e6
+  4b7a46:	59                   	pop    ecx
+  4b7a47:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7a4c:	84 c0                	test   al,al
+  4b7a4e:	75 14                	jne    0x4b7a64
+  4b7a50:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7a56:	84 d2                	test   dl,dl
+  4b7a58:	75 0a                	jne    0x4b7a64
+  4b7a5a:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7a60:	84 c9                	test   cl,cl
+  4b7a62:	74 0a                	je     0x4b7a6e
+  4b7a64:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7a67:	50                   	push   eax
+  4b7a68:	e8 79 7b fb ff       	call   0x46f5e6
+  4b7a6d:	59                   	pop    ecx
+  4b7a6e:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  4b7a74:	84 d2                	test   dl,dl
+  4b7a76:	0f 84 d4 01 00 00    	je     0x4b7c50
+  4b7a7c:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7a82:	84 c9                	test   cl,cl
+  4b7a84:	75 13                	jne    0x4b7a99
+  4b7a86:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7a8b:	84 c0                	test   al,al
+  4b7a8d:	75 0a                	jne    0x4b7a99
+  4b7a8f:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7a95:	84 d2                	test   dl,dl
+  4b7a97:	74 0a                	je     0x4b7aa3
+  4b7a99:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7a9c:	51                   	push   ecx
+  4b7a9d:	e8 44 7b fb ff       	call   0x46f5e6
+  4b7aa2:	59                   	pop    ecx
+  4b7aa3:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7aa8:	84 c0                	test   al,al
+  4b7aaa:	75 14                	jne    0x4b7ac0
+  4b7aac:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7ab2:	84 d2                	test   dl,dl
+  4b7ab4:	75 0a                	jne    0x4b7ac0
+  4b7ab6:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7abc:	84 c9                	test   cl,cl
+  4b7abe:	74 0a                	je     0x4b7aca
+  4b7ac0:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7ac3:	50                   	push   eax
+  4b7ac4:	e8           	call   0x46f5e6
+
+### TX#05 0x004B7AC4 ; disasm 0x004B7A54..0x004B7AEC
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7a54 <.text+0xb6a54>:
+  4b7a54:	4f                   	dec    edi
+  4b7a55:	00 84 d2 75 0a 8a 0d 	add    BYTE PTR [edx+edx*8+0xd8a0a75],al
+  4b7a5c:	b8 a8 4f 00 84       	mov    eax,0x84004fa8
+  4b7a61:	c9                   	leave
+  4b7a62:	74 0a                	je     0x4b7a6e
+  4b7a64:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7a67:	50                   	push   eax
+  4b7a68:	e8 79 7b fb ff       	call   0x46f5e6
+  4b7a6d:	59                   	pop    ecx
+  4b7a6e:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  4b7a74:	84 d2                	test   dl,dl
+  4b7a76:	0f 84 d4 01 00 00    	je     0x4b7c50
+  4b7a7c:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7a82:	84 c9                	test   cl,cl
+  4b7a84:	75 13                	jne    0x4b7a99
+  4b7a86:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7a8b:	84 c0                	test   al,al
+  4b7a8d:	75 0a                	jne    0x4b7a99
+  4b7a8f:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7a95:	84 d2                	test   dl,dl
+  4b7a97:	74 0a                	je     0x4b7aa3
+  4b7a99:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7a9c:	51                   	push   ecx
+  4b7a9d:	e8 44 7b fb ff       	call   0x46f5e6
+  4b7aa2:	59                   	pop    ecx
+  4b7aa3:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7aa8:	84 c0                	test   al,al
+  4b7aaa:	75 14                	jne    0x4b7ac0
+  4b7aac:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7ab2:	84 d2                	test   dl,dl
+  4b7ab4:	75 0a                	jne    0x4b7ac0
+  4b7ab6:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7abc:	84 c9                	test   cl,cl
+  4b7abe:	74 0a                	je     0x4b7aca
+  4b7ac0:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7ac3:	50                   	push   eax
+  4b7ac4:	e8 1d 7b fb ff       	call   0x46f5e6
+  4b7ac9:	59                   	pop    ecx
+  4b7aca:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7ad0:	84 d2                	test   dl,dl
+  4b7ad2:	75 13                	jne    0x4b7ae7
+  4b7ad4:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7ada:	84 c9                	test   cl,cl
+  4b7adc:	75 09                	jne    0x4b7ae7
+  4b7ade:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7ae3:	84 c0                	test   al,al
+  4b7ae5:	74 0a                	je     0x4b7af1
+  4b7ae7:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7aea:	52                   	push   edx
+  4b7aeb:	e8           	call   0x46f5e6
+
+### TX#06 0x004B7AEB ; disasm 0x004B7A7B..0x004B7B13
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7a7b <.text+0xb6a7b>:
+  4b7a7b:	00 8a 0d b7 a8 4f    	add    BYTE PTR [edx+0x4fa8b70d],cl
+  4b7a81:	00 84 c9 75 13 a0 b9 	add    BYTE PTR [ecx+ecx*8-0x465fec8b],al
+  4b7a88:	a8 4f                	test   al,0x4f
+  4b7a8a:	00 84 c0 75 0a 8a 15 	add    BYTE PTR [eax+eax*8+0x158a0a75],al
+  4b7a91:	b8 a8 4f 00 84       	mov    eax,0x84004fa8
+  4b7a96:	d2 74 0a 8d          	shl    BYTE PTR [edx+ecx*1-0x73],cl
+  4b7a9a:	4f                   	dec    edi
+  4b7a9b:	14 51                	adc    al,0x51
+  4b7a9d:	e8 44 7b fb ff       	call   0x46f5e6
+  4b7aa2:	59                   	pop    ecx
+  4b7aa3:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7aa8:	84 c0                	test   al,al
+  4b7aaa:	75 14                	jne    0x4b7ac0
+  4b7aac:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7ab2:	84 d2                	test   dl,dl
+  4b7ab4:	75 0a                	jne    0x4b7ac0
+  4b7ab6:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7abc:	84 c9                	test   cl,cl
+  4b7abe:	74 0a                	je     0x4b7aca
+  4b7ac0:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7ac3:	50                   	push   eax
+  4b7ac4:	e8 1d 7b fb ff       	call   0x46f5e6
+  4b7ac9:	59                   	pop    ecx
+  4b7aca:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7ad0:	84 d2                	test   dl,dl
+  4b7ad2:	75 13                	jne    0x4b7ae7
+  4b7ad4:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7ada:	84 c9                	test   cl,cl
+  4b7adc:	75 09                	jne    0x4b7ae7
+  4b7ade:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7ae3:	84 c0                	test   al,al
+  4b7ae5:	74 0a                	je     0x4b7af1
+  4b7ae7:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7aea:	52                   	push   edx
+  4b7aeb:	e8 f6 7a fb ff       	call   0x46f5e6
+  4b7af0:	59                   	pop    ecx
+  4b7af1:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7af7:	84 c9                	test   cl,cl
+  4b7af9:	75 13                	jne    0x4b7b0e
+  4b7afb:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7b00:	84 c0                	test   al,al
+  4b7b02:	75 0a                	jne    0x4b7b0e
+  4b7b04:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7b0a:	84 d2                	test   dl,dl
+  4b7b0c:	74 0a                	je     0x4b7b18
+  4b7b0e:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7b11:	51                   	push   ecx
+  4b7b12:	e8           	call   0x46f5e6
+
+### TX#07 0x004B7B12 ; disasm 0x004B7AA2..0x004B7B3A
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7aa2 <.text+0xb6aa2>:
+  4b7aa2:	59                   	pop    ecx
+  4b7aa3:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7aa8:	84 c0                	test   al,al
+  4b7aaa:	75 14                	jne    0x4b7ac0
+  4b7aac:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7ab2:	84 d2                	test   dl,dl
+  4b7ab4:	75 0a                	jne    0x4b7ac0
+  4b7ab6:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7abc:	84 c9                	test   cl,cl
+  4b7abe:	74 0a                	je     0x4b7aca
+  4b7ac0:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7ac3:	50                   	push   eax
+  4b7ac4:	e8 1d 7b fb ff       	call   0x46f5e6
+  4b7ac9:	59                   	pop    ecx
+  4b7aca:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7ad0:	84 d2                	test   dl,dl
+  4b7ad2:	75 13                	jne    0x4b7ae7
+  4b7ad4:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7ada:	84 c9                	test   cl,cl
+  4b7adc:	75 09                	jne    0x4b7ae7
+  4b7ade:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7ae3:	84 c0                	test   al,al
+  4b7ae5:	74 0a                	je     0x4b7af1
+  4b7ae7:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7aea:	52                   	push   edx
+  4b7aeb:	e8 f6 7a fb ff       	call   0x46f5e6
+  4b7af0:	59                   	pop    ecx
+  4b7af1:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7af7:	84 c9                	test   cl,cl
+  4b7af9:	75 13                	jne    0x4b7b0e
+  4b7afb:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7b00:	84 c0                	test   al,al
+  4b7b02:	75 0a                	jne    0x4b7b0e
+  4b7b04:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7b0a:	84 d2                	test   dl,dl
+  4b7b0c:	74 0a                	je     0x4b7b18
+  4b7b0e:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7b11:	51                   	push   ecx
+  4b7b12:	e8 cf 7a fb ff       	call   0x46f5e6
+  4b7b17:	59                   	pop    ecx
+  4b7b18:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7b1d:	84 c0                	test   al,al
+  4b7b1f:	75 14                	jne    0x4b7b35
+  4b7b21:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7b27:	84 d2                	test   dl,dl
+  4b7b29:	75 0a                	jne    0x4b7b35
+  4b7b2b:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7b31:	84 c9                	test   cl,cl
+  4b7b33:	74 0a                	je     0x4b7b3f
+  4b7b35:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7b38:	50                   	push   eax
+  4b7b39:	e8           	call   0x46f5e6
+
+### TX#08 0x004B7B39 ; disasm 0x004B7AC9..0x004B7B61
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7ac9 <.text+0xb6ac9>:
+  4b7ac9:	59                   	pop    ecx
+  4b7aca:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7ad0:	84 d2                	test   dl,dl
+  4b7ad2:	75 13                	jne    0x4b7ae7
+  4b7ad4:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7ada:	84 c9                	test   cl,cl
+  4b7adc:	75 09                	jne    0x4b7ae7
+  4b7ade:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7ae3:	84 c0                	test   al,al
+  4b7ae5:	74 0a                	je     0x4b7af1
+  4b7ae7:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7aea:	52                   	push   edx
+  4b7aeb:	e8 f6 7a fb ff       	call   0x46f5e6
+  4b7af0:	59                   	pop    ecx
+  4b7af1:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7af7:	84 c9                	test   cl,cl
+  4b7af9:	75 13                	jne    0x4b7b0e
+  4b7afb:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7b00:	84 c0                	test   al,al
+  4b7b02:	75 0a                	jne    0x4b7b0e
+  4b7b04:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7b0a:	84 d2                	test   dl,dl
+  4b7b0c:	74 0a                	je     0x4b7b18
+  4b7b0e:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7b11:	51                   	push   ecx
+  4b7b12:	e8 cf 7a fb ff       	call   0x46f5e6
+  4b7b17:	59                   	pop    ecx
+  4b7b18:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7b1d:	84 c0                	test   al,al
+  4b7b1f:	75 14                	jne    0x4b7b35
+  4b7b21:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7b27:	84 d2                	test   dl,dl
+  4b7b29:	75 0a                	jne    0x4b7b35
+  4b7b2b:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7b31:	84 c9                	test   cl,cl
+  4b7b33:	74 0a                	je     0x4b7b3f
+  4b7b35:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7b38:	50                   	push   eax
+  4b7b39:	e8 a8 7a fb ff       	call   0x46f5e6
+  4b7b3e:	59                   	pop    ecx
+  4b7b3f:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7b45:	84 d2                	test   dl,dl
+  4b7b47:	75 13                	jne    0x4b7b5c
+  4b7b49:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7b4f:	84 c9                	test   cl,cl
+  4b7b51:	75 09                	jne    0x4b7b5c
+  4b7b53:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7b58:	84 c0                	test   al,al
+  4b7b5a:	74 0a                	je     0x4b7b66
+  4b7b5c:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7b5f:	52                   	push   edx
+  4b7b60:	e8           	call   0x46f5e6
+
+### TX#09 0x004B7B60 ; disasm 0x004B7AF0..0x004B7B88
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7af0 <.text+0xb6af0>:
+  4b7af0:	59                   	pop    ecx
+  4b7af1:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7af7:	84 c9                	test   cl,cl
+  4b7af9:	75 13                	jne    0x4b7b0e
+  4b7afb:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7b00:	84 c0                	test   al,al
+  4b7b02:	75 0a                	jne    0x4b7b0e
+  4b7b04:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7b0a:	84 d2                	test   dl,dl
+  4b7b0c:	74 0a                	je     0x4b7b18
+  4b7b0e:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7b11:	51                   	push   ecx
+  4b7b12:	e8 cf 7a fb ff       	call   0x46f5e6
+  4b7b17:	59                   	pop    ecx
+  4b7b18:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7b1d:	84 c0                	test   al,al
+  4b7b1f:	75 14                	jne    0x4b7b35
+  4b7b21:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7b27:	84 d2                	test   dl,dl
+  4b7b29:	75 0a                	jne    0x4b7b35
+  4b7b2b:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7b31:	84 c9                	test   cl,cl
+  4b7b33:	74 0a                	je     0x4b7b3f
+  4b7b35:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7b38:	50                   	push   eax
+  4b7b39:	e8 a8 7a fb ff       	call   0x46f5e6
+  4b7b3e:	59                   	pop    ecx
+  4b7b3f:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7b45:	84 d2                	test   dl,dl
+  4b7b47:	75 13                	jne    0x4b7b5c
+  4b7b49:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7b4f:	84 c9                	test   cl,cl
+  4b7b51:	75 09                	jne    0x4b7b5c
+  4b7b53:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7b58:	84 c0                	test   al,al
+  4b7b5a:	74 0a                	je     0x4b7b66
+  4b7b5c:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7b5f:	52                   	push   edx
+  4b7b60:	e8 81 7a fb ff       	call   0x46f5e6
+  4b7b65:	59                   	pop    ecx
+  4b7b66:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7b6c:	84 c9                	test   cl,cl
+  4b7b6e:	75 13                	jne    0x4b7b83
+  4b7b70:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7b75:	84 c0                	test   al,al
+  4b7b77:	75 0a                	jne    0x4b7b83
+  4b7b79:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7b7f:	84 d2                	test   dl,dl
+  4b7b81:	74 0a                	je     0x4b7b8d
+  4b7b83:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7b86:	51                   	push   ecx
+  4b7b87:	e8           	call   0x46f5e6
+
+### TX#10 0x004B7B87 ; disasm 0x004B7B17..0x004B7BAF
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7b17 <.text+0xb6b17>:
+  4b7b17:	59                   	pop    ecx
+  4b7b18:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7b1d:	84 c0                	test   al,al
+  4b7b1f:	75 14                	jne    0x4b7b35
+  4b7b21:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7b27:	84 d2                	test   dl,dl
+  4b7b29:	75 0a                	jne    0x4b7b35
+  4b7b2b:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7b31:	84 c9                	test   cl,cl
+  4b7b33:	74 0a                	je     0x4b7b3f
+  4b7b35:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7b38:	50                   	push   eax
+  4b7b39:	e8 a8 7a fb ff       	call   0x46f5e6
+  4b7b3e:	59                   	pop    ecx
+  4b7b3f:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7b45:	84 d2                	test   dl,dl
+  4b7b47:	75 13                	jne    0x4b7b5c
+  4b7b49:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7b4f:	84 c9                	test   cl,cl
+  4b7b51:	75 09                	jne    0x4b7b5c
+  4b7b53:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7b58:	84 c0                	test   al,al
+  4b7b5a:	74 0a                	je     0x4b7b66
+  4b7b5c:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7b5f:	52                   	push   edx
+  4b7b60:	e8 81 7a fb ff       	call   0x46f5e6
+  4b7b65:	59                   	pop    ecx
+  4b7b66:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7b6c:	84 c9                	test   cl,cl
+  4b7b6e:	75 13                	jne    0x4b7b83
+  4b7b70:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7b75:	84 c0                	test   al,al
+  4b7b77:	75 0a                	jne    0x4b7b83
+  4b7b79:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7b7f:	84 d2                	test   dl,dl
+  4b7b81:	74 0a                	je     0x4b7b8d
+  4b7b83:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7b86:	51                   	push   ecx
+  4b7b87:	e8 5a 7a fb ff       	call   0x46f5e6
+  4b7b8c:	59                   	pop    ecx
+  4b7b8d:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7b92:	84 c0                	test   al,al
+  4b7b94:	75 14                	jne    0x4b7baa
+  4b7b96:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7b9c:	84 d2                	test   dl,dl
+  4b7b9e:	75 0a                	jne    0x4b7baa
+  4b7ba0:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7ba6:	84 c9                	test   cl,cl
+  4b7ba8:	74 0a                	je     0x4b7bb4
+  4b7baa:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7bad:	50                   	push   eax
+  4b7bae:	e8           	call   0x46f5e6
+
+### TX#11 0x004B7BAE ; disasm 0x004B7B3E..0x004B7BD6
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7b3e <.text+0xb6b3e>:
+  4b7b3e:	59                   	pop    ecx
+  4b7b3f:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7b45:	84 d2                	test   dl,dl
+  4b7b47:	75 13                	jne    0x4b7b5c
+  4b7b49:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7b4f:	84 c9                	test   cl,cl
+  4b7b51:	75 09                	jne    0x4b7b5c
+  4b7b53:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7b58:	84 c0                	test   al,al
+  4b7b5a:	74 0a                	je     0x4b7b66
+  4b7b5c:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7b5f:	52                   	push   edx
+  4b7b60:	e8 81 7a fb ff       	call   0x46f5e6
+  4b7b65:	59                   	pop    ecx
+  4b7b66:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7b6c:	84 c9                	test   cl,cl
+  4b7b6e:	75 13                	jne    0x4b7b83
+  4b7b70:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7b75:	84 c0                	test   al,al
+  4b7b77:	75 0a                	jne    0x4b7b83
+  4b7b79:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7b7f:	84 d2                	test   dl,dl
+  4b7b81:	74 0a                	je     0x4b7b8d
+  4b7b83:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7b86:	51                   	push   ecx
+  4b7b87:	e8 5a 7a fb ff       	call   0x46f5e6
+  4b7b8c:	59                   	pop    ecx
+  4b7b8d:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7b92:	84 c0                	test   al,al
+  4b7b94:	75 14                	jne    0x4b7baa
+  4b7b96:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7b9c:	84 d2                	test   dl,dl
+  4b7b9e:	75 0a                	jne    0x4b7baa
+  4b7ba0:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7ba6:	84 c9                	test   cl,cl
+  4b7ba8:	74 0a                	je     0x4b7bb4
+  4b7baa:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7bad:	50                   	push   eax
+  4b7bae:	e8 33 7a fb ff       	call   0x46f5e6
+  4b7bb3:	59                   	pop    ecx
+  4b7bb4:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7bba:	84 d2                	test   dl,dl
+  4b7bbc:	75 13                	jne    0x4b7bd1
+  4b7bbe:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7bc4:	84 c9                	test   cl,cl
+  4b7bc6:	75 09                	jne    0x4b7bd1
+  4b7bc8:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7bcd:	84 c0                	test   al,al
+  4b7bcf:	74 0a                	je     0x4b7bdb
+  4b7bd1:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7bd4:	52                   	push   edx
+  4b7bd5:	e8           	call   0x46f5e6
+
+### TX#12 0x004B7BD5 ; disasm 0x004B7B65..0x004B7BFD
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7b65 <.text+0xb6b65>:
+  4b7b65:	59                   	pop    ecx
+  4b7b66:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7b6c:	84 c9                	test   cl,cl
+  4b7b6e:	75 13                	jne    0x4b7b83
+  4b7b70:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7b75:	84 c0                	test   al,al
+  4b7b77:	75 0a                	jne    0x4b7b83
+  4b7b79:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7b7f:	84 d2                	test   dl,dl
+  4b7b81:	74 0a                	je     0x4b7b8d
+  4b7b83:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7b86:	51                   	push   ecx
+  4b7b87:	e8 5a 7a fb ff       	call   0x46f5e6
+  4b7b8c:	59                   	pop    ecx
+  4b7b8d:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7b92:	84 c0                	test   al,al
+  4b7b94:	75 14                	jne    0x4b7baa
+  4b7b96:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7b9c:	84 d2                	test   dl,dl
+  4b7b9e:	75 0a                	jne    0x4b7baa
+  4b7ba0:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7ba6:	84 c9                	test   cl,cl
+  4b7ba8:	74 0a                	je     0x4b7bb4
+  4b7baa:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7bad:	50                   	push   eax
+  4b7bae:	e8 33 7a fb ff       	call   0x46f5e6
+  4b7bb3:	59                   	pop    ecx
+  4b7bb4:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7bba:	84 d2                	test   dl,dl
+  4b7bbc:	75 13                	jne    0x4b7bd1
+  4b7bbe:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7bc4:	84 c9                	test   cl,cl
+  4b7bc6:	75 09                	jne    0x4b7bd1
+  4b7bc8:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7bcd:	84 c0                	test   al,al
+  4b7bcf:	74 0a                	je     0x4b7bdb
+  4b7bd1:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7bd4:	52                   	push   edx
+  4b7bd5:	e8 0c 7a fb ff       	call   0x46f5e6
+  4b7bda:	59                   	pop    ecx
+  4b7bdb:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7be1:	84 c9                	test   cl,cl
+  4b7be3:	75 13                	jne    0x4b7bf8
+  4b7be5:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7bea:	84 c0                	test   al,al
+  4b7bec:	75 0a                	jne    0x4b7bf8
+  4b7bee:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7bf4:	84 d2                	test   dl,dl
+  4b7bf6:	74 0a                	je     0x4b7c02
+  4b7bf8:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7bfb:	51                   	push   ecx
+  4b7bfc:	e8           	call   0x46f5e6
+
+### TX#13 0x004B7BFC ; disasm 0x004B7B8C..0x004B7C24
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7b8c <.text+0xb6b8c>:
+  4b7b8c:	59                   	pop    ecx
+  4b7b8d:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7b92:	84 c0                	test   al,al
+  4b7b94:	75 14                	jne    0x4b7baa
+  4b7b96:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7b9c:	84 d2                	test   dl,dl
+  4b7b9e:	75 0a                	jne    0x4b7baa
+  4b7ba0:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7ba6:	84 c9                	test   cl,cl
+  4b7ba8:	74 0a                	je     0x4b7bb4
+  4b7baa:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7bad:	50                   	push   eax
+  4b7bae:	e8 33 7a fb ff       	call   0x46f5e6
+  4b7bb3:	59                   	pop    ecx
+  4b7bb4:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7bba:	84 d2                	test   dl,dl
+  4b7bbc:	75 13                	jne    0x4b7bd1
+  4b7bbe:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7bc4:	84 c9                	test   cl,cl
+  4b7bc6:	75 09                	jne    0x4b7bd1
+  4b7bc8:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7bcd:	84 c0                	test   al,al
+  4b7bcf:	74 0a                	je     0x4b7bdb
+  4b7bd1:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7bd4:	52                   	push   edx
+  4b7bd5:	e8 0c 7a fb ff       	call   0x46f5e6
+  4b7bda:	59                   	pop    ecx
+  4b7bdb:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7be1:	84 c9                	test   cl,cl
+  4b7be3:	75 13                	jne    0x4b7bf8
+  4b7be5:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7bea:	84 c0                	test   al,al
+  4b7bec:	75 0a                	jne    0x4b7bf8
+  4b7bee:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7bf4:	84 d2                	test   dl,dl
+  4b7bf6:	74 0a                	je     0x4b7c02
+  4b7bf8:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7bfb:	51                   	push   ecx
+  4b7bfc:	e8 e5 79 fb ff       	call   0x46f5e6
+  4b7c01:	59                   	pop    ecx
+  4b7c02:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7c07:	84 c0                	test   al,al
+  4b7c09:	75 14                	jne    0x4b7c1f
+  4b7c0b:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7c11:	84 d2                	test   dl,dl
+  4b7c13:	75 0a                	jne    0x4b7c1f
+  4b7c15:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7c1b:	84 c9                	test   cl,cl
+  4b7c1d:	74 0a                	je     0x4b7c29
+  4b7c1f:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7c22:	50                   	push   eax
+  4b7c23:	e8           	call   0x46f5e6
+
+### TX#14 0x004B7C23 ; disasm 0x004B7BB3..0x004B7C4B
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7bb3 <.text+0xb6bb3>:
+  4b7bb3:	59                   	pop    ecx
+  4b7bb4:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7bba:	84 d2                	test   dl,dl
+  4b7bbc:	75 13                	jne    0x4b7bd1
+  4b7bbe:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7bc4:	84 c9                	test   cl,cl
+  4b7bc6:	75 09                	jne    0x4b7bd1
+  4b7bc8:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7bcd:	84 c0                	test   al,al
+  4b7bcf:	74 0a                	je     0x4b7bdb
+  4b7bd1:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7bd4:	52                   	push   edx
+  4b7bd5:	e8 0c 7a fb ff       	call   0x46f5e6
+  4b7bda:	59                   	pop    ecx
+  4b7bdb:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7be1:	84 c9                	test   cl,cl
+  4b7be3:	75 13                	jne    0x4b7bf8
+  4b7be5:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7bea:	84 c0                	test   al,al
+  4b7bec:	75 0a                	jne    0x4b7bf8
+  4b7bee:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7bf4:	84 d2                	test   dl,dl
+  4b7bf6:	74 0a                	je     0x4b7c02
+  4b7bf8:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7bfb:	51                   	push   ecx
+  4b7bfc:	e8 e5 79 fb ff       	call   0x46f5e6
+  4b7c01:	59                   	pop    ecx
+  4b7c02:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7c07:	84 c0                	test   al,al
+  4b7c09:	75 14                	jne    0x4b7c1f
+  4b7c0b:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7c11:	84 d2                	test   dl,dl
+  4b7c13:	75 0a                	jne    0x4b7c1f
+  4b7c15:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7c1b:	84 c9                	test   cl,cl
+  4b7c1d:	74 0a                	je     0x4b7c29
+  4b7c1f:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7c22:	50                   	push   eax
+  4b7c23:	e8 be 79 fb ff       	call   0x46f5e6
+  4b7c28:	59                   	pop    ecx
+  4b7c29:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7c2f:	84 d2                	test   dl,dl
+  4b7c31:	75 13                	jne    0x4b7c46
+  4b7c33:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7c39:	84 c9                	test   cl,cl
+  4b7c3b:	75 09                	jne    0x4b7c46
+  4b7c3d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7c42:	84 c0                	test   al,al
+  4b7c44:	74 0a                	je     0x4b7c50
+  4b7c46:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7c49:	52                   	push   edx
+  4b7c4a:	e8           	call   0x46f5e6
+
+### TX#15 0x004B7C4A ; disasm 0x004B7BDA..0x004B7C72
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7bda <.text+0xb6bda>:
+  4b7bda:	59                   	pop    ecx
+  4b7bdb:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7be1:	84 c9                	test   cl,cl
+  4b7be3:	75 13                	jne    0x4b7bf8
+  4b7be5:	a0 b9 a8 4f 00       	mov    al,ds:0x4fa8b9
+  4b7bea:	84 c0                	test   al,al
+  4b7bec:	75 0a                	jne    0x4b7bf8
+  4b7bee:	8a 15 b8 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b8
+  4b7bf4:	84 d2                	test   dl,dl
+  4b7bf6:	74 0a                	je     0x4b7c02
+  4b7bf8:	8d 4f 14             	lea    ecx,[edi+0x14]
+  4b7bfb:	51                   	push   ecx
+  4b7bfc:	e8 e5 79 fb ff       	call   0x46f5e6
+  4b7c01:	59                   	pop    ecx
+  4b7c02:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  4b7c07:	84 c0                	test   al,al
+  4b7c09:	75 14                	jne    0x4b7c1f
+  4b7c0b:	8a 15 b9 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b9
+  4b7c11:	84 d2                	test   dl,dl
+  4b7c13:	75 0a                	jne    0x4b7c1f
+  4b7c15:	8a 0d b8 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b8
+  4b7c1b:	84 c9                	test   cl,cl
+  4b7c1d:	74 0a                	je     0x4b7c29
+  4b7c1f:	8d 47 14             	lea    eax,[edi+0x14]
+  4b7c22:	50                   	push   eax
+  4b7c23:	e8 be 79 fb ff       	call   0x46f5e6
+  4b7c28:	59                   	pop    ecx
+  4b7c29:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  4b7c2f:	84 d2                	test   dl,dl
+  4b7c31:	75 13                	jne    0x4b7c46
+  4b7c33:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  4b7c39:	84 c9                	test   cl,cl
+  4b7c3b:	75 09                	jne    0x4b7c46
+  4b7c3d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  4b7c42:	84 c0                	test   al,al
+  4b7c44:	74 0a                	je     0x4b7c50
+  4b7c46:	8d 57 14             	lea    edx,[edi+0x14]
+  4b7c49:	52                   	push   edx
+  4b7c4a:	e8 97 79 fb ff       	call   0x46f5e6
+  4b7c4f:	59                   	pop    ecx
+  4b7c50:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  4b7c56:	84 c9                	test   cl,cl
+  4b7c58:	74 49                	je     0x4b7ca3
+  4b7c5a:	8b 07                	mov    eax,DWORD PTR [edi]
+  4b7c5c:	89 85 08 ff ff ff    	mov    DWORD PTR [ebp-0xf8],eax
+  4b7c62:	6a 40                	push   0x40
+  4b7c64:	68 b3 5e 4f 00       	push   0x4f5eb3
+  4b7c69:	68 9f 5e 4f 00       	push   0x4f5e9f
+  4b7c6e:	8b 95 08 ff      	mov    edx,DWORD PTR [ebp-0xf8]
+
+STATIC INTERPRETATION
+----------------------------------------------------------------------------------------------------
+* CALL direto Write PLC Program -> rotina TX é correlação estática forte do caminho de envio.
+* O conteúdo mostrado antes de cada CALL continua sendo estático: branches podem selecionar caminhos diferentes.
+* Nenhuma ocorrência 09/0F deve ser tratada como download completo sem reconstruir a ordem efetiva dos quadros.
+* 0F 00 F0 (Clear All Memory) continua bloqueado e este script nunca executa TX.
