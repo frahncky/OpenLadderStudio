@@ -48,7 +48,15 @@ $methodInsert = @'
                 return;
             }
 
-            using (TP02Pg33NoOpProbeForm dialog = new TP02Pg33NoOpProbeForm(currentProfile))
+            if (ladderForm == null || ladderForm.IsDisposed) ShowLadder();
+            if (ladderForm == null || ladderForm.IsDisposed)
+            {
+                MessageBox.Show(this, "O editor Ladder nao esta disponivel.", "OpenLadder Studio",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (TP02Pg33NoOpProbeForm dialog = new TP02Pg33NoOpProbeForm(currentProfile, ladderForm))
             {
                 dialog.ShowDialog(this);
             }
