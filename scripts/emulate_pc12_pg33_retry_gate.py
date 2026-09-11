@@ -139,9 +139,11 @@ def main():
         ('timeout-then-success', [timeout, success], 2, success),
         ('checksum-then-success', [badsum, success], 2, success),
         ('status-error-then-success', [status_error, success], 2, success),
-        ('all-timeout', [timeout], 15, timeout),
-        ('all-checksum-error', [badsum], 15, badsum),
-        ('all-status-error', [status_error], 15, status_error),
+        ('two-timeouts-then-success', [timeout, timeout, success], 3, success),
+        ('mixed-failures-then-success', [timeout, badsum, success], 3, success),
+        ('all-timeout', [timeout], 3, timeout),
+        ('all-checksum-error', [badsum], 3, badsum),
+        ('all-status-error', [status_error], 3, status_error),
     ]
 
     rows = []
@@ -177,7 +179,8 @@ def main():
     lines.append('RESULT=' + ('PASS' if overall else 'FAIL'))
     if overall:
         lines.append('O chamador PG33 aceita sucesso quando timeout/checksum/error estão todos zerados.')
-        lines.append('Falha em qualquer uma das três flags provoca nova tentativa, até o máximo observado de 15 chamadas.')
+        lines.append('Falha em qualquer uma das três flags provoca nova tentativa; o máximo confirmado é 3 chamadas por quadro.')
+        lines.append('Sucesso na primeira, segunda ou terceira chamada encerra as tentativas restantes.')
         lines.append('Nesta faixa o chamador não lê RX_BUF/RX_LEN diretamente; o conteúdo específico do ACK é abstraído pela rotina genérica.')
         lines.append('Assim, o payload físico exato do ACK não pode ser deduzido deste chamador apenas pelas condições de sucesso.')
     lines.append('Nenhum byte foi transmitido fora do Unicorn.')
