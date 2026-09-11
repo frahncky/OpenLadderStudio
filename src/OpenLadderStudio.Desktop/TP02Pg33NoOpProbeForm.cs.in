@@ -55,6 +55,7 @@ namespace ModernPC12
         private static readonly byte[] Frame38Request = new byte[] { 0x38, 0x00, 0xC7 };
 
         private readonly PlcDeviceProfile profile;
+        private readonly LadderEditorForm ladderForm;
         private ComboBox portCombo;
         private Button refreshButton;
         private Button probeButton;
@@ -76,9 +77,10 @@ namespace ModernPC12
         private readonly Color Danger = Color.FromArgb(214, 87, 87);
         private readonly Color Success = Color.FromArgb(74, 190, 119);
 
-        public TP02Pg33NoOpProbeForm(PlcDeviceProfile profile)
+        public TP02Pg33NoOpProbeForm(PlcDeviceProfile profile, LadderEditorForm ladderForm)
         {
             this.profile = profile;
+            this.ladderForm = ladderForm;
             Text = "TP02 - Validacao fisica PG33 sem alterar programa";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(900, 620);
