@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'scripts/analyze_pc12_protocol.py'
+      - 'scripts/analyze_pc12_writeprog.py'
       - 'scripts/emulate_pc12_readprog.py'
       - '.github/workflows/analyze-pc12-protocol.yml'
       - 'src/OpenLadderStudio.Desktop/pc12.exe'
@@ -25,6 +26,20 @@ jobs:
           python3 scripts/analyze_pc12_protocol.py \
             src/OpenLadderStudio.Desktop/pc12.exe \
             -o protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Analisar Write PLC Program offline
+        shell: bash
+        run: |
+          {
+            echo
+            echo 'WRITE PLC PROGRAM - OFFLINE STATIC ANALYSIS'
+            echo '================================================================================'
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+          python3 scripts/analyze_pc12_writeprog.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-write-program-analysis.txt
+          cat protocol-analysis/pc12-write-program-analysis.txt \
+            >> protocol-analysis/pc12-protocol-analysis.txt
 
       - name: Conferir a geometria da leitura de programa
         # shell: bash traz -o pipefail; sem ele o status do pipe seria o do tee
@@ -59,7 +74,7 @@ jobs:
             echo 'GNU STRINGS FILTER'
             echo '================================================================================'
             strings -tx -n 4 src/OpenLadderStudio.Desktop/pc12.exe \
-              | grep -Ei 'Read PLC Program|PLC Program|Clear All Memory|Clear Program|Download|Upload|RUN|STOP|CON-ICB' \
+              | grep -Ei 'Read PLC Program|Write PLC Program|PLC Program|Clear All Memory|Clear Program|Download|Upload|RUN|STOP|CON-ICB' \
               | head -n 300 || true
           } >> protocol-analysis/pc12-protocol-analysis.txt
 
@@ -70,5 +85,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pc12-protocol-analysis
-          path: protocol-analysis/pc12-protocol-analysis.txt
+          path: |
+            protocol-analysis/pc12-protocol-analysis.txt
+            protocol-analysis/pc12-write-program-analysis.txt
           retention-days: 30
