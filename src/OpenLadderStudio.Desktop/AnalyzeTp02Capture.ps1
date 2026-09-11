@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 function Get-LatestCapture {
     $dir = Join-Path $PSScriptRoot 'tp02-emulator-captures'
     if (-not (Test-Path $dir)) { return $null }
-    $file = Get-ChildItem -Path $dir -Filter '*-raw.bin' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $file = Get-ChildItem -Path $dir -Filter '*-raw.bin' | Where-Object { -not $_.PSIsContainer } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($file -eq $null) { return $null }
     return $file.FullName
 }
@@ -81,7 +81,7 @@ function Parse-Capture {
                 Total = 8
                 Checksum = '-'
                 Kind = 'HELLO CON-ICB'
-                Hex = Format-Hex -Data $data -Offset $i -Length 8
+                Hex = (Format-Hex -Data $data -Offset $i -Length 8)
             })
             $i += 8
             continue
@@ -101,8 +101,8 @@ function Parse-Capture {
                         Len = $payloadLen
                         Total = $total
                         Checksum = 'FF OK'
-                        Kind = Get-KnownName -Cmd $cmd
-                        Hex = Format-Hex -Data $data -Offset $i -Length $total
+                        Kind = (Get-KnownName -Cmd $cmd)
+                        Hex = (Format-Hex -Data $data -Offset $i -Length $total)
                     })
                     $i += $total
                     continue
