@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Rastreia OFFLINE os campos do objeto usados pelo construtor PG33 do PC12.
+"""Rastreia OFFLINE os campos e a convergência dos encoders PG33 do PC12.
 
 Não executa o PC12, não abre COM e não transmite. O objetivo é localizar no
 caminho Write PLC Program as escritas x86 simples sobre os offsets do objeto
-EDI consumidos por 0x4B7958: +56, +5E, +62, +6A e +6E, mostrar as janelas que
-constroem os planos HIGH/LOW e EXTERNAL e seguir cada saída até sua decisão de
-continuar a coleta ou preparar o quadro 0x33.
+EDI consumidos por 0x4B7958, mostrar as janelas que constroem HIGH/LOW/EXTERNAL
+e mapear saltos relativos que entram nos pontos comuns de coleta, limite de 20
+registros e preparação do quadro 0x33.
 """
 
 import argparse
@@ -23,10 +23,28 @@ from analyze_pc12_writeprog import (
 WRITE_LO = 0x004B6A00
 WRITE_HI = 0x004B7E20
 TARGET = {0x56, 0x5E, 0x62, 0x6A, 0x6E}
+CONTROL_POINTS = {
+    0x004B6B8F: 'collector-loop',
+    0x004B7799: 'generic-span-switch',
+    0x004B7869: 'record-count-boundary',
+    0x004B7878: 'program-tail-check',
+    0x004B7893: 'post-record-decision',
+    0x004B78A1: 'frame-preparation',
+    0x004B7958: 'pg33-builder',
+    0x004B7D22: 'success-next-block-init',
+}
 
 
 def u32(data, off):
     return struct.unpack_from('<I', data, off)[0]
+
+
+def i8(v):
+    return v - 256 if v >= 128 else v
+
+
+def i32(data, off):
+    return struct.unpack_from('<i', data, off)[0]
 
 
 def target8(v):
@@ -51,9 +69,8 @@ def scan(data, sections, image_base):
             i += 1
             continue
 
-        # MOV r/m32, imm32 : C7 /0
         if i + 7 <= hi and data[i] == 0xC7 and (data[i + 1] & 0xF8) == 0x40:
-            if data[i + 1] == 0x47:  # mod=01, r/m=EDI, /0
+            if data[i + 1] == 0x47:
                 disp = data[i + 2]
                 if target8(disp):
                     out.append((va, disp, 'MOV32_IMM', u32(data, i + 3), data[i:i + 7]))
@@ -66,7 +83,6 @@ def scan(data, sections, image_base):
             i += 10
             continue
 
-        # MOV r/m8, imm8 : C6 /0
         if i + 4 <= hi and data[i:i + 2] == b'\xC6\x47':
             disp = data[i + 2]
             if target8(disp):
@@ -80,7 +96,6 @@ def scan(data, sections, image_base):
             i += 7
             continue
 
-        # MOV [EDI+disp], register. Reg field may vary.
         if i + 3 <= hi and data[i] in (0x88, 0x89) and (data[i + 1] & 0xC7) == 0x47:
             disp = data[i + 2]
             if target8(disp):
@@ -96,7 +111,6 @@ def scan(data, sections, image_base):
             i += 6
             continue
 
-        # ADD [EDI+disp8], reg32 : 01 /r
         if i + 3 <= hi and data[i] == 0x01 and (data[i + 1] & 0xC7) == 0x47:
             disp = data[i + 2]
             if target8(disp):
@@ -104,7 +118,6 @@ def scan(data, sections, image_base):
             i += 3
             continue
 
-        # ADD/SUB r/m32, imm8: 83 /0 ou /5; INC/DEC do grupo FF.
         if i + 4 <= hi and data[i] == 0x83 and (data[i + 1] & 0xC7) == 0x47:
             disp = data[i + 2]
             subop = (data[i + 1] >> 3) & 7
@@ -127,6 +140,49 @@ def scan(data, sections, image_base):
     return out
 
 
+def scan_control_branches(data, sections, image_base):
+    """Lista saltos relativos cujo alvo é um dos pontos de controle conhecidos."""
+    lo = va_to_offset(sections, image_base, WRITE_LO)
+    hi_last = va_to_offset(sections, image_base, WRITE_HI - 1)
+    if lo is None or hi_last is None:
+        return []
+    hi = hi_last + 1
+    out = []
+    i = lo
+    while i < hi:
+        va = offset_to_va(sections, image_base, i)
+        if va is None:
+            i += 1
+            continue
+
+        op = data[i]
+        target = None
+        kind = None
+        size = 1
+
+        if op == 0xEB and i + 2 <= hi:  # JMP short
+            size = 2
+            target = (va + size + i8(data[i + 1])) & 0xFFFFFFFF
+            kind = 'JMP8'
+        elif 0x70 <= op <= 0x7F and i + 2 <= hi:  # Jcc short
+            size = 2
+            target = (va + size + i8(data[i + 1])) & 0xFFFFFFFF
+            kind = 'JCC8_%02X' % op
+        elif op == 0xE9 and i + 5 <= hi:  # JMP near
+            size = 5
+            target = (va + size + i32(data, i + 1)) & 0xFFFFFFFF
+            kind = 'JMP32'
+        elif op == 0x0F and i + 6 <= hi and 0x80 <= data[i + 1] <= 0x8F:
+            size = 6
+            target = (va + size + i32(data, i + 2)) & 0xFFFFFFFF
+            kind = 'JCC32_%02X' % data[i + 1]
+
+        if target in CONTROL_POINTS:
+            out.append((va, target, kind, data[i:i + size]))
+        i += size if target is not None else 1
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('exe')
@@ -137,6 +193,7 @@ def main():
     data = path.read_bytes()
     image_base, sections = pe_info(data)
     hits = scan(data, sections, image_base)
+    control_branches = scan_control_branches(data, sections, image_base)
 
     lines = []
     lines.append('PC12 WRITE PLC PROGRAM - PG33 OBJECT FIELD TRACE')
@@ -159,6 +216,16 @@ def main():
                          (va, kind, value_text, hx(raw)))
         lines.append('')
 
+    lines.append('DIRECT BRANCHES INTO KNOWN CONTROL POINTS')
+    lines.append('-' * 92)
+    for target in sorted(CONTROL_POINTS):
+        refs = [r for r in control_branches if r[1] == target]
+        lines.append('0x%08X %-24s incoming=%d' %
+                     (target, CONTROL_POINTS[target], len(refs)))
+        for src, _target, kind, raw in refs:
+            lines.append('  from 0x%08X %-10s bytes=[%s]' % (src, kind, hx(raw)))
+    lines.append('')
+
     lines.append('CHUNK INITIALIZATION')
     lines.append('-' * 92)
     lines.extend(objdump_window(path, 0x004B7D20, 0x004B7D70, max_lines=100))
@@ -169,8 +236,6 @@ def main():
     encoder_sites = [row[0] for row in by_field[0x56]
                      if row[2] == 'ADD32_IMM8' and row[3] == 0x2]
     for idx, va in enumerate(encoder_sites, 1):
-        # Janela maior do lado posterior: a versão anterior acabava exatamente
-        # antes de alvos como 0x4B6D29, escondendo a convergência do encoder.
         a = max(WRITE_LO, va - 0x48)
         b = min(WRITE_HI, va + 0xB0)
         lines.append('### ENCODER#%02d completion=0x%08X window=0x%08X..0x%08X' %
@@ -195,7 +260,7 @@ def main():
     lines.append('  +0x6A -> TX[3]')
     lines.append('  +0x6E -> TX[4]')
     lines.append('')
-    lines.append('GUARDRAIL: this trace establishes static data flow only; it never executes a write.')
+    lines.append('GUARDRAIL: this trace establishes static data/control flow only; it never executes a write.')
 
     report = '\n'.join(lines) + '\n'
     if args.output:
