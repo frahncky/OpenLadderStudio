@@ -27,7 +27,9 @@ TX_BUF_HI = 0x004FA80F
 TX_LEN = 0x004FA8AC
 CONTEXT_BEFORE = 0xE0
 CONTEXT_AFTER = 0x28
-FRAME_BUILDER_LO = 0x004B7940
+STATE_SETUP_LO = 0x004B76C0
+STATE_SETUP_HI = 0x004B7958
+FRAME_BUILDER_LO = 0x004B7958
 FRAME_BUILDER_HI = 0x004B7A20
 
 
@@ -172,8 +174,10 @@ def main():
     lines.append('')
     lines.append('STATIC FRAME SKELETON')
     lines.append('  TX[0] = 0x33 is an immediate constant in the Write PLC Program builder.')
-    lines.append('  TX[1], TX[3], TX[4], TX[5] are runtime-derived in this path; TX[2] = 0x00.')
-    lines.append('  A checksum byte is appended after the runtime payload and TX_LEN is set to payload_length + 1.')
+    lines.append('  TX[1] is computed from object field +0x56; TX[2] = 0x00.')
+    lines.append('  TX[3] comes from object field +0x6A; TX[4] from +0x6E; TX[5] from +0x56.')
+    lines.append('  Bytes from object buffer +0xE0 are copied into TX starting at index held in +0x5E.')
+    lines.append('  A checksum byte is appended and TX_LEN is set to payload_length + 1.')
     lines.append('  This establishes a 0x33 family frame in the write path, not yet its semantic name.')
     lines.append('')
 
@@ -192,9 +196,15 @@ def main():
             lines.append('  (nenhum MOV absoluto simples ao TX no recorte)')
     lines.append('')
 
+    lines.append('OBJECT/CHUNK STATE SETUP BEFORE 0x33 BUILDER')
+    lines.append('-' * 100)
+    lines.append('disasm 0x%08X..0x%08X' % (STATE_SETUP_LO, STATE_SETUP_HI))
+    lines.extend(objdump_window(path, STATE_SETUP_LO, STATE_SETUP_HI, max_lines=700))
+    lines.append('')
+
     lines.append('FRAME BUILDER OBJDUMP')
     lines.append('-' * 100)
-    lines.extend(objdump_window(path, FRAME_BUILDER_LO, FRAME_BUILDER_HI, max_lines=260))
+    lines.extend(objdump_window(path, FRAME_BUILDER_LO, FRAME_BUILDER_HI, max_lines=300))
     lines.append('')
 
     lines.append('FOCUSED OBJDUMP WINDOWS')
