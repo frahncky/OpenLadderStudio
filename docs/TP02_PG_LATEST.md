@@ -9,7 +9,7 @@ PLC: WEG TP02-60MR / TP02-40/60MR(T) V2.2.4K
 OpenLadder Studio público: v1.04
 PG Lab no código-fonte: 1.20
 Serial de leitura já observado: 19200 8O1, com respostas em perfis de DTR/RTS distintos
-Sessão exigida pela PG Lab 1.20 para escrita: DTR OFF, RTS OFF, mantida aberta
+Sessão exigida pela PG Lab 1.21 para escrita: mesmo perfil deve confirmar HELLO STOP e F0 sem fechar a COM
 Fluxo READ-ONLY: HELLO -> F0 -> 38 -> 34
 Fluxo controlado preparado: HELLO -> F0 -> 38 -> backup 34 -> PG33 TESTE -> readback 34 -> PG33 RESTORE -> readback 34
 ```
@@ -17,11 +17,11 @@ Fluxo controlado preparado: HELLO -> F0 -> 38 -> backup 34 -> PG33 TESTE -> read
 A PG Lab possui dois escopos distintos:
 
 - a paginação do `34` e os ensaios ordinários permanecem **READ-ONLY**;
-- a PG Lab 1.20 contém um procedimento físico separado de alteração mínima e restauração por `0x33`, acionado somente após confirmação explícita do operador.
+- a PG Lab 1.21 contém um procedimento físico separado de alteração mínima e restauração por `0x33`, acionado somente após confirmação explícita do operador.
 
-O procedimento de escrita exige PLC em STOP, sessão `19200 8O1` com DTR/RTS OFF desde o HELLO, resposta F0 conhecida, backup prévio, uma única transmissão do PG33 de teste e, se necessário, uma única transmissão do PG33 de restauração. Nenhum RUN remoto, Clear All, WBP, apagamento ou firmware faz parte desse fluxo. `0F 00 F0` = Clear All Memory e permanece bloqueado.
+O procedimento de escrita exige PLC em STOP, sessão `19200 8O1` em um perfil que confirme HELLO STOP e F0 na mesma porta aberta, backup prévio, uma única transmissão do PG33 de teste e, se necessário, uma única transmissão do PG33 de restauração. Nenhum RUN remoto, Clear All, WBP, apagamento ou firmware faz parte desse fluxo. `0F 00 F0` = Clear All Memory e permanece bloqueado.
 
-A geometria do `0x33` foi obtida por análise estática e emulação Unicorn do `pc12.exe`, sem I/O físico. A presença do procedimento na v1.20 não comprova, por si só, que ele já tenha sido executado com sucesso no PLC.
+A geometria do `0x33` foi obtida por análise estática e emulação Unicorn do `pc12.exe`, sem I/O físico. A presença do procedimento na v1.21 não comprova, por si só, que ele já tenha sido executado com sucesso no PLC.
 
 ## Leitura física consolidada
 
@@ -479,13 +479,14 @@ readback da sentinela e readback final idêntico ao backup
 sequência completa de sessão/handshake de escrita observada no fio
 ```
 
-## Auditoria da PG Lab 1.20
+## Auditoria da PG Lab 1.21
 
 O código preparado implementa as travas essenciais:
 
 ```text
-somente OFF/OFF qualifica a sessão de escrita
-HELLO RUN bloqueia antes do PG33
+OFF/OFF, ON/OFF e ON/ON são testados somente com HELLO/F0
+HELLO RUN bloqueia antes do F0 e do PG33
+HELLO STOP e F0 precisam responder na mesma COM e no mesmo perfil
 F0 precisa retornar 00 02 10 22 CB
 backup 34 é salvo antes da alteração
 PG33 TESTE é transmitido no máximo uma vez
@@ -499,12 +500,16 @@ nenhum RUN remoto é enviado
 Limites constatados na auditoria:
 
 ```text
-a v1.20 foi preparada especificamente para o programa conhecido de 23 passos
+a v1.21 foi preparada especificamente para o programa conhecido de 23 passos
 o ACK 00 00 FF ainda precisa de evidência física arquivada
 o sucesso não pode ser inferido de mensagens, comentários ou release notes
 a ausência de energia durante a janela teste/restauração pode deixar a sentinela gravada
 o operador precisa preservar todos os arquivos da sessão antes de considerar o caminho fechado
 ```
+
+### Resultado físico da v1.20
+
+Em 2026-09-11, a v1.20 confirmou HELLO STOP em OFF/OFF, mas o F0 não retornou `00 02 10 22 CB` após cinco rodadas. O fluxo terminou antes de `PG33 TESTE`; portanto, o PLC não foi alterado. Esse resultado invalidou a premissa de que HELLO em OFF/OFF bastava para qualificar a fase binária e motivou a seleção dinâmica da v1.21.
 
 ### Protocolo do próximo teste físico
 
@@ -566,7 +571,7 @@ Bancada READ-ONLY:
 Bancada de escrita controlada:
 
 ```text
-5. executar uma única vez o ciclo v1.20 conforme o protocolo acima;
+5. executar uma única vez o ciclo v1.21 conforme o protocolo acima;
 6. arquivar TX/RX, backup, sentinela e readback final;
 7. somente então atualizar o estado de evidência do ACK e da aceitação física do PG33.
 ```
