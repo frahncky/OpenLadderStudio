@@ -33,11 +33,11 @@ internal static class Tp02Pg33DryRunFrameSelfTest
             new byte[] { 0x01 });
 
         Check(Hex(one) == "33 07 00 00 00 02 00 10 01 B2",
-            "fixture candidato de 1 passo");
+            "fixture candidato de 1 registro");
         Check(Tp02Pg33DryRunFrame.HasValidChecksum(one),
-            "checksum do quadro de 1 passo");
+            "checksum do quadro de 1 registro");
         Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(one),
-            "geometria do quadro de 1 passo");
+            "geometria do quadro de 1 registro");
 
         byte[] two = Tp02Pg33DryRunFrame.BuildCandidate(
             0x0050,
@@ -47,21 +47,30 @@ internal static class Tp02Pg33DryRunFrameSelfTest
         Check(two[1] == 0x0A, "LEN=3*2+4");
         Check(two[2] == 0x00, "flag 00");
         Check(two[3] == 0x00 && two[4] == 0x50, "start step 0x0050");
-        Check(two[5] == 0x04, "plano A tem 2*N bytes");
+        Check(two[5] == 0x04, "plano HIGH/LOW tem 2*N bytes");
         Check(two[6] == 0x00 && two[7] == 0x10 && two[8] == 0x20 && two[9] == 0x41,
             "plano HIGH/LOW preservado");
         Check(two[10] == 0x01 && two[11] == 0x07,
-            "plano externo preservado");
-        Check(Tp02Pg33DryRunFrame.HasValidChecksum(two), "checksum de 2 passos");
-        Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(two), "geometria de 2 passos");
+            "plano EXTERNAL preservado");
+        Check(Tp02Pg33DryRunFrame.HasValidChecksum(two), "checksum de 2 registros");
+        Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(two), "geometria de 2 registros");
 
-        byte[] hl80 = new byte[160];
-        byte[] ext80 = new byte[80];
-        byte[] max = Tp02Pg33DryRunFrame.BuildCandidate(3920, hl80, ext80);
-        Check(max[1] == 0xF4, "LEN candidato de 80 passos = F4");
-        Check(max[5] == 0xA0, "plano A de 80 passos = A0 bytes");
-        Check(max.Length == 247, "quadro de 80 passos = 247 bytes incluindo checksum");
+        byte[] hl20 = new byte[40];
+        byte[] ext20 = new byte[20];
+        byte[] max = Tp02Pg33DryRunFrame.BuildCandidate(3920, hl20, ext20);
+        Check(max[1] == 0x40, "LEN de 20 registros = 40h");
+        Check(max[5] == 0x28, "plano HIGH/LOW de 20 registros = 28h bytes");
+        Check(max.Length == 67, "quadro de 20 registros = 67 bytes incluindo checksum");
         Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(max), "geometria máxima válida");
+
+        // O número de registros não é o span de passos. O construtor bruto não
+        // deve inferir start+N: instruções podem consumir 1..4 passos.
+        byte[] nearEnd = Tp02Pg33DryRunFrame.BuildCandidate(
+            3999,
+            new byte[] { 0x00, 0x10, 0x20, 0x40 },
+            new byte[] { 0x01, 0x06 });
+        Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(nearEnd),
+            "frame bruto perto do limite não infere span de passo");
 
         byte[] broken = (byte[])two.Clone();
         broken[broken.Length - 1] ^= 0x01;
@@ -72,13 +81,16 @@ internal static class Tp02Pg33DryRunFrameSelfTest
 
         ExpectThrow(
             delegate { Tp02Pg33DryRunFrame.BuildCandidate(0, new byte[] { 0x00 }, new byte[] { 0x01 }); },
-            "plano A ímpar deve falhar");
+            "plano HIGH/LOW ímpar deve falhar");
         ExpectThrow(
             delegate { Tp02Pg33DryRunFrame.BuildCandidate(0, new byte[] { 0x00, 0x10 }, new byte[0]); },
-            "plano externo incompatível deve falhar");
+            "plano EXTERNAL incompatível deve falhar");
         ExpectThrow(
-            delegate { Tp02Pg33DryRunFrame.BuildCandidate(3999, new byte[] { 0x00, 0x10, 0x20, 0x40 }, new byte[] { 0x01, 0x06 }); },
-            "quadro que passa de 4000 deve falhar");
+            delegate { Tp02Pg33DryRunFrame.BuildCandidate(0, new byte[42], new byte[21]); },
+            "mais de 20 registros deve falhar");
+        ExpectThrow(
+            delegate { Tp02Pg33DryRunFrame.BuildCandidate(4000, new byte[] { 0x00, 0x10 }, new byte[] { 0x01 }); },
+            "startStep=4000 deve falhar");
 
         if (failures != 0)
         {
