@@ -8,4 +8,7 @@
 # O build injeta estas regras no switch do emulador sem alterar TP02PgEmulator.cs.
 #
 # Comandos ja tratados nativamente e portanto proibidos aqui:
-#   F0 38 34 0A 14
+#   F0 38 34 33 0A 14
+#
+# 33 = Write PLC Program / Program Data confirmado por analise estatica do
+# pc12.exe e emulacao Unicorn offline do construtor original.
