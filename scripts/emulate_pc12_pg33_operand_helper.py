@@ -84,10 +84,8 @@ def emulate_strcpy(mu):
 def format_one_integer(fmt_raw, value):
     """Subconjunto de sprintf usado no helper: um inteiro decimal/hexadecimal."""
     fmt = fmt_raw.decode('ascii', errors='strict')
-    # Remove modificadores C que o operador % do Python não reconhece.
     normalized = re.sub(r'%(?P<flags>[-+ #0]*)(?P<width>\d*)(?P<prec>\.\d+)?[hlL]+(?P<conv>[diuoxX])',
                         r'%\g<flags>\g<width>\g<prec>\g<conv>', fmt)
-    # Python não possui %u distinto; para nossos inteiros positivos, %d é equivalente.
     normalized = re.sub(r'%(?P<flags>[-+ #0]*)(?P<width>\d*)(?P<prec>\.\d+)?u',
                         r'%\g<flags>\g<width>\g<prec>d', normalized)
     try:
@@ -145,10 +143,6 @@ def emulate(exe, operand, init14a=0, init14e=0, init14f=0):
     def hook(uc, address, size, _user):
         state['steps'] += 1
         state['last_eip'] = address
-        if address == STOP:
-            state['returned'] = True
-            uc.emu_stop()
-            return
         if address == PC12_STRCPY:
             try:
                 emulate_strcpy(uc)
@@ -180,6 +174,9 @@ def emulate(exe, operand, init14a=0, init14e=0, init14f=0):
     mu.hook_add(UC_HOOK_CODE, hook)
     mu.hook_add(UC_HOOK_MEM_INVALID, invalid_hook)
     try:
+        # Unicorn encerra quando EIP alcança o endereço 'until'; nesse caso o
+        # hook de código de STOP não é chamado. Por isso o retorno é confirmado
+        # explicitamente pelo EIP após emu_start.
         mu.emu_start(HELPER, STOP, count=500000)
     except UcError as exc:
         eip = mu.reg_read(UC_X86_REG_EIP)
@@ -197,8 +194,10 @@ def emulate(exe, operand, init14a=0, init14e=0, init14f=0):
 
     if state['fatal']:
         raise RuntimeError(state['fatal'])
+    state['returned'] = (mu.reg_read(UC_X86_REG_EIP) == STOP)
     if not state['returned']:
-        raise RuntimeError('helper não retornou para %r; last=0x%08X' % (operand, state['last_eip']))
+        raise RuntimeError('helper não retornou para %r; EIP=0x%08X last=0x%08X' %
+                           (operand, mu.reg_read(UC_X86_REG_EIP), state['last_eip']))
 
     tx_cursor = get32(mu, OBJ + 0x5E)
     ext_cursor = get32(mu, OBJ + 0x62)
