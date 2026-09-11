@@ -4,7 +4,7 @@ $shellPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
 if (-not (Test-Path -LiteralPath $shellPath)) { throw 'UniversalStudioShell.build.cs nao encontrado.' }
 $shell = [System.IO.File]::ReadAllText($shellPath)
 
-# v1.21: um perfil so qualifica a sessao quando HELLO STOP e F0 respondem
+# v1.22: um perfil so qualifica a sessao quando HELLO STOP e F0 respondem
 # na mesma SerialPort, sem fechar ou alternar DTR/RTS entre as duas etapas.
 # OFF/OFF, ON/OFF e ON/ON sao tentados apenas com comandos de leitura; nenhum
 # PG33 e transmitido enquanto o perfil nao estiver integralmente qualificado.
@@ -24,9 +24,9 @@ $replacement = @'
             state = string.Empty;
             acquisitionLabel = string.Empty;
 
-            AppendLogSafe("V121 STARTUP: rodada " + round.ToString(CultureInfo.InvariantCulture)
+            AppendLogSafe("V122 STARTUP: rodada " + round.ToString(CultureInfo.InvariantCulture)
                 + " | qualificacao exige HELLO STOP + F0 na mesma COM e no mesmo perfil.");
-            Thread.Sleep(round == 1 ? 1600 : (round == 2 ? 2600 : 3600));
+            Thread.Sleep(round == 1 ? 900 : (round == 2 ? 1300 : 1700));
 
             bool[] dtr = new bool[] { false, true, true };
             bool[] rts = new bool[] { false, false, true };
@@ -39,7 +39,7 @@ $replacement = @'
 
             for (int profile = 0; profile < names.Length; profile++)
             {
-                SerialPort qualified = TryAcquireQualifiedProfileV121(
+                SerialPort qualified = TryAcquireQualifiedProfileV122(
                     portName, dtr[profile], rts[profile], names[profile],
                     round, out state, out acquisitionLabel);
                 if (qualified != null) return qualified;
@@ -48,10 +48,10 @@ $replacement = @'
 
             RecoverPgSerialV120(portName);
             throw new TimeoutException(
-                "V121: nenhum perfil confirmou HELLO STOP e F0 00 02 10 22 CB na mesma sessao. Nenhum PG33 foi transmitido.");
+                "V122: nenhum perfil confirmou HELLO STOP e F0 00 02 10 22 CB na mesma sessao.");
         }
 
-        private SerialPort TryAcquireQualifiedProfileV121(
+        private SerialPort TryAcquireQualifiedProfileV122(
             string portName, bool dtr, bool rts, string profileName, int round,
             out string state, out string acquisitionLabel)
         {
@@ -71,15 +71,15 @@ $replacement = @'
                 serial.DiscardInBuffer();
                 serial.DiscardOutBuffer();
 
-                Thread.Sleep(profileName.IndexOf("off RTS=off", StringComparison.Ordinal) >= 0 ? 1100 : 750);
-                AppendLogSafe("V121 PERFIL: " + profileName + ".");
+                Thread.Sleep(profileName.IndexOf("off RTS=off", StringComparison.Ordinal) >= 0 ? 700 : 450);
+                AppendLogSafe("V122 PERFIL: " + profileName + ".");
 
-                for (int helloAttempt = 1; helloAttempt <= 4; helloAttempt++)
+                for (int helloAttempt = 1; helloAttempt <= 2; helloAttempt++)
                 {
                     serial.DiscardInBuffer();
                     serial.Write(HelloRequest, 0, HelloRequest.Length);
-                    byte[] helloRaw = ReadBurst(serial, 2800, 240);
-                    AppendLogSafe("V121 " + profileName + " HELLO "
+                    byte[] helloRaw = ReadBurst(serial, 1800, 240);
+                    AppendLogSafe("V122 " + profileName + " HELLO "
                         + helloAttempt.ToString(CultureInfo.InvariantCulture) + " RX="
                         + (helloRaw.Length == 0 ? "[]" : ToHex(helloRaw)));
 
@@ -88,28 +88,28 @@ $replacement = @'
                         state = "RUN";
                         acquisitionLabel = profileName;
                         keepOpen = true;
-                        AppendLogSafe("V121 BLOQUEADO: HELLO indica RUN; nenhum F0/PG33 sera enviado.");
+                        AppendLogSafe("V122 BLOQUEADO: HELLO indica RUN; nenhum F0/PG33 sera enviado.");
                         return serial;
                     }
 
                     if (!Contains(helloRaw, HelloStop))
                     {
-                        Thread.Sleep(350);
+                        Thread.Sleep(220);
                         continue;
                     }
 
-                    AppendLogSafe("V121 HELLO STOP confirmado em " + profileName
+                    AppendLogSafe("V122 HELLO STOP confirmado em " + profileName
                         + "; qualificando F0 sem fechar nem alterar as linhas.");
 
-                    for (int f0Attempt = 1; f0Attempt <= 4; f0Attempt++)
+                    for (int f0Attempt = 1; f0Attempt <= 2; f0Attempt++)
                     {
-                        Thread.Sleep(f0Attempt == 1 ? 700 : 500);
+                        Thread.Sleep(f0Attempt == 1 ? 450 : 300);
                         serial.DiscardInBuffer();
-                        AppendLogSafe("V121 " + profileName + " F0 "
+                        AppendLogSafe("V122 " + profileName + " F0 "
                             + f0Attempt.ToString(CultureInfo.InvariantCulture) + " TX: " + ToHex(F0Request));
                         serial.Write(F0Request, 0, F0Request.Length);
-                        byte[] f0Raw = ReadBurst(serial, 4300, 300);
-                        AppendLogSafe("V121 " + profileName + " F0 "
+                        byte[] f0Raw = ReadBurst(serial, 3000, 300);
+                        AppendLogSafe("V122 " + profileName + " F0 "
                             + f0Attempt.ToString(CultureInfo.InvariantCulture) + " RX="
                             + (f0Raw.Length == 0 ? "[]" : ToHex(f0Raw)));
 
@@ -121,12 +121,12 @@ $replacement = @'
                                 + " / HELLO " + helloAttempt.ToString(CultureInfo.InvariantCulture)
                                 + " / F0 " + f0Attempt.ToString(CultureInfo.InvariantCulture);
                             keepOpen = true;
-                            AppendLogSafe("V121 QUALIFICADO: HELLO STOP + F0 confirmados na mesma COM/perfil; liberando somente 38/34 e o teste controlado.");
+                            AppendLogSafe("V122 QUALIFICADO: HELLO STOP + F0 confirmados na mesma COM/perfil; liberando somente 38/34 e o teste controlado.");
                             return serial;
                         }
                     }
 
-                    AppendLogSafe("V121 " + profileName
+                    AppendLogSafe("V122 " + profileName
                         + ": HELLO respondeu, mas F0 ficou sem resposta; fechando este perfil sem transmitir PG33.");
                     return null;
                 }
@@ -134,7 +134,7 @@ $replacement = @'
             }
             catch (Exception ex)
             {
-                AppendLogSafe("V121 PERFIL sem qualificacao: " + profileName + " - " + ex.Message);
+                AppendLogSafe("V122 PERFIL sem qualificacao: " + profileName + " - " + ex.Message);
                 return null;
             }
             finally
@@ -142,7 +142,7 @@ $replacement = @'
                 if (!keepOpen && serial != null)
                 {
                     ClosePort(serial);
-                    Thread.Sleep(500);
+                    Thread.Sleep(300);
                 }
             }
         }
@@ -181,11 +181,11 @@ $replacement = @'
                 recovery.DtrEnable = false;
                 recovery.RtsEnable = false;
                 Thread.Sleep(700);
-                AppendLogSafe("V121 RECOVERY: linhas condicionadas sem TX de dados.");
+                AppendLogSafe("V122 RECOVERY: linhas condicionadas sem TX de dados.");
             }
             catch (Exception ex)
             {
-                AppendLogSafe("V121 RECOVERY parcial: " + ex.Message);
+                AppendLogSafe("V122 RECOVERY parcial: " + ex.Message);
             }
             finally { ClosePort(recovery); }
         }
@@ -193,8 +193,8 @@ $replacement = @'
         private void PerformF0WriteQualified(SerialPort port, string tag)
         {
             if (port == null || !port.IsOpen)
-                throw new InvalidOperationException("V121: porta qualificada foi fechada antes de 38/34.");
-            AppendLogSafe(tag + " V121: F0 ja confirmado durante a qualificacao da mesma COM/perfil; nenhuma repeticao necessaria.");
+                throw new InvalidOperationException("V122: porta qualificada foi fechada antes de 38/34.");
+            AppendLogSafe(tag + " V122: F0 ja confirmado durante a qualificacao da mesma COM/perfil; nenhuma repeticao necessaria.");
         }
 '@
 
@@ -204,10 +204,13 @@ $shell = $shell.Substring(0, $acqStart) + $replacement + $shell.Substring($acqEn
 $start = $shell.IndexOf('        private void StartChangeRestoreProbe()', [System.StringComparison]::Ordinal)
 if ($start -lt 0) { throw 'StartChangeRestoreProbe nao encontrado.' }
 $tail = $shell.Substring($start)
-$tail = $tail.Replace('PerformF0(port);', 'PerformF0WriteQualified(port, "V121-WRITE");')
-$tail = $tail.Replace('PG33 CHANGE+RESTORE v1.19 iniciado em ', 'PG33 CHANGE+RESTORE v1.21 iniciado em ')
-$tail = $tail.Replace('PASS PG33 CHANGE+RESTORE v1.19', 'PASS PG33 CHANGE+RESTORE v1.21')
+$tail = $tail.Replace('PerformF0(port);', 'PerformF0WriteQualified(port, "V122-WRITE");')
+$tail = $tail.Replace('PG33 CHANGE+RESTORE v1.19 iniciado em ', 'PG33 CHANGE+RESTORE v1.22 iniciado em ')
+$tail = $tail.Replace('PASS PG33 CHANGE+RESTORE v1.19', 'PASS PG33 CHANGE+RESTORE v1.22')
+$tail = $tail.Replace(
+    'Readback final falhou apos 5 rodadas de aquisicao. Ultimo erro: ',
+    'A restauracao recebeu ACK 00 00 FF, mas a verificacao final independente nao conseguiu reconectar apos 5 rodadas. Confirme o programa pelo PC12. Diagnostico: ')
 $shell = $shell.Substring(0, $start) + $tail
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 PG33 Qualified Write V121 aplicado: HELLO STOP + F0 qualificam dinamicamente o mesmo perfil antes de 38/34/PG33.'
+Write-Host 'TP02 PG33 Qualified Write V122 aplicado: HELLO STOP + F0 qualificam dinamicamente o mesmo perfil antes de 38/34/PG33.'
