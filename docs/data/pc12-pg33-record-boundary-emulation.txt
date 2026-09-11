@@ -1,0 +1,22 @@
+PC12 PG33 RECORD STEP/BLOCK BOUNDARY - UNICORN OFFLINE EMULATION
+================================================================================================
+entry=0x004B7799 collector=0x004B6B8F build_prep=0x004B78A1
+mode=OFFLINE; nenhuma rotina TX, COM ou API é executada
+
+OK: span-1 span=1 cursor 0100->0101 records 0->1 path=next-record
+  flags d7=1 d8=1 expected_path=next-record
+OK: span-2 span=2 cursor 0100->0102 records 3->4 path=next-record
+  flags d7=1 d8=1 expected_path=next-record
+OK: span-3 span=3 cursor 0100->0103 records 7->8 path=next-record
+  flags d7=1 d8=1 expected_path=next-record
+OK: span-4 span=4 cursor 0100->0104 records 12->13 path=next-record
+  flags d7=1 d8=1 expected_path=next-record
+OK: record-20-span-1 span=1 cursor 0200->0201 records 19->20 path=build-frame
+  flags d7=1 d8=0 expected_path=build-frame
+OK: record-20-span-4 span=4 cursor 0300->0304 records 19->20 path=build-frame
+  flags d7=1 d8=0 expected_path=build-frame
+
+RESULT=PASS
+Conclusão esperada: +0x176=1..4 avança +0x76 pelo mesmo número de passos,
++0x7A conta um registro, e o 20º registro encerra o bloco independentemente do span.
+Nenhum byte foi transmitido fora do Unicorn.
