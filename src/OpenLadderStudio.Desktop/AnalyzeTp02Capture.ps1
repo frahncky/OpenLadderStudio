@@ -5,9 +5,42 @@ param(
 
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+function New-FrameObject {
+    param(
+        [int]$Seq,
+        [int]$Offset,
+        [string]$Cmd,
+        [int]$Len,
+        [int]$Total,
+        [string]$Checksum,
+        [string]$Kind,
+        [string]$Hex
+    )
+    $o = New-Object PSObject
+    $o | Add-Member NoteProperty Seq $Seq
+    $o | Add-Member NoteProperty Offset $Offset
+    $o | Add-Member NoteProperty Cmd $Cmd
+    $o | Add-Member NoteProperty Len $Len
+    $o | Add-Member NoteProperty Total $Total
+    $o | Add-Member NoteProperty Checksum $Checksum
+    $o | Add-Member NoteProperty Kind $Kind
+    $o | Add-Member NoteProperty Hex $Hex
+    return $o
+}
+
+function New-AnalysisObject {
+    param([string]$ResolvedPath, [int]$Bytes, [object[]]$Frames)
+    $o = New-Object PSObject
+    $o | Add-Member NoteProperty Path $ResolvedPath
+    $o | Add-Member NoteProperty Bytes $Bytes
+    $o | Add-Member NoteProperty Frames $Frames
+    return $o
+}
 
 function Get-LatestCapture {
-    $dir = Join-Path $PSScriptRoot 'tp02-emulator-captures'
+    $dir = Join-Path $ScriptDir 'tp02-emulator-captures'
     if (-not (Test-Path $dir)) { return $null }
     $file = Get-ChildItem -Path $dir -Filter '*-raw.bin' | Where-Object { -not $_.PSIsContainer } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($file -eq $null) { return $null }
@@ -65,7 +98,8 @@ function Parse-Capture {
         throw "Captura nao encontrada: $CapturePath"
     }
 
-    [byte[]]$data = [System.IO.File]::ReadAllBytes((Resolve-Path $CapturePath))
+    $resolved = (Resolve-Path $CapturePath).Path
+    [byte[]]$data = [System.IO.File]::ReadAllBytes($resolved)
     $frames = New-Object System.Collections.Generic.List[object]
     $i = 0
     $seq = 0
@@ -73,16 +107,7 @@ function Parse-Capture {
     while ($i -lt $data.Length) {
         if (Test-HelloAt -Data $data -Offset $i) {
             $seq++
-            $frames.Add([pscustomobject]@{
-                Seq = $seq
-                Offset = $i
-                Cmd = 'ASCII'
-                Len = 8
-                Total = 8
-                Checksum = '-'
-                Kind = 'HELLO CON-ICB'
-                Hex = (Format-Hex -Data $data -Offset $i -Length 8)
-            })
+            $frames.Add((New-FrameObject -Seq $seq -Offset $i -Cmd 'ASCII' -Len 8 -Total 8 -Checksum '-' -Kind 'HELLO CON-ICB' -Hex (Format-Hex -Data $data -Offset $i -Length 8)))
             $i += 8
             continue
         }
@@ -94,16 +119,7 @@ function Parse-Capture {
                 if (Test-SumFF -Data $data -Offset $i -Length $total) {
                     $seq++
                     $cmd = $data[$i]
-                    $frames.Add([pscustomobject]@{
-                        Seq = $seq
-                        Offset = $i
-                        Cmd = ('0x{0:X2}' -f $cmd)
-                        Len = $payloadLen
-                        Total = $total
-                        Checksum = 'FF OK'
-                        Kind = (Get-KnownName -Cmd $cmd)
-                        Hex = (Format-Hex -Data $data -Offset $i -Length $total)
-                    })
+                    $frames.Add((New-FrameObject -Seq $seq -Offset $i -Cmd ('0x{0:X2}' -f $cmd) -Len $payloadLen -Total $total -Checksum 'FF OK' -Kind (Get-KnownName -Cmd $cmd) -Hex (Format-Hex -Data $data -Offset $i -Length $total)))
                     $i += $total
                     continue
                 }
@@ -113,11 +129,7 @@ function Parse-Capture {
         $i++
     }
 
-    return [pscustomobject]@{
-        Path = (Resolve-Path $CapturePath).Path
-        Bytes = $data.Length
-        Frames = $frames.ToArray()
-    }
+    return (New-AnalysisObject -ResolvedPath $resolved -Bytes $data.Length -Frames $frames.ToArray())
 }
 
 function Show-Analysis {
@@ -149,6 +161,12 @@ function Show-Analysis {
         foreach ($f in $unknown) {
             Write-Host ('  #{0} offset={1} cmd={2} len={3}  {4}' -f $f.Seq,$f.Offset,$f.Cmd,$f.Len,$f.Hex) -ForegroundColor Cyan
         }
+    }
+
+    Write-Host ''
+    Write-Host 'Resumo por opcode:'
+    $Result.Frames | Where-Object { $_.Cmd -ne 'ASCII' } | Group-Object Cmd | Sort-Object Name | ForEach-Object {
+        Write-Host ('  {0}: {1} frame(s)' -f $_.Name,$_.Count)
     }
 }
 
