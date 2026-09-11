@@ -27,6 +27,10 @@ from emulate_pc12_pg33_builder import load_pe, map_image
 EXE_DEFAULT = 'src/OpenLadderStudio.Desktop/pc12.exe'
 ENTRY = 0x0046F684
 STOP = 0x0046F719
+# Unicorn trata o endereço `until` como limite exclusivo em algumas rotas.
+# Usamos STOP+1 apenas para garantir que o hook em STOP seja observado; o hook
+# interrompe a emulação antes de qualquer instrução posterior ser executada.
+EMU_END = STOP + 1
 
 RX_BUF = 0x00530230
 RX_LEN = 0x004FA8B0
@@ -72,7 +76,7 @@ def emulate(exe, frame, bypass=0):
 
     mu.hook_add(UC_HOOK_CODE, hook)
     try:
-        mu.emu_start(ENTRY, STOP, count=20000)
+        mu.emu_start(ENTRY, EMU_END, count=20000)
     except UcError as exc:
         raise RuntimeError('Unicorn falhou: %s' % exc)
     if not hit['stop']:
