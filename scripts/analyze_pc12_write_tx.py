@@ -25,8 +25,10 @@ WRITE_HI = 0x004B7E20
 TX_BUF_LO = 0x004FA7A8
 TX_BUF_HI = 0x004FA80F
 TX_LEN = 0x004FA8AC
-CONTEXT_BEFORE = 0xA0
+CONTEXT_BEFORE = 0xE0
 CONTEXT_AFTER = 0x28
+FRAME_BUILDER_LO = 0x004B7940
+FRAME_BUILDER_HI = 0x004B7A20
 
 
 def u32(data, off):
@@ -135,6 +137,8 @@ def main():
     image_base, sections = pe_info(data)
 
     calls = scan_calls_to(data, sections, image_base, WRITE_LO, WRITE_HI, TX_ROUTINE)
+    builder_stores = scan_abs_stores(
+        data, sections, image_base, FRAME_BUILDER_LO, FRAME_BUILDER_HI)
 
     lines = []
     lines.append('PC12 WRITE PLC PROGRAM - FOCUSED TX STATIC ANALYSIS')
@@ -157,6 +161,22 @@ def main():
                          (idx, call_va, off, hx(raw)))
         lines.append('')
 
+    lines.append('FRAME BUILDER 0x33 - DIRECT TX STORES')
+    lines.append('-' * 100)
+    lines.append('window=0x%08X..0x%08X stores=%d' %
+                 (FRAME_BUILDER_LO, FRAME_BUILDER_HI, len(builder_stores)))
+    for va, addr, kind, value, raw in builder_stores:
+        value_text = '?' if value is None else '0x%X' % value
+        lines.append('  0x%08X  %-20s %-10s value=%s bytes=[%s]' %
+                     (va, fmt_addr(addr), kind, value_text, hx(raw)))
+    lines.append('')
+    lines.append('STATIC FRAME SKELETON')
+    lines.append('  TX[0] = 0x33 is an immediate constant in the Write PLC Program builder.')
+    lines.append('  TX[1], TX[3], TX[4], TX[5] are runtime-derived in this path; TX[2] = 0x00.')
+    lines.append('  A checksum byte is appended after the runtime payload and TX_LEN is set to payload_length + 1.')
+    lines.append('  This establishes a 0x33 family frame in the write path, not yet its semantic name.')
+    lines.append('')
+
     lines.append('PRE-TX BUFFER/LENGTH STORES')
     lines.append('-' * 100)
     for idx, (call_va, _off, _raw) in enumerate(calls, 1):
@@ -172,6 +192,11 @@ def main():
             lines.append('  (nenhum MOV absoluto simples ao TX no recorte)')
     lines.append('')
 
+    lines.append('FRAME BUILDER OBJDUMP')
+    lines.append('-' * 100)
+    lines.extend(objdump_window(path, FRAME_BUILDER_LO, FRAME_BUILDER_HI, max_lines=260))
+    lines.append('')
+
     lines.append('FOCUSED OBJDUMP WINDOWS')
     lines.append('-' * 100)
     for idx, (call_va, _off, _raw) in enumerate(calls, 1):
@@ -185,6 +210,8 @@ def main():
     lines.append('STATIC INTERPRETATION')
     lines.append('-' * 100)
     lines.append('* CALL direto Write PLC Program -> rotina TX é correlação estática forte do caminho de envio.')
+    lines.append('* Os vários CALLs consecutivos são cercados por testes de flags de comunicação; não devem ser contados como 15 quadros distintos sem execução do fluxo.')
+    lines.append('* O construtor 0x33 e o cálculo de checksum estão no mesmo caminho que antecede os CALLs de TX.')
     lines.append('* O conteúdo mostrado antes de cada CALL continua sendo estático: branches podem selecionar caminhos diferentes.')
     lines.append('* Nenhuma ocorrência 09/0F deve ser tratada como download completo sem reconstruir a ordem efetiva dos quadros.')
     lines.append('* 0F 00 F0 (Clear All Memory) continua bloqueado e este script nunca executa TX.')
