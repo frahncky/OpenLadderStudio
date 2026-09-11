@@ -33,11 +33,11 @@ internal static class Tp02Pg33DryRunFrameSelfTest
             new byte[] { 0x01 });
 
         Check(Hex(one) == "33 07 00 00 00 02 00 10 01 B2",
-            "fixture candidato de 1 registro");
+            "fixture candidato de 1 palavra");
         Check(Tp02Pg33DryRunFrame.HasValidChecksum(one),
-            "checksum do quadro de 1 registro");
+            "checksum do quadro de 1 palavra");
         Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(one),
-            "geometria do quadro de 1 registro");
+            "geometria do quadro de 1 palavra");
 
         byte[] two = Tp02Pg33DryRunFrame.BuildCandidate(
             0x0050,
@@ -47,24 +47,26 @@ internal static class Tp02Pg33DryRunFrameSelfTest
         Check(two[1] == 0x0A, "LEN=3*2+4");
         Check(two[2] == 0x00, "flag 00");
         Check(two[3] == 0x00 && two[4] == 0x50, "start step 0x0050");
-        Check(two[5] == 0x04, "plano HIGH/LOW tem 2*N bytes");
+        Check(two[5] == 0x04, "plano HIGH/LOW tem 2*W bytes");
         Check(two[6] == 0x00 && two[7] == 0x10 && two[8] == 0x20 && two[9] == 0x41,
             "plano HIGH/LOW preservado");
         Check(two[10] == 0x01 && two[11] == 0x07,
             "plano EXTERNAL preservado");
-        Check(Tp02Pg33DryRunFrame.HasValidChecksum(two), "checksum de 2 registros");
-        Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(two), "geometria de 2 registros");
+        Check(Tp02Pg33DryRunFrame.HasValidChecksum(two), "checksum de 2 palavras");
+        Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(two), "geometria de 2 palavras");
 
-        byte[] hl20 = new byte[40];
-        byte[] ext20 = new byte[20];
-        byte[] max = Tp02Pg33DryRunFrame.BuildCandidate(3920, hl20, ext20);
-        Check(max[1] == 0x40, "LEN de 20 registros = 40h");
-        Check(max[5] == 0x28, "plano HIGH/LOW de 20 registros = 28h bytes");
-        Check(max.Length == 67, "quadro de 20 registros = 67 bytes incluindo checksum");
+        // Limite real do quadro bruto: 20 instruções lógicas podem expandir até
+        // 80 palavras (4 palavras por instrução).
+        byte[] hl80 = new byte[160];
+        byte[] ext80 = new byte[80];
+        byte[] max = Tp02Pg33DryRunFrame.BuildCandidate(3920, hl80, ext80);
+        Check(max[1] == 0xF4, "LEN de 80 palavras = F4h");
+        Check(max[5] == 0xA0, "plano HIGH/LOW de 80 palavras = A0h bytes");
+        Check(max.Length == 247, "quadro de 80 palavras = 247 bytes incluindo checksum");
         Check(Tp02Pg33DryRunFrame.HasCandidateGeometry(max), "geometria máxima válida");
 
-        // O número de registros não é o span de passos. O construtor bruto não
-        // deve inferir start+N: instruções podem consumir 1..4 passos.
+        // O construtor bruto não conhece a decomposição em instruções lógicas.
+        // Portanto não deve inferir avanço de cursor apenas pela quantidade W.
         byte[] nearEnd = Tp02Pg33DryRunFrame.BuildCandidate(
             3999,
             new byte[] { 0x00, 0x10, 0x20, 0x40 },
@@ -86,8 +88,8 @@ internal static class Tp02Pg33DryRunFrameSelfTest
             delegate { Tp02Pg33DryRunFrame.BuildCandidate(0, new byte[] { 0x00, 0x10 }, new byte[0]); },
             "plano EXTERNAL incompatível deve falhar");
         ExpectThrow(
-            delegate { Tp02Pg33DryRunFrame.BuildCandidate(0, new byte[42], new byte[21]); },
-            "mais de 20 registros deve falhar");
+            delegate { Tp02Pg33DryRunFrame.BuildCandidate(0, new byte[162], new byte[81]); },
+            "mais de 80 palavras deve falhar");
         ExpectThrow(
             delegate { Tp02Pg33DryRunFrame.BuildCandidate(4000, new byte[] { 0x00, 0x10 }, new byte[] { 0x01 }); },
             "startStep=4000 deve falhar");
