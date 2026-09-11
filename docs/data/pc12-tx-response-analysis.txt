@@ -1,0 +1,2015 @@
+PC12 TX/RESPONSE ROUTINE - STATIC OFFLINE ANALYSIS
+================================================================================================
+range=0x0046F5E6..0x00470000
+mode=OFFLINE ONLY; no execution, no COM, no PLC, no TX
+
+GLOBAL REFERENCES
+------------------------------------------------------------------------------------------------
+0x0046F5FF  F_TIMEOUT        WRITE8_IMM_00        bytes=[C6 05 B7 A8 4F 00 00]
+0x0046F606  F_CHECKSUM       WRITE8_IMM_00        bytes=[C6 05 B9 A8 4F 00 00]
+0x0046F60D  F_ERROR          WRITE8_IMM_00        bytes=[C6 05 B8 A8 4F 00 00]
+0x0046F684  F_TIMEOUT        READ8_REG            bytes=[8A 0D B7 A8 4F 00]
+0x0046F6A3  RX_LEN           READ32_REG           bytes=[8B 0D B0 A8 4F 00]
+0x0046F6AD  F_CHECKSUM       WRITE8_IMM_00        bytes=[C6 05 B9 A8 4F 00 00]
+0x0046F6CB  F_CHECKSUM       WRITE8_IMM_01        bytes=[C6 05 B9 A8 4F 00 01]
+0x0046F6D6  RX_BUF           READ8_REG            bytes=[8A 15 30 02 53 00]
+0x0046F6EA  F_ERROR          WRITE8_IMM_01        bytes=[C6 05 B8 A8 4F 00 01]
+0x0046F6F3  F_ERROR          WRITE8_IMM_00        bytes=[C6 05 B8 A8 4F 00 00]
+0x0046F6FC  RX_BUF           READ8                bytes=[A0 30 02 53 00]
+0x0046F719  F_TIMEOUT        READ8_REG            bytes=[8A 15 B7 A8 4F 00]
+0x0046F723  F_CHECKSUM       READ8_REG            bytes=[8A 0D B9 A8 4F 00]
+0x0046F72D  F_ERROR          READ8                bytes=[A0 B8 A8 4F 00]
+0x0046F764  F_CHECKSUM       WRITE8_IMM_00        bytes=[C6 05 B9 A8 4F 00 00]
+0x0046F779  F_TIMEOUT        WRITE8_IMM_01        bytes=[C6 05 B7 A8 4F 00 01]
+0x0046F780  F_ERROR          WRITE8_IMM_00        bytes=[C6 05 B8 A8 4F 00 00]
+0x0046F790  RX_LEN           WRITE32              bytes=[A3 B0 A8 4F 00]
+0x0046F7BF  F_TIMEOUT        READ8                bytes=[A0 B7 A8 4F 00]
+0x0046F9A7  RX_LEN           WRITE32_REG          bytes=[89 15 B0 A8 4F 00]
+0x0046FA68  RX_LEN           WRITE32              bytes=[A3 B0 A8 4F 00]
+0x0046FA6D  F_TIMEOUT        WRITE8_IMM_00        bytes=[C6 05 B7 A8 4F 00 00]
+
+FOCUSED DISASSEMBLY AROUND GLOBAL REFERENCES
+------------------------------------------------------------------------------------------------
+### around 0x0046F5FF (F_TIMEOUT WRITE8_IMM_00)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f5e6 <.text+0x6e5e6>:
+  46f5e6:	55                   	push   ebp
+  46f5e7:	8b ec                	mov    ebp,esp
+  46f5e9:	53                   	push   ebx
+  46f5ea:	8b 5d 08             	mov    ebx,DWORD PTR [ebp+0x8]
+  46f5ed:	c6 43 04 01          	mov    BYTE PTR [ebx+0x4],0x1
+  46f5f1:	c6 05 4c a7 4f 00 00 	mov    BYTE PTR ds:0x4fa74c,0x0
+  46f5f8:	c6 05 bd a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bd,0x0
+  46f5ff:	c6 05 b7 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b7,0x0
+  46f606:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f60d:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f614:	6a 01                	push   0x1
+  46f616:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f61c:	e8 4b c8 05 00       	call   0x4cbe6c
+  46f621:	6a 08                	push   0x8
+  46f623:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f629:	e8 2c c8 05 00       	call   0x4cbe5a
+  46f62e:	6a 04                	push   0x4
+  46f630:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f636:	e8 1f c8 05 00       	call   0x4cbe5a
+  46f63b:	c6 05 d1 07 57 00 01 	mov    BYTE PTR ds:0x5707d1,0x1
+  46f642:	c6 05 9d 01 53 00 00 	mov    BYTE PTR ds:0x53019d,0x0
+  46f649:	68 bf a8 4f 00       	push   0x4fa8bf
+  46f64e:	8d 43 3a             	lea    eax,[ebx+0x3a]
+  46f651:	50                   	push   eax
+  46f652:	ff 35 ac a8 4f 00    	push   DWORD PTR ds:0x4fa8ac
+  46f658:	68 a8 a7 4f 00       	push   0x4fa7a8
+  46f65d:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f663:	e8 3a c8 05 00       	call   0x4cbea2
+  46f668:	8a 15 cd 07 57 00    	mov    dl,BYTE PTR ds:0x5707cd
+  46f66e:	84                 	test   dl,dl
+
+### around 0x0046F606 (F_CHECKSUM WRITE8_IMM_00)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f5e6 <.text+0x6e5e6>:
+  46f5e6:	55                   	push   ebp
+  46f5e7:	8b ec                	mov    ebp,esp
+  46f5e9:	53                   	push   ebx
+  46f5ea:	8b 5d 08             	mov    ebx,DWORD PTR [ebp+0x8]
+  46f5ed:	c6 43 04 01          	mov    BYTE PTR [ebx+0x4],0x1
+  46f5f1:	c6 05 4c a7 4f 00 00 	mov    BYTE PTR ds:0x4fa74c,0x0
+  46f5f8:	c6 05 bd a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bd,0x0
+  46f5ff:	c6 05 b7 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b7,0x0
+  46f606:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f60d:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f614:	6a 01                	push   0x1
+  46f616:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f61c:	e8 4b c8 05 00       	call   0x4cbe6c
+  46f621:	6a 08                	push   0x8
+  46f623:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f629:	e8 2c c8 05 00       	call   0x4cbe5a
+  46f62e:	6a 04                	push   0x4
+  46f630:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f636:	e8 1f c8 05 00       	call   0x4cbe5a
+  46f63b:	c6 05 d1 07 57 00 01 	mov    BYTE PTR ds:0x5707d1,0x1
+  46f642:	c6 05 9d 01 53 00 00 	mov    BYTE PTR ds:0x53019d,0x0
+  46f649:	68 bf a8 4f 00       	push   0x4fa8bf
+  46f64e:	8d 43 3a             	lea    eax,[ebx+0x3a]
+  46f651:	50                   	push   eax
+  46f652:	ff 35 ac a8 4f 00    	push   DWORD PTR ds:0x4fa8ac
+  46f658:	68 a8 a7 4f 00       	push   0x4fa7a8
+  46f65d:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f663:	e8 3a c8 05 00       	call   0x4cbea2
+  46f668:	8a 15 cd 07 57 00    	mov    dl,BYTE PTR ds:0x5707cd
+  46f66e:	84 d2                	test   dl,dl
+  46f670:	0f 85 f5 00 00 00    	jne    0x46f76b
+
+### around 0x0046F60D (F_ERROR WRITE8_IMM_00)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f5e6 <.text+0x6e5e6>:
+  46f5e6:	55                   	push   ebp
+  46f5e7:	8b ec                	mov    ebp,esp
+  46f5e9:	53                   	push   ebx
+  46f5ea:	8b 5d 08             	mov    ebx,DWORD PTR [ebp+0x8]
+  46f5ed:	c6 43 04 01          	mov    BYTE PTR [ebx+0x4],0x1
+  46f5f1:	c6 05 4c a7 4f 00 00 	mov    BYTE PTR ds:0x4fa74c,0x0
+  46f5f8:	c6 05 bd a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bd,0x0
+  46f5ff:	c6 05 b7 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b7,0x0
+  46f606:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f60d:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f614:	6a 01                	push   0x1
+  46f616:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f61c:	e8 4b c8 05 00       	call   0x4cbe6c
+  46f621:	6a 08                	push   0x8
+  46f623:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f629:	e8 2c c8 05 00       	call   0x4cbe5a
+  46f62e:	6a 04                	push   0x4
+  46f630:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f636:	e8 1f c8 05 00       	call   0x4cbe5a
+  46f63b:	c6 05 d1 07 57 00 01 	mov    BYTE PTR ds:0x5707d1,0x1
+  46f642:	c6 05 9d 01 53 00 00 	mov    BYTE PTR ds:0x53019d,0x0
+  46f649:	68 bf a8 4f 00       	push   0x4fa8bf
+  46f64e:	8d 43 3a             	lea    eax,[ebx+0x3a]
+  46f651:	50                   	push   eax
+  46f652:	ff 35 ac a8 4f 00    	push   DWORD PTR ds:0x4fa8ac
+  46f658:	68 a8 a7 4f 00       	push   0x4fa7a8
+  46f65d:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f663:	e8 3a c8 05 00       	call   0x4cbea2
+  46f668:	8a 15 cd 07 57 00    	mov    dl,BYTE PTR ds:0x5707cd
+  46f66e:	84 d2                	test   dl,dl
+  46f670:	0f 85 f5 00 00 00    	jne    0x46f76b
+  46f676:	53                   	push   ebx
+  46f677:	e8 f2 00 00 00       	call   0x46f76e
+  46f67c:	59                   	pop    ecx
+
+### around 0x0046F684 (F_TIMEOUT READ8_REG)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f644 <.text+0x6e644>:
+  46f644:	9d                   	popf
+  46f645:	01 53 00             	add    DWORD PTR [ebx+0x0],edx
+  46f648:	00 68 bf             	add    BYTE PTR [eax-0x41],ch
+  46f64b:	a8 4f                	test   al,0x4f
+  46f64d:	00 8d 43 3a 50 ff    	add    BYTE PTR [ebp-0xafc5bd],cl
+  46f653:	35 ac a8 4f 00       	xor    eax,0x4fa8ac
+  46f658:	68 a8 a7 4f 00       	push   0x4fa7a8
+  46f65d:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f663:	e8 3a c8 05 00       	call   0x4cbea2
+  46f668:	8a 15 cd 07 57 00    	mov    dl,BYTE PTR ds:0x5707cd
+  46f66e:	84 d2                	test   dl,dl
+  46f670:	0f 85 f5 00 00 00    	jne    0x46f76b
+  46f676:	53                   	push   ebx
+  46f677:	e8 f2 00 00 00       	call   0x46f76e
+  46f67c:	59                   	pop    ecx
+  46f67d:	c6 05 d1 07 57 00 00 	mov    BYTE PTR ds:0x5707d1,0x0
+  46f684:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  46f68a:	84 c9                	test   cl,cl
+  46f68c:	0f 85 87 00 00 00    	jne    0x46f719
+  46f692:	33 d2                	xor    edx,edx
+  46f694:	33 c0                	xor    eax,eax
+  46f696:	eb 0b                	jmp    0x46f6a3
+  46f698:	33 c9                	xor    ecx,ecx
+  46f69a:	8a 88 30 02 53 00    	mov    cl,BYTE PTR [eax+0x530230]
+  46f6a0:	03 d1                	add    edx,ecx
+  46f6a2:	40                   	inc    eax
+  46f6a3:	8b 0d b0 a8 4f 00    	mov    ecx,DWORD PTR ds:0x4fa8b0
+  46f6a9:	3b c1                	cmp    eax,ecx
+  46f6ab:	7c eb                	jl     0x46f698
+  46f6ad:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f6b4:	81 e2 ff 00 00 00    	and    edx,0xff
+  46f6ba:	81 fa ff 00 00 00    	cmp    edx,0xff
+  46f6c0:	74 12                	je     0x46f6d4
+  46f6c2:	a0 ae 01 53 00       	mov    al,ds:0x5301ae
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6       	mov    BYTE PTR ds:0x4fa8b8,0x0
+
+### around 0x0046F6A3 (RX_LEN READ32_REG)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f663 <.text+0x6e663>:
+  46f663:	e8 3a c8 05 00       	call   0x4cbea2
+  46f668:	8a 15 cd 07 57 00    	mov    dl,BYTE PTR ds:0x5707cd
+  46f66e:	84 d2                	test   dl,dl
+  46f670:	0f 85 f5 00 00 00    	jne    0x46f76b
+  46f676:	53                   	push   ebx
+  46f677:	e8 f2 00 00 00       	call   0x46f76e
+  46f67c:	59                   	pop    ecx
+  46f67d:	c6 05 d1 07 57 00 00 	mov    BYTE PTR ds:0x5707d1,0x0
+  46f684:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  46f68a:	84 c9                	test   cl,cl
+  46f68c:	0f 85 87 00 00 00    	jne    0x46f719
+  46f692:	33 d2                	xor    edx,edx
+  46f694:	33 c0                	xor    eax,eax
+  46f696:	eb 0b                	jmp    0x46f6a3
+  46f698:	33 c9                	xor    ecx,ecx
+  46f69a:	8a 88 30 02 53 00    	mov    cl,BYTE PTR [eax+0x530230]
+  46f6a0:	03 d1                	add    edx,ecx
+  46f6a2:	40                   	inc    eax
+  46f6a3:	8b 0d b0 a8 4f 00    	mov    ecx,DWORD PTR ds:0x4fa8b0
+  46f6a9:	3b c1                	cmp    eax,ecx
+  46f6ab:	7c eb                	jl     0x46f698
+  46f6ad:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f6b4:	81 e2 ff 00 00 00    	and    edx,0xff
+  46f6ba:	81 fa ff 00 00 00    	cmp    edx,0xff
+  46f6c0:	74 12                	je     0x46f6d4
+  46f6c2:	a0 ae 01 53 00       	mov    al,ds:0x5301ae
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6       	mov    BYTE PTR ds:0x4fa8be,0x0
+
+### around 0x0046F6AD (F_CHECKSUM WRITE8_IMM_00)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f66d <.text+0x6e66d>:
+  46f66d:	00 84 d2 0f 85 f5 00 	add    BYTE PTR [edx+edx*8+0xf5850f],al
+  46f674:	00 00                	add    BYTE PTR [eax],al
+  46f676:	53                   	push   ebx
+  46f677:	e8 f2 00 00 00       	call   0x46f76e
+  46f67c:	59                   	pop    ecx
+  46f67d:	c6 05 d1 07 57 00 00 	mov    BYTE PTR ds:0x5707d1,0x0
+  46f684:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  46f68a:	84 c9                	test   cl,cl
+  46f68c:	0f 85 87 00 00 00    	jne    0x46f719
+  46f692:	33 d2                	xor    edx,edx
+  46f694:	33 c0                	xor    eax,eax
+  46f696:	eb 0b                	jmp    0x46f6a3
+  46f698:	33 c9                	xor    ecx,ecx
+  46f69a:	8a 88 30 02 53 00    	mov    cl,BYTE PTR [eax+0x530230]
+  46f6a0:	03 d1                	add    edx,ecx
+  46f6a2:	40                   	inc    eax
+  46f6a3:	8b 0d b0 a8 4f 00    	mov    ecx,DWORD PTR ds:0x4fa8b0
+  46f6a9:	3b c1                	cmp    eax,ecx
+  46f6ab:	7c eb                	jl     0x46f698
+  46f6ad:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f6b4:	81 e2 ff 00 00 00    	and    edx,0xff
+  46f6ba:	81 fa ff 00 00 00    	cmp    edx,0xff
+  46f6c0:	74 12                	je     0x46f6d4
+  46f6c2:	a0 ae 01 53 00       	mov    al,ds:0x5301ae
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8      	mov    dl,BYTE PTR ds:0x4fa8b7
+
+### around 0x0046F6CB (F_CHECKSUM WRITE8_IMM_01)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f68b <.text+0x6e68b>:
+  46f68b:	c9                   	leave
+  46f68c:	0f 85 87 00 00 00    	jne    0x46f719
+  46f692:	33 d2                	xor    edx,edx
+  46f694:	33 c0                	xor    eax,eax
+  46f696:	eb 0b                	jmp    0x46f6a3
+  46f698:	33 c9                	xor    ecx,ecx
+  46f69a:	8a 88 30 02 53 00    	mov    cl,BYTE PTR [eax+0x530230]
+  46f6a0:	03 d1                	add    edx,ecx
+  46f6a2:	40                   	inc    eax
+  46f6a3:	8b 0d b0 a8 4f 00    	mov    ecx,DWORD PTR ds:0x4fa8b0
+  46f6a9:	3b c1                	cmp    eax,ecx
+  46f6ab:	7c eb                	jl     0x46f698
+  46f6ad:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f6b4:	81 e2 ff 00 00 00    	and    edx,0xff
+  46f6ba:	81 fa ff 00 00 00    	cmp    edx,0xff
+  46f6c0:	74 12                	je     0x46f6d4
+  46f6c2:	a0 ae 01 53 00       	mov    al,ds:0x5301ae
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20       	push   DWORD PTR ds:0x530220
+
+### around 0x0046F6D6 (RX_BUF READ8_REG)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f696 <.text+0x6e696>:
+  46f696:	eb 0b                	jmp    0x46f6a3
+  46f698:	33 c9                	xor    ecx,ecx
+  46f69a:	8a 88 30 02 53 00    	mov    cl,BYTE PTR [eax+0x530230]
+  46f6a0:	03 d1                	add    edx,ecx
+  46f6a2:	40                   	inc    eax
+  46f6a3:	8b 0d b0 a8 4f 00    	mov    ecx,DWORD PTR ds:0x4fa8b0
+  46f6a9:	3b c1                	cmp    eax,ecx
+  46f6ab:	7c eb                	jl     0x46f698
+  46f6ad:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f6b4:	81 e2 ff 00 00 00    	and    edx,0xff
+  46f6ba:	81 fa ff 00 00 00    	cmp    edx,0xff
+  46f6c0:	74 12                	je     0x46f6d4
+  46f6c2:	a0 ae 01 53 00       	mov    al,ds:0x5301ae
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff         	push   DWORD PTR ds:0x530220
+
+### around 0x0046F6EA (F_ERROR WRITE8_IMM_01)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f6aa <.text+0x6e6aa>:
+  46f6aa:	c1 7c eb c6 05       	sar    DWORD PTR [ebx+ebp*8-0x3a],0x5
+  46f6af:	b9 a8 4f 00 00       	mov    ecx,0x4fa8
+  46f6b4:	81 e2 ff 00 00 00    	and    edx,0xff
+  46f6ba:	81 fa ff 00 00 00    	cmp    edx,0xff
+  46f6c0:	74 12                	je     0x46f6d4
+  46f6c2:	a0 ae 01 53 00       	mov    al,ds:0x5301ae
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+
+### around 0x0046F6F3 (F_ERROR WRITE8_IMM_00)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f6b3 <.text+0x6e6b3>:
+  46f6b3:	00 81 e2 ff 00 00    	add    BYTE PTR [ecx+0xffe2],al
+  46f6b9:	00 81 fa ff 00 00    	add    BYTE PTR [ecx+0xfffa],al
+  46f6bf:	00 74 12 a0          	add    BYTE PTR [edx+edx*1-0x60],dh
+  46f6c3:	ae                   	scas   al,BYTE PTR es:[edi]
+  46f6c4:	01 53 00             	add    DWORD PTR [ebx+0x0],edx
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74                 	je     0x46f76b
+
+### around 0x0046F6FC (RX_BUF READ8)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f6bc <.text+0x6e6bc>:
+  46f6bc:	ff 00                	inc    DWORD PTR [eax]
+  46f6be:	00 00                	add    BYTE PTR [eax],al
+  46f6c0:	74 12                	je     0x46f6d4
+  46f6c2:	a0 ae 01 53 00       	mov    al,ds:0x5301ae
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+
+### around 0x0046F719 (F_TIMEOUT READ8_REG)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f6d9 <.text+0x6e6d9>:
+  46f6d9:	02 53 00             	add    dl,BYTE PTR [ebx+0x0]
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+  46f76c:	5d                   	pop    ebp
+  46f76d:	c3                   	ret
+  46f76e:	55                   	push   ebp
+  46f76f:	8b ec                	mov    ebp,esp
+  46f771:	53                   	push   ebx
+  46f772:	56                   	push   esi
+  46f773:	8b 1d 80 04 57 00    	mov    ebx,DWORD PTR ds:0x570480
+  46f779:	c6 05 b7 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b7,0x1
+  46f780:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f787:	c6 05      	mov    BYTE PTR ds:0x4fa8bc,0x0
+
+### around 0x0046F723 (F_CHECKSUM READ8_REG)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f6e3 <.text+0x6e6e3>:
+  46f6e3:	fa                   	cli
+  46f6e4:	80 00 00             	add    BYTE PTR [eax],0x0
+  46f6e7:	00 75 09             	add    BYTE PTR [ebp+0x9],dh
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+  46f76c:	5d                   	pop    ebp
+  46f76d:	c3                   	ret
+  46f76e:	55                   	push   ebp
+  46f76f:	8b ec                	mov    ebp,esp
+  46f771:	53                   	push   ebx
+  46f772:	56                   	push   esi
+  46f773:	8b 1d 80 04 57 00    	mov    ebx,DWORD PTR ds:0x570480
+  46f779:	c6 05 b7 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b7,0x1
+  46f780:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f787:	c6 05 bc a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bc,0x0
+  46f78e:	33 c0                	xor    eax,eax
+  46f790:	a3 b0 a8         	mov    ds:0x4fa8b0,eax
+
+### around 0x0046F72D (F_ERROR READ8)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f6ed <.text+0x6e6ed>:
+  46f6ed:	a8 4f                	test   al,0x4f
+  46f6ef:	00 01                	add    BYTE PTR [ecx],al
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+  46f76c:	5d                   	pop    ebp
+  46f76d:	c3                   	ret
+  46f76e:	55                   	push   ebp
+  46f76f:	8b ec                	mov    ebp,esp
+  46f771:	53                   	push   ebx
+  46f772:	56                   	push   esi
+  46f773:	8b 1d 80 04 57 00    	mov    ebx,DWORD PTR ds:0x570480
+  46f779:	c6 05 b7 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b7,0x1
+  46f780:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f787:	c6 05 bc a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bc,0x0
+  46f78e:	33 c0                	xor    eax,eax
+  46f790:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46f795:	6a 00                	push   0x0
+  46f797:	e8 ea c9 05 00       	call   0x4cc186
+  46f79c:	59                   	pop    ecx
+
+### around 0x0046F764 (F_CHECKSUM WRITE8_IMM_00)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f724 <.text+0x6e724>:
+  46f724:	0d b9 a8 4f 00       	or     eax,0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+  46f76c:	5d                   	pop    ebp
+  46f76d:	c3                   	ret
+  46f76e:	55                   	push   ebp
+  46f76f:	8b ec                	mov    ebp,esp
+  46f771:	53                   	push   ebx
+  46f772:	56                   	push   esi
+  46f773:	8b 1d 80 04 57 00    	mov    ebx,DWORD PTR ds:0x570480
+  46f779:	c6 05 b7 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b7,0x1
+  46f780:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f787:	c6 05 bc a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bc,0x0
+  46f78e:	33 c0                	xor    eax,eax
+  46f790:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46f795:	6a 00                	push   0x0
+  46f797:	e8 ea c9 05 00       	call   0x4cc186
+  46f79c:	59                   	pop    ecx
+  46f79d:	8b f0                	mov    esi,eax
+  46f79f:	6a 00                	push   0x0
+  46f7a1:	e8 e0 c9 05 00       	call   0x4cc186
+  46f7a6:	59                   	pop    ecx
+  46f7a7:	80 3d b7 a8 4f 00 00 	cmp    BYTE PTR ds:0x4fa8b7,0x0
+  46f7ae:	75 09                	jne    0x46f7b9
+  46f7b0:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7b7:	eb 06                	jmp    0x46f7bf
+  46f7b9:	2b c6                	sub    eax,esi
+  46f7bb:	3b d8                	cmp    ebx,eax
+  46f7bd:	7d e0                	jge    0x46f79f
+  46f7bf:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  46f7c4:	84 c0                	test   al,al
+  46f7c6:	74 0d                	je     0x46f7d5
+  46f7c8:	6a 00                	push   0x0
+  46f7ca:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7d0:	e8 97 c6 05        	call   0x4cbe6c
+
+### around 0x0046F779 (F_TIMEOUT WRITE8_IMM_01)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f739 <.text+0x6e739>:
+  46f739:	35 20 02 53 00       	xor    eax,0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+  46f76c:	5d                   	pop    ebp
+  46f76d:	c3                   	ret
+  46f76e:	55                   	push   ebp
+  46f76f:	8b ec                	mov    ebp,esp
+  46f771:	53                   	push   ebx
+  46f772:	56                   	push   esi
+  46f773:	8b 1d 80 04 57 00    	mov    ebx,DWORD PTR ds:0x570480
+  46f779:	c6 05 b7 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b7,0x1
+  46f780:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f787:	c6 05 bc a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bc,0x0
+  46f78e:	33 c0                	xor    eax,eax
+  46f790:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46f795:	6a 00                	push   0x0
+  46f797:	e8 ea c9 05 00       	call   0x4cc186
+  46f79c:	59                   	pop    ecx
+  46f79d:	8b f0                	mov    esi,eax
+  46f79f:	6a 00                	push   0x0
+  46f7a1:	e8 e0 c9 05 00       	call   0x4cc186
+  46f7a6:	59                   	pop    ecx
+  46f7a7:	80 3d b7 a8 4f 00 00 	cmp    BYTE PTR ds:0x4fa8b7,0x0
+  46f7ae:	75 09                	jne    0x46f7b9
+  46f7b0:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7b7:	eb 06                	jmp    0x46f7bf
+  46f7b9:	2b c6                	sub    eax,esi
+  46f7bb:	3b d8                	cmp    ebx,eax
+  46f7bd:	7d e0                	jge    0x46f79f
+  46f7bf:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  46f7c4:	84 c0                	test   al,al
+  46f7c6:	74 0d                	je     0x46f7d5
+  46f7c8:	6a 00                	push   0x0
+  46f7ca:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7d0:	e8 97 c6 05 00       	call   0x4cbe6c
+  46f7d5:	8a 15 9d 01 53 00    	mov    dl,BYTE PTR ds:0x53019d
+  46f7db:	84 d2                	test   dl,dl
+  46f7dd:	74 0d                	je     0x46f7ec
+  46f7df:	6a 00                	push   0x0
+  46f7e1:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7e7:	e8 80          	call   0x4cbe6c
+
+### around 0x0046F780 (F_ERROR WRITE8_IMM_00)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f740 <.text+0x6e740>:
+  46f740:	c7 05 00 6a 04 ff 35 	mov    DWORD PTR ds:0xff046a00,0x53022035
+  46f747:	20 02 53 
+  46f74a:	00 e8                	add    al,ch
+  46f74c:	0a c7                	or     al,bh
+  46f74e:	05 00 8a 15 ae       	add    eax,0xae158a00
+  46f753:	01 53 00             	add    DWORD PTR [ebx+0x0],edx
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+  46f76c:	5d                   	pop    ebp
+  46f76d:	c3                   	ret
+  46f76e:	55                   	push   ebp
+  46f76f:	8b ec                	mov    ebp,esp
+  46f771:	53                   	push   ebx
+  46f772:	56                   	push   esi
+  46f773:	8b 1d 80 04 57 00    	mov    ebx,DWORD PTR ds:0x570480
+  46f779:	c6 05 b7 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b7,0x1
+  46f780:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f787:	c6 05 bc a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bc,0x0
+  46f78e:	33 c0                	xor    eax,eax
+  46f790:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46f795:	6a 00                	push   0x0
+  46f797:	e8 ea c9 05 00       	call   0x4cc186
+  46f79c:	59                   	pop    ecx
+  46f79d:	8b f0                	mov    esi,eax
+  46f79f:	6a 00                	push   0x0
+  46f7a1:	e8 e0 c9 05 00       	call   0x4cc186
+  46f7a6:	59                   	pop    ecx
+  46f7a7:	80 3d b7 a8 4f 00 00 	cmp    BYTE PTR ds:0x4fa8b7,0x0
+  46f7ae:	75 09                	jne    0x46f7b9
+  46f7b0:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7b7:	eb 06                	jmp    0x46f7bf
+  46f7b9:	2b c6                	sub    eax,esi
+  46f7bb:	3b d8                	cmp    ebx,eax
+  46f7bd:	7d e0                	jge    0x46f79f
+  46f7bf:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  46f7c4:	84 c0                	test   al,al
+  46f7c6:	74 0d                	je     0x46f7d5
+  46f7c8:	6a 00                	push   0x0
+  46f7ca:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7d0:	e8 97 c6 05 00       	call   0x4cbe6c
+  46f7d5:	8a 15 9d 01 53 00    	mov    dl,BYTE PTR ds:0x53019d
+  46f7db:	84 d2                	test   dl,dl
+  46f7dd:	74 0d                	je     0x46f7ec
+  46f7df:	6a 00                	push   0x0
+  46f7e1:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7e7:	e8 80 c6 05 00       	call   0x4cbe6c
+  46f7ec:	c6 05 bc a8    	mov    BYTE PTR ds:0x4fa8bc,0x1
+
+### around 0x0046F790 (RX_LEN WRITE32)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f750 <.text+0x6e750>:
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+  46f76c:	5d                   	pop    ebp
+  46f76d:	c3                   	ret
+  46f76e:	55                   	push   ebp
+  46f76f:	8b ec                	mov    ebp,esp
+  46f771:	53                   	push   ebx
+  46f772:	56                   	push   esi
+  46f773:	8b 1d 80 04 57 00    	mov    ebx,DWORD PTR ds:0x570480
+  46f779:	c6 05 b7 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b7,0x1
+  46f780:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f787:	c6 05 bc a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bc,0x0
+  46f78e:	33 c0                	xor    eax,eax
+  46f790:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46f795:	6a 00                	push   0x0
+  46f797:	e8 ea c9 05 00       	call   0x4cc186
+  46f79c:	59                   	pop    ecx
+  46f79d:	8b f0                	mov    esi,eax
+  46f79f:	6a 00                	push   0x0
+  46f7a1:	e8 e0 c9 05 00       	call   0x4cc186
+  46f7a6:	59                   	pop    ecx
+  46f7a7:	80 3d b7 a8 4f 00 00 	cmp    BYTE PTR ds:0x4fa8b7,0x0
+  46f7ae:	75 09                	jne    0x46f7b9
+  46f7b0:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7b7:	eb 06                	jmp    0x46f7bf
+  46f7b9:	2b c6                	sub    eax,esi
+  46f7bb:	3b d8                	cmp    ebx,eax
+  46f7bd:	7d e0                	jge    0x46f79f
+  46f7bf:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  46f7c4:	84 c0                	test   al,al
+  46f7c6:	74 0d                	je     0x46f7d5
+  46f7c8:	6a 00                	push   0x0
+  46f7ca:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7d0:	e8 97 c6 05 00       	call   0x4cbe6c
+  46f7d5:	8a 15 9d 01 53 00    	mov    dl,BYTE PTR ds:0x53019d
+  46f7db:	84 d2                	test   dl,dl
+  46f7dd:	74 0d                	je     0x46f7ec
+  46f7df:	6a 00                	push   0x0
+  46f7e1:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7e7:	e8 80 c6 05 00       	call   0x4cbe6c
+  46f7ec:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7f3:	5e                   	pop    esi
+  46f7f4:	5b                   	pop    ebx
+  46f7f5:	5d                   	pop    ebp
+  46f7f6:	c3                   	ret
+  46f7f7:	55                   	push   ebp
+  46f7f8:	8b ec                	mov    ebp,esp
+  46f7fa:	66 c7 05 c6 01 53  	mov    WORD PTR ds:0x5301c6,0x3e
+  46f801:	  
+
+### around 0x0046F7BF (F_TIMEOUT READ8)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f77f <.text+0x6e77f>:
+  46f77f:	01 c6                	add    esi,eax
+  46f781:	05 b8 a8 4f 00       	add    eax,0x4fa8b8
+  46f786:	00 c6                	add    dh,al
+  46f788:	05 bc a8 4f 00       	add    eax,0x4fa8bc
+  46f78d:	00 33                	add    BYTE PTR [ebx],dh
+  46f78f:	c0 a3 b0 a8 4f 00 6a 	shl    BYTE PTR [ebx+0x4fa8b0],0x6a
+  46f796:	00 e8                	add    al,ch
+  46f798:	ea c9 05 00 59 8b f0 	jmp    0xf08b:0x590005c9
+  46f79f:	6a 00                	push   0x0
+  46f7a1:	e8 e0 c9 05 00       	call   0x4cc186
+  46f7a6:	59                   	pop    ecx
+  46f7a7:	80 3d b7 a8 4f 00 00 	cmp    BYTE PTR ds:0x4fa8b7,0x0
+  46f7ae:	75 09                	jne    0x46f7b9
+  46f7b0:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7b7:	eb 06                	jmp    0x46f7bf
+  46f7b9:	2b c6                	sub    eax,esi
+  46f7bb:	3b d8                	cmp    ebx,eax
+  46f7bd:	7d e0                	jge    0x46f79f
+  46f7bf:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  46f7c4:	84 c0                	test   al,al
+  46f7c6:	74 0d                	je     0x46f7d5
+  46f7c8:	6a 00                	push   0x0
+  46f7ca:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7d0:	e8 97 c6 05 00       	call   0x4cbe6c
+  46f7d5:	8a 15 9d 01 53 00    	mov    dl,BYTE PTR ds:0x53019d
+  46f7db:	84 d2                	test   dl,dl
+  46f7dd:	74 0d                	je     0x46f7ec
+  46f7df:	6a 00                	push   0x0
+  46f7e1:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7e7:	e8 80 c6 05 00       	call   0x4cbe6c
+  46f7ec:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7f3:	5e                   	pop    esi
+  46f7f4:	5b                   	pop    ebx
+  46f7f5:	5d                   	pop    ebp
+  46f7f6:	c3                   	ret
+  46f7f7:	55                   	push   ebp
+  46f7f8:	8b ec                	mov    ebp,esp
+  46f7fa:	66 c7 05 c6 01 53 00 	mov    WORD PTR ds:0x5301c6,0x3e
+  46f801:	3e 00 
+  46f803:	68 c6 01 53 00       	push   0x5301c6
+  46f808:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f80e:	e8 1d c6 05 00       	call   0x4cbe30
+  46f813:	c6 05 b4 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b4,0x1
+  46f81a:	68 68 a7 4f 00       	push   0x4fa768
+  46f81f:	6a 00                	push   0x0
+  46f821:	6a 00                	push   0x0
+  46f823:	68 4c f8 46 00       	push   0x46f84c
+  46f828:	6a 00                	push   0x0
+  46f82a:	6a 00                	push   0x0
+  46f82c:	e8 f9 c5         	call   0x4cbe2a
+
+### around 0x0046F9A7 (RX_LEN WRITE32_REG)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f967 <.text+0x6e967>:
+  46f967:	0d 7c a7 4f 00       	or     eax,0x4fa77c
+  46f96c:	3b d1                	cmp    edx,ecx
+  46f96e:	75 04                	jne    0x46f974
+  46f970:	33 db                	xor    ebx,ebx
+  46f972:	eb 09                	jmp    0x46f97d
+  46f974:	2b fe                	sub    edi,esi
+  46f976:	8b 45 fc             	mov    eax,DWORD PTR [ebp-0x4]
+  46f979:	3b f8                	cmp    edi,eax
+  46f97b:	7e b5                	jle    0x46f932
+  46f97d:	84 db                	test   bl,bl
+  46f97f:	74 55                	je     0x46f9d6
+  46f981:	68 94 a7 4f 00       	push   0x4fa794
+  46f986:	68 74 a7 4f 00       	push   0x4fa774
+  46f98b:	ff 35 7c a7 4f 00    	push   DWORD PTR ds:0x4fa77c
+  46f991:	68 30 02 53 00       	push   0x530230
+  46f996:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f99c:	e8 bf c4 05 00       	call   0x4cbe60
+  46f9a1:	8b 15 74 a7 4f 00    	mov    edx,DWORD PTR ds:0x4fa774
+  46f9a7:	89 15 b0 a8 4f 00    	mov    DWORD PTR ds:0x4fa8b0,edx
+  46f9ad:	c6 05 ea 03 57 00 01 	mov    BYTE PTR ds:0x5703ea,0x1
+  46f9b4:	c6 05 4c a7 4f 00 01 	mov    BYTE PTR ds:0x4fa74c,0x1
+  46f9bb:	c6 05 ba a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8ba,0x0
+  46f9c2:	6a 08                	push   0x8
+  46f9c4:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f9ca:	e8 8b c4 05 00       	call   0x4cbe5a
+  46f9cf:	33 c0                	xor    eax,eax
+  46f9d1:	e9 c2 00 00 00       	jmp    0x46fa98
+  46f9d6:	8b 15 64 03 56 00    	mov    edx,DWORD PTR ds:0x560364
+  46f9dc:	83 fa 02             	cmp    edx,0x2
+  46f9df:	75 43                	jne    0x46fa24
+  46f9e1:	8b 0d 60 03 56 00    	mov    ecx,DWORD PTR ds:0x560360
+  46f9e7:	83 c1 03             	add    ecx,0x3
+  46f9ea:	a1 7c a7 4f 00       	mov    eax,ds:0x4fa77c
+  46f9ef:	3b c8                	cmp    ecx,eax
+  46f9f1:	74 31                	je     0x46fa24
+  46f9f3:	8b 15 60 03 56 00    	mov    edx,DWORD PTR ds:0x560360
+  46f9f9:	85 d2                	test   edx,edx
+  46f9fb:	0f 85 fa fe ff ff    	jne    0x46f8fb
+  46fa01:	eb 21                	jmp    0x46fa24
+  46fa03:	68 88 a7 4f 00       	push   0x4fa788
+  46fa08:	68 70 a7 4f 00       	push   0x4fa770
+  46fa0d:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fa13:	e8 00 c4 05        	call   0x4cbe18
+
+### around 0x0046FA68 (RX_LEN WRITE32)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046fa28 <.text+0x6ea28>:
+  46fa28:	00 83 f8 03 75 0b    	add    BYTE PTR [ebx+0xb7503f8],al
+  46fa2e:	8b 15 7c a7 4f 00    	mov    edx,DWORD PTR ds:0x4fa77c
+  46fa34:	83 fa 03             	cmp    edx,0x3
+  46fa37:	72 ca                	jb     0x46fa03
+  46fa39:	8a 0d bc a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8bc
+  46fa3f:	84 c9                	test   cl,cl
+  46fa41:	75 38                	jne    0x46fa7b
+  46fa43:	68 94 a7 4f 00       	push   0x4fa794
+  46fa48:	68 74 a7 4f 00       	push   0x4fa774
+  46fa4d:	ff 35 7c a7 4f 00    	push   DWORD PTR ds:0x4fa77c
+  46fa53:	68 30 02 53 00       	push   0x530230
+  46fa58:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fa5e:	e8 fd c3 05 00       	call   0x4cbe60
+  46fa63:	a1 74 a7 4f 00       	mov    eax,ds:0x4fa774
+  46fa68:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46fa6d:	c6 05 b7 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b7,0x0
+  46fa74:	c6 05 ba a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8ba,0x0
+  46fa7b:	8a 15 b4 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b4
+  46fa81:	84 d2                	test   dl,dl
+  46fa83:	0f 85 e3 fd ff ff    	jne    0x46f86c
+  46fa89:	6a 08                	push   0x8
+  46fa8b:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fa91:	e8 c4 c3 05 00       	call   0x4cbe5a
+  46fa96:	33 c0                	xor    eax,eax
+  46fa98:	5f                   	pop    edi
+  46fa99:	5e                   	pop    esi
+  46fa9a:	5b                   	pop    ebx
+  46fa9b:	59                   	pop    ecx
+  46fa9c:	5d                   	pop    ebp
+  46fa9d:	c3                   	ret
+  46fa9e:	55                   	push   ebp
+  46fa9f:	8b ec                	mov    ebp,esp
+  46faa1:	80 3d e8 03 57 00 00 	cmp    BYTE PTR ds:0x5703e8,0x0
+  46faa8:	74 60                	je     0x46fb0a
+  46faaa:	c6 05 bd a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bd,0x1
+  46fab1:	c6 05 b4 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b4,0x0
+  46fab8:	6a 00                	push   0x0
+  46faba:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fac0:	e8 a7 c3 05 00       	call   0x4cbe6c
+  46fac5:	ff 35 24 02 53 00    	push   DWORD PTR ds:0x530224
+  46facb:	e8 96 c3 05 00       	call   0x4cbe66
+  46fad0:	eb 0e                	jmp    0x46fae0
+  46fad2:	81 3d 68 a7 4f 00  	cmp    DWORD PTR ds:0x4fa768,0x103
+  46fad9:	   
+
+### around 0x0046FA6D (F_TIMEOUT WRITE8_IMM_00)
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046fa2d <.text+0x6ea2d>:
+  46fa2d:	0b 8b 15 7c a7 4f    	or     ecx,DWORD PTR [ebx+0x4fa77c15]
+  46fa33:	00 83 fa 03 72 ca    	add    BYTE PTR [ebx-0x358dfc06],al
+  46fa39:	8a 0d bc a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8bc
+  46fa3f:	84 c9                	test   cl,cl
+  46fa41:	75 38                	jne    0x46fa7b
+  46fa43:	68 94 a7 4f 00       	push   0x4fa794
+  46fa48:	68 74 a7 4f 00       	push   0x4fa774
+  46fa4d:	ff 35 7c a7 4f 00    	push   DWORD PTR ds:0x4fa77c
+  46fa53:	68 30 02 53 00       	push   0x530230
+  46fa58:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fa5e:	e8 fd c3 05 00       	call   0x4cbe60
+  46fa63:	a1 74 a7 4f 00       	mov    eax,ds:0x4fa774
+  46fa68:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46fa6d:	c6 05 b7 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b7,0x0
+  46fa74:	c6 05 ba a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8ba,0x0
+  46fa7b:	8a 15 b4 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b4
+  46fa81:	84 d2                	test   dl,dl
+  46fa83:	0f 85 e3 fd ff ff    	jne    0x46f86c
+  46fa89:	6a 08                	push   0x8
+  46fa8b:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fa91:	e8 c4 c3 05 00       	call   0x4cbe5a
+  46fa96:	33 c0                	xor    eax,eax
+  46fa98:	5f                   	pop    edi
+  46fa99:	5e                   	pop    esi
+  46fa9a:	5b                   	pop    ebx
+  46fa9b:	59                   	pop    ecx
+  46fa9c:	5d                   	pop    ebp
+  46fa9d:	c3                   	ret
+  46fa9e:	55                   	push   ebp
+  46fa9f:	8b ec                	mov    ebp,esp
+  46faa1:	80 3d e8 03 57 00 00 	cmp    BYTE PTR ds:0x5703e8,0x0
+  46faa8:	74 60                	je     0x46fb0a
+  46faaa:	c6 05 bd a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bd,0x1
+  46fab1:	c6 05 b4 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b4,0x0
+  46fab8:	6a 00                	push   0x0
+  46faba:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fac0:	e8 a7 c3 05 00       	call   0x4cbe6c
+  46fac5:	ff 35 24 02 53 00    	push   DWORD PTR ds:0x530224
+  46facb:	e8 96 c3 05 00       	call   0x4cbe66
+  46fad0:	eb 0e                	jmp    0x46fae0
+  46fad2:	81 3d 68 a7 4f 00 03 	cmp    DWORD PTR ds:0x4fa768,0x103
+  46fad9:	01 00 00 
+  46fadc:	74                 	je     0x46fae0
+
+FULL ROUTINE WINDOW
+------------------------------------------------------------------------------------------------
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+0046f5e6 <.text+0x6e5e6>:
+  46f5e6:	55                   	push   ebp
+  46f5e7:	8b ec                	mov    ebp,esp
+  46f5e9:	53                   	push   ebx
+  46f5ea:	8b 5d 08             	mov    ebx,DWORD PTR [ebp+0x8]
+  46f5ed:	c6 43 04 01          	mov    BYTE PTR [ebx+0x4],0x1
+  46f5f1:	c6 05 4c a7 4f 00 00 	mov    BYTE PTR ds:0x4fa74c,0x0
+  46f5f8:	c6 05 bd a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bd,0x0
+  46f5ff:	c6 05 b7 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b7,0x0
+  46f606:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f60d:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f614:	6a 01                	push   0x1
+  46f616:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f61c:	e8 4b c8 05 00       	call   0x4cbe6c
+  46f621:	6a 08                	push   0x8
+  46f623:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f629:	e8 2c c8 05 00       	call   0x4cbe5a
+  46f62e:	6a 04                	push   0x4
+  46f630:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f636:	e8 1f c8 05 00       	call   0x4cbe5a
+  46f63b:	c6 05 d1 07 57 00 01 	mov    BYTE PTR ds:0x5707d1,0x1
+  46f642:	c6 05 9d 01 53 00 00 	mov    BYTE PTR ds:0x53019d,0x0
+  46f649:	68 bf a8 4f 00       	push   0x4fa8bf
+  46f64e:	8d 43 3a             	lea    eax,[ebx+0x3a]
+  46f651:	50                   	push   eax
+  46f652:	ff 35 ac a8 4f 00    	push   DWORD PTR ds:0x4fa8ac
+  46f658:	68 a8 a7 4f 00       	push   0x4fa7a8
+  46f65d:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f663:	e8 3a c8 05 00       	call   0x4cbea2
+  46f668:	8a 15 cd 07 57 00    	mov    dl,BYTE PTR ds:0x5707cd
+  46f66e:	84 d2                	test   dl,dl
+  46f670:	0f 85 f5 00 00 00    	jne    0x46f76b
+  46f676:	53                   	push   ebx
+  46f677:	e8 f2 00 00 00       	call   0x46f76e
+  46f67c:	59                   	pop    ecx
+  46f67d:	c6 05 d1 07 57 00 00 	mov    BYTE PTR ds:0x5707d1,0x0
+  46f684:	8a 0d b7 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b7
+  46f68a:	84 c9                	test   cl,cl
+  46f68c:	0f 85 87 00 00 00    	jne    0x46f719
+  46f692:	33 d2                	xor    edx,edx
+  46f694:	33 c0                	xor    eax,eax
+  46f696:	eb 0b                	jmp    0x46f6a3
+  46f698:	33 c9                	xor    ecx,ecx
+  46f69a:	8a 88 30 02 53 00    	mov    cl,BYTE PTR [eax+0x530230]
+  46f6a0:	03 d1                	add    edx,ecx
+  46f6a2:	40                   	inc    eax
+  46f6a3:	8b 0d b0 a8 4f 00    	mov    ecx,DWORD PTR ds:0x4fa8b0
+  46f6a9:	3b c1                	cmp    eax,ecx
+  46f6ab:	7c eb                	jl     0x46f698
+  46f6ad:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f6b4:	81 e2 ff 00 00 00    	and    edx,0xff
+  46f6ba:	81 fa ff 00 00 00    	cmp    edx,0xff
+  46f6c0:	74 12                	je     0x46f6d4
+  46f6c2:	a0 ae 01 53 00       	mov    al,ds:0x5301ae
+  46f6c7:	84 c0                	test   al,al
+  46f6c9:	75 09                	jne    0x46f6d4
+  46f6cb:	c6 05 b9 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b9,0x1
+  46f6d2:	eb 45                	jmp    0x46f719
+  46f6d4:	33 d2                	xor    edx,edx
+  46f6d6:	8a 15 30 02 53 00    	mov    dl,BYTE PTR ds:0x530230
+  46f6dc:	81 e2 80 00 00 00    	and    edx,0x80
+  46f6e2:	81 fa 80 00 00 00    	cmp    edx,0x80
+  46f6e8:	75 09                	jne    0x46f6f3
+  46f6ea:	c6 05 b8 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b8,0x1
+  46f6f1:	eb 07                	jmp    0x46f6fa
+  46f6f3:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f6fa:	33 c0                	xor    eax,eax
+  46f6fc:	a0 30 02 53 00       	mov    al,ds:0x530230
+  46f701:	83 e0 20             	and    eax,0x20
+  46f704:	83 f8 20             	cmp    eax,0x20
+  46f707:	75 09                	jne    0x46f712
+  46f709:	c6 05 be a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8be,0x1
+  46f710:	eb 07                	jmp    0x46f719
+  46f712:	c6 05 be a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8be,0x0
+  46f719:	8a 15 b7 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b7
+  46f71f:	84 d2                	test   dl,dl
+  46f721:	75 13                	jne    0x46f736
+  46f723:	8a 0d b9 a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8b9
+  46f729:	84 c9                	test   cl,cl
+  46f72b:	75 09                	jne    0x46f736
+  46f72d:	a0 b8 a8 4f 00       	mov    al,ds:0x4fa8b8
+  46f732:	84 c0                	test   al,al
+  46f734:	74 1a                	je     0x46f750
+  46f736:	6a 08                	push   0x8
+  46f738:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f73e:	e8 17 c7 05 00       	call   0x4cbe5a
+  46f743:	6a 04                	push   0x4
+  46f745:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f74b:	e8 0a c7 05 00       	call   0x4cbe5a
+  46f750:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f756:	84 d2                	test   dl,dl
+  46f758:	74 11                	je     0x46f76b
+  46f75a:	8a 0d 4c a7 4f 00    	mov    cl,BYTE PTR ds:0x4fa74c
+  46f760:	84 c9                	test   cl,cl
+  46f762:	74 07                	je     0x46f76b
+  46f764:	c6 05 b9 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b9,0x0
+  46f76b:	5b                   	pop    ebx
+  46f76c:	5d                   	pop    ebp
+  46f76d:	c3                   	ret
+  46f76e:	55                   	push   ebp
+  46f76f:	8b ec                	mov    ebp,esp
+  46f771:	53                   	push   ebx
+  46f772:	56                   	push   esi
+  46f773:	8b 1d 80 04 57 00    	mov    ebx,DWORD PTR ds:0x570480
+  46f779:	c6 05 b7 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b7,0x1
+  46f780:	c6 05 b8 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b8,0x0
+  46f787:	c6 05 bc a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8bc,0x0
+  46f78e:	33 c0                	xor    eax,eax
+  46f790:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46f795:	6a 00                	push   0x0
+  46f797:	e8 ea c9 05 00       	call   0x4cc186
+  46f79c:	59                   	pop    ecx
+  46f79d:	8b f0                	mov    esi,eax
+  46f79f:	6a 00                	push   0x0
+  46f7a1:	e8 e0 c9 05 00       	call   0x4cc186
+  46f7a6:	59                   	pop    ecx
+  46f7a7:	80 3d b7 a8 4f 00 00 	cmp    BYTE PTR ds:0x4fa8b7,0x0
+  46f7ae:	75 09                	jne    0x46f7b9
+  46f7b0:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7b7:	eb 06                	jmp    0x46f7bf
+  46f7b9:	2b c6                	sub    eax,esi
+  46f7bb:	3b d8                	cmp    ebx,eax
+  46f7bd:	7d e0                	jge    0x46f79f
+  46f7bf:	a0 b7 a8 4f 00       	mov    al,ds:0x4fa8b7
+  46f7c4:	84 c0                	test   al,al
+  46f7c6:	74 0d                	je     0x46f7d5
+  46f7c8:	6a 00                	push   0x0
+  46f7ca:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7d0:	e8 97 c6 05 00       	call   0x4cbe6c
+  46f7d5:	8a 15 9d 01 53 00    	mov    dl,BYTE PTR ds:0x53019d
+  46f7db:	84 d2                	test   dl,dl
+  46f7dd:	74 0d                	je     0x46f7ec
+  46f7df:	6a 00                	push   0x0
+  46f7e1:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f7e7:	e8 80 c6 05 00       	call   0x4cbe6c
+  46f7ec:	c6 05 bc a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bc,0x1
+  46f7f3:	5e                   	pop    esi
+  46f7f4:	5b                   	pop    ebx
+  46f7f5:	5d                   	pop    ebp
+  46f7f6:	c3                   	ret
+  46f7f7:	55                   	push   ebp
+  46f7f8:	8b ec                	mov    ebp,esp
+  46f7fa:	66 c7 05 c6 01 53 00 	mov    WORD PTR ds:0x5301c6,0x3e
+  46f801:	3e 00 
+  46f803:	68 c6 01 53 00       	push   0x5301c6
+  46f808:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f80e:	e8 1d c6 05 00       	call   0x4cbe30
+  46f813:	c6 05 b4 a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8b4,0x1
+  46f81a:	68 68 a7 4f 00       	push   0x4fa768
+  46f81f:	6a 00                	push   0x0
+  46f821:	6a 00                	push   0x0
+  46f823:	68 4c f8 46 00       	push   0x46f84c
+  46f828:	6a 00                	push   0x0
+  46f82a:	6a 00                	push   0x0
+  46f82c:	e8 f9 c5 05 00       	call   0x4cbe2a
+  46f831:	a3 24 02 53 00       	mov    ds:0x530224,eax
+  46f836:	83 3d 24 02 53 00 00 	cmp    DWORD PTR ds:0x530224,0x0
+  46f83d:	75 0b                	jne    0x46f84a
+  46f83f:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f845:	e8 d4 c5 05 00       	call   0x4cbe1e
+  46f84a:	5d                   	pop    ebp
+  46f84b:	c3                   	ret
+  46f84c:	55                   	push   ebp
+  46f84d:	8b ec                	mov    ebp,esp
+  46f84f:	51                   	push   ecx
+  46f850:	53                   	push   ebx
+  46f851:	56                   	push   esi
+  46f852:	57                   	push   edi
+  46f853:	a1 80 04 57 00       	mov    eax,ds:0x570480
+  46f858:	89 45 fc             	mov    DWORD PTR [ebp-0x4],eax
+  46f85b:	c6 05 4c a7 4f 00 00 	mov    BYTE PTR ds:0x4fa74c,0x0
+  46f862:	e8 e1 c5 05 00       	call   0x4cbe48
+  46f867:	e9 0f 02 00 00       	jmp    0x46fa7b
+  46f86c:	6a 00                	push   0x0
+  46f86e:	68 6c a7 4f 00       	push   0x4fa76c
+  46f873:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f879:	e8 18 c6 05 00       	call   0x4cbe96
+  46f87e:	f6 05 6c a7 4f 00 01 	test   BYTE PTR ds:0x4fa76c,0x1
+  46f885:	0f 84 f0 01 00 00    	je     0x46fa7b
+  46f88b:	68 88 a7 4f 00       	push   0x4fa788
+  46f890:	68 70 a7 4f 00       	push   0x4fa770
+  46f895:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f89b:	e8 78 c5 05 00       	call   0x4cbe18
+  46f8a0:	8b 15 8c a7 4f 00    	mov    edx,DWORD PTR ds:0x4fa78c
+  46f8a6:	89 15 7c a7 4f 00    	mov    DWORD PTR ds:0x4fa77c,edx
+  46f8ac:	8b 0d 7c a7 4f 00    	mov    ecx,DWORD PTR ds:0x4fa77c
+  46f8b2:	85 c9                	test   ecx,ecx
+  46f8b4:	0f 84 c1 01 00 00    	je     0x46fa7b
+  46f8ba:	eb 1f                	jmp    0x46f8db
+  46f8bc:	68 88 a7 4f 00       	push   0x4fa788
+  46f8c1:	68 70 a7 4f 00       	push   0x4fa770
+  46f8c6:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f8cc:	e8 47 c5 05 00       	call   0x4cbe18
+  46f8d1:	a1 8c a7 4f 00       	mov    eax,ds:0x4fa78c
+  46f8d6:	a3 7c a7 4f 00       	mov    ds:0x4fa77c,eax
+  46f8db:	8b 15 64 03 56 00    	mov    edx,DWORD PTR ds:0x560364
+  46f8e1:	4a                   	dec    edx
+  46f8e2:	0f 85 ee 00 00 00    	jne    0x46f9d6
+  46f8e8:	8b 0d 7c a7 4f 00    	mov    ecx,DWORD PTR ds:0x4fa77c
+  46f8ee:	81 f9 f3 00 00 00    	cmp    ecx,0xf3
+  46f8f4:	72 c6                	jb     0x46f8bc
+  46f8f6:	e9 db 00 00 00       	jmp    0x46f9d6
+  46f8fb:	68 88 a7 4f 00       	push   0x4fa788
+  46f900:	68 70 a7 4f 00       	push   0x4fa770
+  46f905:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f90b:	e8 08 c5 05 00       	call   0x4cbe18
+  46f910:	a1 8c a7 4f 00       	mov    eax,ds:0x4fa78c
+  46f915:	a3 7c a7 4f 00       	mov    ds:0x4fa77c,eax
+  46f91a:	8a 15 ae 01 53 00    	mov    dl,BYTE PTR ds:0x5301ae
+  46f920:	84 d2                	test   dl,dl
+  46f922:	0f 84 ae 00 00 00    	je     0x46f9d6
+  46f928:	6a 00                	push   0x0
+  46f92a:	e8 57 c8 05 00       	call   0x4cc186
+  46f92f:	59                   	pop    ecx
+  46f930:	8b f0                	mov    esi,eax
+  46f932:	6a 00                	push   0x0
+  46f934:	e8 4d c8 05 00       	call   0x4cc186
+  46f939:	59                   	pop    ecx
+  46f93a:	8b f8                	mov    edi,eax
+  46f93c:	b3 01                	mov    bl,0x1
+  46f93e:	68 88 a7 4f 00       	push   0x4fa788
+  46f943:	68 70 a7 4f 00       	push   0x4fa770
+  46f948:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f94e:	e8 c5 c4 05 00       	call   0x4cbe18
+  46f953:	a1 8c a7 4f 00       	mov    eax,ds:0x4fa78c
+  46f958:	a3 7c a7 4f 00       	mov    ds:0x4fa77c,eax
+  46f95d:	8b 15 60 03 56 00    	mov    edx,DWORD PTR ds:0x560360
+  46f963:	83 c2 03             	add    edx,0x3
+  46f966:	8b 0d 7c a7 4f 00    	mov    ecx,DWORD PTR ds:0x4fa77c
+  46f96c:	3b d1                	cmp    edx,ecx
+  46f96e:	75 04                	jne    0x46f974
+  46f970:	33 db                	xor    ebx,ebx
+  46f972:	eb 09                	jmp    0x46f97d
+  46f974:	2b fe                	sub    edi,esi
+  46f976:	8b 45 fc             	mov    eax,DWORD PTR [ebp-0x4]
+  46f979:	3b f8                	cmp    edi,eax
+  46f97b:	7e b5                	jle    0x46f932
+  46f97d:	84 db                	test   bl,bl
+  46f97f:	74 55                	je     0x46f9d6
+  46f981:	68 94 a7 4f 00       	push   0x4fa794
+  46f986:	68 74 a7 4f 00       	push   0x4fa774
+  46f98b:	ff 35 7c a7 4f 00    	push   DWORD PTR ds:0x4fa77c
+  46f991:	68 30 02 53 00       	push   0x530230
+  46f996:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f99c:	e8 bf c4 05 00       	call   0x4cbe60
+  46f9a1:	8b 15 74 a7 4f 00    	mov    edx,DWORD PTR ds:0x4fa774
+  46f9a7:	89 15 b0 a8 4f 00    	mov    DWORD PTR ds:0x4fa8b0,edx
+  46f9ad:	c6 05 ea 03 57 00 01 	mov    BYTE PTR ds:0x5703ea,0x1
+  46f9b4:	c6 05 4c a7 4f 00 01 	mov    BYTE PTR ds:0x4fa74c,0x1
+  46f9bb:	c6 05 ba a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8ba,0x0
+  46f9c2:	6a 08                	push   0x8
+  46f9c4:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46f9ca:	e8 8b c4 05 00       	call   0x4cbe5a
+  46f9cf:	33 c0                	xor    eax,eax
+  46f9d1:	e9 c2 00 00 00       	jmp    0x46fa98
+  46f9d6:	8b 15 64 03 56 00    	mov    edx,DWORD PTR ds:0x560364
+  46f9dc:	83 fa 02             	cmp    edx,0x2
+  46f9df:	75 43                	jne    0x46fa24
+  46f9e1:	8b 0d 60 03 56 00    	mov    ecx,DWORD PTR ds:0x560360
+  46f9e7:	83 c1 03             	add    ecx,0x3
+  46f9ea:	a1 7c a7 4f 00       	mov    eax,ds:0x4fa77c
+  46f9ef:	3b c8                	cmp    ecx,eax
+  46f9f1:	74 31                	je     0x46fa24
+  46f9f3:	8b 15 60 03 56 00    	mov    edx,DWORD PTR ds:0x560360
+  46f9f9:	85 d2                	test   edx,edx
+  46f9fb:	0f 85 fa fe ff ff    	jne    0x46f8fb
+  46fa01:	eb 21                	jmp    0x46fa24
+  46fa03:	68 88 a7 4f 00       	push   0x4fa788
+  46fa08:	68 70 a7 4f 00       	push   0x4fa770
+  46fa0d:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fa13:	e8 00 c4 05 00       	call   0x4cbe18
+  46fa18:	8b 0d 8c a7 4f 00    	mov    ecx,DWORD PTR ds:0x4fa78c
+  46fa1e:	89 0d 7c a7 4f 00    	mov    DWORD PTR ds:0x4fa77c,ecx
+  46fa24:	a1 64 03 56 00       	mov    eax,ds:0x560364
+  46fa29:	83 f8 03             	cmp    eax,0x3
+  46fa2c:	75 0b                	jne    0x46fa39
+  46fa2e:	8b 15 7c a7 4f 00    	mov    edx,DWORD PTR ds:0x4fa77c
+  46fa34:	83 fa 03             	cmp    edx,0x3
+  46fa37:	72 ca                	jb     0x46fa03
+  46fa39:	8a 0d bc a8 4f 00    	mov    cl,BYTE PTR ds:0x4fa8bc
+  46fa3f:	84 c9                	test   cl,cl
+  46fa41:	75 38                	jne    0x46fa7b
+  46fa43:	68 94 a7 4f 00       	push   0x4fa794
+  46fa48:	68 74 a7 4f 00       	push   0x4fa774
+  46fa4d:	ff 35 7c a7 4f 00    	push   DWORD PTR ds:0x4fa77c
+  46fa53:	68 30 02 53 00       	push   0x530230
+  46fa58:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fa5e:	e8 fd c3 05 00       	call   0x4cbe60
+  46fa63:	a1 74 a7 4f 00       	mov    eax,ds:0x4fa774
+  46fa68:	a3 b0 a8 4f 00       	mov    ds:0x4fa8b0,eax
+  46fa6d:	c6 05 b7 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b7,0x0
+  46fa74:	c6 05 ba a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8ba,0x0
+  46fa7b:	8a 15 b4 a8 4f 00    	mov    dl,BYTE PTR ds:0x4fa8b4
+  46fa81:	84 d2                	test   dl,dl
+  46fa83:	0f 85 e3 fd ff ff    	jne    0x46f86c
+  46fa89:	6a 08                	push   0x8
+  46fa8b:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fa91:	e8 c4 c3 05 00       	call   0x4cbe5a
+  46fa96:	33 c0                	xor    eax,eax
+  46fa98:	5f                   	pop    edi
+  46fa99:	5e                   	pop    esi
+  46fa9a:	5b                   	pop    ebx
+  46fa9b:	59                   	pop    ecx
+  46fa9c:	5d                   	pop    ebp
+  46fa9d:	c3                   	ret
+  46fa9e:	55                   	push   ebp
+  46fa9f:	8b ec                	mov    ebp,esp
+  46faa1:	80 3d e8 03 57 00 00 	cmp    BYTE PTR ds:0x5703e8,0x0
+  46faa8:	74 60                	je     0x46fb0a
+  46faaa:	c6 05 bd a8 4f 00 01 	mov    BYTE PTR ds:0x4fa8bd,0x1
+  46fab1:	c6 05 b4 a8 4f 00 00 	mov    BYTE PTR ds:0x4fa8b4,0x0
+  46fab8:	6a 00                	push   0x0
+  46faba:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fac0:	e8 a7 c3 05 00       	call   0x4cbe6c
+  46fac5:	ff 35 24 02 53 00    	push   DWORD PTR ds:0x530224
+  46facb:	e8 96 c3 05 00       	call   0x4cbe66
+  46fad0:	eb 0e                	jmp    0x46fae0
+  46fad2:	81 3d 68 a7 4f 00 03 	cmp    DWORD PTR ds:0x4fa768,0x103
+  46fad9:	01 00 00 
+  46fadc:	74 02                	je     0x46fae0
+  46fade:	eb 14                	jmp    0x46faf4
+  46fae0:	68 68 a7 4f 00       	push   0x4fa768
+  46fae5:	ff 35 24 02 53 00    	push   DWORD PTR ds:0x530224
+  46faeb:	e8 4c c3 05 00       	call   0x4cbe3c
+  46faf0:	85 c0                	test   eax,eax
+  46faf2:	75 de                	jne    0x46fad2
+  46faf4:	ff 35 24 02 53 00    	push   DWORD PTR ds:0x530224
+  46fafa:	e8 1f c3 05 00       	call   0x4cbe1e
+  46faff:	ff 35 20 02 53 00    	push   DWORD PTR ds:0x530220
+  46fb05:	e8 14 c3 05 00       	call   0x4cbe1e
+  46fb0a:	5d                   	pop    ebp
+  46fb0b:	c3                   	ret
+  46fb0c:	55                   	push   ebp
+  46fb0d:	8b ec                	mov    ebp,esp
+  46fb0f:	53                   	push   ebx
+  46fb10:	56                   	push   esi
+  46fb11:	57                   	push   edi
+  46fb12:	8b 7d 10             	mov    edi,DWORD PTR [ebp+0x10]
+  46fb15:	8b 75 0c             	mov    esi,DWORD PTR [ebp+0xc]
+  46fb18:	8b 5d 08             	mov    ebx,DWORD PTR [ebp+0x8]
+  46fb1b:	89 5e 08             	mov    DWORD PTR [esi+0x8],ebx
+  46fb1e:	57                   	push   edi
+  46fb1f:	56                   	push   esi
+  46fb20:	68 bc fb 4d 00       	push   0x4dfbbc
+  46fb25:	ff 73 04             	push   DWORD PTR [ebx+0x4]
+  46fb28:	e8 c7 be 05 00       	call   0x4cb9f4
+  46fb2d:	83 c4 10             	add    esp,0x10
+  46fb30:	84 c0                	test   al,al
+  46fb32:	75 13                	jne    0x46fb47
+  46fb34:	57                   	push   edi
+  46fb35:	56                   	push   esi
+  46fb36:	53                   	push   ebx
+  46fb37:	e8 6a be 05 00       	call   0x4cb9a6
+  46fb3c:	83 c4 0c             	add    esp,0xc
+  46fb3f:	84 c0                	test   al,al
+  46fb41:	75 04                	jne    0x46fb47
+  46fb43:	33 c0                	xor    eax,eax
+  46fb45:	eb 05                	jmp    0x46fb4c
+  46fb47:	b8 01 00 00 00       	mov    eax,0x1
+  46fb4c:	5f                   	pop    edi
+  46fb4d:	5e                   	pop    esi
+  46fb4e:	5b                   	pop    ebx
+  46fb4f:	5d                   	pop    ebp
+  46fb50:	c3                   	ret
+  46fb51:	55                   	push   ebp
+  46fb52:	8b ec                	mov    ebp,esp
+  46fb54:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fb57:	6a 02                	push   0x2
+  46fb59:	50                   	push   eax
+  46fb5a:	8b 40 0c             	mov    eax,DWORD PTR [eax+0xc]
+  46fb5d:	ff 50 20             	call   DWORD PTR [eax+0x20]
+  46fb60:	83 c4 08             	add    esp,0x8
+  46fb63:	5d                   	pop    ebp
+  46fb64:	c3                   	ret
+  46fb65:	55                   	push   ebp
+  46fb66:	8b ec                	mov    ebp,esp
+  46fb68:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fb6b:	80 78 1e 00          	cmp    BYTE PTR [eax+0x1e],0x0
+  46fb6f:	74 0c                	je     0x46fb7d
+  46fb71:	c7 05 84 04 57 00 01 	mov    DWORD PTR ds:0x570484,0x1
+  46fb78:	00 00 00 
+  46fb7b:	eb 08                	jmp    0x46fb85
+  46fb7d:	33 d2                	xor    edx,edx
+  46fb7f:	89 15 84 04 57 00    	mov    DWORD PTR ds:0x570484,edx
+  46fb85:	8a 48 19             	mov    cl,BYTE PTR [eax+0x19]
+  46fb88:	84 c9                	test   cl,cl
+  46fb8a:	74 0c                	je     0x46fb98
+  46fb8c:	c7 05 94 04 57 00 01 	mov    DWORD PTR ds:0x570494,0x1
+  46fb93:	00 00 00 
+  46fb96:	eb 08                	jmp    0x46fba0
+  46fb98:	33 d2                	xor    edx,edx
+  46fb9a:	89 15 94 04 57 00    	mov    DWORD PTR ds:0x570494,edx
+  46fba0:	8a 48 1a             	mov    cl,BYTE PTR [eax+0x1a]
+  46fba3:	84 c9                	test   cl,cl
+  46fba5:	74 0c                	je     0x46fbb3
+  46fba7:	c7 05 98 04 57 00 01 	mov    DWORD PTR ds:0x570498,0x1
+  46fbae:	00 00 00 
+  46fbb1:	eb 08                	jmp    0x46fbbb
+  46fbb3:	33 d2                	xor    edx,edx
+  46fbb5:	89 15 98 04 57 00    	mov    DWORD PTR ds:0x570498,edx
+  46fbbb:	8a 48 1b             	mov    cl,BYTE PTR [eax+0x1b]
+  46fbbe:	84 c9                	test   cl,cl
+  46fbc0:	74 0c                	je     0x46fbce
+  46fbc2:	c7 05 9c 04 57 00 01 	mov    DWORD PTR ds:0x57049c,0x1
+  46fbc9:	00 00 00 
+  46fbcc:	eb 08                	jmp    0x46fbd6
+  46fbce:	33 d2                	xor    edx,edx
+  46fbd0:	89 15 9c 04 57 00    	mov    DWORD PTR ds:0x57049c,edx
+  46fbd6:	8a 48 1c             	mov    cl,BYTE PTR [eax+0x1c]
+  46fbd9:	84 c9                	test   cl,cl
+  46fbdb:	74 0c                	je     0x46fbe9
+  46fbdd:	c7 05 a0 04 57 00 01 	mov    DWORD PTR ds:0x5704a0,0x1
+  46fbe4:	00 00 00 
+  46fbe7:	eb 08                	jmp    0x46fbf1
+  46fbe9:	33 d2                	xor    edx,edx
+  46fbeb:	89 15 a0 04 57 00    	mov    DWORD PTR ds:0x5704a0,edx
+  46fbf1:	8a 48 1d             	mov    cl,BYTE PTR [eax+0x1d]
+  46fbf4:	84 c9                	test   cl,cl
+  46fbf6:	74 0c                	je     0x46fc04
+  46fbf8:	c7 05 a4 04 57 00 01 	mov    DWORD PTR ds:0x5704a4,0x1
+  46fbff:	00 00 00 
+  46fc02:	eb 08                	jmp    0x46fc0c
+  46fc04:	33 d2                	xor    edx,edx
+  46fc06:	89 15 a4 04 57 00    	mov    DWORD PTR ds:0x5704a4,edx
+  46fc0c:	6a 01                	push   0x1
+  46fc0e:	50                   	push   eax
+  46fc0f:	8b 40 0c             	mov    eax,DWORD PTR [eax+0xc]
+  46fc12:	ff 50 20             	call   DWORD PTR [eax+0x20]
+  46fc15:	83 c4 08             	add    esp,0x8
+  46fc18:	5d                   	pop    ebp
+  46fc19:	c3                   	ret
+  46fc1a:	55                   	push   ebp
+  46fc1b:	8b ec                	mov    ebp,esp
+  46fc1d:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fc20:	0f be 50 1e          	movsx  edx,BYTE PTR [eax+0x1e]
+  46fc24:	83 fa 01             	cmp    edx,0x1
+  46fc27:	1b c9                	sbb    ecx,ecx
+  46fc29:	f7 d9                	neg    ecx
+  46fc2b:	88 48 1e             	mov    BYTE PTR [eax+0x1e],cl
+  46fc2e:	5d                   	pop    ebp
+  46fc2f:	c3                   	ret
+  46fc30:	55                   	push   ebp
+  46fc31:	8b ec                	mov    ebp,esp
+  46fc33:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fc36:	0f be 50 19          	movsx  edx,BYTE PTR [eax+0x19]
+  46fc3a:	83 fa 01             	cmp    edx,0x1
+  46fc3d:	1b c9                	sbb    ecx,ecx
+  46fc3f:	f7 d9                	neg    ecx
+  46fc41:	88 48 19             	mov    BYTE PTR [eax+0x19],cl
+  46fc44:	5d                   	pop    ebp
+  46fc45:	c3                   	ret
+  46fc46:	55                   	push   ebp
+  46fc47:	8b ec                	mov    ebp,esp
+  46fc49:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fc4c:	0f be 50 1a          	movsx  edx,BYTE PTR [eax+0x1a]
+  46fc50:	83 fa 01             	cmp    edx,0x1
+  46fc53:	1b c9                	sbb    ecx,ecx
+  46fc55:	f7 d9                	neg    ecx
+  46fc57:	88 48 1a             	mov    BYTE PTR [eax+0x1a],cl
+  46fc5a:	5d                   	pop    ebp
+  46fc5b:	c3                   	ret
+  46fc5c:	55                   	push   ebp
+  46fc5d:	8b ec                	mov    ebp,esp
+  46fc5f:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fc62:	0f be 50 1b          	movsx  edx,BYTE PTR [eax+0x1b]
+  46fc66:	83 fa 01             	cmp    edx,0x1
+  46fc69:	1b c9                	sbb    ecx,ecx
+  46fc6b:	f7 d9                	neg    ecx
+  46fc6d:	88 48 1b             	mov    BYTE PTR [eax+0x1b],cl
+  46fc70:	5d                   	pop    ebp
+  46fc71:	c3                   	ret
+  46fc72:	55                   	push   ebp
+  46fc73:	8b ec                	mov    ebp,esp
+  46fc75:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fc78:	0f be 50 1c          	movsx  edx,BYTE PTR [eax+0x1c]
+  46fc7c:	83 fa 01             	cmp    edx,0x1
+  46fc7f:	1b c9                	sbb    ecx,ecx
+  46fc81:	f7 d9                	neg    ecx
+  46fc83:	88 48 1c             	mov    BYTE PTR [eax+0x1c],cl
+  46fc86:	5d                   	pop    ebp
+  46fc87:	c3                   	ret
+  46fc88:	55                   	push   ebp
+  46fc89:	8b ec                	mov    ebp,esp
+  46fc8b:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fc8e:	0f be 50 1d          	movsx  edx,BYTE PTR [eax+0x1d]
+  46fc92:	83 fa 01             	cmp    edx,0x1
+  46fc95:	1b c9                	sbb    ecx,ecx
+  46fc97:	f7 d9                	neg    ecx
+  46fc99:	88 48 1d             	mov    BYTE PTR [eax+0x1d],cl
+  46fc9c:	5d                   	pop    ebp
+  46fc9d:	c3                   	ret
+  46fc9e:	55                   	push   ebp
+  46fc9f:	8b ec                	mov    ebp,esp
+  46fca1:	83 c4 d8             	add    esp,0xffffffd8
+  46fca4:	b8 b4 fc 4d 00       	mov    eax,0x4dfcb4
+  46fca9:	e8 4e b9 05 00       	call   0x4cb5fc
+  46fcae:	66 c7 45 e8 08 00    	mov    WORD PTR [ebp-0x18],0x8
+  46fcb4:	8b 55 0c             	mov    edx,DWORD PTR [ebp+0xc]
+  46fcb7:	85 d2                	test   edx,edx
+  46fcb9:	0f 85 97 00 00 00    	jne    0x46fd56
+  46fcbf:	8b 4d 08             	mov    ecx,DWORD PTR [ebp+0x8]
+  46fcc2:	83 c1 33             	add    ecx,0x33
+  46fcc5:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fcc8:	89 08                	mov    DWORD PTR [eax],ecx
+  46fcca:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  46fccd:	83 c2 27             	add    edx,0x27
+  46fcd0:	8b 4d 08             	mov    ecx,DWORD PTR [ebp+0x8]
+  46fcd3:	89 51 33             	mov    DWORD PTR [ecx+0x33],edx
+  46fcd6:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fcd9:	83 c0 2b             	add    eax,0x2b
+  46fcdc:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  46fcdf:	89 42 37             	mov    DWORD PTR [edx+0x37],eax
+  46fce2:	8b 4d 08             	mov    ecx,DWORD PTR [ebp+0x8]
+  46fce5:	83 c1 27             	add    ecx,0x27
+  46fce8:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fceb:	89 48 04             	mov    DWORD PTR [eax+0x4],ecx
+  46fcee:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  46fcf1:	83 c2 2b             	add    edx,0x2b
+  46fcf4:	8b 4d 08             	mov    ecx,DWORD PTR [ebp+0x8]
+  46fcf7:	89 51 08             	mov    DWORD PTR [ecx+0x8],edx
+  46fcfa:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fcfd:	33 d2                	xor    edx,edx
+  46fcff:	89 50 23             	mov    DWORD PTR [eax+0x23],edx
+  46fd02:	8b 4d 08             	mov    ecx,DWORD PTR [ebp+0x8]
+  46fd05:	33 c0                	xor    eax,eax
+  46fd07:	89 41 2f             	mov    DWORD PTR [ecx+0x2f],eax
+  46fd0a:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fd0d:	83 c0 27             	add    eax,0x27
+  46fd10:	c7 00 78 de 4c 00    	mov    DWORD PTR [eax],0x4cde78
+  46fd16:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fd19:	83 c0 2b             	add    eax,0x2b
+  46fd1c:	c7 00 68 de 4c 00    	mov    DWORD PTR [eax],0x4cde68
+  46fd22:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]
+  46fd25:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]
+  46fd28:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  46fd2b:	8b 4a 04             	mov    ecx,DWORD PTR [edx+0x4]
+  46fd2e:	81 69 fc 6a ff ff ff 	sub    DWORD PTR [ecx-0x4],0xffffff6a
+  46fd35:	6a 01                	push   0x1
+  46fd37:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fd3a:	83 c0 33             	add    eax,0x33
+  46fd3d:	50                   	push   eax
+  46fd3e:	e8 6f bf 05 00       	call   0x4cbcb2
+  46fd43:	83 c4 08             	add    esp,0x8
+  46fd46:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]
+  46fd49:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  46fd4c:	8b 4a 04             	mov    ecx,DWORD PTR [edx+0x4]
+  46fd4f:	81 41 fc 6a ff ff ff 	add    DWORD PTR [ecx-0x4],0xffffff6a
+  46fd56:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fd59:	8b 50 04             	mov    edx,DWORD PTR [eax+0x4]
+  46fd5c:	83 6a fc 0a          	sub    DWORD PTR [edx-0x4],0xa
+  46fd60:	8b 4d 08             	mov    ecx,DWORD PTR [ebp+0x8]
+  46fd63:	8b 01                	mov    eax,DWORD PTR [ecx]
+  46fd65:	83 68 fc 0a          	sub    DWORD PTR [eax-0x4],0xa
+  46fd69:	6a 00                	push   0x0
+  46fd6b:	83 c4 fc             	add    esp,0xfffffffc
+  46fd6e:	8b 55 14             	mov    edx,DWORD PTR [ebp+0x14]
+  46fd71:	89 14 24             	mov    DWORD PTR [esp],edx
+  46fd74:	ff 75 10             	push   DWORD PTR [ebp+0x10]
+  46fd77:	6a 01                	push   0x1
+  46fd79:	ff 75 08             	push   DWORD PTR [ebp+0x8]
+  46fd7c:	e8 e9 bb 05 00       	call   0x4cb96a
+  46fd81:	83 c4 14             	add    esp,0x14
+  46fd84:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]
+  46fd87:	8b 4d 08             	mov    ecx,DWORD PTR [ebp+0x8]
+  46fd8a:	8b 41 04             	mov    eax,DWORD PTR [ecx+0x4]
+  46fd8d:	83 40 fc 0a          	add    DWORD PTR [eax-0x4],0xa
+  46fd91:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  46fd94:	8b 0a                	mov    ecx,DWORD PTR [edx]
+  46fd96:	83 41 fc 0a          	add    DWORD PTR [ecx-0x4],0xa
+  46fd9a:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fd9d:	c7 40 0c f4 fc 4d 00 	mov    DWORD PTR [eax+0xc],0x4dfcf4
+  46fda4:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  46fda7:	8b 4a 04             	mov    ecx,DWORD PTR [edx+0x4]
+  46fdaa:	c7 01 38 fd 4d 00    	mov    DWORD PTR [ecx],0x4dfd38
+  46fdb0:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fdb3:	8b 50 08             	mov    edx,DWORD PTR [eax+0x8]
+  46fdb6:	c7 02 44 fd 4d 00    	mov    DWORD PTR [edx],0x4dfd44
+  46fdbc:	8b 4d 08             	mov    ecx,DWORD PTR [ebp+0x8]
+  46fdbf:	8b 01                	mov    eax,DWORD PTR [ecx]
+  46fdc1:	c7 40 08 50 fd 4d 00 	mov    DWORD PTR [eax+0x8],0x4dfd50
+  46fdc8:	68 b0 00 00 00       	push   0xb0
+  46fdcd:	e8 0a c2 05 00       	call   0x4cbfdc
+  46fdd2:	59                   	pop    ecx
+  46fdd3:	89 45 fc             	mov    DWORD PTR [ebp-0x4],eax
+  46fdd6:	85 c0                	test   eax,eax
+  46fdd8:	74 29                	je     0x46fe03
+  46fdda:	66 c7 45 e8 20 00    	mov    WORD PTR [ebp-0x18],0x20
+  46fde0:	6a 00                	push   0x0
+  46fde2:	6a 00                	push   0x0
+  46fde4:	6a 6b                	push   0x6b
+  46fde6:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  46fde9:	ff 32                	push   DWORD PTR [edx]
+  46fdeb:	6a 00                	push   0x0
+  46fded:	ff 75 fc             	push   DWORD PTR [ebp-0x4]
+  46fdf0:	e8 e5 ba 05 00       	call   0x4cb8da
+  46fdf5:	83 c4 18             	add    esp,0x18
+  46fdf8:	66 c7 45 e8 14 00    	mov    WORD PTR [ebp-0x18],0x14
+  46fdfe:	8b 4d fc             	mov    ecx,DWORD PTR [ebp-0x4]
+  46fe01:	eb 03                	jmp    0x46fe06
+  46fe03:	8b 4d fc             	mov    ecx,DWORD PTR [ebp-0x4]
+  46fe06:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fe09:	89 48 1f             	mov    DWORD PTR [eax+0x1f],ecx
+  46fe0c:	8b 55 d8             	mov    edx,DWORD PTR [ebp-0x28]
+  46fe0f:	64 89 15 00 00 00 00 	mov    DWORD PTR fs:0x0,edx
+  46fe16:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  46fe19:	8b e5                	mov    esp,ebp
+  46fe1b:	5d                   	pop    ebp
+  46fe1c:	c3                   	ret
+  46fe1d:	55                   	push   ebp
+  46fe1e:	8b ec                	mov    ebp,esp
+  46fe20:	53                   	push   ebx
+  46fe21:	8b 5d 08             	mov    ebx,DWORD PTR [ebp+0x8]
+  46fe24:	53                   	push   ebx
+  46fe25:	e8 a0 bb 05 00       	call   0x4cb9ca
+  46fe2a:	59                   	pop    ecx
+  46fe2b:	c6 43 19 00          	mov    BYTE PTR [ebx+0x19],0x0
+  46fe2f:	c6 43 1a 00          	mov    BYTE PTR [ebx+0x1a],0x0
+  46fe33:	c6 43 1b 00          	mov    BYTE PTR [ebx+0x1b],0x0
+  46fe37:	c6 43 1c 00          	mov    BYTE PTR [ebx+0x1c],0x0
+  46fe3b:	c6 43 1d 00          	mov    BYTE PTR [ebx+0x1d],0x0
+  46fe3f:	c6 43 1e 01          	mov    BYTE PTR [ebx+0x1e],0x1
+  46fe43:	6a 01                	push   0x1
+  46fe45:	ff 73 1f             	push   DWORD PTR [ebx+0x1f]
+  46fe48:	e8 99 ba 05 00       	call   0x4cb8e6
+  46fe4d:	83 c4 08             	add    esp,0x8
+  46fe50:	5b                   	pop    ebx
+  46fe51:	5d                   	pop    ebp
+  46fe52:	c3                   	ret
+  46fe53:	90                   	nop
+  46fe54:	04 00                	add    al,0x0
+  46fe56:	00 00                	add    BYTE PTR [eax],al
+  46fe58:	90                   	nop
+  46fe59:	00 0c 00             	add    BYTE PTR [eax+eax*1],cl
+  46fe5c:	70 fe                	jo     0x46fe5c
+  46fe5e:	46                   	inc    esi
+  46fe5f:	00 57 52             	add    BYTE PTR [edi+0x52],dl
+  46fe62:	49                   	dec    ecx
+  46fe63:	54                   	push   esp
+  46fe64:	45                   	inc    ebp
+  46fe65:	44                   	inc    esp
+  46fe66:	69 61 6c 6f 67 20 2a 	imul   esp,DWORD PTR [ecx+0x6c],0x2a20676f
+  46fe6d:	00 90 90 b9 00 00    	add    BYTE PTR [eax+0xb990],dl
+  46fe73:	00 03                	add    BYTE PTR [ebx],al
+  46fe75:	00 30                	add    BYTE PTR [eax],dh
+  46fe77:	00 0c 00             	add    BYTE PTR [eax+eax*1],cl
+  46fe7a:	00 00                	add    BYTE PTR [eax],al
+  46fe7c:	7f 00                	jg     0x46fe7e
+  46fe7e:	00 00                	add    BYTE PTR [eax],al
+  46fe80:	3c 00                	cmp    al,0x0
+  46fe82:	4c                   	dec    esp
+	...
+  46fe8f:	00 04 00             	add    BYTE PTR [eax+eax*1],al
+  46fe92:	00 00                	add    BYTE PTR [eax],al
+  46fe94:	02 00                	add    al,BYTE PTR [eax]
+  46fe96:	00 00                	add    BYTE PTR [eax],al
+  46fe98:	e8 fe 46 00 01       	call   0x147459b
+  46fe9d:	00 74 00 57          	add    BYTE PTR [eax+eax*1+0x57],dh
+  46fea1:	52                   	push   edx
+  46fea2:	49                   	dec    ecx
+  46fea3:	54                   	push   esp
+  46fea4:	45                   	inc    ebp
+  46fea5:	44                   	inc    esp
+  46fea6:	69 61 6c 6f 67 00 48 	imul   esp,DWORD PTR [ecx+0x6c],0x4800676f
+  46fead:	25 40 00 00 00       	and    eax,0x40
+  46feb2:	00 00                	add    BYTE PTR [eax],al
+  46feb4:	03 00                	add    eax,DWORD PTR [eax]
+  46feb6:	00 00                	add    BYTE PTR [eax],al
+  46feb8:	00 00                	add    BYTE PTR [eax],al
+  46feba:	00 00                	add    BYTE PTR [eax],al
+  46febc:	10 25 40 00 04 00    	adc    BYTE PTR ds:0x40040,ah
+  46fec2:	00 00                	add    BYTE PTR [eax],al
+  46fec4:	0d 00 00 00 c4       	or     eax,0xc4000000
+  46fec9:	24 40                	and    al,0x40
+  46fecb:	00 08                	add    BYTE PTR [eax],cl
+  46fecd:	00 00                	add    BYTE PTR [eax],al
+  46fecf:	00 0d 00 00 00 b0    	add    BYTE PTR ds:0xb0000000,cl
+  46fed5:	25 40 00 00 00       	and    eax,0x40
+  46feda:	00 00                	add    BYTE PTR [eax],al
+  46fedc:	0d 00 00 00 00       	or     eax,0x0
+  46fee1:	00 00                	add    BYTE PTR [eax],al
+  46fee3:	00 00                	add    BYTE PTR [eax],al
+  46fee5:	00 00                	add    BYTE PTR [eax],al
+  46fee7:	00 55 8b             	add    BYTE PTR [ebp-0x75],dl
+  46feea:	ec                   	in     al,dx
+  46feeb:	83 c4 dc             	add    esp,0xffffffdc
+  46feee:	53                   	push   ebx
+  46feef:	56                   	push   esi
+  46fef0:	8b 75 0c             	mov    esi,DWORD PTR [ebp+0xc]
+  46fef3:	8b 5d 08             	mov    ebx,DWORD PTR [ebp+0x8]
+  46fef6:	b8 e0 fc 4d 00       	mov    eax,0x4dfce0
+  46fefb:	e8 fc b6 05 00       	call   0x4cb5fc
+  46ff00:	85 db                	test   ebx,ebx
+  46ff02:	74 7b                	je     0x46ff7f
+  46ff04:	83 45 f8 04          	add    DWORD PTR [ebp-0x8],0x4
+  46ff08:	8b 53 04             	mov    edx,DWORD PTR [ebx+0x4]
+  46ff0b:	83 6a fc 0a          	sub    DWORD PTR [edx-0x4],0xa
+  46ff0f:	8b 0b                	mov    ecx,DWORD PTR [ebx]
+  46ff11:	83 69 fc 0a          	sub    DWORD PTR [ecx-0x4],0xa
+  46ff15:	83 6d f8 03          	sub    DWORD PTR [ebp-0x8],0x3
+  46ff19:	6a 00                	push   0x0
+  46ff1b:	53                   	push   ebx
+  46ff1c:	e8 4f ba 05 00       	call   0x4cb970
+  46ff21:	83 c4 08             	add    esp,0x8
+  46ff24:	8b 43 04             	mov    eax,DWORD PTR [ebx+0x4]
+  46ff27:	83 40 fc 0a          	add    DWORD PTR [eax-0x4],0xa
+  46ff2b:	8b 13                	mov    edx,DWORD PTR [ebx]
+  46ff2d:	83 42 fc 0a          	add    DWORD PTR [edx-0x4],0xa
+  46ff31:	f7 c6 02 00 00 00    	test   esi,0x2
+  46ff37:	74 37                	je     0x46ff70
+  46ff39:	8b 4b 04             	mov    ecx,DWORD PTR [ebx+0x4]
+  46ff3c:	81 69 fc 6a ff ff ff 	sub    DWORD PTR [ecx-0x4],0xffffff6a
+  46ff43:	83 6d f8 02          	sub    DWORD PTR [ebp-0x8],0x2
+  46ff47:	6a 00                	push   0x0
+  46ff49:	8d 43 33             	lea    eax,[ebx+0x33]
+  46ff4c:	50                   	push   eax
+  46ff4d:	e8 66 bd 05 00       	call   0x4cbcb8
+  46ff52:	83 c4 08             	add    esp,0x8
+  46ff55:	8b 53 04             	mov    edx,DWORD PTR [ebx+0x4]
+  46ff58:	81 42 fc 6a ff ff ff 	add    DWORD PTR [edx-0x4],0xffffff6a
+  46ff5f:	ff 4d f8             	dec    DWORD PTR [ebp-0x8]
+  46ff62:	6a 00                	push   0x0
+  46ff64:	8d 4b 2b             	lea    ecx,[ebx+0x2b]
+  46ff67:	51                   	push   ecx
+  46ff68:	e8 91 be 05 00       	call   0x4cbdfe
+  46ff6d:	83 c4 08             	add    esp,0x8
+  46ff70:	f7 c6 01 00 00 00    	test   esi,0x1
+  46ff76:	74 07                	je     0x46ff7f
+  46ff78:	53                   	push   ebx
+  46ff79:	e8 52 c0 05 00       	call   0x4cbfd0
+  46ff7e:	59                   	pop    ecx
+  46ff7f:	8b 45 dc             	mov    eax,DWORD PTR [ebp-0x24]
+  46ff82:	64 a3 00 00 00 00    	mov    fs:0x0,eax
+  46ff88:	5e                   	pop    esi
+  46ff89:	5b                   	pop    ebx
+  46ff8a:	8b e5                	mov    esp,ebp
+  46ff8c:	5d                   	pop    ebp
+  46ff8d:	c3                   	ret
+  46ff8e:	90                   	nop
+  46ff8f:	90                   	nop
+  46ff90:	8b 44 24 04          	mov    eax,DWORD PTR [esp+0x4]
+  46ff94:	03 40 fc             	add    eax,DWORD PTR [eax-0x4]
+  46ff97:	83 c0 cd             	add    eax,0xffffffcd
+  46ff9a:	89 44 24 04          	mov    DWORD PTR [esp+0x4],eax
+  46ff9e:	e9 69 fb ff ff       	jmp    0x46fb0c
+  46ffa3:	8b 44 24 04          	mov    eax,DWORD PTR [esp+0x4]
+  46ffa7:	03 40 fc             	add    eax,DWORD PTR [eax-0x4]
+  46ffaa:	83 c0 cd             	add    eax,0xffffffcd
+  46ffad:	89 44 24 04          	mov    DWORD PTR [esp+0x4],eax
+  46ffb1:	e9 67 fe ff ff       	jmp    0x46fe1d
+  46ffb6:	8b 44 24 04          	mov    eax,DWORD PTR [esp+0x4]
+  46ffba:	03 40 fc             	add    eax,DWORD PTR [eax-0x4]
+  46ffbd:	83 c0 cd             	add    eax,0xffffffcd
+  46ffc0:	89 44 24 04          	mov    DWORD PTR [esp+0x4],eax
+  46ffc4:	e9 e3 b9 05 00       	jmp    0x4cb9ac
+  46ffc9:	8b 44 24 04          	mov    eax,DWORD PTR [esp+0x4]
+  46ffcd:	03 40 fc             	add    eax,DWORD PTR [eax-0x4]
+  46ffd0:	83 c0 cd             	add    eax,0xffffffcd
+  46ffd3:	89 44 24 04          	mov    DWORD PTR [esp+0x4],eax
+  46ffd7:	e9 d6 b9 05 00       	jmp    0x4cb9b2
+  46ffdc:	8b 44 24 04          	mov    eax,DWORD PTR [esp+0x4]
+  46ffe0:	03 40 fc             	add    eax,DWORD PTR [eax-0x4]
+  46ffe3:	83 c0 cd             	add    eax,0xffffffcd
+  46ffe6:	89 44 24 04          	mov    DWORD PTR [esp+0x4],eax
+  46ffea:	e9 c9 b9 05 00       	jmp    0x4cb9b8
+  46ffef:	8b 44 24 04          	mov    eax,DWORD PTR [esp+0x4]
+  46fff3:	03 40 fc             	add    eax,DWORD PTR [eax-0x4]
+  46fff6:	83 c0 cd             	add    eax,0xffffffcd
+  46fff9:	89 44 24 04          	mov    DWORD PTR [esp+0x4],eax
+  46fffd:	e9 bc b9         	jmp    0x4cb9be
+
+INTERPRETATION GUARDRAILS
+------------------------------------------------------------------------------------------------
+* Escrita em F_TIMEOUT/F_ERROR/F_CHECKSUM mostra apenas estado interno da rotina.
+* Uma comparação com RX_BUF pode ajudar a reconstruir o ACK, mas não constitui validação física.
+* Nenhum payload de resposta deve ser inventado sem fluxo de dados explícito ou captura.
+* Este script nunca chama a rotina 0x0046F5E6; apenas examina os bytes do executável.
