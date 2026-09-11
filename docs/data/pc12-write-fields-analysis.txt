@@ -1,0 +1,75 @@
+PC12 WRITE PLC PROGRAM - PG33 OBJECT FIELD TRACE
+============================================================================================
+mode=OFFLINE ONLY; no serial, no PLC, no TX
+range=0x004B6A00..0x004B7E20
+target_offsets=+0x56, +0x5E, +0x62, +0x6A, +0x6E
+
+FIELD +0x56 : 11 write candidate(s)
+  0x004B6D08  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B6E53  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B6EF4  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B6F8F  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B70DA  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B71AC  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B7490  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B755E  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B7622  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B7680  ADD32_IMM8   value=0x2        bytes=[83 47 56 02]
+  0x004B7D35  MOV32_REG    value=?          bytes=[89 57 56]
+
+FIELD +0x5E : 23 write candidate(s)
+  0x004B6B7E  MOV32_IMM    value=0x6        bytes=[C7 47 5E 06 00 00 00]
+  0x004B6CDA  INC32        value=?          bytes=[FF 47 5E]
+  0x004B6CEC  INC32        value=?          bytes=[FF 47 5E]
+  0x004B6E2B  INC32        value=?          bytes=[FF 47 5E]
+  0x004B6E3D  INC32        value=?          bytes=[FF 47 5E]
+  0x004B6ED0  INC32        value=?          bytes=[FF 47 5E]
+  0x004B6EDD  INC32        value=?          bytes=[FF 47 5E]
+  0x004B6F6B  INC32        value=?          bytes=[FF 47 5E]
+  0x004B6F78  INC32        value=?          bytes=[FF 47 5E]
+  0x004B70B2  INC32        value=?          bytes=[FF 47 5E]
+  0x004B70C4  INC32        value=?          bytes=[FF 47 5E]
+  0x004B7184  INC32        value=?          bytes=[FF 47 5E]
+  0x004B7196  INC32        value=?          bytes=[FF 47 5E]
+  0x004B746D  INC32        value=?          bytes=[FF 47 5E]
+  0x004B747F  INC32        value=?          bytes=[FF 47 5E]
+  0x004B753A  INC32        value=?          bytes=[FF 47 5E]
+  0x004B7547  INC32        value=?          bytes=[FF 47 5E]
+  0x004B75FA  INC32        value=?          bytes=[FF 47 5E]
+  0x004B760C  INC32        value=?          bytes=[FF 47 5E]
+  0x004B765D  INC32        value=?          bytes=[FF 47 5E]
+  0x004B766F  INC32        value=?          bytes=[FF 47 5E]
+  0x004B79AA  INC32        value=?          bytes=[FF 47 5E]
+  0x004B7D27  MOV32_IMM    value=0x6        bytes=[C7 47 5E 06 00 00 00]
+
+FIELD +0x62 : 11 write candidate(s)
+  0x004B6CFF  INC32        value=?          bytes=[FF 47 62]
+  0x004B6E50  INC32        value=?          bytes=[FF 47 62]
+  0x004B6EEB  INC32        value=?          bytes=[FF 47 62]
+  0x004B6F86  INC32        value=?          bytes=[FF 47 62]
+  0x004B70D7  INC32        value=?          bytes=[FF 47 62]
+  0x004B71A9  INC32        value=?          bytes=[FF 47 62]
+  0x004B748D  INC32        value=?          bytes=[FF 47 62]
+  0x004B7555  INC32        value=?          bytes=[FF 47 62]
+  0x004B761F  INC32        value=?          bytes=[FF 47 62]
+  0x004B767D  INC32        value=?          bytes=[FF 47 62]
+  0x004B7D30  MOV32_REG    value=?          bytes=[89 47 62]
+
+FIELD +0x6A : 3 write candidate(s)
+  0x004B6B6C  MOV32_REG    value=?          bytes=[89 57 6A]
+  0x004B78FE  MOV32_REG    value=?          bytes=[89 4F 6A]
+  0x004B791A  ADD32_REG    value=?          bytes=[01 57 6A]
+
+FIELD +0x6E : 3 write candidate(s)
+  0x004B6B71  MOV32_REG    value=?          bytes=[89 4F 6E]
+  0x004B7939  MOV32_REG    value=?          bytes=[89 47 6E]
+  0x004B7955  ADD32_REG    value=?          bytes=[01 4F 6E]
+
+KNOWN CONSUMERS AT 0x004B7958
+  +0x56 -> TX[1] formula and TX[5]
+  +0x5E -> destination index while copying body; later checksum index
+  +0x62 -> number of bytes copied from object +0xE0
+  +0x6A -> TX[3]
+  +0x6E -> TX[4]
+
+GUARDRAIL: this trace establishes static data flow only; it never executes a write.
