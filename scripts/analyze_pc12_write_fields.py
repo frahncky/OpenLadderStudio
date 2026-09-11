@@ -3,8 +3,9 @@
 
 Não executa o PC12, não abre COM e não transmite. O objetivo é localizar no
 caminho Write PLC Program as escritas x86 simples sobre os offsets do objeto
-EDI consumidos por 0x4B7958: +56, +5E, +62, +6A e +6E, e mostrar as janelas
-que constroem os planos HIGH/LOW e EXTERNAL antes do quadro 0x33.
+EDI consumidos por 0x4B7958: +56, +5E, +62, +6A e +6E, mostrar as janelas que
+constroem os planos HIGH/LOW e EXTERNAL e seguir cada saída até sua decisão de
+continuar a coleta ou preparar o quadro 0x33.
 """
 
 import argparse
@@ -52,8 +53,7 @@ def scan(data, sections, image_base):
 
         # MOV r/m32, imm32 : C7 /0
         if i + 7 <= hi and data[i] == 0xC7 and (data[i + 1] & 0xF8) == 0x40:
-            # mod=01, r/m=EDI, /0 => 47 disp8 imm32
-            if data[i + 1] == 0x47:
+            if data[i + 1] == 0x47:  # mod=01, r/m=EDI, /0
                 disp = data[i + 2]
                 if target8(disp):
                     out.append((va, disp, 'MOV32_IMM', u32(data, i + 3), data[i:i + 7]))
@@ -164,20 +164,24 @@ def main():
     lines.extend(objdump_window(path, 0x004B7D20, 0x004B7D70, max_lines=100))
     lines.append('')
 
-    lines.append('ENCODER WINDOWS AROUND +0x56 += 2')
+    lines.append('ENCODER WINDOWS THROUGH EXIT / BOUNDARY DECISION')
     lines.append('-' * 92)
-    # Cada incremento de +0x56 por 2 marca a conclusão de um par HIGH/LOW.
-    # Mostrar o entorno permite conferir onde esse par e o byte externo são
-    # efetivamente armazenados sem executar o binário.
     encoder_sites = [row[0] for row in by_field[0x56]
                      if row[2] == 'ADD32_IMM8' and row[3] == 0x2]
     for idx, va in enumerate(encoder_sites, 1):
+        # Janela maior do lado posterior: a versão anterior acabava exatamente
+        # antes de alvos como 0x4B6D29, escondendo a convergência do encoder.
         a = max(WRITE_LO, va - 0x48)
-        b = min(WRITE_HI, va + 0x20)
+        b = min(WRITE_HI, va + 0xB0)
         lines.append('### ENCODER#%02d completion=0x%08X window=0x%08X..0x%08X' %
                      (idx, va, a, b))
-        lines.extend(objdump_window(path, a, b, max_lines=100))
+        lines.extend(objdump_window(path, a, b, max_lines=260))
         lines.append('')
+
+    lines.append('GENERIC VARIABLE-SPAN / 20-RECORD BOUNDARY')
+    lines.append('-' * 92)
+    lines.extend(objdump_window(path, 0x004B7790, 0x004B78B0, max_lines=320))
+    lines.append('')
 
     lines.append('ADDRESS BYTE CONSTRUCTION')
     lines.append('-' * 92)
@@ -190,12 +194,6 @@ def main():
     lines.append('  +0x62 -> number of bytes copied from object +0xE0')
     lines.append('  +0x6A -> TX[3]')
     lines.append('  +0x6E -> TX[4]')
-    lines.append('')
-    lines.append('STATIC EXPECTATION TO VERIFY IN WINDOWS')
-    lines.append('  +0x5E starts at 6; +0x56 and +0x62 start at 0 for each chunk.')
-    lines.append('  If every encoded step writes 2 bytes directly at TX[+0x5E], increments +0x5E twice,')
-    lines.append('  appends one external byte to object+0xE0, increments +0x62 once, and +0x56 by 2,')
-    lines.append('  then the 0x33 body geometry 2*N HIGH/LOW + N EXTERNAL is statically closed.')
     lines.append('')
     lines.append('GUARDRAIL: this trace establishes static data flow only; it never executes a write.')
 
