@@ -9,6 +9,7 @@ on:
       - 'scripts/analyze_pc12_write_tx.py'
       - 'scripts/analyze_pc12_write_fields.py'
       - 'scripts/analyze_pc12_tx_response.py'
+      - 'scripts/emulate_pc12_response_validator.py'
       - 'scripts/emulate_pc12_pg33_builder.py'
       - 'scripts/emulate_pc12_pg33_success_tail.py'
       - 'scripts/emulate_pc12_readprog.py'
@@ -86,8 +87,6 @@ jobs:
           } >> protocol-analysis/pc12-protocol-analysis.txt
 
       - name: Conferir a geometria da leitura de programa
-        # shell: bash traz -o pipefail; sem ele o status do pipe seria o do tee
-        # e a divergencia que este passo existe para barrar passaria batida.
         shell: bash
         run: |
           python3 scripts/emulate_pc12_readprog.py --so-geometria \
@@ -95,6 +94,19 @@ jobs:
 
       - name: Instalar emulador Unicorn
         run: python3 -m pip install 'unicorn==2.1.4'
+
+      - name: Emular validador RX sem hardware
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_response_validator.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-response-validator-emulation.txt
+          {
+            echo
+            echo 'RX VALIDATOR - UNICORN OFFLINE EMULATION'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-response-validator-emulation.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
 
       - name: Emular construtor PG33 sem hardware
         shell: bash
@@ -156,25 +168,20 @@ jobs:
         shell: bash
         run: |
           mkdir -p docs/data
-          cp protocol-analysis/pc12-write-program-analysis.txt \
-            docs/data/pc12-write-program-analysis.txt
-          cp protocol-analysis/pc12-write-tx-analysis.txt \
-            docs/data/pc12-write-tx-analysis.txt
-          cp protocol-analysis/pc12-write-fields-analysis.txt \
-            docs/data/pc12-write-fields-analysis.txt
-          cp protocol-analysis/pc12-tx-response-analysis.txt \
-            docs/data/pc12-tx-response-analysis.txt
-          cp protocol-analysis/pc12-pg33-builder-emulation.txt \
-            docs/data/pc12-pg33-builder-emulation.txt
-          cp protocol-analysis/pc12-pg33-success-tail-emulation.txt \
-            docs/data/pc12-pg33-success-tail-emulation.txt
-          if [ -z "$(git status --porcelain -- docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-tx-response-analysis.txt docs/data/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt)" ]; then
+          cp protocol-analysis/pc12-write-program-analysis.txt docs/data/pc12-write-program-analysis.txt
+          cp protocol-analysis/pc12-write-tx-analysis.txt docs/data/pc12-write-tx-analysis.txt
+          cp protocol-analysis/pc12-write-fields-analysis.txt docs/data/pc12-write-fields-analysis.txt
+          cp protocol-analysis/pc12-tx-response-analysis.txt docs/data/pc12-tx-response-analysis.txt
+          cp protocol-analysis/pc12-response-validator-emulation.txt docs/data/pc12-response-validator-emulation.txt
+          cp protocol-analysis/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-builder-emulation.txt
+          cp protocol-analysis/pc12-pg33-success-tail-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt
+          if [ -z "$(git status --porcelain -- docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-tx-response-analysis.txt docs/data/pc12-response-validator-emulation.txt docs/data/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt)" ]; then
             echo 'Relatórios offline sem alterações.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-tx-response-analysis.txt docs/data/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt
+          git add docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-tx-response-analysis.txt docs/data/pc12-response-validator-emulation.txt docs/data/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt
           git commit -m 'Atualizar relatórios offline PC12 Write PLC Program'
           git push origin HEAD:main
 
@@ -188,6 +195,7 @@ jobs:
             protocol-analysis/pc12-write-tx-analysis.txt
             protocol-analysis/pc12-write-fields-analysis.txt
             protocol-analysis/pc12-tx-response-analysis.txt
+            protocol-analysis/pc12-response-validator-emulation.txt
             protocol-analysis/pc12-pg33-builder-emulation.txt
             protocol-analysis/pc12-pg33-success-tail-emulation.txt
           retention-days: 30
