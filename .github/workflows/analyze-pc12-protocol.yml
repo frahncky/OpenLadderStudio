@@ -34,6 +34,15 @@ jobs:
           python3 scripts/emulate_pc12_readprog.py --so-geometria \
             | tee -a protocol-analysis/pc12-protocol-analysis.txt
 
+      - name: Instalar emulador Unicorn
+        run: python3 -m pip install 'unicorn==2.1.4'
+
+      - name: Emular Read PLC Program sem hardware
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_readprog.py --paginas 12 \
+            | tee -a protocol-analysis/pc12-protocol-analysis.txt
+
       - name: PE headers
         run: |
           {
