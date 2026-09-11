@@ -12,6 +12,7 @@ Esta rota e separada do protocolo PG proprietario usado pelo PC12. O TP02 docume
 - cada passo de programa = 3 bytes = 6 hex (`HIGH`, `LOW`, `EXT`);
 - `RBP` automatico depois de cada `WBP` para verificacao byte a byte;
 - escrita recusada se `PSR` nao confirmar `STOP`;
+- compilacao direta de projeto `.pladder` para palavras TP02;
 - modo padrao dry-run, sem abrir porta serial.
 
 Arquivos:
@@ -19,6 +20,8 @@ Arquivos:
 ```text
 src/OpenLadderStudio.Core/Tp02ComputerLinkProgramCodec.cs
 src/OpenLadderStudio.Desktop/TP02WbpWriter.cs
+src/OpenLadderStudio.Desktop/TP02ProjectToWbpHex.cs
+src/OpenLadderStudio.Desktop/TP02WriteProject.bat
 src/OpenLadderStudio.Desktop/BuildTp02WbpWriter.bat
 tests/OpenLadderStudio.Core.Tests/Tp02ComputerLinkProgramCodecSelfTest.cs
 ```
@@ -54,11 +57,39 @@ O build primeiro compila e executa o autoteste do codec. Somente depois gera:
 
 ```text
 OpenLadderTP02Wbp.exe
+OpenLadderTP02ProjectExport.exe
 ```
 
-## Formato do arquivo de programa
+## Fluxo direto a partir do projeto OpenLadder
 
-O arquivo contem somente palavras de maquina TP02, uma ou mais por linha. Cada palavra tem 6 hex:
+Para compilar um `.pladder` e apenas visualizar os quadros WBP:
+
+```bat
+TP02WriteProject.bat meu-projeto.pladder
+```
+
+Fluxo:
+
+```text
+.pladder
+  -> LadderProjectCodec
+  -> Tp02LadderTargetCompiler
+  -> Tp02MachineWord (3 bytes por passo)
+  -> Tp02ComputerLinkProgramCodec
+  -> WBP dry-run
+```
+
+Para solicitar explicitamente a escrita real:
+
+```bat
+TP02WriteProject.bat meu-projeto.pladder COM3 WRITE
+```
+
+Mesmo com `WRITE`, a ferramenta ainda executa `PSR` e recusa a transferencia se o TP02 nao estiver em `STOP`.
+
+## Formato intermediario de programa
+
+Tambem e possivel usar diretamente um arquivo de palavras de maquina TP02. Cada palavra tem 6 hex:
 
 ```text
 001000
@@ -75,7 +106,15 @@ TP02-WBP-SAMPLE.hex
 
 O compilador TP02 do OpenLadder ja trabalha com a mesma estrutura `Tp02MachineWord` de 3 bytes.
 
-## Dry-run
+## Exportar projeto sem transmitir
+
+```bat
+OpenLadderTP02ProjectExport.exe meu-projeto.pladder programa.tp02.hex
+```
+
+Esse comando apenas compila e grava o codigo de maquina em arquivo.
+
+## Dry-run de arquivo HEX
 
 ```bat
 OpenLadderTP02Wbp.exe TP02-WBP-SAMPLE.hex
@@ -83,9 +122,7 @@ OpenLadderTP02Wbp.exe TP02-WBP-SAMPLE.hex
 
 Nesse modo nenhuma COM e aberta. Os quadros WBP sao apenas exibidos.
 
-## Escrita real
-
-Exemplo:
+## Escrita real de arquivo HEX
 
 ```bat
 OpenLadderTP02Wbp.exe --file=programa.hex --port=COM3 --write
