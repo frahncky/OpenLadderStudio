@@ -20,29 +20,36 @@ $replacement = @'
             byte[] helloC0 = new byte[] { 0xC0, 0x01, 0x09, 0x35 };
             byte[] hello80 = new byte[] { 0x80, 0x01, 0x09, 0x75 };
 
-            // O perfil fisicamente mais estavel fica sempre em primeiro lugar.
+            // Bancada real 2026-09-11: o TP-232PG do usuario confirmou HELLO
+            // 80 01 09 75 com 19200 8O1, DTR=off e RTS=off. Esse perfil
+            // passa a ser o primeiro e recebe mais tentativas antes de qualquer
+            // variacao das linhas de controle.
             string[] names = new string[]
             {
+                "19200 8O1 DTR=off RTS=off",
                 "19200 8O1 DTR=on RTS=off",
-                "19200 8O1 DTR=on RTS=on",
-                "19200 8O1 DTR=off RTS=off"
+                "19200 8O1 DTR=on RTS=on"
             };
-            bool[] dtr = new bool[] { true, true, false };
-            bool[] rts = new bool[] { false, true, false };
+            bool[] dtr = new bool[] { false, true, true };
+            bool[] rts = new bool[] { false, false, true };
 
+            AppendLogSafe("PG STARTUP: perfil observado na bancada = 19200 8O1 DTR=off RTS=off.");
             AppendLogSafe("PG STARTUP: aguardando estabilizacao do TP-232PG antes do primeiro HELLO...");
-            Thread.Sleep(700);
+            Thread.Sleep(850);
 
-            // Duas varreduras internas reproduzem automaticamente o comportamento
-            // observado em bancada: a primeira abertura pode apenas inicializar o
-            // conversor/linhas seriais e a segunda passa a responder normalmente.
+            int totalRx = 0;
+
+            // Duas sessoes completas dentro do mesmo clique. O comportamento
+            // observado foi: uma tentativa pode falhar e a seguinte funcionar.
+            // A segunda sessao reabre a COM mantendo DTR/RTS em OFF; nao envia
+            // qualquer comando adicional alem do HELLO conhecido.
             for (int sweep = 1; sweep <= 2; sweep++)
             {
                 if (sweep == 2)
                 {
-                    AppendLogSafe("PG AUTO-RETRY: primeira varredura sem HELLO; rearmando a serial e tentando novamente sem intervencao do usuario.");
-                    RearmPgSerial(portName);
-                    Thread.Sleep(900);
+                    AppendLogSafe("PG AUTO-RETRY: primeira sessao sem HELLO; reabrindo a serial automaticamente.");
+                    RecoverPgSerial(portName);
+                    Thread.Sleep(1000);
                 }
 
                 for (int p = 0; p < names.Length; p++)
@@ -60,33 +67,37 @@ $replacement = @'
                         serial.DiscardInBuffer();
                         serial.DiscardOutBuffer();
 
-                        // Na segunda varredura damos mais tempo para o opto/acoplador
-                        // e o PLC estabilizarem antes do primeiro byte transmitido.
-                        Thread.Sleep(sweep == 1 ? 300 : 650);
+                        int settleMs = p == 0 ? (sweep == 1 ? 500 : 900) : 450;
+                        Thread.Sleep(settleMs);
                         AppendLogSafe("PG PERFIL [ciclo " + sweep.ToString(CultureInfo.InvariantCulture) + "/2]: " + names[p]);
 
-                        int attempts = p == 0 ? 5 : 3;
+                        int attempts = p == 0 ? 5 : 2;
+                        int receiveMs = p == 0 ? (sweep == 1 ? 1900 : 2400) : 1700;
                         for (int attempt = 1; attempt <= attempts; attempt++)
                         {
                             serial.DiscardInBuffer();
                             AppendLogSafe("PG HELLO TX " + attempt.ToString(CultureInfo.InvariantCulture) + ": 43 4F 4E 2D 49 43 42 0D");
                             serial.Write(hello, 0, hello.Length);
-                            byte[] raw = ReadPgBurst(serial, sweep == 1 ? 1700 : 2200);
+                            byte[] raw = ReadPgBurst(serial, receiveMs);
+                            totalRx += raw.Length;
                             AppendLogSafe("PG HELLO RX: " + (raw.Length == 0 ? "[]" : PgHex(raw)));
 
                             if (PgContains(raw, helloC0) && PgSum8(helloC0) == 0xFF)
                             {
                                 helloVariant = "C0 01 09 35";
                                 profileName = names[p] + " / ciclo " + sweep.ToString(CultureInfo.InvariantCulture);
+                                AppendLogSafe("PG ESTAVEL: HELLO confirmado; perfil mantido sem novas variacoes DTR/RTS.");
                                 return true;
                             }
                             if (PgContains(raw, hello80) && PgSum8(hello80) == 0xFF)
                             {
                                 helloVariant = "80 01 09 75";
                                 profileName = names[p] + " / ciclo " + sweep.ToString(CultureInfo.InvariantCulture);
+                                AppendLogSafe("PG ESTAVEL: HELLO confirmado; perfil mantido sem novas variacoes DTR/RTS.");
                                 return true;
                             }
-                            Thread.Sleep(sweep == 1 ? 160 : 240);
+
+                            Thread.Sleep(p == 0 ? 260 : 180);
                         }
                     }
                     catch (Exception ex)
@@ -100,16 +111,17 @@ $replacement = @'
                             try { if (serial.IsOpen) serial.Close(); } catch { }
                             serial.Dispose();
                         }
-                        Thread.Sleep(sweep == 1 ? 250 : 400);
+                        Thread.Sleep(p == 0 ? 350 : 220);
                     }
                 }
             }
 
-            AppendLogSafe("PG RESULTADO: duas varreduras completas sem HELLO conhecido; somente agora sera considerado o fallback Computer Link.");
+            AppendLogSafe("PG RESULTADO: duas sessoes automaticas sem HELLO conhecido; RX total="
+                + totalRx.ToString(CultureInfo.InvariantCulture) + " byte(s). Somente agora sera considerado o fallback Computer Link.");
             return false;
         }
 
-        private void RearmPgSerial(string portName)
+        private void RecoverPgSerial(string portName)
         {
             SerialPort recovery = null;
             try
@@ -121,11 +133,10 @@ $replacement = @'
                 recovery.DtrEnable = false;
                 recovery.RtsEnable = false;
                 recovery.Open();
-                Thread.Sleep(450);
-                recovery.DtrEnable = true;
-                recovery.RtsEnable = false;
-                Thread.Sleep(450);
-                AppendLogSafe("PG RECOVERY: DTR/RTS rearmados sem envio de bytes.");
+                recovery.DiscardInBuffer();
+                recovery.DiscardOutBuffer();
+                Thread.Sleep(700);
+                AppendLogSafe("PG RECOVERY: COM estabilizada em 8O1 com DTR=off/RTS=off, sem envio de bytes.");
             }
             catch (Exception ex)
             {
@@ -145,4 +156,4 @@ $replacement = @'
 
 $text = $text.Substring(0, $start) + $replacement + $text.Substring($end)
 [System.IO.File]::WriteAllText($shellPath, $text, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 PG Recovery V93 aplicado: auto-retry e estabilizacao do TP-232PG.'
+Write-Host 'TP02 PG Recovery V93 aplicado: perfil real off/off + auto-retry incorporados.'
