@@ -3,8 +3,12 @@
 
 Objetivo
 --------
-Validar dinamicamente, mas 100% offline, a reconstrução estática do quadro
-montado por 0x004B7958 no caminho "Write PLC Program".
+Validar dinamicamente, mas 100% offline, a reconstrução do quadro montado por
+0x004B7958 no caminho "Write PLC Program".
+
+A unidade do corpo é PALAVRA DE MÁQUINA (HIGH/LOW/EXTERNAL). A análise do
+helper 0x004BCA65 mostrou que até 20 instruções lógicas podem expandir para
+até 80 palavras (StepSpan 1..4). Portanto este emulador valida W=1..80.
 
 O script:
 - lê pc12.exe como dados;
@@ -45,7 +49,7 @@ OBJ = 0x21000000
 STACK = 0x22000000
 STOP = 0x23000000
 
-MAX_RECORDS = 20
+MAX_MACHINE_WORDS = 80
 
 
 def u16(data, off):
@@ -93,15 +97,15 @@ def checksum(prefix):
 
 
 def model_frame(start_step, high_low, external):
-    n = len(external)
+    w = len(external)
     body = list(high_low) + list(external)
     frame = [
         0x33,
-        3 * n + 4,
+        3 * w + 4,
         0x00,
         (start_step >> 8) & 0xFF,
         start_step & 0xFF,
-        2 * n,
+        2 * w,
     ] + body
     frame.append(checksum(frame))
     return bytes(frame)
@@ -110,11 +114,11 @@ def model_frame(start_step, high_low, external):
 def emulate_builder(exe, start_step, high_low, external):
     if len(high_low) % 2:
         raise ValueError('HIGH/LOW deve ter quantidade par de bytes')
-    n = len(high_low) // 2
-    if n != len(external):
-        raise ValueError('EXTERNAL deve ter um byte por registro')
-    if not (1 <= n <= MAX_RECORDS):
-        raise ValueError('N deve estar entre 1 e 20 registros')
+    w = len(high_low) // 2
+    if w != len(external):
+        raise ValueError('EXTERNAL deve ter um byte por palavra de máquina')
+    if not (1 <= w <= MAX_MACHINE_WORDS):
+        raise ValueError('W deve estar entre 1 e 80 palavras de máquina')
     if not (0 <= start_step < 4000):
         raise ValueError('start_step fora de 0..3999')
 
@@ -125,10 +129,10 @@ def emulate_builder(exe, start_step, high_low, external):
     mu.mem_map(STACK - 0x10000, 0x20000)
     mu.mem_map(STOP, 0x1000)
 
-    # Estado exatamente como o construtor espera depois da fase de coleta.
-    mu.mem_write(OBJ + 0x56, struct.pack('<I', 2 * n))
-    mu.mem_write(OBJ + 0x5E, struct.pack('<I', 6 + 2 * n))
-    mu.mem_write(OBJ + 0x62, struct.pack('<I', n))
+    # Estado como o construtor espera depois da fase de coleta/expansão.
+    mu.mem_write(OBJ + 0x56, struct.pack('<I', 2 * w))
+    mu.mem_write(OBJ + 0x5E, struct.pack('<I', 6 + 2 * w))
+    mu.mem_write(OBJ + 0x62, struct.pack('<I', w))
     mu.mem_write(OBJ + 0x6A, struct.pack('<I', (start_step >> 8) & 0xFF))
     mu.mem_write(OBJ + 0x6E, struct.pack('<I', start_step & 0xFF))
     mu.mem_write(OBJ + 0xE0, bytes(external))
@@ -189,7 +193,7 @@ def run_fixture(exe, name, start_step, high_low, external):
     return {
         'name': name,
         'start': start_step,
-        'n': len(external),
+        'w': len(external),
         'real': real,
         'expected': expected,
         'clock_calls': clock_calls,
@@ -204,19 +208,19 @@ def main():
     args = ap.parse_args()
 
     fixtures = [
-        ('one-boolean', 0x0000,
+        ('one-boolean-word', 0x0000,
          bytes([0x00, 0x10]),
          bytes([0x01])),
-        ('two-known-records', 0x0050,
+        ('two-machine-words', 0x0050,
          bytes([0x00, 0x10, 0x20, 0x41]),
          bytes([0x01, 0x07])),
-        # Endereço alto não nulo, mas ainda dentro do limite físico de 4000 passos.
-        ('address-0E34', 0x0E34,
+        ('address-0E34-three-words', 0x0E34,
          bytes([0x02, 0x11, 0x21, 0x40, 0x00, 0x39]),
          bytes([0x04, 0x07, 0x0C])),
-        ('max-20-records', 0x0F00,
-         bytes((i * 7 + 3) & 0xFF for i in range(40)),
-         bytes((i * 5 + 1) & 0xFF for i in range(20))),
+        # Pior caso estrutural: 20 instruções lógicas de StepSpan=4 -> W=80.
+        ('max-80-machine-words', 0x0F00,
+         bytes((i * 7 + 3) & 0xFF for i in range(160)),
+         bytes((i * 5 + 1) & 0xFF for i in range(80))),
     ]
 
     rows = []
@@ -233,13 +237,18 @@ def main():
     lines.append('mode=OFFLINE; rotina TX interceptada antes de qualquer I/O')
     lines.append('')
     for row in rows:
-        lines.append('%s: %s  start=0x%04X records=%d clock_calls=%d' %
+        lines.append('%s: %s  start=0x%04X machine_words=%d clock_calls=%d' %
                      ('OK' if row['ok'] else 'FALHA', row['name'], row['start'],
-                      row['n'], row['clock_calls']))
-        lines.append('  PC12 : ' + hx(row['real']))
-        lines.append('  model: ' + hx(row['expected']))
+                      row['w'], row['clock_calls']))
+        if row['w'] <= 3:
+            lines.append('  PC12 : ' + hx(row['real']))
+            lines.append('  model: ' + hx(row['expected']))
+        else:
+            lines.append('  PC12/model bytes=%d LEN=%02X HL=%02X checksum=%02X' %
+                         (len(row['real']), row['real'][1], row['real'][5], row['real'][-1]))
     lines.append('')
     lines.append('RESULT=' + ('PASS' if overall else 'FAIL'))
+    lines.append('W=80 valida dinamicamente offline o construtor máximo: LEN=F4, HIGH/LOW=A0, 247 bytes.')
     lines.append('Nenhum byte foi transmitido fora do Unicorn.')
 
     report = '\n'.join(lines) + '\n'
