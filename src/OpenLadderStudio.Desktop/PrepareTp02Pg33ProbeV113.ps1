@@ -13,30 +13,38 @@ function Replace-RegexOnce([string]$text, [string]$pattern, [string]$replacement
     return [System.Text.RegularExpressions.Regex]::Replace($text, $pattern, $replacement, 1)
 }
 
-# 1) Preflight de escrita: pode recuperar sessoes antes do primeiro 0x33,
-# mas nunca retransmite automaticamente depois que o PG33 foi tentado.
+# v1.15: voltar ao handshake que ja funcionou fisicamente na v1.10.
+# Nao enviar HELLO adicional depois de um HELLO valido e nao ressincronizar
+# HELLO entre tentativas de F0. Se uma sessao falhar antes do PG33, fecha-se a
+# COM e tenta-se uma nova sessao limpa.
+
+# 1) Preflight de escrita: um warm-up inicial e ate 5 sessoes limpas.
+# O PG33 continua podendo ser transmitido no maximo UMA vez.
 $executePattern = '(?s)        private byte\[\] ExecutePg33\(string portName, byte\[\] frame\)\s*\{.*?\r?\n        \}\r?\n\r?\n(?=        private static void ValidateKnownProbeProgram)'
 $executeReplacement = @'
         private byte[] ExecutePg33(string portName, byte[] frame)
         {
             Exception last = null;
 
-            // O TP-232PG pode perder o estado de enlace ao fechar/reabrir a COM.
-            // O preflight pode abrir ate 5 sessoes independentes, mas somente
-            // ANTES da primeira transmissao 0x33.
+            // Mesmo condicionamento do leitor PG v1.10: warm-up uma unica vez,
+            // seguido por sessoes seriais limpas.
+            WarmUpLink(portName, "write-preflight");
+
             for (int session = 1; session <= 5; session++)
             {
                 SerialPort port = null;
                 bool pg33Attempted = false;
                 try
                 {
-                    AppendLogSafe("write-preflight: preparando sessao "
-                        + session.ToString(CultureInfo.InvariantCulture) + " de 5.");
+                    if (session > 1)
+                    {
+                        AppendLogSafe("write-preflight PG AUTO-RETRY: preparando sessao "
+                            + session.ToString(CultureInfo.InvariantCulture) + ".");
+                        Thread.Sleep(session == 2 ? 1500 : 2000);
+                    }
 
-                    WarmUpLink(portName, "write-preflight-s" + session.ToString(CultureInfo.InvariantCulture));
                     port = OpenPort(portName);
-
-                    int settle = 1800 + ((session - 1) * 400);
+                    int settle = session == 1 ? 1600 : (session == 2 ? 1900 : 2300);
                     Thread.Sleep(settle);
                     AppendLogSafe("write-preflight COM aberta | sessao "
                         + session.ToString(CultureInfo.InvariantCulture)
@@ -45,34 +53,31 @@ $executeReplacement = @'
                     string state = PerformHello(port);
                     if (!string.Equals(state, "STOP", StringComparison.Ordinal))
                         throw new InvalidOperationException("PLC saiu de STOP antes do PG33. Escrita bloqueada.");
-                    Thread.Sleep(700);
+                    Thread.Sleep(450);
 
                     PerformF0(port);
-                    Thread.Sleep(600);
+                    Thread.Sleep(420);
 
-                    SendAndReadFrame(port, Frame38Request, 0x02, 4, 4200,
+                    SendAndReadFrame(port, Frame38Request, 0x02, 4, 3600,
                         "write-preflight-38-s" + session.ToString(CultureInfo.InvariantCulture));
-                    Thread.Sleep(650);
+                    Thread.Sleep(450);
 
-                    // A partir deste ponto NAO ha retry de sessao automatico.
+                    // A partir deste ponto NAO existe retry automatico de escrita.
                     port.DiscardInBuffer();
                     AppendLogSafe("PG33 TX UNICA: " + ToHex(frame));
                     pg33Attempted = true;
                     port.Write(frame, 0, frame.Length);
 
-                    byte[] raw = ReadBurst(port, 7000, 380);
+                    byte[] raw = ReadBurst(port, 6500, 350);
                     AppendLogSafe("PG33 RX UNICA: " + (raw.Length == 0 ? "[]" : ToHex(raw)));
 
                     byte[] valid = FindFirstValidResponseFrame(raw);
                     if (valid != null)
-                    {
                         AppendLogSafe("PG33 resposta estruturalmente valida: " + ToHex(valid));
-                    }
                     else
-                    {
                         AppendLogSafe("PG33 foi transmitido, mas nenhum ACK valido foi confirmado. "
                             + "Por seguranca, nao havera retransmissao automatica.");
-                    }
+
                     return raw;
                 }
                 catch (Exception ex)
@@ -89,10 +94,7 @@ $executeReplacement = @'
                     }
 
                     if (session < 5)
-                    {
-                        AppendLogSafe("write-preflight: nenhuma escrita foi feita; tentando nova sessao automaticamente.");
-                        Thread.Sleep(session <= 2 ? 1800 : 2600);
-                    }
+                        AppendLogSafe("write-preflight: nenhuma escrita foi feita; abrindo nova sessao limpa.");
                 }
                 finally
                 {
@@ -108,43 +110,31 @@ $executeReplacement = @'
 '@
 $shell = Replace-RegexOnce $shell $executePattern $executeReplacement 'ExecutePg33'
 
-# 2) Snapshot inicial: ampliar as sessoes automaticas de 3 para 5.
+# 2) Snapshot inicial: manter warm-up v1.10 do V111, mas permitir ate 5 sessoes.
 $snapshotPattern = '(?s)(        private ProgramSnapshot ReadSnapshotRobust\(string portName, string tag\).*?for \(int session = 1; session <= )3(; session\+\+\))'
 $snapshotMatch = [System.Text.RegularExpressions.Regex]::Matches($shell, $snapshotPattern)
-if ($snapshotMatch.Count -ne 1) { throw "ReadSnapshotRobust loop esperado uma vez; encontrado: $($snapshotMatch.Count)." }
-$shell = [System.Text.RegularExpressions.Regex]::Replace($shell, $snapshotPattern, '${1}5${2}', 1)
+if ($snapshotMatch.Count -eq 1) {
+    $shell = [System.Text.RegularExpressions.Regex]::Replace($shell, $snapshotPattern, '${1}5${2}', 1)
+}
+elseif ($snapshotMatch.Count -ne 0) {
+    throw "ReadSnapshotRobust loop ambiguo; encontrado: $($snapshotMatch.Count)."
+}
 
-# 3) HELLO: quando finalmente responde, dar um pulso de confirmacao extra antes
-# de prosseguir. O segundo pulso e somente leitura/handshake e nao bloqueia se ficar mudo.
+# 3) HELLO exatamente no estilo do leitor v1.10 validado fisicamente.
 $helloPattern = '(?s)        private string PerformHello\(SerialPort port\)\s*\{.*?\r?\n        \}\r?\n\r?\n(?=        private void PerformF0)'
 $helloReplacement = @'
         private string PerformHello(SerialPort port)
         {
-            for (int attempt = 1; attempt <= 8; attempt++)
+            for (int attempt = 1; attempt <= 6; attempt++)
             {
                 port.DiscardInBuffer();
                 port.Write(HelloRequest, 0, HelloRequest.Length);
-                byte[] raw = ReadBurst(port, attempt == 1 ? 2800 : 3200, 250);
+                byte[] raw = ReadBurst(port, attempt == 1 ? 2600 : 3000, 240);
                 AppendLogSafe("HELLO tentativa " + attempt.ToString(CultureInfo.InvariantCulture)
                     + " RX=" + (raw.Length == 0 ? "[]" : ToHex(raw)));
-
-                string state = null;
-                if (Contains(raw, HelloStop)) state = "STOP";
-                else if (Contains(raw, HelloRun)) state = "RUN";
-
-                if (!string.IsNullOrEmpty(state))
-                {
-                    AppendLogSafe("HELLO valido; executando confirmacao extra de enlace antes do F0.");
-                    Thread.Sleep(500);
-                    port.DiscardInBuffer();
-                    port.Write(HelloRequest, 0, HelloRequest.Length);
-                    byte[] confirm = ReadBurst(port, 2400, 250);
-                    AppendLogSafe("HELLO confirmacao RX="
-                        + (confirm.Length == 0 ? "[]" : ToHex(confirm)));
-                    Thread.Sleep(700);
-                    return state;
-                }
-                Thread.Sleep(400);
+                if (Contains(raw, HelloStop)) return "STOP";
+                if (Contains(raw, HelloRun)) return "RUN";
+                Thread.Sleep(350);
             }
             throw new TimeoutException("HELLO PG nao confirmado.");
         }
@@ -152,38 +142,26 @@ $helloReplacement = @'
 '@
 $shell = Replace-RegexOnce $shell $helloPattern $helloReplacement 'PerformHello'
 
-# 4) F0: se ficar mudo, ressincronizar com HELLO antes do proximo F0.
-# Nenhum comando de escrita e usado nesta recuperacao.
+# 4) F0 exatamente no estilo do leitor v1.10: sem HELLO extra entre tentativas.
 $f0Pattern = '(?s)        private void PerformF0\(SerialPort port\)\s*\{.*?\r?\n        \}\r?\n\r?\n(?=        private byte\[\] SendAndReadFrame)'
 $f0Replacement = @'
         private void PerformF0(SerialPort port)
         {
-            for (int attempt = 1; attempt <= 6; attempt++)
+            for (int attempt = 1; attempt <= 4; attempt++)
             {
                 port.DiscardInBuffer();
                 port.Write(F0Request, 0, F0Request.Length);
-                byte[] raw = ReadBurst(port, 3900, 270);
+                byte[] raw = ReadBurst(port, 3600, 250);
                 AppendLogSafe("F0 tentativa " + attempt.ToString(CultureInfo.InvariantCulture)
                     + " RX=" + (raw.Length == 0 ? "[]" : ToHex(raw)));
                 if (Contains(raw, F0Response)) return;
-
-                if (attempt < 6)
-                {
-                    AppendLogSafe("F0 sem resposta valida; ressincronizando com HELLO antes do proximo F0.");
-                    Thread.Sleep(450);
-                    port.DiscardInBuffer();
-                    port.Write(HelloRequest, 0, HelloRequest.Length);
-                    byte[] sync = ReadBurst(port, 2500, 250);
-                    AppendLogSafe("F0 RESYNC HELLO RX="
-                        + (sync.Length == 0 ? "[]" : ToHex(sync)));
-                    Thread.Sleep(650);
-                }
+                Thread.Sleep(350);
             }
-            throw new InvalidDataException("F0 nao retornou 00 02 10 22 CB apos ressincronizacao HELLO.");
+            throw new InvalidDataException("F0 nao retornou 00 02 10 22 CB.");
         }
 
 '@
 $shell = Replace-RegexOnce $shell $f0Pattern $f0Replacement 'PerformF0'
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 PG33 Probe V114 aplicado: HELLO confirmacao, F0 resync, 5 sessoes antes do PG33 e escrita unica.'
+Write-Host 'TP02 PG33 Probe V115 aplicado: handshake v1.10 restaurado, 5 sessoes limpas e PG33 transmitido no maximo uma vez.'
