@@ -25,7 +25,7 @@ Execute:
 BuildTp02Emulator.bat
 ```
 
-Será criado:
+O build aplica automaticamente as regras externas de `TP02PgEmulatorRules.txt` e cria:
 
 ```text
 OpenLadderTP02Emulator.exe
@@ -67,6 +67,42 @@ F0 00 0F    -> 00 02 10 22 CB
 ```
 
 `14` continua classificado apenas como consulta auxiliar; sua semântica ainda não deve ser presumida.
+
+## Regras externas adaptativas
+
+Depois que um novo opcode for descoberto, não é necessário editar `TP02PgEmulator.cs`.
+
+As respostas adicionais ficam em:
+
+```text
+TP02PgEmulatorRules.txt
+```
+
+Formato:
+
+```text
+CMD_HEX|DELAY_MS|RESPONSE_HEX|LABEL
+```
+
+Exemplo hipotético, somente depois de `A1` aparecer em captura real:
+
+```text
+A1|150|00 00 FF|ACK observado para A1
+```
+
+Também é possível adicionar uma regra validada pelo helper:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\AddTp02EmulatorRule.ps1 -Cmd A1 -Response "00 00 FF" -DelayMs 150 -Label "ACK observado"
+```
+
+O helper exige que a resposta feche a soma módulo 256 em `FF`. Depois execute novamente:
+
+```bat
+BuildTp02Emulator.bat
+```
+
+`PrepareTp02EmulatorRules.ps1` injeta as regras no fonte temporário de build, mantendo o fonte principal intacto. Os comandos nativos `F0`, `38`, `34`, `0A` e `14` não podem ser sobrescritos pelo arquivo de regras.
 
 ## Captura bruta
 
@@ -111,7 +147,7 @@ Isso mostra exatamente quais frames mudaram entre duas operações.
 
 ## Campanha para descobrir a escrita
 
-Use sempre um projeto mínimo e altere apenas uma variável por teste.
+Use sempre um projeto mínimo e altere apenas uma variável por teste. A matriz completa está em `docs/TP02-PG-WRITE-CAMPAIGN.md`.
 
 ### Teste 0 - controle
 
@@ -126,11 +162,12 @@ Se a leitura não passar pelo emulador, não avance para a escrita: primeiro cor
 
 1. Reinicie o emulador para gerar uma captura limpa.
 2. Abra no PC12 um programa mínimo.
-3. Execute `Write` para o PLC emulado.
-4. Rode `AnalyzeLatestTp02Capture.bat`.
-5. Anote o primeiro `CMD=0xXX` classificado como `DESCONHECIDO`.
+3. Marque somente `Write Program Data`.
+4. Execute `Write` para o PLC emulado.
+5. Rode `AnalyzeLatestTp02Capture.bat`.
+6. Anote o primeiro `CMD=0xXX` classificado como `DESCONHECIDO`.
 
-Esse opcode passa a ser o principal candidato ao início do download.
+Esse opcode passa a ser o principal candidato ao início do download. Se o ACK genérico não fizer o PC12 avançar, capture o comportamento com `--no-auto-ack`, determine a resposta necessária e registre-a em `TP02PgEmulatorRules.txt`.
 
 ### Teste 2 - endereço de operando
 
@@ -180,9 +217,11 @@ Assim conseguimos distinguir entre:
 - comando que exige ACK específico;
 - comando cuja resposta depende de estado ou payload.
 
+Quando a resposta correta for conhecida, registre-a pela camada de regras externas e repita a sessão. Isso permite avançar comando a comando sem alterar o motor principal.
+
 ## Operações adicionais do PC12
 
-O PC12 possui operações separadas de leitura, escrita, RUN, STOP, EEPROM e limpeza de áreas de memória. Elas devem ser estudadas individualmente contra o emulador. Não use comandos de limpeza, gravação experimental ou RUN/STOP contra o PLC físico até que os respectivos frames e respostas estejam identificados.
+O PC12 possui operações separadas de leitura, escrita, RUN, STOP, EEPROM e limpeza de áreas de memória. No menu Write, as classes são separadas em Program Data, System/WS, V, D, WC e FL. Elas devem ser estudadas individualmente contra o emulador. Não use comandos de limpeza, gravação experimental ou RUN/STOP contra o PLC físico até que os respectivos frames e respostas estejam identificados.
 
 `0F 00 F0` permanece tratado como candidato destrutivo associado a limpeza de memória e não deve ser enviado ao equipamento físico durante esta fase.
 
