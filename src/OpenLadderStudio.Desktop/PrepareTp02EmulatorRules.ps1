@@ -37,7 +37,8 @@ $marker = '                default:'
 $idx = $text.IndexOf($marker, [StringComparison]::Ordinal)
 if ($idx -lt 0) { throw 'Nao foi encontrado o bloco default do switch do emulador.' }
 
-$known = @('F0','38','34','0A','14')
+# 33 e Write PLC Program confirmado offline; nao pode ser sobrescrito por regra externa.
+$known = @('F0','38','34','33','0A','14')
 $cases = New-Object Text.StringBuilder
 $count = 0
 
