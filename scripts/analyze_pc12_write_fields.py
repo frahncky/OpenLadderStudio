@@ -3,14 +3,21 @@
 
 Não executa o PC12, não abre COM e não transmite. O objetivo é localizar no
 caminho Write PLC Program as escritas x86 simples sobre os offsets do objeto
-EDI consumidos por 0x4B7958: +56, +5E, +62, +6A e +6E.
+EDI consumidos por 0x4B7958: +56, +5E, +62, +6A e +6E, e mostrar as janelas
+que constroem os planos HIGH/LOW e EXTERNAL antes do quadro 0x33.
 """
 
 import argparse
 import pathlib
 import struct
 
-from analyze_pc12_writeprog import hx, offset_to_va, pe_info, va_to_offset
+from analyze_pc12_writeprog import (
+    hx,
+    objdump_window,
+    offset_to_va,
+    pe_info,
+    va_to_offset,
+)
 
 WRITE_LO = 0x004B6A00
 WRITE_HI = 0x004B7E20
@@ -97,8 +104,7 @@ def scan(data, sections, image_base):
             i += 3
             continue
 
-        # ADD/SUB/CMP/etc r/m32, imm8: 83 /x. Aqui registramos só escrita
-        # de ADD (/0) e SUB (/5), além de INC do grupo FF.
+        # ADD/SUB r/m32, imm8: 83 /0 ou /5; INC/DEC do grupo FF.
         if i + 4 <= hi and data[i] == 0x83 and (data[i + 1] & 0xC7) == 0x47:
             disp = data[i + 2]
             subop = (data[i + 1] >> 3) & 7
@@ -153,12 +159,43 @@ def main():
                          (va, kind, value_text, hx(raw)))
         lines.append('')
 
+    lines.append('CHUNK INITIALIZATION')
+    lines.append('-' * 92)
+    lines.extend(objdump_window(path, 0x004B7D20, 0x004B7D70, max_lines=100))
+    lines.append('')
+
+    lines.append('ENCODER WINDOWS AROUND +0x56 += 2')
+    lines.append('-' * 92)
+    # Cada incremento de +0x56 por 2 marca a conclusão de um par HIGH/LOW.
+    # Mostrar o entorno permite conferir onde esse par e o byte externo são
+    # efetivamente armazenados sem executar o binário.
+    encoder_sites = [row[0] for row in by_field[0x56]
+                     if row[2] == 'ADD32_IMM8' and row[3] == 0x2]
+    for idx, va in enumerate(encoder_sites, 1):
+        a = max(WRITE_LO, va - 0x48)
+        b = min(WRITE_HI, va + 0x20)
+        lines.append('### ENCODER#%02d completion=0x%08X window=0x%08X..0x%08X' %
+                     (idx, va, a, b))
+        lines.extend(objdump_window(path, a, b, max_lines=100))
+        lines.append('')
+
+    lines.append('ADDRESS BYTE CONSTRUCTION')
+    lines.append('-' * 92)
+    lines.extend(objdump_window(path, 0x004B78E0, 0x004B7958, max_lines=160))
+    lines.append('')
+
     lines.append('KNOWN CONSUMERS AT 0x004B7958')
     lines.append('  +0x56 -> TX[1] formula and TX[5]')
     lines.append('  +0x5E -> destination index while copying body; later checksum index')
     lines.append('  +0x62 -> number of bytes copied from object +0xE0')
     lines.append('  +0x6A -> TX[3]')
     lines.append('  +0x6E -> TX[4]')
+    lines.append('')
+    lines.append('STATIC EXPECTATION TO VERIFY IN WINDOWS')
+    lines.append('  +0x5E starts at 6; +0x56 and +0x62 start at 0 for each chunk.')
+    lines.append('  If every encoded step writes 2 bytes directly at TX[+0x5E], increments +0x5E twice,')
+    lines.append('  appends one external byte to object+0xE0, increments +0x62 once, and +0x56 by 2,')
+    lines.append('  then the 0x33 body geometry 2*N HIGH/LOW + N EXTERNAL is statically closed.')
     lines.append('')
     lines.append('GUARDRAIL: this trace establishes static data flow only; it never executes a write.')
 
