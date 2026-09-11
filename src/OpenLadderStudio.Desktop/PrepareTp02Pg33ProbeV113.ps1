@@ -5,7 +5,7 @@ if (-not (Test-Path $shellPath)) { throw 'UniversalStudioShell.build.cs nao enco
 
 $shell = [System.IO.File]::ReadAllText($shellPath)
 
-$pattern = '(?s)        private byte\[\] ExecutePg33\(string portName, byte\[\] frame\)\s*\{.*?\r?\n        \}\r?\n\r?\n        private static byte\[\] BuildPg33SameProgram'
+$pattern = '(?s)        private byte\[\] ExecutePg33\(string portName, byte\[\] frame\)\s*\{.*?\r?\n        \}\r?\n\r?\n(?=        private static void ValidateKnownProbeProgram)'
 $matches = [System.Text.RegularExpressions.Regex]::Matches($shell, $pattern)
 if ($matches.Count -ne 1) {
     throw "ExecutePg33 esperado exatamente uma vez; encontrado: $($matches.Count)."
@@ -102,7 +102,6 @@ $replacement = @'
                 + (last == null ? "desconhecido" : last.Message));
         }
 
-        private static byte[] BuildPg33SameProgram
 '@
 
 $shell = [System.Text.RegularExpressions.Regex]::Replace($shell, $pattern, $replacement, 1)
