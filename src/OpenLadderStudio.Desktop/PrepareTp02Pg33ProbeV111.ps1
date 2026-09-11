@@ -69,6 +69,149 @@ $dpiNeedle = '            AutoScaleMode = AutoScaleMode.Dpi;'
 $dpiReplacement = '            AutoScaleDimensions = new SizeF(96F, 96F);' + "`r`n" + $dpiNeedle
 $probe = Replace-Required $probe $dpiNeedle $dpiReplacement 'AutoScaleDimensions PG33 probe'
 
+# A sonda v1.11 tinha uma rotina de snapshot mais curta que o leitor PG v1.10
+# validado fisicamente. A v1.12 replica o mesmo warm-up, tempos de estabilizacao
+# e intervalos entre HELLO/F0/38/34 antes de qualquer possibilidade de PG33.
+$robustNeedle = @'
+        private ProgramSnapshot ReadSnapshotRobust(string portName, string tag)
+        {
+            Exception last = null;
+'@
+$robustReplacement = @'
+        private ProgramSnapshot ReadSnapshotRobust(string portName, string tag)
+        {
+            WarmUpLink(portName, tag);
+            Exception last = null;
+'@
+$probe = Replace-Required $probe $robustNeedle $robustReplacement 'warm-up antes do snapshot'
+
+$retryNeedle = '                    if (session > 1) Thread.Sleep(1300 + (session * 250));'
+$retryReplacement = @'
+                    if (session > 1)
+                    {
+                        AppendLogSafe(tag + " PG AUTO-RETRY: preparando sessao " + session.ToString(CultureInfo.InvariantCulture) + ".");
+                        Thread.Sleep(session == 2 ? 1500 : 2000);
+                    }
+'@
+$probe = Replace-Required $probe $retryNeedle $retryReplacement 'retry igual ao leitor v1.10'
+
+$settleNeedle = '                Thread.Sleep(sessionNumber == 1 ? 1500 : 1900);'
+$settleReplacement = @'
+                int settle = sessionNumber == 1 ? 1600 : (sessionNumber == 2 ? 1900 : 2300);
+                Thread.Sleep(settle);
+                AppendLogSafe(tag + " COM aberta | sessao " + sessionNumber.ToString(CultureInfo.InvariantCulture)
+                    + " | estabilizacao " + settle.ToString(CultureInfo.InvariantCulture) + " ms.");
+'@
+$probe = Replace-Required $probe $settleNeedle $settleReplacement 'estabilizacao por sessao'
+
+$helloGapNeedle = '                string state = PerformHello(port);'
+$helloGapReplacement = $helloGapNeedle + "`r`n" + '                Thread.Sleep(450);'
+# Ha duas ocorrencias (snapshot e write preflight); substituir ambas e desejado.
+$probe = $probe.Replace($helloGapNeedle, $helloGapReplacement)
+
+$f0GapNeedle = '                PerformF0(port);'
+$f0GapReplacement = $f0GapNeedle + "`r`n" + '                Thread.Sleep(420);'
+$probe = $probe.Replace($f0GapNeedle, $f0GapReplacement)
+
+$frame38SnapshotNeedle = '                SendAndReadFrame(port, Frame38Request, 0x02, 4, 3800, tag + "-38");'
+$frame38SnapshotReplacement = $frame38SnapshotNeedle + "`r`n" + '                Thread.Sleep(450);'
+$probe = Replace-Required $probe $frame38SnapshotNeedle $frame38SnapshotReplacement 'intervalo apos 38 snapshot'
+
+$frame38WriteNeedle = '                SendAndReadFrame(port, Frame38Request, 0x02, 4, 3800, "write-preflight-38");'
+$frame38WriteReplacement = $frame38WriteNeedle + "`r`n" + '                Thread.Sleep(450);'
+$probe = Replace-Required $probe $frame38WriteNeedle $frame38WriteReplacement 'intervalo apos 38 write'
+
+# O endereco do comando 34 deve usar LOW, HIGH, exatamente como o leitor v1.10
+# fisicamente validado. Em pagina zero ambos eram 00, por isso a divergencia
+# nao explicava a falha atual, mas seria incorreta em paginas posteriores.
+$pageOrderNeedle = @'
+            frame[2] = (byte)((startStep >> 8) & 0xFF);
+            frame[3] = (byte)(startStep & 0xFF);
+'@
+$pageOrderReplacement = @'
+            frame[2] = (byte)(startStep & 0xFF);
+            frame[3] = (byte)((startStep >> 8) & 0xFF);
+'@
+$probe = Replace-Required $probe $pageOrderNeedle $pageOrderReplacement 'ordem LOW HIGH do comando 34'
+
+# Warm-up identico ao leitor PG v1.10: somente CON-ICB, fecha a porta e depois
+# inicia uma sessao limpa. Nenhum comando de escrita e enviado no warm-up.
+$warmupAnchor = '        private ProgramSnapshot ReadSnapshotRobust(string portName, string tag)'
+$warmupMethod = @'
+        private void WarmUpLink(string portName, string tag)
+        {
+            SerialPort port = null;
+            try
+            {
+                AppendLogSafe(tag + " PG WARM-UP: pre-estabilizando TP-232PG somente com HELLO.");
+                port = OpenPort(portName);
+                Thread.Sleep(1400);
+                for (int attempt = 1; attempt <= 3; attempt++)
+                {
+                    port.DiscardInBuffer();
+                    port.Write(HelloRequest, 0, HelloRequest.Length);
+                    byte[] raw = ReadBurst(port, 2200, 230);
+                    AppendLogSafe(tag + " WARM-UP HELLO " + attempt.ToString(CultureInfo.InvariantCulture)
+                        + " RX=" + (raw.Length == 0 ? "[]" : ToHex(raw)));
+                    if (Contains(raw, HelloStop) || Contains(raw, HelloRun))
+                    {
+                        AppendLogSafe(tag + " PG WARM-UP confirmado; iniciando sessao limpa.");
+                        break;
+                    }
+                    Thread.Sleep(300);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLogSafe(tag + " PG WARM-UP nao confirmou link: " + ex.Message
+                    + ". O retry completo continuara.");
+            }
+            finally
+            {
+                ClosePort(port);
+            }
+            Thread.Sleep(1100);
+        }
+
+'@
+$warmupIndex = $probe.IndexOf($warmupAnchor, [System.StringComparison]::Ordinal)
+if ($warmupIndex -lt 0) { throw 'ReadSnapshotRobust nao encontrado para inserir WarmUpLink.' }
+$probe = $probe.Substring(0, $warmupIndex) + $warmupMethod + $probe.Substring($warmupIndex)
+
+# Antes do preflight de escrita, condiciona o TP-232PG novamente, pois o teste
+# fisico mostrou que uma nova abertura da COM pode voltar ao estado intermitente.
+$executeNeedle = @'
+        private byte[] ExecutePg33(string portName, byte[] frame)
+        {
+            SerialPort port = null;
+'@
+$executeReplacement = @'
+        private byte[] ExecutePg33(string portName, byte[] frame)
+        {
+            WarmUpLink(portName, "write-preflight");
+            SerialPort port = null;
+'@
+$probe = Replace-Required $probe $executeNeedle $executeReplacement 'warm-up antes do PG33'
+$probe = Replace-Required $probe '                Thread.Sleep(1800);' '                Thread.Sleep(2000);' 'settle write preflight'
+
+# HELLO/F0 passam a registrar RX bruto e usam o mesmo primeiro timeout do leitor
+# v1.10, permitindo diagnosticar sem repetir a operacao de escrita.
+$helloReadNeedle = '                byte[] raw = ReadBurst(port, 3000, 240);'
+$helloReadReplacement = @'
+                byte[] raw = ReadBurst(port, attempt == 1 ? 2600 : 3000, 240);
+                AppendLogSafe("HELLO tentativa " + attempt.ToString(CultureInfo.InvariantCulture)
+                    + " RX=" + (raw.Length == 0 ? "[]" : ToHex(raw)));
+'@
+$probe = Replace-Required $probe $helloReadNeedle $helloReadReplacement 'log HELLO bruto'
+
+$f0ReadNeedle = '                byte[] raw = ReadBurst(port, 3600, 250);'
+$f0ReadReplacement = @'
+                byte[] raw = ReadBurst(port, 3600, 250);
+                AppendLogSafe("F0 tentativa " + attempt.ToString(CultureInfo.InvariantCulture)
+                    + " RX=" + (raw.Length == 0 ? "[]" : ToHex(raw)));
+'@
+$probe = Replace-Required $probe $f0ReadNeedle $f0ReadReplacement 'log F0 bruto'
+
 # Gate fisico: injecao por uma linha de codigo ASCII estavel, sem depender de
 # acentos/normalizacao Unicode do texto ao redor.
 $saveNeedle = '                    SaveSnapshot("backup-before", before);'
@@ -144,4 +287,4 @@ $body = [string]::Join("`r`n", $bodyLines.ToArray()).Trim()
 $shell = $prefix + $shell.TrimStart([char]0xFEFF) + "`r`n`r`n" + $body + "`r`n"
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 PG33 Physical No-Op Probe V111 aplicado com gate, DPI, EXTERNAL seguro e protecao contra eco.'
+Write-Host 'TP02 PG33 Probe V112 aplicado: warm-up v1.10, retry robusto, LOW/HIGH 34, gate, DPI, EXTERNAL seguro e anti-eco.'
