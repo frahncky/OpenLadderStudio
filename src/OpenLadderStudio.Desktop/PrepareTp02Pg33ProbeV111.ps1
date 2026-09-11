@@ -69,48 +69,40 @@ $dpiNeedle = '            AutoScaleMode = AutoScaleMode.Dpi;'
 $dpiReplacement = '            AutoScaleDimensions = new SizeF(96F, 96F);' + "`r`n" + $dpiNeedle
 $probe = Replace-Required $probe $dpiNeedle $dpiReplacement 'AutoScaleDimensions PG33 probe'
 
-# Primeiro ensaio fisico: somente o programa misto de 23 passos ja lido e
-# confirmado em bancada pode ser reenviado. BRAW do 34 NAO e reutilizado como
-# EXTERNAL do 33; para essa assinatura canonica todos os EXTERNAL confirmados
-# offline sao 00.
-$gateAnchor = @'
-                    if (before.Count > 80)
-                        throw new InvalidOperationException("Esta primeira prova física aceita somente programas de até 80 passos. O programa atual tem "
-                            + before.Count.ToString(CultureInfo.InvariantCulture) + ".");
+# Gate fisico: injecao por uma linha de codigo ASCII estavel, sem depender de
+# acentos/normalizacao Unicode do texto ao redor.
+$saveNeedle = '                    SaveSnapshot("backup-before", before);'
+$saveReplacement = '                    ValidateKnownProbeProgram(before);' + "`r`n" + $saveNeedle
+$probe = Replace-Required $probe $saveNeedle $saveReplacement 'gate assinatura fisica'
 
-                    SaveSnapshot("backup-before", before);
-'@
-$gateReplacement = @'
-                    if (before.Count > 80)
-                        throw new InvalidOperationException("Esta primeira prova física aceita somente programas de até 80 passos. O programa atual tem "
-                            + before.Count.ToString(CultureInfo.InvariantCulture) + ".");
+# BRAW lido pelo 34 nao e EXTERNAL usado pelo PG33. Para a assinatura canonica
+# de 23 passos todos os EXTERNAL foram confirmados offline como 00.
+$externalNeedle = '            for (int i = 0; i < w; i++) frame[p++] = snapshot.External[i];'
+$externalReplacement = '            for (int i = 0; i < w; i++) frame[p++] = 0x00;'
+$probe = Replace-Required $probe $externalNeedle $externalReplacement 'BRAW diferente de EXTERNAL'
 
-                    ValidateKnownProbeProgram(before);
-                    SaveSnapshot("backup-before", before);
+# Nunca aceitar o proprio quadro 0x33 eventualmente ecoado pela interface como
+# resposta do PLC. Um ACK fisico deve ser outro quadro estruturalmente valido.
+$ackNeedle = @'
+            for (int start = 0; start <= raw.Length - 3; start++)
+            {
+                int len = raw[start + 1];
 '@
-$probe = Replace-Required $probe $gateAnchor $gateReplacement 'gate assinatura fisica'
-
-$unsafeExternal = @'
-            // Para esta prova no-op usamos o terceiro byte lido do 34 como plano externo.
-            // A operação só prossegue para o programa já validado em bancada e o compare
-            // posterior detecta qualquer divergência. O valor é preservado byte a byte.
-            for (int i = 0; i < w; i++) frame[p++] = snapshot.External[i];
+$ackReplacement = @'
+            for (int start = 0; start <= raw.Length - 3; start++)
+            {
+                if (raw[start] == 0x33) continue;
+                int len = raw[start + 1];
 '@
-$safeExternal = @'
-            // BRAW do 34 nao e o plano EXTERNAL do PG33. Esta primeira prova e
-            // deliberadamente limitada a assinatura canonica de 23 passos, para a
-            // qual o coletor original do PC12 confirmou EXTERNAL=00 em todas as words.
-            for (int i = 0; i < w; i++) frame[p++] = 0x00;
-'@
-$probe = Replace-Required $probe $unsafeExternal $safeExternal 'BRAW diferente de EXTERNAL'
+$probe = Replace-Required $probe $ackNeedle $ackReplacement 'ignorar eco PG33 como ACK'
 
 $buildAnchor = '        private static byte[] BuildPg33SameProgram(ProgramSnapshot snapshot)'
 $validationMethod = @'
         private static void ValidateKnownProbeProgram(ProgramSnapshot snapshot)
         {
             // Assinatura do programa fisico de 23 passos validado na bancada em v1.10.
-            // O gate existe para impedir que um programa arbitrario seja convertido
-            // para PG33 antes de o mapeamento BRAW -> EXTERNAL estar generalizado.
+            // O gate impede que um programa arbitrario seja convertido para PG33 antes
+            // de o mapeamento BRAW -> EXTERNAL estar generalizado.
             string[] expected = new string[]
             {
                 "0010", "0060", "8768", "4040", "0011", "0012", "0168", "800A",
@@ -152,4 +144,4 @@ $body = [string]::Join("`r`n", $bodyLines.ToArray()).Trim()
 $shell = $prefix + $shell.TrimStart([char]0xFEFF) + "`r`n`r`n" + $body + "`r`n"
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 PG33 Physical No-Op Probe V111 aplicado com gate de assinatura, DPI e EXTERNAL seguro.'
+Write-Host 'TP02 PG33 Physical No-Op Probe V111 aplicado com gate, DPI, EXTERNAL seguro e protecao contra eco.'
