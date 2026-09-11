@@ -17,8 +17,30 @@ namespace OpenLadderStudio.Core.Tests
             Check("SCS do manual usa prefixo ::",
                 Tp02ComputerLinkProgramCodec.BuildFrame(1, 5, "SCS", "Y00011") == "::01?5SCSY00011F7\r");
 
-            Check("RBP do manual usa prefixo ::",
+            Check("RBP oficial 0000/3",
                 Tp02ComputerLinkProgramCodec.BuildRbp(1, 0, 3, 5) == "::01?5RBP00000324\r");
+
+            Tp02ComputerLinkResponse rbpOfficial = Tp02ComputerLinkProgramCodec.ParseResponse(
+                "::01#5RBP5E150920400620C10FA2\r", "RBP");
+            Check("RBP oficial: checksum e 3 words",
+                rbpOfficial.ChecksumOk
+                && !rbpOfficial.IsError
+                && rbpOfficial.Command == "RBP"
+                && rbpOfficial.Data == "5E150920400620C10F");
+
+            Tp02ComputerLinkState psrState;
+            Check("PSR STOP parseado",
+                Tp02ComputerLinkProgramCodec.TryGetPsrState("::01#5PSR022\r", out psrState)
+                && psrState == Tp02ComputerLinkState.Stop);
+
+            string wbpErrorCode;
+            Check("WBP sucesso parseado",
+                Tp02ComputerLinkProgramCodec.IsSuccessfulResponse("::01#5WBP5E\r", "WBP", out wbpErrorCode)
+                && string.IsNullOrEmpty(wbpErrorCode));
+
+            Check("WBP erro 02 detectado",
+                !Tp02ComputerLinkProgramCodec.IsSuccessfulResponse("::01%5WBP02FA\r", "WBP", out wbpErrorCode)
+                && wbpErrorCode == "02");
 
             List<Tp02MachineWord> three = new List<Tp02MachineWord>();
             three.Add(new Tp02MachineWord(0x00, 0x10, 0x00));
