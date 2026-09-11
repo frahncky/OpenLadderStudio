@@ -5,19 +5,19 @@ if (-not (Test-Path -LiteralPath $shellPath)) { throw 'UniversalStudioShell.buil
 
 $shell = [System.IO.File]::ReadAllText($shellPath)
 
-function Replace-RegexOnce([string]$text, [string]$pattern, [string]$replacement, [string]$label) {
-    $matches = [System.Text.RegularExpressions.Regex]::Matches($text, $pattern)
-    if ($matches.Count -ne 1) {
-        throw "$label esperado exatamente uma vez; encontrado: $($matches.Count)."
-    }
-    return [System.Text.RegularExpressions.Regex]::Replace($text, $pattern, $replacement, 1)
-}
-
 # v1.19: restaurar na sonda PG33 a varredura de linhas que tornou a validacao
 # fisica estavel: 8O1 OFF/OFF primeiro, depois ON/OFF e ON/ON. Nenhum byte alem
 # de CON-ICB e enviado durante a aquisicao. Assim que HELLO e confirmado, a MESMA
 # SerialPort permanece aberta para F0 -> 38 -> 34 -> PG33.
-$acqPattern = '(?s)        private SerialPort AcquireStablePgPortV93\(string portName, int round,\s*out string state, out string acquisitionLabel\)\s*\{.*?\r?\n        \}\r?\n\r?\n        private void RecoverPgSerialV93\(string portName\)\s*\{.*?\r?\n        \}\r?\n\r?\n(?=        private void StartChangeRestoreProbe)'
+#
+# Substituicao por ancoras estruturais, sem depender do corpo exato gerado pelas
+# etapas anteriores do build.
+$startAnchor = '        private SerialPort AcquireStablePgPortV93'
+$endAnchor = '        private void StartChangeRestoreProbe()'
+$start = $shell.IndexOf($startAnchor, [System.StringComparison]::Ordinal)
+if ($start -lt 0) { throw 'Inicio de AcquireStablePgPortV93 nao encontrado.' }
+$end = $shell.IndexOf($endAnchor, $start, [System.StringComparison]::Ordinal)
+if ($end -lt 0) { throw 'Inicio de StartChangeRestoreProbe nao encontrado apos AcquireStablePgPortV93.' }
 
 $acqReplacement = @'
         private SerialPort AcquireStablePgPortV93(string portName, int round,
@@ -38,7 +38,6 @@ $acqReplacement = @'
             AppendLogSafe("V119 STARTUP: rodada " + round.ToString(CultureInfo.InvariantCulture)
                 + " | aquisicao 8O1 com varredura segura das linhas DTR/RTS.");
 
-            // Uma pausa maior ajuda a encerrar qualquer estado residual da sessao PG anterior.
             Thread.Sleep(round == 1 ? 1500 : (round == 2 ? 2600 : 3600));
 
             for (int sweep = 1; sweep <= 2; sweep++)
@@ -130,7 +129,6 @@ $acqReplacement = @'
 
         private void RecoverPgSerialV93(string portName)
         {
-            // Compatibilidade com chamadas anteriores: usar a recuperacao V119.
             RecoverPgSerialV119(portName);
         }
 
@@ -174,7 +172,7 @@ $acqReplacement = @'
 
 '@
 
-$shell = Replace-RegexOnce $shell $acqPattern $acqReplacement 'AcquireStablePgPortV93 + recovery V119'
+$shell = $shell.Substring(0, $start) + $acqReplacement + $shell.Substring($end)
 
 # Dar mais margem antes de desistir, sempre SEM escrita se o link nao foi adquirido.
 $shell = $shell.Replace('for (int round = 1; round <= 3 && !testWritten; round++)',
@@ -191,7 +189,6 @@ $shell = $shell.Replace('apos 3 rodadas V93. ',
 $shell = $shell.Replace('Readback V93 final falhou apos 3 rodadas.',
     'Readback final falhou apos 5 rodadas de aquisicao.')
 
-# Rotulos para diagnostico da versao fisica.
 $shell = $shell.Replace('PG33 CHANGE+RESTORE v1.18 iniciado em ', 'PG33 CHANGE+RESTORE v1.19 iniciado em ')
 $shell = $shell.Replace('PASS PG33 CHANGE+RESTORE v1.18', 'PASS PG33 CHANGE+RESTORE v1.19')
 
