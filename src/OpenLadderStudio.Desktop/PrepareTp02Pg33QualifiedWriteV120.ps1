@@ -4,17 +4,18 @@ $shellPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
 if (-not (Test-Path -LiteralPath $shellPath)) { throw 'UniversalStudioShell.build.cs nao encontrado.' }
 $shell = [System.IO.File]::ReadAllText($shellPath)
 
-function Replace-RegexOnce([string]$text, [string]$pattern, [string]$replacement, [string]$label) {
-    $matches = [System.Text.RegularExpressions.Regex]::Matches($text, $pattern)
-    if ($matches.Count -ne 1) { throw "$label esperado exatamente uma vez; encontrado: $($matches.Count)." }
-    return [System.Text.RegularExpressions.Regex]::Replace($text, $pattern, $replacement, 1)
-}
-
 # v1.20: somente OFF/OFF pode qualificar a sessao que seguira para F0/38/34/PG33.
 # ON/OFF e ON/ON sao usados apenas como condicionamento HELLO e sempre sao fechados
 # antes de voltar para OFF/OFF. Isso preserva o unico perfil fisicamente comprovado
 # ate o ACK PG33 00 00 FF.
-$pattern = '(?s)        private SerialPort AcquireStablePgPortV93\(string portName, int round,\s*out string state, out string acquisitionLabel\)\s*\{.*?\r?\n        \}\r?\n\r?\n        private void RecoverPgSerialV93\(string portName\)\s*\{.*?\r?\n        \}\r?\n\r?\n        private void RecoverPgSerialV119\(string portName\)\s*\{.*?\r?\n        \}\r?\n\r?\n(?=        private void StartChangeRestoreProbe)'
+# Usa as mesmas ancoras estruturais da v1.19. O corpo contem blocos aninhados e
+# nao deve ser localizado por uma regex que tente equilibrar chaves.
+$acqStartAnchor = '        private SerialPort AcquireStablePgPortV93'
+$acqEndAnchor = '        private void StartChangeRestoreProbe()'
+$acqStart = $shell.IndexOf($acqStartAnchor, [System.StringComparison]::Ordinal)
+if ($acqStart -lt 0) { throw 'Inicio de AcquireStablePgPortV93 V120 nao encontrado.' }
+$acqEnd = $shell.IndexOf($acqEndAnchor, $acqStart, [System.StringComparison]::Ordinal)
+if ($acqEnd -lt 0) { throw 'Inicio de StartChangeRestoreProbe nao encontrado apos AcquireStablePgPortV93 V120.' }
 
 $replacement = @'
         private SerialPort AcquireStablePgPortV93(string portName, int round,
@@ -225,7 +226,7 @@ $replacement = @'
 
 '@
 
-$shell = Replace-RegexOnce $shell $pattern $replacement 'AcquireStablePgPortV93 V120'
+$shell = $shell.Substring(0, $acqStart) + $replacement + $shell.Substring($acqEnd)
 
 # Apenas a prova alterar+restaurar/readbacks usa o F0 qualificado novo.
 $start = $shell.IndexOf('        private void StartChangeRestoreProbe()', [System.StringComparison]::Ordinal)
