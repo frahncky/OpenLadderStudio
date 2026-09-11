@@ -18,6 +18,7 @@ if not exist "%CORE%\Tp02LadderTargetCompiler.cs" goto :faltando
 if not exist "%CORE%\Tp02ComputerLinkProgramCodec.cs" goto :faltando
 if not exist "TP02WbpWriter.cs" goto :faltando
 if not exist "TP02RbpReader.cs" goto :faltando
+if not exist "TP02ComputerLinkEmulator.cs" goto :faltando
 if not exist "TP02ProjectToWbpHex.cs" goto :faltando
 if not exist "%TESTS%\Tp02ComputerLinkProgramCodecSelfTest.cs" goto :faltando
 
@@ -33,12 +34,16 @@ if errorlevel 1 goto :erro
 "%CSC%" /nologo /target:exe /optimize+ /main:ModernPC12.TP02RbpReaderProgram /out:"OpenLadderTP02Rbp.exe" /reference:System.dll "%CORE%\Tp02TargetCompiler.cs" "%CORE%\Tp02ComputerLinkProgramCodec.cs" "TP02RbpReader.cs"
 if errorlevel 1 goto :erro
 
+"%CSC%" /nologo /target:exe /optimize+ /main:ModernPC12.TP02ComputerLinkEmulatorProgram /out:"OpenLadderTP02HostEmulator.exe" /reference:System.dll "%CORE%\Tp02TargetCompiler.cs" "%CORE%\Tp02ComputerLinkProgramCodec.cs" "TP02ComputerLinkEmulator.cs"
+if errorlevel 1 goto :erro
+
 "%CSC%" /nologo /target:exe /optimize+ /main:ModernPC12.TP02ProjectToWbpHexProgram /out:"OpenLadderTP02ProjectExport.exe" /reference:System.dll "%CORE%\LadderProject.cs" "%CORE%\Tp02TargetCompiler.cs" "%CORE%\Tp02LadderTargetCompiler.cs" "TP02ProjectToWbpHex.cs"
 if errorlevel 1 goto :erro
 
 echo.
 echo OpenLadderTP02Wbp.exe criado com sucesso.
 echo OpenLadderTP02Rbp.exe criado com sucesso.
+echo OpenLadderTP02HostEmulator.exe criado com sucesso.
 echo OpenLadderTP02ProjectExport.exe criado com sucesso.
 echo Escrita real exige --write, PSR=STOP, backup previo e RBP verify.
 exit /b 0
