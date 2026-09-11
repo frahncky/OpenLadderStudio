@@ -6,14 +6,17 @@ on:
       - 'src/OpenLadderStudio.Core/Tp02TargetCompiler.cs'
       - 'src/OpenLadderStudio.Core/Tp02LadderTargetCompiler.cs'
       - 'src/OpenLadderStudio.Core/Tp02Pg34Decoder.cs'
+      - 'src/OpenLadderStudio.Core/Tp02Pg34Pager.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg34DecoderSelfTest.cs'
+      - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg34PagerSelfTest.cs'
       - 'src/OpenLadderStudio.Desktop/Tp02DryRunPreview.cs'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02DryRunV83.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabDecode34V27.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabMixedDecodeV28.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabPaginationV29.ps1'
+      - 'src/OpenLadderStudio.Desktop/PreparePgLabPaginationV30.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Lab.bat'
       - 'src/OpenLadderStudio.Desktop/Build.bat'
       - 'docs/tp02-machine-code-reverse-engineering.md'
@@ -27,14 +30,17 @@ on:
       - 'src/OpenLadderStudio.Core/Tp02TargetCompiler.cs'
       - 'src/OpenLadderStudio.Core/Tp02LadderTargetCompiler.cs'
       - 'src/OpenLadderStudio.Core/Tp02Pg34Decoder.cs'
+      - 'src/OpenLadderStudio.Core/Tp02Pg34Pager.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02TargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs'
       - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg34DecoderSelfTest.cs'
+      - 'tests/OpenLadderStudio.Core.Tests/Tp02Pg34PagerSelfTest.cs'
       - 'src/OpenLadderStudio.Desktop/Tp02DryRunPreview.cs'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02DryRunV83.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabDecode34V27.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabMixedDecodeV28.ps1'
       - 'src/OpenLadderStudio.Desktop/PreparePgLabPaginationV29.ps1'
+      - 'src/OpenLadderStudio.Desktop/PreparePgLabPaginationV30.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Lab.bat'
       - '.github/workflows/validate-tp02-compiler.yml'
 
@@ -88,6 +94,20 @@ jobs:
       - name: Executar autoteste decoder PG34
         shell: cmd
         run: Tp02Pg34DecoderSelfTest.exe
+
+      - name: Compilar autoteste paginador PG34
+        shell: cmd
+        run: >-
+          C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
+          /nologo
+          /target:exe
+          /out:Tp02Pg34PagerSelfTest.exe
+          src\OpenLadderStudio.Core\Tp02Pg34Pager.cs
+          tests\OpenLadderStudio.Core.Tests\Tp02Pg34PagerSelfTest.cs
+
+      - name: Executar autoteste paginador PG34
+        shell: cmd
+        run: Tp02Pg34PagerSelfTest.exe
 
       - name: Compilar PG Lab TP02
         shell: cmd
