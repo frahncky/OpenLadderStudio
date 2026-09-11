@@ -2,12 +2,14 @@
 setlocal
 cd /d "%~dp0"
 
-if not exist "OpenLadderTP02Emulator.exe" (
+set "EMU=OpenLadderTP02Emulator"
+
+if not exist "%EMU%.exe" (
     call BuildTp02Emulator.bat
     if errorlevel 1 exit /b 1
 )
 
-OpenLadderTP02Emulator.exe %*
+"%EMU%.exe" %*
 
 if errorlevel 1 (
     echo.
