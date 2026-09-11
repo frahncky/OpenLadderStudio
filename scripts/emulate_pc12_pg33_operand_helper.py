@@ -15,8 +15,11 @@ import struct
 import sys
 
 try:
-    from unicorn import Uc, UcError, UC_ARCH_X86, UC_MODE_32, UC_HOOK_CODE
-    from unicorn.x86_const import UC_X86_REG_ESP
+    from unicorn import (
+        Uc, UcError, UC_ARCH_X86, UC_MODE_32, UC_HOOK_CODE,
+        UC_HOOK_MEM_INVALID,
+    )
+    from unicorn.x86_const import UC_X86_REG_EIP, UC_X86_REG_ESP
 except ImportError:
     print('ERRO: unicorn não instalado. Use: pip install unicorn==2.1.4', file=sys.stderr)
     raise
@@ -70,19 +73,50 @@ def emulate(exe, operand, init14a=0, init14e=0, init14f=0):
     mu.mem_write(esp, struct.pack('<II', STOP, OBJ))
     mu.reg_write(UC_X86_REG_ESP, esp)
 
-    state = {'returned': False, 'steps': 0}
+    state = {
+        'returned': False,
+        'steps': 0,
+        'last_eip': HELPER,
+        'invalid': None,
+    }
 
     def hook(uc, address, size, _user):
         state['steps'] += 1
+        state['last_eip'] = address
         if address == STOP:
             state['returned'] = True
             uc.emu_stop()
 
+    def invalid_hook(uc, access, address, size, value, _user):
+        state['invalid'] = {
+            'access': access,
+            'address': address,
+            'size': size,
+            'value': value,
+            'eip': uc.reg_read(UC_X86_REG_EIP),
+            'esp': uc.reg_read(UC_X86_REG_ESP),
+        }
+        # Não mapear automaticamente: o objetivo é identificar a dependência
+        # faltante, não mascará-la com memória sintética.
+        return False
+
     mu.hook_add(UC_HOOK_CODE, hook)
+    mu.hook_add(UC_HOOK_MEM_INVALID, invalid_hook)
     try:
         mu.emu_start(HELPER, STOP, count=500000)
     except UcError as exc:
-        raise RuntimeError('Unicorn falhou para %r: %s' % (operand, exc))
+        eip = mu.reg_read(UC_X86_REG_EIP)
+        esp_now = mu.reg_read(UC_X86_REG_ESP)
+        if state['invalid'] is not None:
+            inv = state['invalid']
+            raise RuntimeError(
+                "Unicorn falhou para %r: %s; EIP=0x%08X last=0x%08X ESP=0x%08X; "
+                "mem_invalid access=%d addr=0x%08X size=%d value=0x%X at_eip=0x%08X" %
+                (operand, exc, eip, state['last_eip'], esp_now,
+                 inv['access'], inv['address'], inv['size'], inv['value'], inv['eip']))
+        raise RuntimeError(
+            "Unicorn falhou para %r: %s; EIP=0x%08X last=0x%08X ESP=0x%08X" %
+            (operand, exc, eip, state['last_eip'], esp_now))
 
     if not state['returned']:
         raise RuntimeError('helper não retornou para %r' % operand)
@@ -176,7 +210,7 @@ def main():
     if overall:
         lines.append('Os operandos do ADD coincidem com as palavras fisicamente observadas no quadro 34.')
     else:
-        lines.append('Divergência preservada como dado experimental; não inferir formato antes de classificar o estado faltante.')
+        lines.append('Falhas de emulação são preservadas com EIP/endereço inválido para classificar a dependência faltante.')
     lines.append('Nenhum byte foi transmitido fora do Unicorn.')
 
     report = '\n'.join(lines) + '\n'
