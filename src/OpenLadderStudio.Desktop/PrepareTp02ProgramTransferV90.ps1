@@ -90,9 +90,13 @@ $capReplacement = @'
 '@
 $section = Replace-Required $section $capNeedle.Trim() $capReplacement.Trim() 'capacidades TP02'
 
-$oldDescription = '            return "Serial TP02: 19200 bps, 8O1, estação configurável. É o perfil que o PC12 original força ao abrir a porta. Operações modernas atuais em modo seguro de leitura.";'
+$descStart = $section.IndexOf('            return "Serial TP02:', [System.StringComparison]::Ordinal)
+if ($descStart -lt 0) { throw 'Descricao WegTp02Driver nao encontrada.' }
+$descEnd = $section.IndexOf('";', $descStart, [System.StringComparison]::Ordinal)
+if ($descEnd -lt 0) { throw 'Fim da descricao WegTp02Driver nao encontrado.' }
+$descEnd += 2
 $newDescription = '            return "WEG TP02: PG/PC12 em 19200 8O1; transferencia moderna pela MMI em Computer Link 19200 7N1. RBP le o programa; WBP grava somente em STOP com backup e verificacao por releitura.";'
-$section = Replace-Required $section $oldDescription $newDescription 'descricao driver TP02'
+$section = $section.Substring(0, $descStart) + $newDescription + $section.Substring($descEnd)
 
 $plc = $before + $section + $after
 [System.IO.File]::WriteAllText($plcPath, $plc, [System.Text.Encoding]::UTF8)
