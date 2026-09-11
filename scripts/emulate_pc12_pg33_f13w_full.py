@@ -18,14 +18,13 @@ quadro e antes da decisão de continuar para a próxima instrução.
 """
 
 import argparse
-import re
 import struct
 import sys
 
 try:
     from unicorn import Uc, UcError, UC_ARCH_X86, UC_MODE_32, UC_HOOK_CODE, UC_HOOK_MEM_INVALID
     from unicorn.x86_const import (
-        UC_X86_REG_EAX, UC_X86_REG_EBX, UC_X86_REG_EDI, UC_X86_REG_EIP,
+        UC_X86_REG_EBX, UC_X86_REG_EDI, UC_X86_REG_EIP,
         UC_X86_REG_ESI, UC_X86_REG_ESP,
     )
 except ImportError:
@@ -45,6 +44,8 @@ PC12_STRCPY = 0x004CC174
 PC12_SPRINTF = 0x004CBF90
 PROGRESS_HELPER = 0x004CBD48
 TX_BUF = 0x004FA7A8
+PROGRAM_SIZE = 0x00560368
+LAST_PROGRAM_STEP = 0x0052CD3C
 
 PROGRAM_RECORD = 0x0053034B
 OBJ = 0x2C000000
@@ -101,6 +102,12 @@ def emulate(exe):
     put32(mu, OBJ + 0x7A, 0)   # contador de instruções
     mu.mem_write(OBJ + 0xD7, b'\x01')
     mu.mem_write(OBJ + 0xD8, b'\x01')
+
+    # Guardas globais lidas pelo switch de StepSpan. Sem estes valores o PE
+    # recém-mapeado contém zero e o caminho de fim de programa desfaz o cursor,
+    # embora as quatro palavras já tenham sido codificadas corretamente.
+    put32(mu, PROGRAM_SIZE, 4000)
+    put32(mu, LAST_PROGRAM_STEP, 3999)
 
     mu.mem_write(DUMMY_ESI, struct.pack('<I', 0))
     mu.reg_write(UC_X86_REG_EDI, OBJ)
@@ -213,6 +220,7 @@ def main():
         lines.append('program=F-13w ADD D0002,D0001,00010')
         lines.append('entry=0x%08X stop=0x%08X mode=OFFLINE; no COM, no TX routine, no PLC' %
                      (ENTRY, STOP))
+        lines.append('synthetic guards: program_size=4000 last_program_step=3999')
         lines.append('')
         lines.append('%s HIGH/LOW=[%s]' % ('OK' if row['ok'] else 'DIVERGE', hx(row['high_low'])))
         lines.append('expected       =[%s]' % hx(EXPECTED_HL))
