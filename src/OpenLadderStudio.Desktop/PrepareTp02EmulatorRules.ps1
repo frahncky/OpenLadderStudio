@@ -78,5 +78,18 @@ foreach ($raw in [IO.File]::ReadAllLines($rulesPath)) {
 }
 
 $out = $text.Insert($idx, $cases.ToString())
+
+# Quando houver programa recebido por PG33, 38/34 passam a refletir esse banco.
+# Sem PG33, TP02PgReadback preserva os vetores/fixtures historicos.
+$old38 = 'Send("EMU -> PC12 38", Response38);'
+$new38 = 'Send("EMU -> PC12 38", TP02PgReadback.Build38(ProgramWords, ProgramWordValid, HighestProgramStep, Response38));'
+if (-not $out.Contains($old38)) { throw 'Ponto de integracao do comando 38 nao encontrado.' }
+$out = $out.Replace($old38, $new38)
+
+$old34 = 'Send("EMU -> PC12 34", BuildProgramReadResponse(frame));'
+$new34 = 'Send("EMU -> PC12 34", TP02PgReadback.Build34(frame, ProgramWords, ProgramWordValid, HighestProgramStep, ProgramPage0000));'
+if (-not $out.Contains($old34)) { throw 'Ponto de integracao do comando 34 nao encontrado.' }
+$out = $out.Replace($old34, $new34)
+
 [IO.File]::WriteAllText($outputPath, $out, [Text.Encoding]::UTF8)
-Write-Host ("TP02 emulator build source preparado: {0} regra(s) externa(s)." -f $count)
+Write-Host ("TP02 emulator build source preparado: {0} regra(s) externa(s) + readback PG33/38/34." -f $count)
