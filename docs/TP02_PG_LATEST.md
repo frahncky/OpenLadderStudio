@@ -1,6 +1,6 @@
 # TP02 PG — ponto canônico de retomada
 
-> Estado canônico em 2026-09-11 após a captura física de instruções variáveis, paginação READ-ONLY do `34`, reconstrução OFFLINE do `Write PLC Program`/PG33 e confirmação completa OFFLINE do `F-13w ADD`.
+> Estado canônico em 2026-09-11 após a captura física de instruções variáveis, paginação READ-ONLY do `34`, reconstrução OFFLINE do `Write PLC Program`/PG33, emulação completa de F-13w/F-23, blocos máximos e gate de resposta/retry.
 
 ## Ambiente e segurança
 
@@ -14,14 +14,14 @@ Fluxo READ-ONLY: HELLO -> F0 -> 38 -> 34
 
 A bancada permanece **READ-ONLY**. Nenhuma escrita, download, apagamento, firmware ou RUN/STOP remoto foi habilitado no PG Lab. `0F 00 F0` = Clear All Memory e permanece bloqueado.
 
-A pesquisa do `0x33` é feita por análise estática e emulação Unicorn do `pc12.exe`, sem COM, sem PLC e sem execução da rotina TX.
+A pesquisa do `0x33` é feita por análise estática e emulação Unicorn do `pc12.exe`, sem COM, sem PLC e com a rotina TX interceptada antes de qualquer I/O.
 
 ## Leitura física consolidada
 
 HELLO:
 
 ```text
-TX STOP/RUN probe: CON-ICB\r
+TX: CON-ICB\r
 STOP RX: 80 01 09 75
 RUN  RX: C0 01 09 35
 ```
@@ -48,7 +48,7 @@ Região A = 160 bytes = 80 pares HIGH/LOW
 Região B = 80 bytes  = 80 BRAW
 ```
 
-A regra física de checksum continua:
+Checksum físico:
 
 ```text
 sum(quadro) mod 256 = FF
@@ -113,7 +113,7 @@ F-00 END:
 
 F-23/F-24 ocupam 2 passos; F-13w ocupa 4; END ocupa 1 no programa observado.
 
-Constantes diretas observadas obedecem:
+Constantes diretas observadas:
 
 ```text
 HIGH = 80 | (value >> 7)
@@ -130,7 +130,7 @@ Fisicamente confirmada nos booleanos e na captura mista:
 BRAW = ((HIGH >> 4) + (HIGH & 0F) + (LOW >> 4) + (LOW & 0F)) & 0F
 ```
 
-Não identificar automaticamente esse `BRAW` com o `EXTERNAL` do caminho PG33; continuam campos epistemicamente separados.
+Não identificar automaticamente esse `BRAW` com o `EXTERNAL` do caminho PG33.
 
 ## Comando `38`
 
@@ -149,7 +149,7 @@ Todos coincidem com:
 38.payload[1] = 2 * (N - 1)
 ```
 
-O software trata `38` apenas como hint/metadado, porque essa regra ainda não está provada universalmente e um único byte cria ambiguidade para programas maiores.
+O software trata `38` apenas como hint/metadado; a regra ainda não está provada universalmente.
 
 ## Paginação READ-ONLY do `34`
 
@@ -165,13 +165,13 @@ O software trata `38` apenas como hint/metadado, porque essa regra ainda não es
 
 A leitura termina ao encontrar `F-00 END = 00 70` ou no limite de 4000 passos.
 
-**Ainda falta confirmação física cruzando a fronteira 79/80.** O ensaio de 91 passos documentado em `docs/tp02-pg-pagination-34-v119.md` continua sendo o próximo teste de bancada READ-ONLY recomendado.
+**Ainda falta confirmação física cruzando a fronteira 79/80.** O ensaio de 91 passos em `docs/tp02-pg-pagination-34-v119.md` continua sendo o próximo teste de bancada READ-ONLY recomendado.
 
-## Escrita de programa `0x33` — somente OFFLINE
+# Escrita de programa `0x33` — somente OFFLINE
 
 O caminho `Write PLC Program...` do PC12 usa quadro dedicado `0x33`; `0x09` permanece uma família separada de escrita de memória/registradores.
 
-Construtor final do `0x33`:
+Construtor final:
 
 ```text
 0x004B7958
@@ -190,7 +190,7 @@ PALAVRA DE MÁQUINA
   ocupa um passo expandido
 ```
 
-A primeira palavra é emitida pelo chamador. Para cada passo adicional, o helper `0x004BCA65` acrescenta outra palavra HIGH/LOW/EXTERNAL.
+A primeira palavra é emitida pelo chamador. Cada passo adicional é emitido por `0x004BCA65`.
 
 No final comum do helper:
 
@@ -211,9 +211,9 @@ Depois da instrução completa:
 +0x7A += 1
 ```
 
-`cmp +0x7A, 0x14` confirma limite de **20 instruções lógicas por bloco**. Como cada uma pode ocupar até 4 palavras, um bloco pode chegar a **80 palavras de máquina**.
+`cmp +0x7A, 0x14` confirma limite de **20 instruções lógicas por bloco**. Como cada instrução pode ocupar até 4 palavras, um bloco pode chegar a **80 palavras de máquina**.
 
-### Geometria do PG33
+## Geometria do PG33
 
 Para `W` palavras de máquina já expandidas:
 
@@ -227,7 +227,7 @@ Para `W` palavras de máquina já expandidas:
 sum(quadro) mod 256 = FF
 ```
 
-Pior caso reconstruído:
+Pior caso reconstruído e emulado no construtor original:
 
 ```text
 20 instruções x 4 passos
@@ -238,9 +238,9 @@ EXTERNAL = 80 bytes
 quadro total = 247 bytes
 ```
 
-O Core já modela isso em `Tp02Pg33DryRunFrame` e `Tp02Pg33DryRunProgram`, sem qualquer acesso serial.
+O Core modela isso em `Tp02Pg33DryRunFrame` e `Tp02Pg33DryRunProgram`, sem acesso serial.
 
-## Confirmação OFFLINE dos operandos
+## Operand helper confirmado OFFLINE
 
 O helper original `0x004BCA65`, executado no Unicorn, gerou:
 
@@ -252,35 +252,21 @@ D0001 -> F0 00 / EXTERNAL 00
 01000 -> 87 68 / EXTERNAL 00
 ```
 
-A normalização interna também mostrou `00010 -> 000A` e `01000 -> 03E8` antes da palavra final.
-
 Evidência:
 
 ```text
 docs/data/pc12-pg33-operand-helper-emulation.txt
 ```
 
-## F-13w ADD — caminho completo confirmado OFFLINE
+## F-13w completo confirmado OFFLINE
 
-O parser `0x004BA69E` recebe o registro interno de 48 bytes. Para `internal=513` cai no case `0x004BAD14`:
-
-```text
-HIGH = 0D
-LOW  = 77
-EXTERNAL = 00
-StepSpan = 4
-mode = 2
-```
-
-Em seguida o coletor chama `0x004BCA65` para os três operandos.
-
-A emulação completa do programa sintético:
+Programa sintético:
 
 ```text
 F-13w ADD D0002,D0001,00010
 ```
 
-produziu exatamente:
+O coletor original do PC12 produziu:
 
 ```text
 0D 77 | F0 01 | F0 00 | 80 0A
@@ -290,15 +276,7 @@ cursor = 4
 logical instructions = 1
 ```
 
-Resultado do workflow:
-
-```text
-Analyze PC12 PG33 encoder fields
-run #12 / 34559256817
-RESULT=PASS
-```
-
-Isso coincide **byte a byte nos pares HIGH/LOW** com o F-13w já lido fisicamente do TP02 pelo `0x34`.
+Isso coincide byte a byte nos pares HIGH/LOW com a captura física PG34 do mesmo ADD.
 
 Evidências:
 
@@ -307,7 +285,141 @@ docs/data/pc12-pg33-f13w-full-emulation.txt
 docs/tp02-pg-f13w-offline-confirmation.md
 ```
 
-Essa correlação é forte, mas ainda **não prova que o PLC aceite fisicamente um quadro `0x33`**.
+## F-23 SET completo confirmado OFFLINE
+
+Programa sintético:
+
+```text
+F-23 SET Y0001
+```
+
+O coletor original produziu:
+
+```text
+17 71 | C8 80
+EXTERNAL = 00 | 00
+StepSpan = 2
+cursor = 2
+logical instructions = 1
+```
+
+Também coincide byte a byte nos pares HIGH/LOW com a captura física PG34.
+
+Evidência:
+
+```text
+docs/data/pc12-pg33-f23-full-emulation.txt
+```
+
+## Bloco máximo confirmado OFFLINE
+
+Vinte instruções:
+
+```text
+20 x F-13w ADD D0002,D0001,00010
+```
+
+produziram no coletor + builder originais:
+
+```text
+logical instructions = 20
+cursor = 80
+HIGH/LOW bytes = 160
+EXTERNAL bytes = 80
+frame bytes = 247
+CMD = 33
+LEN = F4
+start = 0000
+HIGH/LOW count = A0
+checksum = 8C
+RESULT = PASS
+```
+
+Evidência:
+
+```text
+docs/data/pc12-pg33-f13w-batch20-emulation.txt
+```
+
+## Divisão 20 + 1 confirmada OFFLINE
+
+Com 21 F-13w, o PC12 foi reproduzido em dois blocos:
+
+```text
+bloco 1:
+  20 instruções / 80 palavras
+  start=0000
+  LEN=F4
+  HIGH/LOW=A0
+  total=247 bytes
+
+cauda de sucesso:
+  +56=0
+  +5E=6
+  +62=0
+  +76=80
+  +7A=0
+  +7E=80
+
+bloco 2:
+  1 instrução / 4 palavras
+  start=0050
+  LEN=10
+  HIGH/LOW=08
+  total=19 bytes
+```
+
+Evidência:
+
+```text
+docs/data/pc12-pg33-f13w-blocks21-emulation.txt
+```
+
+## Gate de resposta/retry do PG33 confirmado OFFLINE
+
+Faixa do chamador emulada:
+
+```text
+0x004B7A07..0x004B7C50
+```
+
+A rotina genérica de comunicação `0x0046F5E6` foi interceptada antes de I/O e substituída apenas pelas três flags que entrega ao chamador:
+
+```text
+0x4FA8B7 = timeout
+0x4FA8B9 = checksum inválido
+0x4FA8B8 = erro/status bit7
+```
+
+Resultados:
+
+```text
+sucesso imediato                 -> 1 chamada
+1 falha + sucesso                -> 2 chamadas
+2 falhas + sucesso               -> 3 chamadas
+falha permanente por timeout     -> 3 chamadas
+falha permanente por checksum    -> 3 chamadas
+falha permanente por status      -> 3 chamadas
+```
+
+Portanto, o máximo confirmado é **3 tentativas por quadro**, não 15.
+
+O chamador aceita o quadro quando as três flags ficam zeradas. A faixa de retry não possui referência direta a `RX_BUF` nem `RX_LEN`; ela depende da classificação feita pela rotina genérica.
+
+Consequência epistemicamente importante:
+
+```text
+conhecemos a condição de sucesso do PC12,
+mas NÃO conhecemos ainda o payload físico exato do ACK do 0x33.
+```
+
+Um quadro genérico como `00 00 FF` satisfazer o parser não prova que seja o ACK real do TP02.
+
+Evidência:
+
+```text
+docs/data/pc12-pg33-retry-gate-emulation.txt
+```
 
 ## Estado de evidência
 
@@ -339,9 +451,12 @@ StepSpan 1..4
 20 instruções lógicas por bloco
 até 80 palavras por quadro
 helper de operandos
-codificação D0001/D0002/K10/K1000
-F-13w completo = 0D77 F001 F000 800A
-cursor real de passos
+D0001/D0002/K10/K1000
+F-13w completo
+F-23 SET completo
+bloco máximo W=80 / LEN=F4 / 247 bytes
+divisão 20+1 e start real do segundo bloco
+gate de sucesso/retry: máximo 3 tentativas
 parser RX genérico
 ```
 
@@ -351,7 +466,7 @@ parser RX genérico
 paginação 34 >80 passos
 aceitação do 0x33 pelo TP02
 ACK exato do 0x33
-sequência completa de sessão/handshake de escrita no fio
+sequência completa de sessão/handshake de escrita observada no fio
 ```
 
 ## Próximas prioridades
@@ -359,16 +474,15 @@ sequência completa de sessão/handshake de escrita no fio
 OFFLINE:
 
 ```text
-1. repetir o coletor completo para uma instrução real de 2 passos, preferencialmente F-23 SET;
-2. emular 20 instruções de 4 passos no coletor completo e confirmar W=80 no builder;
-3. emular 21 instruções para confirmar a divisão física interna 20 + 1 e endereço do segundo quadro;
-4. aprofundar a rotina de resposta do 0x33 para tentar recuperar o ACK esperado sem TX físico.
+1. repetir o coletor completo para F-24 RST e, se útil, TMR/CNT;
+2. mapear o preâmbulo e a finalização da sessão Write PLC Program sem executar I/O;
+3. manter o ACK físico classificado como desconhecido até existir observação real.
 ```
 
 Bancada READ-ONLY:
 
 ```text
-5. confirmar paginação do 34 com programa >80 passos.
+4. confirmar paginação do 34 com programa >80 passos.
 ```
 
 Qualquer ensaio físico de escrita continua fora de escopo até decisão explícita e validação de segurança separada.
