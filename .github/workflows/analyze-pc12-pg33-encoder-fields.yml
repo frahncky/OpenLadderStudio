@@ -79,11 +79,15 @@ jobs:
           cat protocol-analysis/pc12-pg33-f13w-blocks21-emulation.txt
 
       - name: Emular gate de ACK e retentativas PG33
+        shell: bash
         run: |
+          set +e
           python3 scripts/emulate_pc12_pg33_retry_gate.py \
             src/OpenLadderStudio.Desktop/pc12.exe \
             -o protocol-analysis/pc12-pg33-retry-gate-emulation.txt
+          rc=$?
           cat protocol-analysis/pc12-pg33-retry-gate-emulation.txt
+          exit $rc
 
       - name: Persistir relatórios
         if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
