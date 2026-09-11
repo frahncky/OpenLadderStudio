@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'scripts/analyze_pc12_pg33_encoder_fields.py'
+      - 'scripts/emulate_pc12_pg33_operand_helper.py'
       - '.github/workflows/analyze-pc12-pg33-encoder-fields.yml'
       - 'src/OpenLadderStudio.Desktop/pc12.exe'
   workflow_dispatch:
@@ -26,26 +27,40 @@ jobs:
             -o protocol-analysis/pc12-pg33-encoder-fields-analysis.txt
           cat protocol-analysis/pc12-pg33-encoder-fields-analysis.txt
 
-      - name: Persistir relatório
+      - name: Instalar Unicorn
+        run: python3 -m pip install 'unicorn==2.1.4'
+
+      - name: Emular helper de operandos PG33 sem hardware
+        run: |
+          python3 scripts/emulate_pc12_pg33_operand_helper.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-pg33-operand-helper-emulation.txt
+          cat protocol-analysis/pc12-pg33-operand-helper-emulation.txt
+
+      - name: Persistir relatórios
         if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
         shell: bash
         run: |
           mkdir -p docs/data
           cp protocol-analysis/pc12-pg33-encoder-fields-analysis.txt \
              docs/data/pc12-pg33-encoder-fields-analysis.txt
-          if [ -z "$(git status --porcelain -- docs/data/pc12-pg33-encoder-fields-analysis.txt)" ]; then
-            echo 'Relatório sem alterações.'
+          cp protocol-analysis/pc12-pg33-operand-helper-emulation.txt \
+             docs/data/pc12-pg33-operand-helper-emulation.txt
+          if [ -z "$(git status --porcelain -- docs/data/pc12-pg33-encoder-fields-analysis.txt docs/data/pc12-pg33-operand-helper-emulation.txt)" ]; then
+            echo 'Relatórios sem alterações.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/data/pc12-pg33-encoder-fields-analysis.txt
-          git commit -m 'Atualizar mapa offline dos encoders PG33'
+          git add docs/data/pc12-pg33-encoder-fields-analysis.txt docs/data/pc12-pg33-operand-helper-emulation.txt
+          git commit -m 'Atualizar análise offline dos encoders PG33'
           git push origin HEAD:main
 
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
           name: pc12-pg33-encoder-fields-analysis
-          path: protocol-analysis/pc12-pg33-encoder-fields-analysis.txt
+          path: |
+            protocol-analysis/pc12-pg33-encoder-fields-analysis.txt
+            protocol-analysis/pc12-pg33-operand-helper-emulation.txt
           retention-days: 30
