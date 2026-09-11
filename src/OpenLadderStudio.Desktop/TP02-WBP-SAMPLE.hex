@@ -1,9 +1,4 @@
-# Exemplo minimo - NAO usar diretamente sem revisar a logica da maquina.
-# STR X0001
 001000
-# AND X0002
 002100
-# OUT Y0001
 204000
-# F-00 END
 007000
