@@ -10,6 +10,7 @@ Objetivos:
 - localizar acessos a +0x172..+0x176 e flags auxiliares +0x14A/+0x14E/+0x14F;
 - mostrar as janelas dos encoders que convergem para o caminho multistep;
 - mostrar integralmente o helper 0x004BCA65 e o switch 1..4 passos em 0x004B7799;
+- verificar se o helper altera o buffer TX e a contabilidade +0x5E/+0x62/+0x56/+0x7A;
 - preservar a distincao entre registro PG33 e passo expandido observado no 34.
 """
 
@@ -21,8 +22,9 @@ from analyze_pc12_writeprog import hx, objdump_window, pe_info, va_to_offset, of
 
 WRITE_LO = 0x004B6A00
 WRITE_HI = 0x004B7E20
+HELPER_ENTRY = 0x004BCA65
 HELPER_LO = 0x004BCA20
-HELPER_HI = 0x004BCD80
+HELPER_HI = 0x004BD220
 
 FIELDS = {
     0x14A: 'flag-14A',
@@ -33,6 +35,13 @@ FIELDS = {
     0x174: 'record-EXT',
     0x175: 'aux-byte-175',
     0x176: 'StepSpan',
+}
+
+HELPER_PATTERNS = {
+    b'\xFF\x46\x5E': 'INC +0x5E (TX HIGH/LOW cursor)',
+    b'\xFF\x46\x62': 'INC +0x62 (EXTERNAL cursor)',
+    b'\x83\x46\x56\x02': 'ADD +0x56,2 (HIGH/LOW byte count)',
+    b'\xFF\x46\x7A': 'INC +0x7A (record count)',
 }
 
 
@@ -54,7 +63,6 @@ def scan_field_accesses(data, sections, image_base, lo_va, hi_va):
             i += 1
             continue
 
-        # ModRM com base EDI e disp32: 8A/8B le, 88/89 escreve.
         if i + 6 <= hi and data[i] in (0x8A, 0x8B, 0x88, 0x89) and (data[i + 1] & 0xC7) == 0x87:
             disp = u32(data, i + 2)
             if disp in FIELDS:
@@ -65,7 +73,6 @@ def scan_field_accesses(data, sections, image_base, lo_va, hi_va):
             i += 6
             continue
 
-        # MOV byte ptr [EDI+disp32], imm8
         if i + 7 <= hi and data[i:i + 2] == b'\xC6\x87':
             disp = u32(data, i + 2)
             if disp in FIELDS:
@@ -73,7 +80,6 @@ def scan_field_accesses(data, sections, image_base, lo_va, hi_va):
             i += 7
             continue
 
-        # MOV dword ptr [EDI+disp32], imm32
         if i + 10 <= hi and data[i:i + 2] == b'\xC7\x87':
             disp = u32(data, i + 2)
             if disp in FIELDS:
@@ -85,17 +91,18 @@ def scan_field_accesses(data, sections, image_base, lo_va, hi_va):
     return out
 
 
-def scan_absolute_tx_refs(data, sections, image_base, lo_va, hi_va):
-    """Procura referencias absolutas aos globais do buffer TX dentro do helper.
-
-    Serve somente como guarda estatica: ausencia de referencia direta nao exclui
-    escrita indireta, mas uma referencia encontrada precisa ser examinada.
-    """
+def va_range_to_offsets(data, sections, image_base, lo_va, hi_va):
     lo = va_to_offset(sections, image_base, lo_va)
     hi_last = va_to_offset(sections, image_base, hi_va - 1)
     if lo is None or hi_last is None:
+        return None, None
+    return lo, hi_last + 1
+
+
+def scan_absolute_tx_refs(data, sections, image_base, lo_va, hi_va):
+    lo, hi = va_range_to_offsets(data, sections, image_base, lo_va, hi_va)
+    if lo is None:
         return []
-    hi = hi_last + 1
     refs = []
     needles = {
         struct.pack('<I', 0x004FA7A8): 'TX_BUF',
@@ -110,6 +117,20 @@ def scan_absolute_tx_refs(data, sections, image_base, lo_va, hi_va):
     return sorted(refs)
 
 
+def scan_helper_patterns(data, sections, image_base):
+    lo, hi = va_range_to_offsets(data, sections, image_base, HELPER_ENTRY, HELPER_HI)
+    if lo is None:
+        return []
+    rows = []
+    for pattern, label in HELPER_PATTERNS.items():
+        pos = data.find(pattern, lo, hi)
+        while pos != -1:
+            va = offset_to_va(sections, image_base, pos)
+            rows.append((va, label, pattern))
+            pos = data.find(pattern, pos + 1, hi)
+    return sorted(rows)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('exe')
@@ -120,13 +141,15 @@ def main():
     data = path.read_bytes()
     image_base, sections = pe_info(data)
     accesses = scan_field_accesses(data, sections, image_base, WRITE_LO, WRITE_HI)
-    helper_tx_refs = scan_absolute_tx_refs(data, sections, image_base, 0x004BCA65, HELPER_HI)
+    helper_tx_refs = scan_absolute_tx_refs(data, sections, image_base, HELPER_ENTRY, HELPER_HI)
+    helper_patterns = scan_helper_patterns(data, sections, image_base)
 
     lines = []
     lines.append('PC12 PG33 MULTISTEP ENCODER FIELD MAP - OFFLINE STATIC ANALYSIS')
     lines.append('=' * 96)
     lines.append('mode=OFFLINE ONLY; no serial, no PLC, no TX')
     lines.append('write-path=0x%08X..0x%08X' % (WRITE_LO, WRITE_HI))
+    lines.append('helper=0x%08X..0x%08X' % (HELPER_ENTRY, HELPER_HI))
     lines.append('')
 
     for field in sorted(FIELDS):
@@ -148,12 +171,12 @@ def main():
     lines.extend(objdump_window(path, 0x004B7790, 0x004B78A1, max_lines=360))
     lines.append('')
 
-    lines.append('HELPER 0x004BCA65 - FULL WINDOW')
+    lines.append('HELPER 0x004BCA65 - FULL FUNCTION WINDOW')
     lines.append('-' * 96)
-    lines.extend(objdump_window(path, HELPER_LO, HELPER_HI, max_lines=1400))
+    lines.extend(objdump_window(path, HELPER_LO, HELPER_HI, max_lines=3600))
     lines.append('')
 
-    lines.append('DIRECT ABSOLUTE TX REFERENCES INSIDE HELPER WINDOW')
+    lines.append('DIRECT ABSOLUTE TX REFERENCES INSIDE HELPER')
     lines.append('-' * 96)
     if helper_tx_refs:
         for va, label in helper_tx_refs:
@@ -162,12 +185,21 @@ def main():
         lines.append('none found for TX_BUF=0x004FA7A8 or TX_LEN=0x004FA8AC')
     lines.append('')
 
+    lines.append('HELPER BOOKKEEPING SIGNATURES')
+    lines.append('-' * 96)
+    if helper_patterns:
+        for va, label, raw in helper_patterns:
+            lines.append('0x%08X %-38s bytes=[%s]' % (va, label, hx(raw)))
+    else:
+        lines.append('none found')
+    lines.append('')
+
     lines.append('STATIC INTERPRETATION GUARDRAIL')
     lines.append('-' * 96)
-    lines.append('Acesso a +0x172/+0x173/+0x174 prova apenas a origem do registro enviado.')
-    lines.append('StepSpan em +0x176 controla o avanço do cursor do programa e nao deve ser confundido')
-    lines.append('com o numero de registros PG33. O helper 0x004BCA65 deve ser classificado por completo')
-    lines.append('antes de concluir se ele apenas interpreta texto/operandos ou tambem altera o quadro TX.')
+    lines.append('Acesso a +0x172/+0x173/+0x174 prova apenas a origem do primeiro registro emitido.')
+    lines.append('StepSpan em +0x176 controla o avanço do cursor do programa. O helper 0x004BCA65')
+    lines.append('tambem precisa ser contabilizado porque pode acrescentar HIGH/LOW adicionais ao TX.')
+    lines.append('A quantidade efetiva de registros PG33 so pode ser concluida somando o chamador e o helper.')
     lines.append('Nenhum byte foi transmitido ao PLC.')
 
     report = '\n'.join(lines) + '\n'
