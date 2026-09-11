@@ -65,11 +65,454 @@ FIELD +0x6E : 3 write candidate(s)
   0x004B7939  MOV32_REG    value=?          bytes=[89 47 6E]
   0x004B7955  ADD32_REG    value=?          bytes=[01 4F 6E]
 
+CHUNK INITIALIZATION
+--------------------------------------------------------------------------------------------
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7d20 <.text+0xb6d20>:
+  4b7d20:	00 00                	add    BYTE PTR [eax],al
+  4b7d22:	33 c9                	xor    ecx,ecx
+  4b7d24:	89 4f 7a             	mov    DWORD PTR [edi+0x7a],ecx
+  4b7d27:	c7 47 5e 06 00 00 00 	mov    DWORD PTR [edi+0x5e],0x6
+  4b7d2e:	33 c0                	xor    eax,eax
+  4b7d30:	89 47 62             	mov    DWORD PTR [edi+0x62],eax
+  4b7d33:	33 d2                	xor    edx,edx
+  4b7d35:	89 57 56             	mov    DWORD PTR [edi+0x56],edx
+  4b7d38:	8b 4f 76             	mov    ecx,DWORD PTR [edi+0x76]
+  4b7d3b:	89 4f 7e             	mov    DWORD PTR [edi+0x7e],ecx
+  4b7d3e:	8b 47 76             	mov    eax,DWORD PTR [edi+0x76]
+  4b7d41:	a3 f0 03 57 00       	mov    ds:0x5703f0,eax
+  4b7d46:	8a 15 e6 03 57 00    	mov    dl,BYTE PTR ds:0x5703e6
+  4b7d4c:	84 d2                	test   dl,dl
+  4b7d4e:	74 17                	je     0x4b7d67
+  4b7d50:	68 b3 15 00 00       	push   0x15b3
+  4b7d55:	6a 16                	push   0x16
+  4b7d57:	68 00 04 00 00       	push   0x400
+  4b7d5c:	ff 35 54 03 56 00    	push   DWORD PTR ds:0x560354
+  4b7d62:	e8 ff 41 01 00       	call   0x4cbf66
+  4b7d67:	8b 4f 76             	mov    ecx,DWORD PTR [edi+0x76]
+  4b7d6a:	a1 68 03 56 00       	mov    eax,ds:0x560368
+  4b7d6f:	3b                 	cmp    ecx,eax
+
+ENCODER WINDOWS AROUND +0x56 += 2
+--------------------------------------------------------------------------------------------
+### ENCODER#01 completion=0x004B6D08 window=0x004B6CC0..0x004B6D28
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b6cc0 <.text+0xb5cc0>:
+  4b6cc0:	6f                   	outs   dx,DWORD PTR ds:[esi]
+  4b6cc1:	00 00                	add    BYTE PTR [eax],al
+  4b6cc3:	59                   	pop    ecx
+  4b6cc4:	c6 87 d6 00 00 00 01 	mov    BYTE PTR [edi+0xd6],0x1
+  4b6ccb:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b6cce:	8a 87 72 01 00 00    	mov    al,BYTE PTR [edi+0x172]
+  4b6cd4:	88 81 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],al
+  4b6cda:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b6cdd:	8b 57 5e             	mov    edx,DWORD PTR [edi+0x5e]
+  4b6ce0:	8a 8f 73 01 00 00    	mov    cl,BYTE PTR [edi+0x173]
+  4b6ce6:	88 8a a8 a7 4f 00    	mov    BYTE PTR [edx+0x4fa7a8],cl
+  4b6cec:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b6cef:	8b 47 62             	mov    eax,DWORD PTR [edi+0x62]
+  4b6cf2:	8a 97 74 01 00 00    	mov    dl,BYTE PTR [edi+0x174]
+  4b6cf8:	88 94 07 e0 00 00 00 	mov    BYTE PTR [edi+eax*1+0xe0],dl
+  4b6cff:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b6d02:	ff 47 76             	inc    DWORD PTR [edi+0x76]
+  4b6d05:	ff 47 7a             	inc    DWORD PTR [edi+0x7a]
+  4b6d08:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b6d0c:	8b 4f 76             	mov    ecx,DWORD PTR [edi+0x76]
+  4b6d0f:	a1 68 03 56 00       	mov    eax,ds:0x560368
+  4b6d14:	3b c8                	cmp    ecx,eax
+  4b6d16:	7c 11                	jl     0x4b6d29
+  4b6d18:	c6 87 d7 00 00 00 00 	mov    BYTE PTR [edi+0xd7],0x0
+  4b6d1f:	c6 87 d8 00 00 00 00 	mov    BYTE PTR [edi+0xd8],0x0
+  4b6d26:	ff 4f              	dec    DWORD PTR [edi+0x76]
+
+### ENCODER#02 completion=0x004B6E53 window=0x004B6E0B..0x004B6E73
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b6e0b <.text+0xb5e0b>:
+  4b6e0b:	00 00                	add    BYTE PTR [eax],al
+  4b6e0d:	00 57 e8             	add    BYTE PTR [edi-0x18],dl
+  4b6e10:	99                   	cdq
+  4b6e11:	6e                   	outs   dx,BYTE PTR ds:[esi]
+  4b6e12:	00 00                	add    BYTE PTR [eax],al
+  4b6e14:	59                   	pop    ecx
+  4b6e15:	c6 87 d6 00 00 00 01 	mov    BYTE PTR [edi+0xd6],0x1
+  4b6e1c:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b6e1f:	8a 97 72 01 00 00    	mov    dl,BYTE PTR [edi+0x172]
+  4b6e25:	88 90 a8 a7 4f 00    	mov    BYTE PTR [eax+0x4fa7a8],dl
+  4b6e2b:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b6e2e:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b6e31:	8a 87 73 01 00 00    	mov    al,BYTE PTR [edi+0x173]
+  4b6e37:	88 81 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],al
+  4b6e3d:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b6e40:	8b 57 62             	mov    edx,DWORD PTR [edi+0x62]
+  4b6e43:	8a 8f 74 01 00 00    	mov    cl,BYTE PTR [edi+0x174]
+  4b6e49:	88 8c 17 e0 00 00 00 	mov    BYTE PTR [edi+edx*1+0xe0],cl
+  4b6e50:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b6e53:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b6e57:	ff 47 76             	inc    DWORD PTR [edi+0x76]
+  4b6e5a:	ff 47 7a             	inc    DWORD PTR [edi+0x7a]
+  4b6e5d:	8b 47 76             	mov    eax,DWORD PTR [edi+0x76]
+  4b6e60:	8b 15 68 03 56 00    	mov    edx,DWORD PTR ds:0x560368
+  4b6e66:	3b c2                	cmp    eax,edx
+  4b6e68:	7c 11                	jl     0x4b6e7b
+  4b6e6a:	c6 87 d7 00 00 00 00 	mov    BYTE PTR [edi+0xd7],0x0
+  4b6e71:	c6 87      	mov    BYTE PTR [edi+0xd8],0x0
+
+### ENCODER#03 completion=0x004B6EF4 window=0x004B6EAC..0x004B6F14
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b6eac <.text+0xb5eac>:
+  4b6eac:	00 00                	add    BYTE PTR [eax],al
+  4b6eae:	6a 01                	push   0x1
+  4b6eb0:	68 00 04 00 00       	push   0x400
+  4b6eb5:	ff 36                	push   DWORD PTR [esi]
+  4b6eb7:	e8 8c 4e 01 00       	call   0x4cbd48
+  4b6ebc:	83 c4 10             	add    esp,0x10
+  4b6ebf:	c6 87 d6 00 00 00 01 	mov    BYTE PTR [edi+0xd6],0x1
+  4b6ec6:	8b 57 5e             	mov    edx,DWORD PTR [edi+0x5e]
+  4b6ec9:	c6 82 a8 a7 4f 00 00 	mov    BYTE PTR [edx+0x4fa7a8],0x0
+  4b6ed0:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b6ed3:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b6ed6:	c6 81 a8 a7 4f 00 01 	mov    BYTE PTR [ecx+0x4fa7a8],0x1
+  4b6edd:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b6ee0:	8b 47 62             	mov    eax,DWORD PTR [edi+0x62]
+  4b6ee3:	c6 84 07 e0 00 00 00 	mov    BYTE PTR [edi+eax*1+0xe0],0x0
+  4b6eea:	00 
+  4b6eeb:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b6eee:	ff 47 76             	inc    DWORD PTR [edi+0x76]
+  4b6ef1:	ff 47 7a             	inc    DWORD PTR [edi+0x7a]
+  4b6ef4:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b6ef8:	8b 57 76             	mov    edx,DWORD PTR [edi+0x76]
+  4b6efb:	8b 0d 68 03 56 00    	mov    ecx,DWORD PTR ds:0x560368
+  4b6f01:	3b d1                	cmp    edx,ecx
+  4b6f03:	7c 11                	jl     0x4b6f16
+  4b6f05:	c6 87 d7 00 00 00 00 	mov    BYTE PTR [edi+0xd7],0x0
+  4b6f0c:	c6 87 d8 00 00 00 00 	mov    BYTE PTR [edi+0xd8],0x0
+  4b6f13:	ff               	dec    DWORD PTR [edi+0x76]
+
+### ENCODER#04 completion=0x004B6F8F window=0x004B6F47..0x004B6FAF
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b6f47 <.text+0xb5f47>:
+  4b6f47:	00 00                	add    BYTE PTR [eax],al
+  4b6f49:	6a 01                	push   0x1
+  4b6f4b:	68 00 04 00 00       	push   0x400
+  4b6f50:	ff 36                	push   DWORD PTR [esi]
+  4b6f52:	e8 f1 4d 01 00       	call   0x4cbd48
+  4b6f57:	83 c4 10             	add    esp,0x10
+  4b6f5a:	c6 87 d6 00 00 00 01 	mov    BYTE PTR [edi+0xd6],0x1
+  4b6f61:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b6f64:	c6 81 a8 a7 4f 00 00 	mov    BYTE PTR [ecx+0x4fa7a8],0x0
+  4b6f6b:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b6f6e:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b6f71:	c6 80 a8 a7 4f 00 02 	mov    BYTE PTR [eax+0x4fa7a8],0x2
+  4b6f78:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b6f7b:	8b 57 62             	mov    edx,DWORD PTR [edi+0x62]
+  4b6f7e:	c6 84 17 e0 00 00 00 	mov    BYTE PTR [edi+edx*1+0xe0],0x0
+  4b6f85:	00 
+  4b6f86:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b6f89:	ff 47 76             	inc    DWORD PTR [edi+0x76]
+  4b6f8c:	ff 47 7a             	inc    DWORD PTR [edi+0x7a]
+  4b6f8f:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b6f93:	8b 4f 76             	mov    ecx,DWORD PTR [edi+0x76]
+  4b6f96:	a1 68 03 56 00       	mov    eax,ds:0x560368
+  4b6f9b:	3b c8                	cmp    ecx,eax
+  4b6f9d:	7c 11                	jl     0x4b6fb0
+  4b6f9f:	c6 87 d7 00 00 00 00 	mov    BYTE PTR [edi+0xd7],0x0
+  4b6fa6:	c6 87 d8 00 00 00 00 	mov    BYTE PTR [edi+0xd8],0x0
+  4b6fad:	ff 4f              	dec    DWORD PTR [edi+0x76]
+
+### ENCODER#05 completion=0x004B70DA window=0x004B7092..0x004B70FA
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7092 <.text+0xb6092>:
+  4b7092:	00 00                	add    BYTE PTR [eax],al
+  4b7094:	00 57 e8             	add    BYTE PTR [edi-0x18],dl
+  4b7097:	12 6c 00 00          	adc    ch,BYTE PTR [eax+eax*1+0x0]
+  4b709b:	59                   	pop    ecx
+  4b709c:	c6 87 d6 00 00 00 01 	mov    BYTE PTR [edi+0xd6],0x1
+  4b70a3:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b70a6:	8a 97 72 01 00 00    	mov    dl,BYTE PTR [edi+0x172]
+  4b70ac:	88 90 a8 a7 4f 00    	mov    BYTE PTR [eax+0x4fa7a8],dl
+  4b70b2:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b70b5:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b70b8:	8a 87 73 01 00 00    	mov    al,BYTE PTR [edi+0x173]
+  4b70be:	88 81 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],al
+  4b70c4:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b70c7:	8b 57 62             	mov    edx,DWORD PTR [edi+0x62]
+  4b70ca:	8a 8f 74 01 00 00    	mov    cl,BYTE PTR [edi+0x174]
+  4b70d0:	88 8c 17 e0 00 00 00 	mov    BYTE PTR [edi+edx*1+0xe0],cl
+  4b70d7:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b70da:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b70de:	ff 47 76             	inc    DWORD PTR [edi+0x76]
+  4b70e1:	ff 47 7a             	inc    DWORD PTR [edi+0x7a]
+  4b70e4:	8b 47 76             	mov    eax,DWORD PTR [edi+0x76]
+  4b70e7:	8b 15 68 03 56 00    	mov    edx,DWORD PTR ds:0x560368
+  4b70ed:	3b c2                	cmp    eax,edx
+  4b70ef:	7c 11                	jl     0x4b7102
+  4b70f1:	c6 87 d7 00 00 00 00 	mov    BYTE PTR [edi+0xd7],0x0
+  4b70f8:	c6 87      	mov    BYTE PTR [edi+0xd8],0x0
+
+### ENCODER#06 completion=0x004B71AC window=0x004B7164..0x004B71CC
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7164 <.text+0xb6164>:
+  4b7164:	00 00                	add    BYTE PTR [eax],al
+  4b7166:	00 57 e8             	add    BYTE PTR [edi-0x18],dl
+  4b7169:	e3 68                	jecxz  0x4b71d3
+  4b716b:	00 00                	add    BYTE PTR [eax],al
+  4b716d:	59                   	pop    ecx
+  4b716e:	c6 87 d6 00 00 00 01 	mov    BYTE PTR [edi+0xd6],0x1
+  4b7175:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b7178:	8a 87 72 01 00 00    	mov    al,BYTE PTR [edi+0x172]
+  4b717e:	88 81 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],al
+  4b7184:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b7187:	8b 57 5e             	mov    edx,DWORD PTR [edi+0x5e]
+  4b718a:	8a 8f 73 01 00 00    	mov    cl,BYTE PTR [edi+0x173]
+  4b7190:	88 8a a8 a7 4f 00    	mov    BYTE PTR [edx+0x4fa7a8],cl
+  4b7196:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b7199:	8b 47 62             	mov    eax,DWORD PTR [edi+0x62]
+  4b719c:	8a 97 74 01 00 00    	mov    dl,BYTE PTR [edi+0x174]
+  4b71a2:	88 94 07 e0 00 00 00 	mov    BYTE PTR [edi+eax*1+0xe0],dl
+  4b71a9:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b71ac:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b71b0:	ff 47 76             	inc    DWORD PTR [edi+0x76]
+  4b71b3:	ff 47 7a             	inc    DWORD PTR [edi+0x7a]
+  4b71b6:	8b 4f 76             	mov    ecx,DWORD PTR [edi+0x76]
+  4b71b9:	a1 68 03 56 00       	mov    eax,ds:0x560368
+  4b71be:	3b c8                	cmp    ecx,eax
+  4b71c0:	7c 11                	jl     0x4b71d3
+  4b71c2:	c6 87 d7 00 00 00 00 	mov    BYTE PTR [edi+0xd7],0x0
+  4b71c9:	c6 87 d8     	mov    BYTE PTR [edi+0xd8],0x0
+
+### ENCODER#07 completion=0x004B7490 window=0x004B7448..0x004B74B0
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7448 <.text+0xb6448>:
+  4b7448:	01 00                	add    DWORD PTR [eax],eax
+  4b744a:	00 8a 97 44 01 00    	add    BYTE PTR [edx+0x14497],cl
+  4b7450:	00 88 97 73 01 00    	add    BYTE PTR [eax+0x17397],cl
+  4b7456:	00 c6                	add    dh,al
+  4b7458:	87 d6                	xchg   esi,edx
+  4b745a:	00 00                	add    BYTE PTR [eax],al
+  4b745c:	00 01                	add    BYTE PTR [ecx],al
+  4b745e:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b7461:	8a 87 72 01 00 00    	mov    al,BYTE PTR [edi+0x172]
+  4b7467:	88 81 a8 a7 4f 00    	mov    BYTE PTR [ecx+0x4fa7a8],al
+  4b746d:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b7470:	8b 57 5e             	mov    edx,DWORD PTR [edi+0x5e]
+  4b7473:	8a 8f 73 01 00 00    	mov    cl,BYTE PTR [edi+0x173]
+  4b7479:	88 8a a8 a7 4f 00    	mov    BYTE PTR [edx+0x4fa7a8],cl
+  4b747f:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b7482:	8b 47 62             	mov    eax,DWORD PTR [edi+0x62]
+  4b7485:	c6 84 07 e0 00 00 00 	mov    BYTE PTR [edi+eax*1+0xe0],0x0
+  4b748c:	00 
+  4b748d:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b7490:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b7494:	8b 57 76             	mov    edx,DWORD PTR [edi+0x76]
+  4b7497:	c1 e2 02             	shl    edx,0x2
+  4b749a:	8b ca                	mov    ecx,edx
+  4b749c:	c1 e1 02             	shl    ecx,0x2
+  4b749f:	8d 0c 49             	lea    ecx,[ecx+ecx*2]
+  4b74a2:	81 c1 63 03 53 00    	add    ecx,0x530363
+  4b74a8:	51                   	push   ecx
+  4b74a9:	8d 87 a1 12 00 00    	lea    eax,[edi+0x12a1]
+  4b74af:	50                   	push   eax
+
+### ENCODER#08 completion=0x004B755E window=0x004B7516..0x004B757E
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7516 <.text+0xb6516>:
+  4b7516:	00 00                	add    BYTE PTR [eax],al
+  4b7518:	6a 01                	push   0x1
+  4b751a:	68 00 04 00 00       	push   0x400
+  4b751f:	ff 36                	push   DWORD PTR [esi]
+  4b7521:	e8 22 48 01 00       	call   0x4cbd48
+  4b7526:	83 c4 10             	add    esp,0x10
+  4b7529:	c6 87 d6 00 00 00 01 	mov    BYTE PTR [edi+0xd6],0x1
+  4b7530:	8b 4f 5e             	mov    ecx,DWORD PTR [edi+0x5e]
+  4b7533:	c6 81 a8 a7 4f 00 00 	mov    BYTE PTR [ecx+0x4fa7a8],0x0
+  4b753a:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b753d:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b7540:	c6 80 a8 a7 4f 00 00 	mov    BYTE PTR [eax+0x4fa7a8],0x0
+  4b7547:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b754a:	8b 57 62             	mov    edx,DWORD PTR [edi+0x62]
+  4b754d:	c6 84 17 e0 00 00 00 	mov    BYTE PTR [edi+edx*1+0xe0],0x0
+  4b7554:	00 
+  4b7555:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b7558:	ff 47 76             	inc    DWORD PTR [edi+0x76]
+  4b755b:	ff 47 7a             	inc    DWORD PTR [edi+0x7a]
+  4b755e:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b7562:	8b 4f 76             	mov    ecx,DWORD PTR [edi+0x76]
+  4b7565:	a1 68 03 56 00       	mov    eax,ds:0x560368
+  4b756a:	3b c8                	cmp    ecx,eax
+  4b756c:	7c 11                	jl     0x4b757f
+  4b756e:	c6 87 d7 00 00 00 00 	mov    BYTE PTR [edi+0xd7],0x0
+  4b7575:	c6 87 d8 00 00 00 00 	mov    BYTE PTR [edi+0xd8],0x0
+  4b757c:	ff 4f              	dec    DWORD PTR [edi+0x76]
+
+### ENCODER#09 completion=0x004B7622 window=0x004B75DA..0x004B7642
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b75da <.text+0xb65da>:
+  4b75da:	6a 01                	push   0x1
+  4b75dc:	68 00 04 00 00       	push   0x400
+  4b75e1:	ff 36                	push   DWORD PTR [esi]
+  4b75e3:	e8 60 47 01 00       	call   0x4cbd48
+  4b75e8:	83 c4 10             	add    esp,0x10
+  4b75eb:	8b 57 5e             	mov    edx,DWORD PTR [edi+0x5e]
+  4b75ee:	8a 8f 72 01 00 00    	mov    cl,BYTE PTR [edi+0x172]
+  4b75f4:	88 8a a8 a7 4f 00    	mov    BYTE PTR [edx+0x4fa7a8],cl
+  4b75fa:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b75fd:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b7600:	8a 97 73 01 00 00    	mov    dl,BYTE PTR [edi+0x173]
+  4b7606:	88 90 a8 a7 4f 00    	mov    BYTE PTR [eax+0x4fa7a8],dl
+  4b760c:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b760f:	8b 4f 62             	mov    ecx,DWORD PTR [edi+0x62]
+  4b7612:	8a 87 74 01 00 00    	mov    al,BYTE PTR [edi+0x174]
+  4b7618:	88 84 0f e0 00 00 00 	mov    BYTE PTR [edi+ecx*1+0xe0],al
+  4b761f:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b7622:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b7626:	8b 97 76 01 00 00    	mov    edx,DWORD PTR [edi+0x176]
+  4b762c:	4a                   	dec    edx
+  4b762d:	0f 8e 9f 00 00 00    	jle    0x4b76d2
+  4b7633:	68 70 17 00 00       	push   0x1770
+  4b7638:	6a 01                	push   0x1
+  4b763a:	68 00 04 00 00       	push   0x400
+  4b763f:	ff 36                	push   DWORD PTR [esi]
+  4b7641:	e8           	call   0x4cbd48
+
+### ENCODER#10 completion=0x004B7680 window=0x004B7638..0x004B76A0
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b7638 <.text+0xb6638>:
+  4b7638:	6a 01                	push   0x1
+  4b763a:	68 00 04 00 00       	push   0x400
+  4b763f:	ff 36                	push   DWORD PTR [esi]
+  4b7641:	e8 02 47 01 00       	call   0x4cbd48
+  4b7646:	83 c4 10             	add    esp,0x10
+  4b7649:	8a 8f 4e 01 00 00    	mov    cl,BYTE PTR [edi+0x14e]
+  4b764f:	84 c9                	test   cl,cl
+  4b7651:	74 33                	je     0x4b7686
+  4b7653:	8b 47 5e             	mov    eax,DWORD PTR [edi+0x5e]
+  4b7656:	c6 80 a8 a7 4f 00 80 	mov    BYTE PTR [eax+0x4fa7a8],0x80
+  4b765d:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b7660:	8b 57 5e             	mov    edx,DWORD PTR [edi+0x5e]
+  4b7663:	8a 8f 75 01 00 00    	mov    cl,BYTE PTR [edi+0x175]
+  4b7669:	88 8a a8 a7 4f 00    	mov    BYTE PTR [edx+0x4fa7a8],cl
+  4b766f:	ff 47 5e             	inc    DWORD PTR [edi+0x5e]
+  4b7672:	8b 47 62             	mov    eax,DWORD PTR [edi+0x62]
+  4b7675:	c6 84 07 e0 00 00 00 	mov    BYTE PTR [edi+eax*1+0xe0],0x0
+  4b767c:	00 
+  4b767d:	ff 47 62             	inc    DWORD PTR [edi+0x62]
+  4b7680:	83 47 56 02          	add    DWORD PTR [edi+0x56],0x2
+  4b7684:	eb 4c                	jmp    0x4b76d2
+  4b7686:	8a 97 4a 01 00 00    	mov    dl,BYTE PTR [edi+0x14a]
+  4b768c:	84 d2                	test   dl,dl
+  4b768e:	74 17                	je     0x4b76a7
+  4b7690:	8a 8f 4f 01 00 00    	mov    cl,BYTE PTR [edi+0x14f]
+  4b7696:	84 c9                	test   cl,cl
+  4b7698:	74 0d                	je     0x4b76a7
+  4b769a:	8a 9f 4f 01 00 00    	mov    bl,BYTE PTR [edi+0x14f]
+
+ADDRESS BYTE CONSTRUCTION
+--------------------------------------------------------------------------------------------
+
+src/OpenLadderStudio.Desktop/pc12.exe:     file format pei-i386
+
+
+Disassembly of section .text:
+
+004b78e0 <.text+0xb68e0>:
+  4b78e0:	c4 08                	les    ecx,FWORD PTR [eax]
+  4b78e2:	8a 95 b0 fe ff ff    	mov    dl,BYTE PTR [ebp-0x150]
+  4b78e8:	88 97 6e 12 00 00    	mov    BYTE PTR [edi+0x126e],dl
+  4b78ee:	57                   	push   edi
+  4b78ef:	e8 10 65 00 00       	call   0x4bde04
+  4b78f4:	59                   	pop    ecx
+  4b78f5:	8b 8f 82 01 00 00    	mov    ecx,DWORD PTR [edi+0x182]
+  4b78fb:	c1 e1 04             	shl    ecx,0x4
+  4b78fe:	89 4f 6a             	mov    DWORD PTR [edi+0x6a],ecx
+  4b7901:	8a 85 b1 fe ff ff    	mov    al,BYTE PTR [ebp-0x14f]
+  4b7907:	88 87 6e 12 00 00    	mov    BYTE PTR [edi+0x126e],al
+  4b790d:	57                   	push   edi
+  4b790e:	e8 f1 64 00 00       	call   0x4bde04
+  4b7913:	59                   	pop    ecx
+  4b7914:	8b 97 82 01 00 00    	mov    edx,DWORD PTR [edi+0x182]
+  4b791a:	01 57 6a             	add    DWORD PTR [edi+0x6a],edx
+  4b791d:	8a 8d b2 fe ff ff    	mov    cl,BYTE PTR [ebp-0x14e]
+  4b7923:	88 8f 6e 12 00 00    	mov    BYTE PTR [edi+0x126e],cl
+  4b7929:	57                   	push   edi
+  4b792a:	e8 d5 64 00 00       	call   0x4bde04
+  4b792f:	59                   	pop    ecx
+  4b7930:	8b 87 82 01 00 00    	mov    eax,DWORD PTR [edi+0x182]
+  4b7936:	c1 e0 04             	shl    eax,0x4
+  4b7939:	89 47 6e             	mov    DWORD PTR [edi+0x6e],eax
+  4b793c:	8a 95 b3 fe ff ff    	mov    dl,BYTE PTR [ebp-0x14d]
+  4b7942:	88 97 6e 12 00 00    	mov    BYTE PTR [edi+0x126e],dl
+  4b7948:	57                   	push   edi
+  4b7949:	e8 b6 64 00 00       	call   0x4bde04
+  4b794e:	59                   	pop    ecx
+  4b794f:	8b 8f 82 01 00 00    	mov    ecx,DWORD PTR [edi+0x182]
+  4b7955:	01 4f 6e             	add    DWORD PTR [edi+0x6e],ecx
+
 KNOWN CONSUMERS AT 0x004B7958
   +0x56 -> TX[1] formula and TX[5]
   +0x5E -> destination index while copying body; later checksum index
   +0x62 -> number of bytes copied from object +0xE0
   +0x6A -> TX[3]
   +0x6E -> TX[4]
+
+STATIC EXPECTATION TO VERIFY IN WINDOWS
+  +0x5E starts at 6; +0x56 and +0x62 start at 0 for each chunk.
+  If every encoded step writes 2 bytes directly at TX[+0x5E], increments +0x5E twice,
+  appends one external byte to object+0xE0, increments +0x62 once, and +0x56 by 2,
+  then the 0x33 body geometry 2*N HIGH/LOW + N EXTERNAL is statically closed.
 
 GUARDRAIL: this trace establishes static data flow only; it never executes a write.
