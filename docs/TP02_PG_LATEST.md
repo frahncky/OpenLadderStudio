@@ -2,6 +2,11 @@
 
 > Estado canônico em 2026-09-11 após a captura física de instruções variáveis, paginação READ-ONLY do `34`, reconstrução OFFLINE do `Write PLC Program`/PG33 e validação física completa do PG33 e restauração confirmada no PC12.
 
+Visão geral em uma página, com a anatomia dos quadros, o diagrama de sessão e a
+geometria de programa dos dois protocolos: `docs/protocolo-pg-tp02.html`. É
+apresentação derivada deste documento, não evidência — quando os dois divergirem,
+este aqui vale.
+
 ## Ambiente e segurança
 
 ```text
