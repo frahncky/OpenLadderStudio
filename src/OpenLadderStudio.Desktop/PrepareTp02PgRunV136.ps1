@@ -2,18 +2,18 @@ $ErrorActionPreference = 'Stop'
 
 # V136: primeira validacao fisica controlada do RUN no protocolo PG.
 #
-# A analise estatica reproduzivel do pc12.exe mapeou:
+# Evidencia estatica reproduzivel do pc12.exe:
 #   0x0046F4FA -> quadro 02 00 FD
 #   chamadores em 0x004AE5DC..0x004AE836
-#   string de resultado no mesmo handler: "PLC Mode: Running"
+#   o mesmo handler referencia "PLC Mode: Running"
 #
-# Isso e evidencia estatica forte, mas NAO e validacao fisica. Por isso o RUN:
-# - exige conexao previa e requalifica STOP por HELLO+F0 na mesma porta aberta;
+# Isso ainda NAO e validacao fisica. O caminho RUN portanto:
+# - exige conexao previa e requalifica STOP por HELLO+F0;
 # - pede confirmacao explicita sobre energizacao de saidas;
 # - transmite 02 00 FD exatamente UMA vez;
-# - nunca retransmite o RUN, mesmo se a verificacao falhar;
-# - confirma o resultado somente por HELLO conhecido (C0 01 09 35 = RUN);
-# - se o estado final ficar desconhecido, invalida a conexao logica da tela.
+# - nunca retransmite RUN automaticamente;
+# - confirma sucesso somente por HELLO conhecido (C0 01 09 35 = RUN);
+# - invalida a conexao logica se o estado final ficar desconhecido.
 # STOP permanece protegido e sem TX nesta versao.
 
 $shellPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
@@ -29,11 +29,11 @@ function Replace-Section([string]$text, [string]$startAnchor, [string]$endAnchor
 }
 
 # -----------------------------------------------------------------------------
-# 1. Substitui apenas o handler protegido RUN/STOP da janela PG.
-# STOP conserva o comportamento anterior sem TX. RUN ganha o ensaio one-shot.
+# 1. Substitui somente o handler RUN/STOP. O decoder READ V132, inserido logo
+# depois desse metodo, deve permanecer intacto.
 # -----------------------------------------------------------------------------
 $runStart = '        private void ShowPgRunStopPendingV125(string action)'
-$runEnd = '        private ProgramSnapshot ReadCanonicalSnapshotOnOpenPort'
+$runEnd = '        private sealed class V132ReadWord'
 $runReplacement = @'
         private bool runAttemptedV136;
         private string runResultStateV136 = "CANCELLED";
@@ -140,8 +140,7 @@ $runReplacement = @'
                         runAttemptedV136 = true;
                         AppendLogSafe("V136 RUN TX UNICO: 02 00 FD");
 
-                        // Somente escuta passiva. O conteudo recebido aqui nao confirma RUN;
-                        // a confirmacao e feita exclusivamente pelo HELLO conhecido abaixo.
+                        // Escuta apenas para diagnostico. Este RX nunca e criterio de sucesso.
                         Thread.Sleep(220);
                         try
                         {
@@ -227,7 +226,7 @@ $runReplacement = @'
 
                 if (failure != null)
                 {
-                    resultState = sent ? "UNKNOWN" : "STOP";
+                    resultState = "UNKNOWN";
                     resultText = (sent
                         ? "O quadro RUN foi transmitido UMA UNICA VEZ, mas ocorreu falha antes da confirmacao do estado."
                         : "RUN NAO TRANSMITIDO: o preflight falhou antes do comando de mudanca de estado.")
@@ -270,8 +269,9 @@ $runReplacement = @'
 $shell = Replace-Section $shell $runStart $runEnd $runReplacement 'RUN one-shot V136'
 
 # -----------------------------------------------------------------------------
-# 2. A tela principal so muda o indicador para RUN depois do resultado do HELLO.
-# Se o TX ocorreu e o estado ficou desconhecido, a conexao logica e invalidada.
+# 2. A tela principal so muda para RUN depois do HELLO de verificacao. Qualquer
+# estado desconhecido invalida a conexao logica para impedir operacoes em estado
+# presumido.
 # -----------------------------------------------------------------------------
 $homeStart = '        private void ExecuteTp02HomeCommandV126(string command)'
 $homeEnd = '        private MenuStrip BuildMenu()'
@@ -361,9 +361,11 @@ $homeReplacement = @'
                         : "TP02 permanece em STOP";
                     return;
                 }
-                if (runAttempted && string.Equals(runResult, "UNKNOWN", StringComparison.Ordinal))
+                if (string.Equals(runResult, "UNKNOWN", StringComparison.Ordinal))
                 {
-                    ResetTp02HomeConnectionV128("Estado do TP02 desconhecido apos tentativa unica de RUN; conecte novamente.");
+                    ResetTp02HomeConnectionV128(runAttempted
+                        ? "Estado do TP02 desconhecido apos tentativa unica de RUN; conecte novamente."
+                        : "Nao foi possivel requalificar o estado do TP02; conecte novamente.");
                     return;
                 }
             }
