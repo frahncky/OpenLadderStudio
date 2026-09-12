@@ -48,7 +48,10 @@ apenas 7 dos 33 tópicos e passa a impressão falsa de que o arquivo é pequeno.
 posições do WinHelp são `TOPICPOS = (bloco << 14) | offset`, com o offset contado
 desde o início do bloco de 4096 bytes, cabeçalho de 12 bytes incluído. O critério
 de parada correto é a contagem de entradas do `|TTLBTREE` — 33, que é exatamente
-o número de cabeçalhos de tópico encontrados pelo walk correto.
+o número de cabeçalhos de tópico encontrados pelo walk correto. Vale **só** para
+conferir a contagem: as chaves do `|TTLBTREE` são `TOPICOFFSET`, espaço de
+endereço distinto do `TOPICPOS`, então casar os dois por posição erra em
+praticamente toda entrada. O título de cada tópico sai do próprio `TOPICHEADER`.
 
 Reproduzir:
 
@@ -110,8 +113,11 @@ que o programa original sabe executar contra o PLC:
  7 Set RTC              14 Set TimeOut Value
 ```
 
-Isso **fecha o espaço de comandos a investigar**: nenhuma outra operação de PG
-existe no produto original. Também explica o contexto de string
+Isso **delimita o que o operador podia acionar** — e não o conjunto das trocas
+do protocolo. Um item de menu pode gastar várias trocas, e existem trocas sem
+item de menu nenhum: o handshake e o `F0` são exatamente isso. A lista orienta
+a investigação dos opcodes ainda não atribuídos; não a encerra. Também explica
+o contexto de string
 `Compare PLC Program...` que a varredura de quadros já encontrara nos sítios do
 `34` — comparar programa é uma leitura do `34` seguida de comparação local, não
 um comando próprio.

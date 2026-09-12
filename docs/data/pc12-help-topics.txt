@@ -8,7 +8,8 @@ bitmaps: 75 (|bm0..|bm74)
   |SYSTEM LCID       10 bytes
   |SYSTEM CharSet    8 bytes
 
-topicos: 33   titulos em |TTLBTREE: 33
+topicos: 33   com titulo no cabecalho: 0
+|TTLBTREE: 33 entradas, chaveadas por TOPICOFFSET (espaco distinto do TOPICPOS)
 
 ====================================================================================================
 TEXTO DOS TOPICOS
@@ -154,61 +155,62 @@ bitmaps: 0
   |SYSTEM LCID       10 bytes
   |SYSTEM CharSet    3 bytes
 
-topicos: 14   titulos em |TTLBTREE: 14
+topicos: 14   com titulo no cabecalho: 13
+|TTLBTREE: 14 entradas, chaveadas por TOPICOFFSET (espaco distinto do TOPICPOS)
 
 ====================================================================================================
 TEXTO DOS TOPICOS
 ====================================================================================================
 
----------- topico 0  TOPICPOS=12  
+---------- topico 0  TOPICPOS=12  OK Button
 Hit1
 Application Instruction(Please press mouse right button for learn how to work).
 
----------- topico 1  TOPICPOS=232  
+---------- topico 1  TOPICPOS=232  Cancel Button
 Hit02
 Fast select to Application Instructions.
 
----------- topico 2  TOPICPOS=418  
+---------- topico 2  TOPICPOS=418  Edit Box
 Hit03
 Operand (Coil).
 
----------- topico 3  TOPICPOS=574  
+---------- topico 3  TOPICPOS=574  List Box
 Hit04
 Operand (S1).
 
----------- topico 4  TOPICPOS=728  
+---------- topico 4  TOPICPOS=728  Edit2
 Hit05
 Operand (S2).
 
----------- topico 5  TOPICPOS=879  
+---------- topico 5  TOPICPOS=879  Edit2
 Hit06
 Operand (D).
 
----------- topico 6  TOPICPOS=1029  
+---------- topico 6  TOPICPOS=1029  Edit2
 Hit07
 Symbol of Operand (Coil).
 
----------- topico 7  TOPICPOS=1192  
+---------- topico 7  TOPICPOS=1192  Edit2
 Hit08
 Symbol of Operand (S1).
 
----------- topico 8  TOPICPOS=1353  
+---------- topico 8  TOPICPOS=1353  Edit2
 Hit09
 Symbol of Operand (S2).
 
----------- topico 9  TOPICPOS=1514  
+---------- topico 9  TOPICPOS=1514  Edit2
 Hit10
 Symbol of Operand (D).
 
----------- topico 10  TOPICPOS=1674  
+---------- topico 10  TOPICPOS=1674  Edit2
 Hit11
 Select Time has reset coil or not.
 
----------- topico 11  TOPICPOS=1846  
+---------- topico 11  TOPICPOS=1846  Edit2
 Hit12
 Operand (S).
 
----------- topico 12  TOPICPOS=1996  
+---------- topico 12  TOPICPOS=1996  Edit2
 Hit13
 Symbol of Operand (S).
 
