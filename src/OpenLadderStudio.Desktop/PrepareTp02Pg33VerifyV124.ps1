@@ -7,6 +7,7 @@ $v127 = Join-Path $PSScriptRoot 'PrepareTp02FastPgV127.ps1'
 $v128 = Join-Path $PSScriptRoot 'PrepareTp02ConnectFirstV128.ps1'
 $v129 = Join-Path $PSScriptRoot 'PrepareUiPolishV129.ps1'
 $v129n = Join-Path $PSScriptRoot 'PrepareUiPolishV129Normalize.ps1'
+$v129i = Join-Path $PSScriptRoot 'PrepareUiPolishV129InteractionRepair.ps1'
 
 if (-not (Test-Path -LiteralPath $core)) { throw 'PrepareTp02Pg33VerifyV124Core.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v125)) { throw 'PrepareTp02PgControlV125.ps1 nao encontrado.' }
@@ -15,6 +16,7 @@ if (-not (Test-Path -LiteralPath $v127)) { throw 'PrepareTp02FastPgV127.ps1 nao 
 if (-not (Test-Path -LiteralPath $v128)) { throw 'PrepareTp02ConnectFirstV128.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v129)) { throw 'PrepareUiPolishV129.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v129n)) { throw 'PrepareUiPolishV129Normalize.ps1 nao encontrado.' }
+if (-not (Test-Path -LiteralPath $v129i)) { throw 'PrepareUiPolishV129InteractionRepair.ps1 nao encontrado.' }
 
 & $core
 & $v125
@@ -23,3 +25,4 @@ if (-not (Test-Path -LiteralPath $v129n)) { throw 'PrepareUiPolishV129Normalize.
 & $v128
 & $v129
 & $v129n
+& $v129i
