@@ -1,10 +1,29 @@
 using System;
+using System.Collections.Generic;
 
 namespace OpenLadderStudio.Core
 {
     /// <summary>Quadros curtos PG reconstruídos do PC12 v2.1. Não realiza I/O.</summary>
     internal static class Tp02PgProtocol
     {
+        internal sealed class CommandInfo
+        {
+            internal readonly string Code;
+            internal readonly string Frame;
+            internal readonly string Function;
+            internal readonly string Evidence;
+            internal readonly bool TransmitAllowed;
+
+            internal CommandInfo(string code, string frame, string function, string evidence, bool transmitAllowed)
+            {
+                Code = code;
+                Frame = frame;
+                Function = function;
+                Evidence = evidence;
+                TransmitAllowed = transmitAllowed;
+            }
+        }
+
         internal static readonly byte[] ProgramMode = BuildShortFrame(0x01);
         internal static readonly byte[] Run = BuildShortFrame(0x02);
         internal static readonly byte[] Candidate03 = BuildShortFrame(0x03);
@@ -12,6 +31,30 @@ namespace OpenLadderStudio.Core
         internal static readonly byte[] ClearAllMemory = BuildShortFrame(0x0F);
         internal static readonly byte[] Candidate11 = BuildShortFrame(0x11);
         internal static readonly byte[] Presence = BuildShortFrame(0xF0);
+
+        internal static IList<CommandInfo> GetCommandCatalog()
+        {
+            return new List<CommandInfo>
+            {
+                new CommandInfo("HELLO", "CON-ICB<CR>", "Iniciar comunicação PG", "Confirmado no PC12 e no TP02", true),
+                new CommandInfo("01", "01 00 FE", "Program/STOP", "PC12; validação física pendente", false),
+                new CommandInfo("02", "02 00 FD", "RUN", "PC12; TX único com confirmação por HELLO", true),
+                new CommandInfo("03", "03 00 FC", "Função desconhecida", "Quadro extraído do PC12", false),
+                new CommandInfo("04", "04 00 FB", "Função desconhecida", "Quadro extraído do PC12", false),
+                new CommandInfo("09", "09 LEN ... CHK", "Acesso variável: memória/senha", "Semântica parcial", false),
+                new CommandInfo("0A", "0A 03 END QTD CHK", "Leitura de áreas/sistema", "PC12; leitura parametrizada", false),
+                new CommandInfo("0F", "0F 00 F0", "Apagar toda a memória", "Clear All Memory confirmado no PC12", false),
+                new CommandInfo("11", "11 00 EE", "Função desconhecida", "Quadro extraído do PC12", false),
+                new CommandInfo("13", "13 00 EC", "Senha/validação", "Contexto de senha no PC12", false),
+                new CommandInfo("14", "14 00 EB", "Consulta/tratamento de senha", "Contexto de senha no PC12", false),
+                new CommandInfo("33", "33 LEN ... CHK", "Gravar programa", "Construtor original emulado offline", false),
+                new CommandInfo("34", "34 03 END QTD CHK", "Ler programa", "Confirmado no PC12 e em bancada", true),
+                new CommandInfo("35", "35 03 ... CHK", "Função desconhecida", "Quadro parametrizado extraído", false),
+                new CommandInfo("37", "37 02 FF FF C8", "Atualizar BIOS/firmware", "Contexto BIOS Refresh no PC12", false),
+                new CommandInfo("38", "38 00 C7", "Metadados/preâmbulo do programa", "Confirmado no fluxo de leitura", true),
+                new CommandInfo("F0", "F0 00 0F", "Status/preflight da conexão", "Confirmado no PC12 e no TP02", true)
+            }.AsReadOnly();
+        }
 
         internal static byte[] BuildShortFrame(byte command)
         {
