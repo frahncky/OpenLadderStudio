@@ -610,7 +610,8 @@ documentação do fabricante no repositório. O que eles acrescentam ao trabalho
 de PG:
 
 ```text
-o menu PLC tem exatamente 14 operações; o espaço de comandos a investigar é fechado
+o menu PLC tem exatamente 14 operações acionáveis pelo operador
+isso orienta a busca mas não fecha o espaço de comandos: handshake e F0 não têm item de menu
 Password protege RUN!/STOP!/READ/WRITE e a gravação em EEPROM
 Compare Program é leitura por 34 mais comparação local, não comando próprio
 capacidade: 1.5K palavras no módulo 20/28 e 4K no 40/60

@@ -31,7 +31,9 @@ Metodo
 
 Percorrer o |TOPIC linearmente, ignorando a codificacao por bloco, recupera
 apenas os primeiros topicos e da a impressao falsa de que o arquivo e pequeno.
-A contagem de topicos confere com o numero de entradas de |TTLBTREE.
+O numero de entradas do |TTLBTREE serve de conferencia para a contagem de
+topicos -- so a contagem: as chaves do |TTLBTREE sao TOPICOFFSET, espaco de
+endereco distinto do TOPICPOS, entao nao casam por posicao.
 
 Este script apenas le os arquivos de ajuda. Nao executa nada e nao os modifica.
 """
@@ -172,7 +174,14 @@ class WinHelp(object):
             pos = next_pos
 
     def titles(self):
-        """Titulos de topico do |TTLBTREE (estrutura 'Lz': TOPICPOS + STRINGZ)."""
+        """Titulos do |TTLBTREE (estrutura 'Lz': TOPICOFFSET + STRINGZ).
+
+        Cuidado: a chave e TOPICOFFSET, que conta apenas caracteres de texto
+        decodificado, e nao o TOPICPOS de armazenamento devolvido por
+        topic_links(). Sao dois espacos de endereco distintos: casar um pelo
+        outro erra em praticamente toda entrada. Por isso o titulo de cada
+        topico vem do proprio TOPICHEADER, nao daqui.
+        """
         if '|TTLBTREE' not in self.files:
             return {}
         raw = self.internal('|TTLBTREE')
@@ -191,12 +200,16 @@ class WinHelp(object):
         return out
 
     def topics(self):
-        """Agrupa os TOPICLINK em topicos: [(TOPICPOS, titulo, [paragrafos])]."""
-        titles = self.titles()
+        """Agrupa os TOPICLINK em topicos: [(TOPICPOS, titulo, [paragrafos])].
+
+        O titulo sai do LinkData2 do proprio TOPICHEADER, que e onde o WinHelp
+        guarda o nome do topico. Ver a ressalva em titles() sobre o |TTLBTREE.
+        """
         out = []
         for record_type, _link1, link2, pos in self.topic_links():
             if record_type == RECORD_TOPIC_HEADER:
-                out.append((pos, titles.get(pos, ''), []))
+                title = link2.split(b'\0')[0].decode('latin-1') if link2 else ''
+                out.append((pos, title, []))
             elif record_type in (RECORD_TEXT, RECORD_TABLE) and out:
                 text = link2.decode('latin-1').replace('\0', '')
                 if text.strip():
@@ -294,7 +307,10 @@ def report(path, dump_bitmaps=None):
 
     topics = hlp.topics()
     lines.append('')
-    lines.append('topicos: %d   titulos em |TTLBTREE: %d' % (len(topics), len(hlp.titles())))
+    with_title = sum(1 for _pos, title, _paragraphs in topics if title)
+    lines.append('topicos: %d   com titulo no cabecalho: %d' % (len(topics), with_title))
+    lines.append('|TTLBTREE: %d entradas, chaveadas por TOPICOFFSET (espaco distinto do TOPICPOS)'
+                 % len(hlp.titles()))
     lines.append('')
     lines.append('=' * 100)
     lines.append('TEXTO DOS TOPICOS')
