@@ -14,6 +14,7 @@ CANDIDATES = {
     0x0046F4FA: '02 00 FD',
     0x0046F570: '01 00 FE',
 }
+KEYS = ('RUN','STOP','PLC','REMOTE','START','PROGRAM','MONITOR')
 
 def pe_sections(data):
     pe = struct.unpack_from('<I', data, 0x3C)[0]
@@ -33,13 +34,6 @@ def f2va(off, base, secs):
             return base+va+(off-ra)
     return None
 
-def va2f(va, base, secs):
-    rva=va-base
-    for _,sva,vs,ra,rs in secs:
-        if sva <= rva < sva+rs:
-            return ra+(rva-sva)
-    return None
-
 def text_range(base,secs):
     for name,va,vs,ra,rs in secs:
         if name=='.text': return ra,ra+rs,base+va-ra
@@ -55,50 +49,49 @@ def find_calls(data,start,end,delta,target):
     return hits
 
 def function_start(data, off, floor):
-    # Old VC/MFC code in this image commonly uses push ebp / mov ebp,esp.
     for back in range(0,6000):
         o=off-back
         if o < floor+3: break
         if data[o:o+3] == b'\x55\x8b\xec': return o
     return None
 
-def strings(data, base, secs):
+def next_function_start(data, off, ceiling, max_forward=10000):
+    top=min(ceiling,off+max_forward)
+    p=data.find(b'\x55\x8b\xec',off+3,top)
+    return p if p >= 0 else top
+
+def all_strings(data, base, secs):
     out=[]
     for m in re.finditer(rb'[ -~]{4,}\x00', data):
         raw=m.group()[:-1]
         txt=raw.decode('latin-1','replace')
-        if any(k in txt.upper() for k in ('RUN','STOP','PLC','REMOTE','START')):
-            va=f2va(m.start(),base,secs)
-            if va is not None: out.append((m.start(),va,txt))
+        va=f2va(m.start(),base,secs)
+        if va is not None: out.append((m.start(),va,txt))
     return out
 
-def refs_to_va(blob, start, end, va):
-    needle=struct.pack('<I',va)
-    pos=start; hits=[]
+def refs_to_va(blob,start,end,va):
+    needle=struct.pack('<I',va); pos=start; hits=[]
     while True:
         p=blob.find(needle,pos,end)
         if p<0: break
         hits.append(p); pos=p+1
     return hits
 
-def nearby_ascii(data, center, radius=2500):
-    lo=max(0,center-radius); hi=min(len(data),center+radius)
-    vals=[]
-    for m in re.finditer(rb'[ -~]{5,}\x00', data[lo:hi]):
-        s=m.group()[:-1].decode('latin-1','replace')
-        if any(k in s.upper() for k in ('RUN','STOP','PLC','PASSWORD','ERROR','CONNECT')):
-            vals.append(s)
-    return vals[:30]
+def hex_window(data,off,before=40,after=72):
+    lo=max(0,off-before); hi=min(len(data),off+after)
+    return lo, ' '.join('%02X'%b for b in data[lo:hi])
 
 def main():
     data=BIN.read_bytes(); base,secs=pe_sections(data)
     ts,te,delta=text_range(base,secs)
-    strs=strings(data,base,secs)
-    print('PC12 RUN/STOP static cross-reference report')
-    print('binary:', BIN, 'size=',len(data),'imagebase=0x%08X'%base)
+    strs=all_strings(data,base,secs)
+    relevant=[x for x in strs if any(k in x[2].upper() for k in KEYS)]
+    print('PC12 RUN/STOP static cross-reference report v2')
+    print('binary:',BIN,'size=',len(data),'imagebase=0x%08X'%base)
     print('\nRelevant strings with mapped VA:')
-    for _,va,s in strs[:200]: print('  0x%08X  %s'%(va,s))
+    for _,va,s in relevant[:240]: print('  0x%08X  %s'%(va,s))
 
+    seen_functions=set()
     print('\nCandidate short-frame builders and callers:')
     for target,frame in CANDIDATES.items():
         calls=find_calls(data,ts,te,delta,target)
@@ -107,14 +100,28 @@ def main():
             fs=function_start(data,fo,ts)
             if fs is None:
                 print('  call=0x%08X function=?'%site); continue
-            fva=fs+delta
-            # Limit context to the next 8 KB; string xrefs are exact immediates.
-            fend=min(te,fs+8192)
-            exact=[]
-            for _,sva,s in strs:
-                if refs_to_va(data,fs,fend,sva): exact.append(s)
-            print('  call=0x%08X function=0x%08X'%(site,fva))
-            for s in exact[:20]: print('    xref-string:',s)
-            for s in nearby_ascii(data,fo): print('    nearby-string:',s)
+            fe=next_function_start(data,fs,te)
+            fva=fs+delta; feva=fe+delta
+            print('  call=0x%08X function=0x%08X..0x%08X'%(site,fva,feva))
+            # Show exact string-reference sites in execution-address order.
+            refs=[]
+            for _,sva,s in relevant:
+                for p in refs_to_va(data,fs,fe,sva): refs.append((p+delta,sva,s))
+            for xva,sva,s in sorted(refs):
+                print('    xref@0x%08X -> 0x%08X  %s'%(xva,sva,s))
+            lo,h=hex_window(data,fo)
+            print('    bytes@0x%08X: %s'%(lo+delta,h))
+            seen_functions.add((fs,fe))
+
+    # Full ordered event list for the small adjacent mode-control functions.
+    print('\nOrdered events per unique candidate caller function:')
+    for fs,fe in sorted(seen_functions):
+        print('\n  FUNCTION 0x%08X..0x%08X'%(fs+delta,fe+delta))
+        events=[]
+        for target,frame in CANDIDATES.items():
+            for fo,site in find_calls(data,fs,fe,delta,target): events.append((site,'CALL '+frame))
+        for _,sva,s in relevant:
+            for p in refs_to_va(data,fs,fe,sva): events.append((p+delta,'STR '+s))
+        for va,label in sorted(events): print('    0x%08X  %s'%(va,label))
 
 if __name__=='__main__': main()
