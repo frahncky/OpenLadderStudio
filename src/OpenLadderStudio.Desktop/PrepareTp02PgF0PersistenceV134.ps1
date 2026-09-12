@@ -234,30 +234,48 @@ $acqReplacement = @'
             }
 
             AppendLogSafe("V132 FALLBACK: qualificacao conservadora V127.");
-            SerialPort fallback = AcquireStablePgPortConservativeV127(portName, round,
-                out state, out acquisitionLabel);
-            if (fallback != null)
+
+            // AcquireStablePgPortConservativeV127 nunca devolve null: quando nenhum
+            // perfil qualifica, ele lanca TimeoutException com uma mensagem generica
+            // que nao distingue "HELLO nunca respondeu" de "HELLO respondeu STOP e o
+            // F0 ficou mudo". Essa distincao e o que decide se a proxima investigacao
+            // e de cabo/conversor ou do preflight F0 desta unidade, e e exatamente o
+            // que pgLastQualifyReasonV134 carrega. Por isso a excecao e traduzida
+            // aqui, em vez de um throw depois da chamada, que seria inalcancavel.
+            try
             {
-                RememberPgProfileV132(portName, fallback.DtrEnable, fallback.RtsEnable,
-                    "19200 8O1 DTR=" + (fallback.DtrEnable ? "on" : "off")
-                    + " RTS=" + (fallback.RtsEnable ? "on" : "off"));
-                acquisitionLabel += " / memorizado V132";
-                return fallback;
+                SerialPort fallback = AcquireStablePgPortConservativeV127(portName, round,
+                    out state, out acquisitionLabel);
+                if (fallback != null)
+                {
+                    RememberPgProfileV132(portName, fallback.DtrEnable, fallback.RtsEnable,
+                        "19200 8O1 DTR=" + (fallback.DtrEnable ? "on" : "off")
+                        + " RTS=" + (fallback.RtsEnable ? "on" : "off"));
+                    acquisitionLabel += " / memorizado V132";
+                    return fallback;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new IOException(DescribePgQualifyFailureV134(portName, round, ex.Message), ex);
             }
 
-            // Antes daqui a rotina devolvia null com state vazio, e cada consumidor
-            // caia no seu proprio if (state != "STOP") anunciando "PLC esta em RUN".
-            // Todos os chamadores envolvem esta chamada em try/catch e registram
-            // ex.Message, portanto o motivo verdadeiro chega ao operador.
-            state = string.Empty;
-            acquisitionLabel = string.Empty;
+            throw new IOException(DescribePgQualifyFailureV134(portName, round, string.Empty));
+        }
+
+        private static string DescribePgQualifyFailureV134(string portName, int round,
+            string innerMessage)
+        {
             string reason = string.IsNullOrEmpty(pgLastQualifyReasonV134)
-                ? "nenhum perfil DTR/RTS respondeu."
+                ? "nenhum perfil DTR/RTS respondeu ao HELLO."
                 : pgLastQualifyReasonV134;
-            throw new IOException("Enlace PG n\u00e3o qualificou em " + portName
+            string text = "Enlace PG n\u00e3o qualificou em " + portName
                 + " (rodada " + round.ToString(CultureInfo.InvariantCulture) + "). " + reason
-                + "\r\nIsto n\u00e3o informa o modo do PLC: o estado s\u00f3 \u00e9 declarado"
-                + " depois de HELLO e F0 responderem na mesma porta aberta.");
+                + "\r\nO estado do PLC s\u00f3 \u00e9 declarado depois de HELLO e F0"
+                + " responderem na mesma porta aberta.";
+            if (!string.IsNullOrEmpty(innerMessage))
+                text += "\r\nDetalhe do fallback conservador: " + innerMessage;
+            return text;
         }
 
 '@
