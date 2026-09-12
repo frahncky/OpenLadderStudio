@@ -11,6 +11,8 @@ on:
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
       - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat'
       - '.github/workflows/validate-tp02-emulator.yml'
   workflow_dispatch:
 
@@ -26,7 +28,8 @@ jobs:
         run: |
           $files = @(
             'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1',
-            'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
+            'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1',
+            'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
           )
           foreach ($file in $files) {
             $errors = $null
@@ -61,3 +64,18 @@ jobs:
           $exe = 'src/OpenLadderStudio.Desktop/OpenLadderTP02Emulator.exe'
           if (-not (Test-Path $exe)) { throw "Executavel nao foi gerado: $exe" }
           Write-Host "OK: $exe"
+
+      - name: Package RUN STOP discovery bench
+        uses: actions/upload-artifact@v4
+        with:
+          name: tp02-pg-run-stop-discovery
+          path: |
+            src/OpenLadderStudio.Desktop/OpenLadderTP02Emulator.exe
+            src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1
+            src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat
+            src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat
+            src/OpenLadderStudio.Desktop/TP02PgEmulator.cs
+            src/OpenLadderStudio.Desktop/TP02PgReadback.cs
+            src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt
+            src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1
+          if-no-files-found: error
