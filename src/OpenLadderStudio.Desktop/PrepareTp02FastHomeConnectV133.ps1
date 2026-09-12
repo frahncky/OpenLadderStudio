@@ -166,7 +166,6 @@ $replacement = @'
 '@
 
 $shell = Replace-Section $shell $start $end $replacement 'TryHomeConnectV128'
-$shell = $shell.Replace('    |    v1.31";', '    |    v1.33";')
 
 [System.IO.File]::WriteAllText($shellPath, $shell, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host 'TP02 Fast Home Connect V133 aplicado: CONECTAR usa HELLO rapido; operacoes mantem qualificacao completa.' -ForegroundColor Cyan

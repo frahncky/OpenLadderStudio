@@ -282,7 +282,6 @@ $acqReplacement = @'
 
 $shell = Replace-Section $shell $acqStart $acqEnd $acqReplacement 'AcquireStablePgPortV93 falha descritiva'
 
-$shell = $shell.Replace('    |    v1.33";', '    |    v1.34";')
 
 [System.IO.File]::WriteAllText($shellPath, $shell, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host 'TP02 PG F0 Persistence V134 aplicado: F0 com 4 tentativas/3600ms no perfil qualificado; falha de enlace deixa de ser reportada como PLC em RUN.' -ForegroundColor Cyan
