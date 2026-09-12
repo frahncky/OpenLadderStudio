@@ -20,6 +20,10 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
+      - name: Mapear candidatos RUN STOP do PC12
+        shell: cmd
+        run: python scripts\analyze_pc12_runstop.py
+
       - name: Validar metadados e estrutura
         shell: powershell
         run: .\scripts\ValidateProject.ps1
