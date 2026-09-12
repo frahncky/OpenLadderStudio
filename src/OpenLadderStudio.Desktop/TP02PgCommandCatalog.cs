@@ -9,6 +9,8 @@ namespace ModernPC12
     {
         internal TP02PgCommandCatalogForm()
         {
+            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleDimensions = new SizeF(6.0f, 13.0f);
             Text = "OpenLadder Studio - Comandos PG do PC12";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(900, 520);
@@ -57,6 +59,7 @@ namespace ModernPC12
             grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 54, 78);
             grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             grid.EnableHeadersVisualStyles = false;
 
             foreach (Tp02PgProtocol.CommandInfo info in Tp02PgProtocol.GetCommandCatalog())
