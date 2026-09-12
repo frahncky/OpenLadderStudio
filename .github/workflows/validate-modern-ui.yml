@@ -20,6 +20,198 @@ jobs:
       - name: Baixar repositório
         uses: actions/checkout@v4
 
-      - name: Mapear candidatos RUN STOP do PC12
+      - name: Validar metadados e estrutura
+        shell: powershell
+        run: .\scripts\ValidateProject.ps1
+
+      - name: Compilar OpenLadder Studio e ferramentas
         shell: cmd
-        run: python scripts\analyze_pc12_runstop.py
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          call Build.bat
+          if errorlevel 1 exit /b 1
+          call BuildTp02Lab.bat
+          if errorlevel 1 exit /b 1
+          if not exist OpenLadderStudio.ico exit /b 1
+          if not exist OpenLadderStudio.icon.png exit /b 1
+          if not exist OpenLadderStudio.exe exit /b 1
+          if not exist OpenLadderEditor.exe exit /b 1
+          if not exist OpenLadderDeviceManager.exe exit /b 1
+          if not exist OpenLadderModbus.exe exit /b 1
+          if not exist OpenLadderMemoryMap.exe exit /b 1
+          if not exist OpenLadderUpdater.exe exit /b 1
+          if not exist OpenLadderTP02PgLab.exe exit /b 1
+          if not exist OpenLadderTP02Capture.exe exit /b 1
+          if not exist OpenLadderSimulator.exe exit /b 1
+          if not exist OpenLadderSimTest.exe exit /b 1
+          if not exist OpenLadderCoreTest.exe exit /b 1
+          if not exist TP02-PG-Tests.json exit /b 1
+
+      - name: Executar autotestes do núcleo
+        shell: cmd
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          OpenLadderCoreTest.exe
+          if errorlevel 1 exit /b 1
+          OpenLadderSimTest.exe
+          if errorlevel 1 exit /b 1
+
+      - name: Testar inicialização da interface
+        shell: powershell
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          $logDir = Join-Path $env:APPDATA 'OpenLadder Studio\logs'
+          if (Test-Path $logDir) { Remove-Item $logDir -Recurse -Force }
+
+          $process = $null
+          try {
+            $process = Start-Process -FilePath '.\OpenLadderStudio.exe' -PassThru
+            Start-Sleep -Seconds 5
+
+            $failureLogs = @()
+            if (Test-Path $logDir) {
+              $failureLogs = @(Get-ChildItem $logDir -Filter 'falhas-*.log' -File -ErrorAction SilentlyContinue)
+            }
+
+            if ($failureLogs.Count -gt 0) {
+              foreach ($log in $failureLogs) {
+                Write-Host "===== $($log.FullName) ====="
+                Get-Content $log.FullName
+              }
+              throw 'OpenLadder Studio registrou exceção durante a inicialização da interface.'
+            }
+
+            if ($process.HasExited) {
+              throw "OpenLadder Studio encerrou inesperadamente durante o teste de inicialização. ExitCode=$($process.ExitCode)"
+            }
+
+            Write-Host 'Inicialização da interface validada sem exceções.'
+          }
+          finally {
+            if ($null -ne $process -and -not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
+
+      - name: Preparar instalador
+        shell: powershell
+        run: .\scripts\PrepareInstaller.ps1
+
+      - name: Instalar Inno Setup 6 se necessário
+        shell: powershell
+        run: |
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
+          if (-not (Test-Path $iscc)) { throw 'ISCC.exe não encontrado.' }
+
+      - name: Gerar instalador
+        shell: cmd
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\OpenLadderStudio.build.iss"
+
+      - name: Gerar SHA-256
+        shell: powershell
+        run: |
+          $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  OpenLadder-Studio-Setup.exe" | Set-Content -Encoding ASCII 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
+
+      - name: Publicar aplicativo
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenLadder-Studio
+          path: |
+            src/OpenLadderStudio.Desktop/OpenLadderStudio.ico
+            src/OpenLadderStudio.Desktop/OpenLadderStudio.icon.png
+            src/OpenLadderStudio.Desktop/OpenLadderStudio.exe
+            src/OpenLadderStudio.Desktop/OpenLadderEditor.exe
+            src/OpenLadderStudio.Desktop/OpenLadderDeviceManager.exe
+            src/OpenLadderStudio.Desktop/OpenLadderModbus.exe
+            src/OpenLadderStudio.Desktop/OpenLadderMemoryMap.exe
+            src/OpenLadderStudio.Desktop/OpenLadderUpdater.exe
+            src/OpenLadderStudio.Desktop/OpenLadderTP02PgLink.exe
+            src/OpenLadderStudio.Desktop/OpenLadderTP02Capture.exe
+            src/OpenLadderStudio.Desktop/OpenLadderTP02PgLab.exe
+            src/OpenLadderStudio.Desktop/OpenLadderSimulator.exe
+            src/OpenLadderStudio.Desktop/TP02-PG-Tests.json
+            src/OpenLadderStudio.Desktop/version.txt
+
+      - name: Publicar instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenLadder-Studio-Setup
+          path: |
+            installer/output/OpenLadder-Studio-Setup.exe
+            installer/output/OpenLadder-Studio-Setup.exe.sha256
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Baixar instalador
+        uses: actions/download-artifact@v4
+        with:
+          name: OpenLadder-Studio-Setup
+          path: installer/output
+
+      - name: Publicar Release para atualização automática
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Get-Content 'src\OpenLadderStudio.Desktop\version.txt').Trim()
+          if ([string]::IsNullOrWhiteSpace($version)) { throw 'version.txt está vazio.' }
+          $tag = "v$version"
+          $setup = 'installer\output\OpenLadder-Studio-Setup.exe'
+          $sha = 'installer\output\OpenLadder-Studio-Setup.exe.sha256'
+          $title = "OpenLadder Studio v$version"
+
+          $aTilde = [char]0x00E3
+          $notes = "OpenLadder Studio v$version. Consulte as notas da vers${aTilde}o para os detalhes."
+          $versionedNotes = "docs\releases\v$version.md"
+          if (Test-Path $versionedNotes) {
+            $notes = [System.IO.File]::ReadAllText((Resolve-Path $versionedNotes).Path, [System.Text.Encoding]::UTF8).Trim()
+          }
+          elseif (Test-Path 'CHANGELOG.md') {
+            $changePath = (Resolve-Path 'CHANGELOG.md').Path
+            $change = [System.IO.File]::ReadAllText($changePath, [System.Text.Encoding]::UTF8)
+            $escaped = [Regex]::Escape($version)
+            $match = [Regex]::Match($change, "(?ms)^## \[$escaped\][^\r\n]*\r?\n(.*?)(?=^## \[|\z)")
+            if ($match.Success -and -not [string]::IsNullOrWhiteSpace($match.Groups[1].Value)) {
+              $notes = $match.Groups[1].Value.Trim()
+            }
+          }
+
+          $notesFile = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          [System.IO.File]::WriteAllText($notesFile, $notes, (New-Object System.Text.UTF8Encoding($false)))
+
+          function Update-ExistingRelease {
+            gh release upload $tag $setup $sha --clobber --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) { throw 'Falha ao enviar arquivos da release existente.' }
+            gh release edit $tag --title $title --notes-file $notesFile --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) { throw 'Falha ao atualizar metadados da release existente.' }
+          }
+
+          cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
+          if ($LASTEXITCODE -eq 0) {
+            Update-ExistingRelease
+          }
+          else {
+            gh release create $tag $setup $sha --target $env:GITHUB_SHA --title $title --notes-file $notesFile --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) {
+              Start-Sleep -Seconds 2
+              cmd /c "gh release view $tag --repo $env:GITHUB_REPOSITORY >nul 2>&1"
+              if ($LASTEXITCODE -eq 0) {
+                Update-ExistingRelease
+              }
+              else {
+                throw 'Não foi possível criar nem localizar a release.'
+              }
+            }
+          }
