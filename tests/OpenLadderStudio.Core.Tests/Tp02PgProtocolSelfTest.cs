@@ -36,6 +36,10 @@ internal static class Tp02PgProtocolSelfTest
         System.Collections.Generic.IList<Tp02PgProtocol.CommandInfo> catalog = Tp02PgProtocol.GetCommandCatalog();
         Check(catalog.Count == 17, "catálogo completo com handshake e 16 opcodes");
         Check(catalog[0].Code == "HELLO" && catalog[16].Code == "F0", "ordem estável do catálogo");
+        Check(catalog[3].Function.IndexOf("gravar programa", StringComparison.OrdinalIgnoreCase) >= 0,
+            "03 associado ao preflight de escrita sem promover TX");
+        Check(catalog[6].Function.IndexOf("V, D, WC, FILE", StringComparison.Ordinal) >= 0,
+            "0A cataloga as áreas de leitura encontradas");
         int allowed = 0;
         for (int i = 0; i < catalog.Count; i++) if (catalog[i].TransmitAllowed) allowed++;
         Check(allowed == 5, "somente cinco operações qualificadas para TX");
