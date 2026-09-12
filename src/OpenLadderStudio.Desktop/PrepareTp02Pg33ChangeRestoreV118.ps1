@@ -257,7 +257,7 @@ $methods = @'
         {
             ProgramSnapshot s = new ProgramSnapshot();
             s.PlcState = "STOP";
-            // PG33 EXTERNAL sera forçado a 00 pelo builder validado.
+            // PG33 EXTERNAL sera forcado a 00 pelo builder validado.
             // Estes terceiros bytes sao BRAW esperados na leitura 34.
             s.High.Add(0x00); s.Low.Add(0x10); s.External.Add(0x01); // STR X0001
             s.High.Add(0x20); s.Low.Add(0x40); s.External.Add(0x06); // OUT Y0001

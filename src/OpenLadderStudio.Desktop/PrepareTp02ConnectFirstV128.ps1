@@ -231,7 +231,7 @@ $barReplacement = @'
                 }
                 else
                 {
-                    tp02ConnectionLabelV128.Text = "CONECTADO  " + tp02HomePortV128 + "  •  " + tp02HomeStateV128;
+                    tp02ConnectionLabelV128.Text = "CONECTADO  " + tp02HomePortV128 + "  |  " + tp02HomeStateV128;
                     tp02ConnectionLabelV128.ForeColor = Accent;
                 }
             }

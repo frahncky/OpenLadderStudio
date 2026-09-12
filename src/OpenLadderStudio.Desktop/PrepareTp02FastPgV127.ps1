@@ -435,7 +435,7 @@ $readReplacement = @'
 $shell = Replace-Block $shell $readStart $readEnd $readReplacement 'ReadSnapshot fast v1.27'
 
 # Identificacao visual e logs da nova camada; STOP/RUN permanecem sem TX.
-$shell = $shell.Replace('TP02 / TP-232PG";', 'TP02 / TP-232PG  •  FAST";')
+$shell = $shell.Replace('TP02 / TP-232PG";', 'TP02 / TP-232PG  |  FAST";')
 $shell = $shell.Replace('STOP / RUN protegidos ate validacao fisica', 'FAST PG ativo  |  STOP / RUN protegidos ate validacao fisica')
 $shell = $shell.Replace('PG READ v1.25 iniciado em ', 'PG READ FAST v1.27 iniciado em ')
 $shell = $shell.Replace('PG33 READBACK-ONLY VERIFY v1.24 iniciado em ', 'PG33 READBACK-ONLY VERIFY FAST v1.27 iniciado em ')

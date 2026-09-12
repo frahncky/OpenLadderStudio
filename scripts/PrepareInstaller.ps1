@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $versionPath = Join-Path $repoRoot 'src\OpenLadderStudio.Desktop\version.txt'

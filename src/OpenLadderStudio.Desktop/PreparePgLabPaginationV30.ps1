@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $path = Join-Path (Get-Location) 'TP02PgLab.build.cs'
 if (-not (Test-Path $path)) { throw 'TP02PgLab.build.cs nao encontrado.' }
