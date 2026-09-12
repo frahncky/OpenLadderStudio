@@ -1,6 +1,5 @@
 param(
-    [ValidateSet('STOP','RUN','BOTH')]
-    [string]$Action = 'BOTH',
+    [ValidateSet('STOP','RUN','BOTH')][string]$Action = 'BOTH',
     [string]$Port = '',
     [int]$TimeoutSeconds = 120,
     [switch]$Rebuild
@@ -11,198 +10,141 @@ $ErrorActionPreference = 'Stop'
 $base = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $base
 
-function Write-Banner([string]$text) {
+function Banner([string]$text) {
     Write-Host ''
     Write-Host '============================================================'
     Write-Host (' TP02 PG - ' + $text)
     Write-Host '============================================================'
 }
 
-function Get-Hex([byte[]]$bytes) {
-    if ($null -eq $bytes -or $bytes.Length -eq 0) { return '' }
-    return (($bytes | ForEach-Object { $_.ToString('X2') }) -join ' ')
+function Hex([byte[]]$data) {
+    return (($data | ForEach-Object { $_.ToString('X2') }) -join ' ')
 }
 
-function Get-FrameInfo([string]$path, [string]$label) {
-    [byte[]]$bytes = [IO.File]::ReadAllBytes($path)
-    if ($bytes.Length -lt 3) { throw "Quadro curto demais em $path" }
+function Snapshot([string]$dir) {
+    $h = @{}
+    if (Test-Path $dir) {
+        Get-ChildItem -LiteralPath $dir -Filter '*-unknown-*.bin' -ErrorAction SilentlyContinue | ForEach-Object {
+            $h[$_.FullName.ToLowerInvariant()] = $true
+        }
+    }
+    return $h
+}
 
+function Decode([string]$path, [string]$label) {
+    [byte[]]$b = [IO.File]::ReadAllBytes($path)
+    if ($b.Length -lt 3) { throw "Quadro curto: $path" }
     $sum = 0
-    foreach ($b in $bytes) { $sum = ($sum + [int]$b) -band 0xFF }
-
-    $payloadLength = [int]$bytes[1]
-    $expectedTotal = $payloadLength + 3
-
+    foreach ($x in $b) { $sum = ($sum + [int]$x) -band 0xFF }
     return New-Object PSObject -Property @{
         Label = $label
         Path = $path
-        Command = [int]$bytes[0]
-        PayloadLength = $payloadLength
-        TotalLength = $bytes.Length
-        ExpectedTotalLength = $expectedTotal
+        Command = [int]$b[0]
+        PayloadLength = [int]$b[1]
+        TotalLength = $b.Length
         ChecksumOk = ($sum -eq 0xFF)
-        Hex = Get-Hex $bytes
-        Bytes = $bytes
+        Hex = Hex $b
     }
 }
 
-function Get-UnknownSnapshot([string]$captureDir) {
-    $seen = @{}
-    if (Test-Path $captureDir) {
-        Get-ChildItem -LiteralPath $captureDir -Filter '*-unknown-*.bin' -ErrorAction SilentlyContinue | ForEach-Object {
-            $seen[$_.FullName.ToLowerInvariant()] = $true
-        }
-    }
-    return $seen
-}
+function Capture([string]$label, [string]$portName, [string]$exe, [string]$dir) {
+    Banner ('CAPTURA ' + $label)
+    Write-Host ('Emulador na ' + $portName + '; PC12 na outra ponta do par virtual.')
+    Write-Host ('No PC12 original, execute SOMENTE ' + $label + ' agora.')
+    Write-Host 'Nenhum opcode desconhecido recebera ACK nesta captura.'
 
-function Wait-NewUnknown([string]$captureDir, [hashtable]$before, [int]$timeoutSeconds) {
-    $deadline = (Get-Date).AddSeconds($timeoutSeconds)
-    while ((Get-Date) -lt $deadline) {
-        if (Test-Path $captureDir) {
-            $candidate = Get-ChildItem -LiteralPath $captureDir -Filter '*-unknown-*.bin' -ErrorAction SilentlyContinue |
+    $before = Snapshot $dir
+    $p = Start-Process -FilePath $exe -ArgumentList @($portName,'--no-auto-ack','--pg33-ack') -PassThru -NoNewWindow
+    try {
+        $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+        $found = $null
+        while ((Get-Date) -lt $deadline -and $null -eq $found) {
+            $found = Get-ChildItem -LiteralPath $dir -Filter '*-unknown-*.bin' -ErrorAction SilentlyContinue |
                 Sort-Object LastWriteTime -Descending |
                 Where-Object { -not $before.ContainsKey($_.FullName.ToLowerInvariant()) } |
                 Select-Object -First 1
-            if ($null -ne $candidate) { return $candidate.FullName }
+            if ($null -eq $found) { Start-Sleep -Milliseconds 200 }
         }
-        Start-Sleep -Milliseconds 200
-    }
-    return $null
-}
-
-function Capture-Action([string]$label, [string]$portName, [string]$emulatorExe, [string]$captureDir, [int]$timeoutSeconds) {
-    Write-Banner ("CAPTURA " + $label)
-    Write-Host ('PC12 deve estar configurado na outra ponta do par virtual. Emulador: ' + $portName)
-    Write-Host ('Agora, no PC12 original, execute SOMENTE o comando ' + $label + '.')
-    Write-Host 'Nao execute READ, WRITE ou outro comando durante esta fase.'
-    Write-Host 'O emulador NAO respondera a opcode desconhecido; ele apenas capturara o quadro.'
-    Write-Host ''
-
-    $before = Get-UnknownSnapshot $captureDir
-    $args = @($portName, '--no-auto-ack', '--pg33-ack')
-    $process = Start-Process -FilePath $emulatorExe -ArgumentList $args -PassThru -NoNewWindow
-
-    try {
-        $path = Wait-NewUnknown $captureDir $before $timeoutSeconds
-        if ($null -eq $path) {
-            throw ("Nenhum quadro desconhecido foi capturado em {0} s durante {1}." -f $timeoutSeconds,$label)
-        }
-
-        Start-Sleep -Milliseconds 350
-        try {
-            if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
-        } catch { }
-
-        $info = Get-FrameInfo $path $label
-        Write-Host ''
-        Write-Host ('CAPTURADO ' + $label + ':')
-        Write-Host ('  CMD          : 0x{0:X2}' -f $info.Command)
-        Write-Host ('  LEN          : {0}' -f $info.PayloadLength)
-        Write-Host ('  Total        : {0} byte(s)' -f $info.TotalLength)
-        Write-Host ('  Checksum FF  : {0}' -f $(if ($info.ChecksumOk) { 'OK' } else { 'ERRO' }))
-        Write-Host ('  HEX          : ' + $info.Hex)
-        return $info
+        if ($null -eq $found) { throw ("Timeout aguardando quadro desconhecido de " + $label) }
+        Start-Sleep -Milliseconds 250
+        $r = Decode $found.FullName $label
+        Write-Host ('CMD=0x{0:X2} LEN={1} CHECKSUM={2}' -f $r.Command,$r.PayloadLength,$(if ($r.ChecksumOk) {'OK'} else {'ERRO'}))
+        Write-Host ('HEX=' + $r.Hex)
+        return $r
     }
     finally {
-        try {
-            if ($null -ne $process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
-        } catch { }
-        Start-Sleep -Milliseconds 300
+        try { if ($null -ne $p -and -not $p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue } } catch { }
+        Start-Sleep -Milliseconds 250
     }
 }
 
-if ($TimeoutSeconds -lt 10 -or $TimeoutSeconds -gt 600) {
-    throw 'TimeoutSeconds deve estar entre 10 e 600.'
-}
+if ($TimeoutSeconds -lt 10 -or $TimeoutSeconds -gt 600) { throw 'TimeoutSeconds deve estar entre 10 e 600.' }
 
 $build = Join-Path $base 'BuildTp02Emulator.bat'
-$emulator = Join-Path $base 'OpenLadderTP02Emulator.exe'
-$captureDir = Join-Path $base 'tp02-emulator-captures'
+$exe = Join-Path $base 'OpenLadderTP02Emulator.exe'
+$dir = Join-Path $base 'tp02-emulator-captures'
+[IO.Directory]::CreateDirectory($dir) | Out-Null
 
-if (-not (Test-Path $build)) { throw "BuildTp02Emulator.bat nao encontrado em $base" }
-
-if ($Rebuild -or -not (Test-Path $emulator)) {
-    Write-Host 'Compilando emulador TP02...'
+if ($Rebuild -or -not (Test-Path $exe)) {
     & $build
-    if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar OpenLadderTP02Emulator.exe.' }
+    if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar o emulador.' }
 }
-
-if (-not (Test-Path $emulator)) { throw 'OpenLadderTP02Emulator.exe nao foi encontrado apos o build.' }
+if (-not (Test-Path $exe)) { throw 'OpenLadderTP02Emulator.exe nao encontrado.' }
 
 if ([string]::IsNullOrWhiteSpace($Port)) {
-    $Port = (Read-Host 'Informe a porta COM VIRTUAL usada pelo emulador, por exemplo COM11').Trim()
+    $Port = (Read-Host 'COM VIRTUAL usada pelo emulador (ex.: COM11)').Trim()
 }
 if ([string]::IsNullOrWhiteSpace($Port)) { throw 'Porta COM nao informada.' }
 
-Directory::CreateDirectory($captureDir) | Out-Null
-
 $results = @()
-if ($Action -eq 'STOP' -or $Action -eq 'BOTH') {
-    $results += Capture-Action 'STOP' $Port $emulator $captureDir $TimeoutSeconds
-}
+if ($Action -eq 'STOP' -or $Action -eq 'BOTH') { $results += Capture 'STOP' $Port $exe $dir }
 if ($Action -eq 'BOTH') {
     Write-Host ''
-    Write-Host 'Prepare o PC12 para uma nova conexao com a mesma COM virtual.'
-    Write-Host 'Pressione ENTER quando estiver pronto para a captura de RUN.'
-    [void](Read-Host)
+    Write-Host 'Reabra/reconecte o PC12 na mesma porta virtual se necessario.'
+    [void](Read-Host 'Pressione ENTER para iniciar a fase RUN')
 }
-if ($Action -eq 'RUN' -or $Action -eq 'BOTH') {
-    $results += Capture-Action 'RUN' $Port $emulator $captureDir $TimeoutSeconds
-}
+if ($Action -eq 'RUN' -or $Action -eq 'BOTH') { $results += Capture 'RUN' $Port $exe $dir }
 
-$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$reportPath = Join-Path $captureDir ("TP02-PG-RUNSTOP-DISCOVERY-" + $stamp + '.txt')
 $report = New-Object Text.StringBuilder
-[void]$report.AppendLine('TP02 PG - descoberta controlada de RUN/STOP')
-[void]$report.AppendLine(('Data: ' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')))
-[void]$report.AppendLine(('Porta do emulador: ' + $Port))
-[void]$report.AppendLine('Metodo: PC12 original -> COM virtual -> OpenLadder TP02 Emulator')
-[void]$report.AppendLine('Seguranca: nenhum quadro desta rotina foi enviado ao PLC fisico.')
-[void]$report.AppendLine('Resposta para opcode desconhecido: DESABILITADA (--no-auto-ack).')
+[void]$report.AppendLine('TP02 PG - RUN/STOP discovery')
+[void]$report.AppendLine(('Data=' + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')))
+[void]$report.AppendLine(('EmulatorPort=' + $Port))
+[void]$report.AppendLine('PhysicalPLC=NO')
+[void]$report.AppendLine('UnknownAck=OFF')
 [void]$report.AppendLine('')
-
 foreach ($r in $results) {
     [void]$report.AppendLine(('[' + $r.Label + ']'))
     [void]$report.AppendLine(('CMD=0x{0:X2}' -f $r.Command))
     [void]$report.AppendLine(('LEN=' + $r.PayloadLength))
     [void]$report.AppendLine(('TOTAL=' + $r.TotalLength))
-    [void]$report.AppendLine(('EXPECTED_TOTAL=' + $r.ExpectedTotalLength))
-    [void]$report.AppendLine(('CHECKSUM_FF=' + $(if ($r.ChecksumOk) { 'OK' } else { 'ERRO' })))
+    [void]$report.AppendLine(('CHECKSUM_FF=' + $(if ($r.ChecksumOk) {'OK'} else {'ERRO'})))
     [void]$report.AppendLine(('HEX=' + $r.Hex))
     [void]$report.AppendLine(('FILE=' + $r.Path))
     [void]$report.AppendLine('')
 }
 
 if ($results.Count -eq 2) {
-    $stop = $results | Where-Object { $_.Label -eq 'STOP' } | Select-Object -First 1
-    $run = $results | Where-Object { $_.Label -eq 'RUN' } | Select-Object -First 1
-    if ($null -ne $stop -and $null -ne $run) {
-        [void]$report.AppendLine('[COMPARACAO]')
-        [void]$report.AppendLine(('CMD_STOP=0x{0:X2}' -f $stop.Command))
-        [void]$report.AppendLine(('CMD_RUN=0x{0:X2}' -f $run.Command))
-        [void]$report.AppendLine(('OPCODE_IGUAL=' + $(if ($stop.Command -eq $run.Command) { 'SIM' } else { 'NAO' })))
-        [void]$report.AppendLine(('FRAME_IGUAL=' + $(if ($stop.Hex -eq $run.Hex) { 'SIM' } else { 'NAO' })))
-        if ($stop.Command -eq $run.Command -and $stop.Hex -ne $run.Hex) {
-            [void]$report.AppendLine('OBS=RUN e STOP usam o mesmo opcode; a diferenca esta no payload/quadro.')
-        }
-        elseif ($stop.Command -ne $run.Command) {
-            [void]$report.AppendLine('OBS=RUN e STOP aparentam usar opcodes distintos.')
-        }
-        else {
-            [void]$report.AppendLine('OBS=Frames identicos; a captura precisa ser repetida antes de qualquer implementacao.')
-        }
-        [void]$report.AppendLine('')
+    $s = $results | Where-Object { $_.Label -eq 'STOP' } | Select-Object -First 1
+    $r = $results | Where-Object { $_.Label -eq 'RUN' } | Select-Object -First 1
+    [void]$report.AppendLine('[COMPARE]')
+    [void]$report.AppendLine(('CMD_STOP=0x{0:X2}' -f $s.Command))
+    [void]$report.AppendLine(('CMD_RUN=0x{0:X2}' -f $r.Command))
+    [void]$report.AppendLine(('SAME_OPCODE=' + $(if ($s.Command -eq $r.Command) {'YES'} else {'NO'})))
+    [void]$report.AppendLine(('SAME_FRAME=' + $(if ($s.Hex -eq $r.Hex) {'YES'} else {'NO'})))
+    if ($s.Command -eq $r.Command -and $s.Hex -ne $r.Hex) {
+        [void]$report.AppendLine('NOTE=Mesmo opcode; RUN/STOP diferem no payload.')
+    } elseif ($s.Command -ne $r.Command) {
+        [void]$report.AppendLine('NOTE=RUN/STOP aparentam usar opcodes distintos.')
+    } else {
+        [void]$report.AppendLine('NOTE=Frames identicos; repetir captura antes de implementar.')
     }
+    [void]$report.AppendLine('')
 }
 
-[void]$report.AppendLine('[PROXIMO PASSO]')
-[void]$report.AppendLine('Nao adicionar regra de resposta nem implementar no PLC fisico apenas com esta captura.')
-[void]$report.AppendLine('Primeiro confirmar o quadro e a resposta esperada em nova captura/analise do PC12; depois validar uma vez no TP02 fisico.')
+[void]$report.AppendLine('NEXT=Nao enviar estes quadros ao PLC fisico ainda. Primeiro confirmar resposta/semantica; depois implementar no OpenLadder e validar uma vez em bancada.')
+$reportPath = Join-Path $dir ('TP02-PG-RUNSTOP-DISCOVERY-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.txt')
+[IO.File]::WriteAllText($reportPath,$report.ToString(),[Text.Encoding]::UTF8)
 
-[IO.File]::WriteAllText($reportPath, $report.ToString(), [Text.Encoding]::UTF8)
-
-Write-Banner 'CAPTURA CONCLUIDA'
+Banner 'CONCLUIDO'
 Write-Host ('Relatorio: ' + $reportPath)
-Write-Host ''
 Write-Host $report.ToString()
