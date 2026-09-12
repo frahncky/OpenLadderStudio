@@ -33,6 +33,12 @@ internal static class Tp02PgProtocolSelfTest
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Candidate03), "03 bloqueado");
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Candidate04), "04 bloqueado");
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Candidate11), "11 bloqueado");
+        System.Collections.Generic.IList<Tp02PgProtocol.CommandInfo> catalog = Tp02PgProtocol.GetCommandCatalog();
+        Check(catalog.Count == 17, "catálogo completo com handshake e 16 opcodes");
+        Check(catalog[0].Code == "HELLO" && catalog[16].Code == "F0", "ordem estável do catálogo");
+        int allowed = 0;
+        for (int i = 0; i < catalog.Count; i++) if (catalog[i].TransmitAllowed) allowed++;
+        Check(allowed == 5, "somente cinco operações qualificadas para TX");
         byte[] copy = Tp02PgProtocol.Copy(Tp02PgProtocol.Run);
         copy[0] = 0xFF;
         Check(Tp02PgProtocol.Run[0] == 0x02, "cópia defensiva");
