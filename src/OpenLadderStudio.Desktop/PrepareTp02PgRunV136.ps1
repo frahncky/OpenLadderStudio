@@ -133,7 +133,8 @@ $runReplacement = @'
                         if (!string.Equals(initialState, "STOP", StringComparison.Ordinal))
                             throw new InvalidOperationException("RUN recusado: o preflight nao confirmou STOP nem RUN.");
 
-                        byte[] runFrame = new byte[] { 0x02, 0x00, 0xFD };
+                        byte[] runFrame = OpenLadderStudio.Core.Tp02PgProtocol.Copy(
+                            OpenLadderStudio.Core.Tp02PgProtocol.Run);
                         serial.DiscardInBuffer();
                         serial.Write(runFrame, 0, runFrame.Length);
                         sent = true;
