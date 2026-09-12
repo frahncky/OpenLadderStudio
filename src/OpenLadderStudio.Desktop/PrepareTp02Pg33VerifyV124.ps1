@@ -12,6 +12,7 @@ $v132return = Join-Path $PSScriptRoot 'PrepareTp02ReadReturnV132.ps1'
 $v133 = Join-Path $PSScriptRoot 'PrepareTp02FastHomeConnectV133.ps1'
 $v134 = Join-Path $PSScriptRoot 'PrepareTp02PgF0PersistenceV134.ps1'
 $v135 = Join-Path $PSScriptRoot 'PrepareTp02BarVersionV135.ps1'
+$v136 = Join-Path $PSScriptRoot 'PrepareTp02PgRunV136.ps1'
 
 if (-not (Test-Path -LiteralPath $core)) { throw 'PrepareTp02Pg33VerifyV124Core.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v125)) { throw 'PrepareTp02PgControlV125.ps1 nao encontrado.' }
@@ -25,6 +26,7 @@ if (-not (Test-Path -LiteralPath $v132return)) { throw 'PrepareTp02ReadReturnV13
 if (-not (Test-Path -LiteralPath $v133)) { throw 'PrepareTp02FastHomeConnectV133.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v134)) { throw 'PrepareTp02PgF0PersistenceV134.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v135)) { throw 'PrepareTp02BarVersionV135.ps1 nao encontrado.' }
+if (-not (Test-Path -LiteralPath $v136)) { throw 'PrepareTp02PgRunV136.ps1 nao encontrado.' }
 
 & $core
 & $v125
@@ -37,4 +39,5 @@ if (-not (Test-Path -LiteralPath $v135)) { throw 'PrepareTp02BarVersionV135.ps1 
 & $v132return
 & $v133
 & $v134
+& $v136
 & $v135
