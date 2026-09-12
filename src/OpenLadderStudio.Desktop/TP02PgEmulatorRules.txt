@@ -7,6 +7,13 @@
 # Regras so devem ser adicionadas depois que o opcode aparecer em captura do PC12.
 # O build injeta estas regras no switch do emulador sem alterar TP02PgEmulator.cs.
 #
+# Para descobrir RUN/STOP sem tocar no PLC fisico, execute:
+#   DiscoverTp02PgRunStop.bat
+# A rotina usa PC12 original + par COM virtual + emulador com --no-auto-ack,
+# captura STOP e RUN separadamente e gera TP02-PG-RUNSTOP-DISCOVERY-*.txt.
+# Nao copie automaticamente os candidatos para este arquivo: primeiro confirme
+# o quadro e a resposta/semantica esperada.
+#
 # Comandos ja tratados nativamente e portanto proibidos aqui:
 #   F0 38 34 33 0A 14
 #
