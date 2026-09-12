@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!--
+  Protocolo PG do TP02 — página de referência visual.
+
+  Conteúdo derivado de docs/TP02_PG_LATEST.md, docs/TP02-PG-EMULATOR.md,
+  docs/tp02-pg-frame-inventory.md, docs/TP02-COMPUTER-LINK-*.md e
+  docs/pc12-ajuda-oficial.md. Estes continuam sendo a fonte canônica;
+  esta página é apresentação, não evidência.
+
+  Autossuficiente: abre direto no navegador, sem servidor e sem build.
+  A única dependência externa são as fontes do Google Fonts; sem rede,
+  a pilha de reserva declarada assume.
+
+  Publicada também como artifact em
+  https://claude.ai/code/artifact/8795cb2f-9758-46a8-9e92-1be7b49d530d
+  Lá o conteúdo é o mesmo sem este invólucro (<!doctype>, <html>, <head>),
+  que o publicador acrescenta sozinho. Para republicar, remova o invólucro.
+-->
+<style>
+  :root{color-scheme:light dark}
+  body{margin:0}
+  img{max-width:100%}
+</style>
+</head>
+<body>
+<title>Protocolo PG do TP02</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<style>
+  :root{
+    --paper:#EDF1F4;
+    --surface:#F9FBFC;
+    --sunk:#E2E9EE;
+    --ink:#141A20;
+    --ink2:#3C4854;
+    --muted:#6A7783;
+    --rule:#C6D1DA;
+    --rule-soft:#D9E2E8;
+    --tx:#1F4E9C;
+    --rx:#0B6E63;
+    --rx-soft:#D6E9E6;
+    --warn:#8A5A0B;
+    --danger:#9C2A1F;
+    --shadow:0 1px 2px rgba(20,26,32,.07);
+
+    --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    --cond:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0F1418;
+      --surface:#161D23;
+      --sunk:#1B2329;
+      --ink:#E4EAEF;
+      --ink2:#B4BFC9;
+      --muted:#8492A0;
+      --rule:#2C363F;
+      --rule-soft:#232C34;
+      --tx:#7FB0F0;
+      --rx:#4FC7B6;
+      --rx-soft:#18332F;
+      --warn:#D9A74C;
+      --danger:#E8867A;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0F1418;
+    --surface:#161D23;
+    --sunk:#1B2329;
+    --ink:#E4EAEF;
+    --ink2:#B4BFC9;
+    --muted:#8492A0;
+    --rule:#2C363F;
+    --rule-soft:#232C34;
+    --tx:#7FB0F0;
+    --rx:#4FC7B6;
+    --rx-soft:#18332F;
+    --warn:#D9A74C;
+    --danger:#E8867A;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.6;
+    padding-inline:20px;
+    padding-block:0;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding-block:0 72px}
+
+  /* ---------- tipografia ---------- */
+  h1,h2,h3{font-family:var(--cond);font-weight:700;text-wrap:balance;margin:0}
+  h1{font-size:clamp(2.1rem,5.2vw,3.1rem);line-height:1.04;letter-spacing:-.015em}
+  h2{font-size:clamp(1.35rem,3vw,1.7rem);line-height:1.12;letter-spacing:-.01em}
+  h3{font-size:1.02rem;font-weight:600;line-height:1.25}
+  p{margin:0}
+  .lede{font-size:1.12rem;line-height:1.55;color:var(--ink2)}
+  .eyebrow{
+    font-family:var(--cond);font-weight:600;font-size:.76rem;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  }
+  .note{font-size:.9rem;color:var(--muted);line-height:1.5;max-width:680px}
+  em{font-style:italic}
+  code,.m{font-family:var(--mono);font-size:.9em;font-variant-ligatures:none}
+  code{background:var(--sunk);padding:.1em .34em;border-radius:2px}
+
+  /* ---------- cabecalho ---------- */
+  header.masthead{
+    padding-block:56px 36px;
+    border-bottom:2px solid var(--ink);
+    display:flex;flex-direction:column;gap:22px;
+  }
+  .titleblock{display:flex;flex-direction:column;gap:14px;max-width:760px}
+  .profiles{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{
+    display:flex;flex-direction:column;gap:1px;
+    border:1px solid var(--rule);background:var(--surface);
+    padding:7px 13px 8px;border-radius:2px;
+  }
+  .chip .k{font-family:var(--cond);font-weight:600;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .chip .v{font-family:var(--mono);font-weight:500;font-size:.95rem;color:var(--ink)}
+
+  /* ---------- legenda de evidencia ---------- */
+  .legend{
+    display:flex;flex-wrap:wrap;gap:6px 22px;
+    padding:14px 0 0;border-top:1px solid var(--rule-soft);
+  }
+  .legend div{display:flex;align-items:baseline;gap:7px;font-size:.86rem;color:var(--ink2)}
+  .mk{font-family:var(--mono);font-size:.95rem;line-height:1}
+  .mk-hw{color:var(--ink)}
+  .mk-off{color:var(--tx)}
+  .mk-hyp{color:var(--warn)}
+  .mk-blk{color:var(--danger)}
+
+  /* ---------- secoes ---------- */
+  section{padding-block:46px;border-bottom:1px solid var(--rule-soft)}
+  section:last-of-type{border-bottom:0}
+  .shead{display:flex;flex-direction:column;gap:9px;margin-bottom:26px;max-width:680px}
+  .stack{display:flex;flex-direction:column;gap:20px}
+
+  /* ---------- figuras ---------- */
+  figure{margin:0;display:flex;flex-direction:column;gap:11px}
+  .figbox{
+    border:1px solid var(--rule);background:var(--surface);
+    border-radius:3px;padding:18px 6px;overflow-x:auto;box-shadow:var(--shadow);
+  }
+  .figbox svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  figcaption{font-size:.88rem;line-height:1.5;color:var(--muted);max-width:680px}
+  figcaption b{color:var(--ink2);font-weight:500}
+
+  /* ---------- sistema dos diagramas ----------
+     matiz carrega um significado so: azul = o que o mestre envia,
+     teal = o que o PLC devolve, ambar = restricao, tinta = o terceiro byte. */
+  .dg text{font-family:var(--mono);font-size:11.5px;fill:var(--ink2)}
+  .dg text.h{font-family:var(--cond);font-weight:600;font-size:13.5px;fill:var(--ink)}
+  .dg text.sm{font-family:var(--sans);font-size:12px;fill:var(--muted)}
+  .dg text.dim{fill:var(--muted)}
+  .dg text.tx{fill:var(--tx)}
+  .dg text.rx{fill:var(--rx)}
+  .dg text.wn{fill:var(--warn)}
+  .dg .bx{fill:none;stroke:var(--ink);stroke-width:1.5}
+  .dg .bx.tx{stroke:var(--tx)}
+  .dg .bx.rx{stroke:var(--rx)}
+  .dg .bx.wn{stroke:var(--warn);stroke-width:1.3}
+  .dg .bx.soft{stroke:var(--rule);stroke-width:1}
+  .dg .bx.tint{fill:var(--rx-soft);stroke:var(--rx);stroke-width:1.3}
+  .dg .ln{fill:none;stroke:var(--ink2);stroke-width:1.6}
+  .dg .ln.tx{stroke:var(--tx)}
+  .dg .ln.rx{stroke:var(--rx)}
+  .dg .ln.wn{stroke:var(--warn);stroke-width:1.5}
+  .dg .ln.thin{stroke:var(--rule);stroke-width:1}
+  .dg .ln.tick{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 3}
+  .dg .life{fill:none;stroke:var(--rule);stroke-width:1;stroke-dasharray:3 4}
+  .dg .hd{stroke:none;fill:var(--ink2)}
+  .dg .hd.tx{fill:var(--tx)}
+  .dg .hd.rx{fill:var(--rx)}
+
+  /* ---------- tira de bytes ---------- */
+  .stripwrap{overflow-x:auto;padding-bottom:4px}
+  .strip{display:flex;gap:3px;min-width:max-content;align-items:stretch}
+  .cell{
+    display:flex;flex-direction:column;min-width:52px;
+    border:1px solid var(--rule);border-radius:2px;background:var(--surface);
+    overflow:hidden;
+  }
+  .cell .f{
+    font-family:var(--cond);font-weight:600;font-size:.62rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);
+    padding:4px 7px 3px;border-bottom:1px solid var(--rule-soft);
+    background:var(--sunk);white-space:nowrap;text-align:center;
+  }
+  .cell .b{
+    font-family:var(--mono);font-weight:500;font-size:.95rem;
+    padding:7px 9px;text-align:center;white-space:nowrap;color:var(--ink);
+  }
+  .cell.wide{min-width:118px}
+  .cell.flex .b{color:var(--ink2)}
+  .cell.head{border-color:var(--tx);border-width:2px}
+  .cell.head .f{background:var(--tx);color:var(--surface);border-bottom-color:var(--tx)}
+  .cell.head.is-rx{border-color:var(--rx)}
+  .cell.head.is-rx .f{background:var(--rx);border-bottom-color:var(--rx)}
+  .cell.sum{background:var(--sunk)}
+  .striplabel{
+    font-family:var(--cond);font-weight:600;font-size:.74rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:7px;
+  }
+  .striplabel .dir{color:var(--tx)}
+  .striplabel .dir.is-rx{color:var(--rx)}
+
+  /* ---------- blocos de dado ---------- */
+  pre{
+    font-family:var(--mono);font-size:.86rem;line-height:1.65;
+    background:var(--surface);border:1px solid var(--rule);
+    border-radius:3px;padding:14px 16px;margin:0;overflow-x:auto;color:var(--ink2);
+  }
+  pre b{color:var(--ink);font-weight:600}
+  pre .c{color:var(--muted)}
+
+  .rule-card{
+    border:1px solid var(--rule);border-radius:3px;background:var(--surface);
+    padding:16px 18px;display:flex;flex-direction:column;gap:7px;box-shadow:var(--shadow);
+  }
+  .rule-card .rt{font-family:var(--cond);font-weight:600;font-size:1rem;color:var(--ink)}
+  .rule-card .rb{font-size:.92rem;color:var(--ink2);line-height:1.5}
+  .rule-card.is-warn{border-left:3px solid var(--warn)}
+  .rule-card.is-danger{border-left:3px solid var(--danger)}
+
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:14px}
+
+  /* ---------- tabelas ---------- */
+  .tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:3px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:540px;font-size:.9rem}
+  caption{text-align:left;font-size:.88rem;color:var(--muted);padding:0 0 9px}
+  th,td{text-align:left;padding:8px 13px;border-bottom:1px solid var(--rule-soft);vertical-align:top;color:var(--ink2)}
+  thead th{
+    font-family:var(--cond);font-weight:600;font-size:.72rem;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--muted);background:var(--sunk);
+    border-bottom:1px solid var(--rule);white-space:nowrap;
+  }
+  tbody tr:last-child td{border-bottom:0}
+  td.hex{font-family:var(--mono);font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink)}
+  td.st{white-space:nowrap;font-size:.82rem;color:var(--muted)}
+
+  /* ---------- procedimento numerado ---------- */
+  ol.steps{list-style:none;margin:0;padding:0;counter-reset:s;display:flex;flex-direction:column;gap:0}
+  ol.steps li{
+    counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:14px;
+    padding-block:13px;border-bottom:1px solid var(--rule-soft);
+  }
+  ol.steps li:last-child{border-bottom:0}
+  ol.steps li::before{
+    content:counter(s,decimal-leading-zero);
+    font-family:var(--mono);font-size:.82rem;font-weight:600;color:var(--tx);
+    padding-top:2px;
+  }
+  ol.steps .sb{font-size:.95rem;color:var(--ink2);line-height:1.5}
+  ol.steps .sb b{color:var(--ink);font-weight:600}
+
+  ul.plain{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+  ul.plain li{display:grid;grid-template-columns:18px 1fr;gap:10px;font-size:.95rem;color:var(--ink2);line-height:1.5}
+  ul.plain li b{color:var(--ink);font-weight:600}
+  ul.plain li .mk{padding-top:3px}
+
+  footer{
+    padding-block:34px 0;border-top:2px solid var(--ink);
+    display:flex;flex-direction:column;gap:12px;
+  }
+  footer .src{font-family:var(--mono);font-size:.82rem;color:var(--muted);line-height:1.9}
+  :focus-visible{outline:2px solid var(--tx);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="titleblock">
+      <p class="eyebrow">WEG TP02 &middot; engenharia reversa do PC12 Design Center 2.1</p>
+      <h1>Protocolo PG do TP02</h1>
+      <p class="lede">São <em>dois</em> protocolos no mesmo conector, e essa é a primeira coisa da lógica. O PG é binário e proprietário — é o que o PC12 fala. O Computer Link é ASCII e documentado. Na porta MMI eles são modos elétricos mutuamente exclusivos: o estado do pino 4 decide qual dos dois responde.</p>
+    </div>
+    <div class="profiles">
+      <div class="chip"><span class="k">PG &middot; 8 dados, ímpar, 1 stop</span><span class="v">19200 8O1</span></div>
+      <div class="chip"><span class="k">PG &middot; linhas</span><span class="v">DTR on &middot; RTS off</span></div>
+      <div class="chip"><span class="k">Host &middot; 7 dados, sem paridade</span><span class="v">19200 7N1</span></div>
+      <div class="chip"><span class="k">Host &middot; estação</span><span class="v">01 &middot; response 5</span></div>
+    </div>
+    <div class="legend">
+      <div><span class="mk mk-hw">&#9679;</span> confirmado em hardware</div>
+      <div><span class="mk mk-off">&#9680;</span> confirmado offline no <span class="m">pc12.exe</span></div>
+      <div><span class="mk mk-hyp">&#9675;</span> hipótese, não confirmada</div>
+      <div><span class="mk mk-blk">&#10005;</span> bloqueado por segurança</div>
+    </div>
+  </header>
+
+  <!-- ============ 1. bifurcacao ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">Camada física</p>
+      <h2>Duas rotas, um conector</h2>
+      <p>O cabo que o PC12 usa em modo PG deixa o pino 4 aberto. Nessa condição o Host Protocol simplesmente não responde — não é erro de quadro nem de paridade, é a porta em outro modo. Por isso as duas rotas nunca aparecem na mesma captura.</p>
+    </div>
+    <figure>
+      <div class="figbox">
+        <svg class="dg" viewBox="0 0 820 252" role="img" aria-label="A porta MMI do TP02 bifurca em dois protocolos segundo o estado do pino 4: aberto leva ao PG binário em 19200 8O1, ligado ao pino 5 leva ao Computer Link ASCII em 19200 7N1.">
+          <rect class="bx" x="24" y="96" width="150" height="58" rx="3"></rect>
+          <text class="h" x="99" y="120" text-anchor="middle">Porta MMI</text>
+          <text class="dim" x="99" y="139" text-anchor="middle">TP02-40/60MR</text>
+
+          <path class="ln" d="M 174 118 L 300 118 L 300 64 L 424 64"></path>
+          <polygon class="hd" points="430,64 420,59 420,69"></polygon>
+          <text x="302" y="42">PG/COM = HIGH &middot; pino 4 aberto</text>
+
+          <path class="ln" d="M 174 134 L 300 134 L 300 188 L 424 188"></path>
+          <polygon class="hd" points="430,188 420,183 420,193"></polygon>
+          <text x="302" y="226">PG/COM = LOW &middot; pino 4 no pino 5</text>
+
+          <rect class="bx" x="434" y="38" width="358" height="52" rx="3"></rect>
+          <text class="h" x="450" y="59">PG &mdash; binário proprietário</text>
+          <text class="dim" x="450" y="78">19200 8O1 &middot; CMD LEN payload CHK &middot; soma = FF</text>
+
+          <rect class="bx" x="434" y="162" width="358" height="52" rx="3"></rect>
+          <text class="h" x="450" y="183">Computer Link &mdash; Host Protocol</text>
+          <text class="dim" x="450" y="202">19200 7N1 &middot; ::AD?RCCC&hellip;SS&lt;CR&gt; &middot; ASCII</text>
+
+          <line class="ln thin" x1="300" y1="118" x2="300" y2="134"></line>
+          <text class="sm" x="613" y="131" text-anchor="middle">mutuamente exclusivos na mesma porta</text>
+        </svg>
+      </div>
+      <figcaption><b>Figura 1.</b> A bifurcação é elétrica, não de software. Trocar de protocolo exige trocar o cabo ou a jumperização — nenhum comando muda o modo. O RS-485 também atende Computer Link quando a memória de sistema o configura assim.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ 2. enquadramento ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">PG &middot; enquadramento</p>
+      <h2>Um quadro, três campos e um checksum que fecha em FF</h2>
+      <p>O formato não foi suposto: a rotina de transmissão em <code>0x46F5E6</code> chama <code>WriteFile</code> com o buffer em <code>0x4FA7A8</code> e o comprimento em <code>0x4FA8AC</code>. Varrer as escritas imediatas nesses dois endereços recupera os quadros mecanicamente.</p>
+    </div>
+
+    <div class="stack">
+      <div>
+        <p class="striplabel"><span class="dir">&rarr; TX</span> &nbsp;PC12 para o PLC</p>
+        <div class="stripwrap">
+          <div class="strip">
+            <div class="cell head"><span class="f">CMD</span><span class="b">34</span></div>
+            <div class="cell"><span class="f">LEN</span><span class="b">03</span></div>
+            <div class="cell wide flex"><span class="f">payload [LEN]</span><span class="b">00 00 A0</span></div>
+            <div class="cell sum"><span class="f">CHK</span><span class="b">28</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="striplabel"><span class="dir is-rx">&larr; RX</span> &nbsp;PLC para o PC12 &mdash; mesma forma, primeiro byte é status</p>
+        <div class="stripwrap">
+          <div class="strip">
+            <div class="cell head is-rx"><span class="f">STATUS</span><span class="b">00</span></div>
+            <div class="cell"><span class="f">LEN</span><span class="b">02</span></div>
+            <div class="cell wide flex"><span class="f">payload [LEN]</span><span class="b">10 22</span></div>
+            <div class="cell sum"><span class="f">CHK</span><span class="b">CB</span></div>
+          </div>
+        </div>
+      </div>
+
+      <pre><b>total = LEN + 3</b>                      <span class="c">confere em todos os sítios de montagem</span>
+<b>soma(quadro) mod 256 = FF</b>              <span class="c">o CHK fecha a soma, não a complementa a zero</span></pre>
+
+      <div class="grid2">
+        <div class="rule-card">
+          <p class="rt">Bandeiras do byte de status</p>
+          <p class="rb"><span class="m">0x00</span> ok &middot; <span class="m">0x80</span> erro &middot; <span class="m">0x40</span> acompanha RUN (evidência forte, vista em HELLO, <span class="m">14</span> e <span class="m">0A</span>) &middot; <span class="m">0x20</span> observada e não classificada.</p>
+        </div>
+        <div class="rule-card is-warn">
+          <p class="rt">O parser de RX é genérico</p>
+          <p class="rb">Ele testa timeout, checksum e bit de erro — e nada mais. Não reconhece ACK específico por comando. Um quadro passar nesse validador não diz o que o PLC respondeu; diz apenas que satisfaz as três regras.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. sequencia ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">PG &middot; sessão</p>
+      <h2>A sessão tem um preâmbulo fixo e um portão</h2>
+      <p>O HELLO é o único quadro ASCII do PG, e é ele que informa RUN ou STOP. O <code>F0</code> vem em seguida, obrigatório — e com a semântica exata ainda desconhecida. Só depois disso o PC12 emite a operação.</p>
+    </div>
+
+    <figure>
+      <div class="figbox">
+        <svg class="dg" viewBox="-64 0 944 560" role="img" aria-label="Diagrama de sequência entre PC12 e TP02: CON-ICB seguido da resposta de estado, depois F0 e 38, e por fim a operação de leitura 34 ou escrita 33, esta com no máximo três tentativas por quadro.">
+          <rect class="bx" x="72" y="18" width="156" height="40" rx="3"></rect>
+          <text class="h" x="150" y="44" text-anchor="middle">PC12 (mestre)</text>
+          <rect class="bx" x="652" y="18" width="156" height="40" rx="3"></rect>
+          <text class="h" x="730" y="44" text-anchor="middle">TP02</text>
+          <line class="life" x1="150" y1="58" x2="150" y2="534"></line>
+          <line class="life" x1="730" y1="58" x2="730" y2="534"></line>
+
+          <!-- HELLO -->
+          <text class="tx" x="440" y="84" text-anchor="middle">CON-ICB&lt;CR&gt;</text>
+          <line class="ln tx" x1="150" y1="94" x2="720" y2="94"></line>
+          <polygon class="hd tx" points="728,94 717,89 717,99"></polygon>
+          <text class="rx" x="440" y="120" text-anchor="middle">80 01 09 75 = STOP&#8194;&#8194;C0 01 09 35 = RUN</text>
+          <line class="ln rx" x1="730" y1="130" x2="160" y2="130"></line>
+          <polygon class="hd rx" points="152,130 163,125 163,135"></polygon>
+
+          <!-- portao -->
+          <rect class="bx wn" x="196" y="146" width="488" height="30" rx="3"></rect>
+          <text class="wn" x="440" y="166" text-anchor="middle">portão: RUN interrompe aqui &mdash; nada é escrito sem STOP</text>
+
+          <!-- F0 -->
+          <text class="tx" x="440" y="206" text-anchor="middle">F0 00 0F</text>
+          <line class="ln tx" x1="150" y1="216" x2="720" y2="216"></line>
+          <polygon class="hd tx" points="728,216 717,211 717,221"></polygon>
+          <text class="rx" x="440" y="242" text-anchor="middle">00 02 10 22 CB</text>
+          <line class="ln rx" x1="730" y1="252" x2="160" y2="252"></line>
+          <polygon class="hd rx" points="152,252 163,247 163,257"></polygon>
+          <text class="wn" x="742" y="249">semântica</text>
+          <text class="wn" x="742" y="264">desconhecida</text>
+
+          <!-- 38 -->
+          <text class="tx" x="440" y="300" text-anchor="middle">38 00 C7</text>
+          <line class="ln tx" x1="150" y1="310" x2="720" y2="310"></line>
+          <polygon class="hd tx" points="728,310 717,305 717,315"></polygon>
+          <text class="rx" x="440" y="336" text-anchor="middle">hint de tamanho &middot; payload[1] = 2*(N-1)</text>
+          <line class="ln rx" x1="730" y1="346" x2="160" y2="346"></line>
+          <polygon class="hd rx" points="152,346 163,341 163,351"></polygon>
+
+          <line class="ln thin" x1="-56" y1="368" x2="808" y2="368"></line>
+          <text class="h" x="-56" y="392">A OPERAÇÃO</text>
+
+          <!-- leitura -->
+          <text class="tx" x="440" y="418" text-anchor="middle">34 03 00 00 A0 28&#8194;&#8194;ler 80 passos</text>
+          <line class="ln tx" x1="150" y1="428" x2="720" y2="428"></line>
+          <polygon class="hd tx" points="728,428 717,423 717,433"></polygon>
+          <text class="rx" x="440" y="454" text-anchor="middle">00 F0 + 240 bytes + CHK</text>
+          <line class="ln rx" x1="730" y1="464" x2="160" y2="464"></line>
+          <polygon class="hd rx" points="152,464 163,459 163,469"></polygon>
+
+          <!-- escrita com retry -->
+          <text class="tx" x="440" y="494" text-anchor="middle">33 [3W+4] &hellip;&#8194;&#8194;escrever até 80 palavras</text>
+          <line class="ln tx" x1="150" y1="504" x2="720" y2="504"></line>
+          <polygon class="hd tx" points="728,504 717,499 717,509"></polygon>
+          <text class="rx" x="440" y="530" text-anchor="middle">status sem timeout, sem erro de checksum, sem bit de erro</text>
+          <line class="ln rx" x1="730" y1="540" x2="160" y2="540"></line>
+          <polygon class="hd rx" points="152,540 163,535 163,545"></polygon>
+
+          <path class="ln thin" d="M 66 482 L 50 482 L 50 548 L 66 548"></path>
+          <text class="sm" x="44" y="513" text-anchor="end">máx. 3</text>
+          <text class="sm" x="44" y="528" text-anchor="end">tentativas</text>
+        </svg>
+      </div>
+      <figcaption><b>Figura 2.</b> O preâmbulo é sempre o mesmo; só a última troca muda com a operação. O <span class="m">CON-ICB</span> está armazenado como cadeia no binário e recebe o <span class="m">0D</span> em execução — por isso não aparece na varredura de bytes imediatos e só foi recuperado por emulação. O limite de <b>três tentativas por quadro</b> foi medido interceptando as três bandeiras que a rotina genérica entrega ao chamador do <span class="m">0x33</span>.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ 4. leitura 34 ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">PG &middot; ler programa</p>
+      <h2>O <span class="m">34</span> devolve o programa em dois planos</h2>
+      <p>Cada passo do programa tem três valores, mas a resposta não os entrega juntos. Os 240 bytes se dividem em um bloco de pares e um bloco de terceiros bytes — correspondência posicional entre planos, não intercalação. É a peça que mais engana quem lê a captura pela primeira vez.</p>
+    </div>
+
+    <div class="stack">
+      <div>
+        <p class="striplabel"><span class="dir">&rarr; TX</span> &nbsp;pedido de uma página de 80 passos</p>
+        <div class="stripwrap">
+          <div class="strip">
+            <div class="cell head"><span class="f">CMD</span><span class="b">34</span></div>
+            <div class="cell"><span class="f">LEN</span><span class="b">03</span></div>
+            <div class="cell"><span class="f">passo hi</span><span class="b">00</span></div>
+            <div class="cell"><span class="f">passo lo</span><span class="b">00</span></div>
+            <div class="cell"><span class="f">2&times;80</span><span class="b">A0</span></div>
+            <div class="cell sum"><span class="f">CHK</span><span class="b">28</span></div>
+          </div>
+        </div>
+      </div>
+
+      <figure>
+        <div class="figbox">
+          <svg class="dg" viewBox="0 0 860 332" role="img" aria-label="Comparação: a resposta do comando 34 separa os 240 bytes em 160 bytes de pares HIGH LOW e 80 bytes de BRAW em plano separado, enquanto o RBP do Computer Link devolve os três bytes juntos por passo.">
+            <text class="h" x="10" y="22">PG &middot; resposta do 34 &mdash; o terceiro byte em plano separado</text>
+
+            <rect class="bx rx" x="10" y="64" width="52" height="30"></rect><text x="36" y="84" text-anchor="middle">00 10</text>
+            <rect class="bx rx" x="64" y="64" width="52" height="30"></rect><text x="90" y="84" text-anchor="middle">20 40</text>
+            <rect class="bx rx" x="118" y="64" width="52" height="30"></rect><text x="144" y="84" text-anchor="middle">00 70</text>
+            <rect class="bx soft" x="172" y="64" width="52" height="30"></rect><text class="dim" x="198" y="84" text-anchor="middle">&hellip;</text>
+            <rect class="bx soft" x="226" y="64" width="52" height="30"></rect><text class="dim" x="252" y="84" text-anchor="middle">par 80</text>
+            <text class="sm" x="292" y="80">região A &middot; 80 pares HIGH/LOW</text>
+            <text class="sm" x="292" y="95">160 bytes</text>
+
+            <rect class="bx tint" x="10" y="160" width="52" height="30"></rect><text x="36" y="180" text-anchor="middle">01</text>
+            <rect class="bx tint" x="64" y="160" width="52" height="30"></rect><text x="90" y="180" text-anchor="middle">06</text>
+            <rect class="bx tint" x="118" y="160" width="52" height="30"></rect><text x="144" y="180" text-anchor="middle">07</text>
+            <rect class="bx soft" x="172" y="160" width="52" height="30"></rect><text class="dim" x="198" y="180" text-anchor="middle">&hellip;</text>
+            <rect class="bx soft" x="226" y="160" width="52" height="30"></rect><text class="dim" x="252" y="180" text-anchor="middle">B 80</text>
+            <text class="sm" x="292" y="176">região B &middot; 80 BRAW, um por passo</text>
+            <text class="sm" x="292" y="191">80 bytes</text>
+
+            <line class="ln tick" x1="36" y1="96" x2="36" y2="152"></line>
+            <polygon class="hd" points="36,158 31,148 41,148"></polygon>
+            <line class="ln tick" x1="90" y1="96" x2="90" y2="152"></line>
+            <polygon class="hd" points="90,158 85,148 95,148"></polygon>
+            <line class="ln tick" x1="144" y1="96" x2="144" y2="152"></line>
+            <polygon class="hd" points="144,158 139,148 149,148"></polygon>
+            <text x="470" y="132">BRAW = ((HIGH&gt;&gt;4)+(HIGH&amp;0F)+(LOW&gt;&gt;4)+(LOW&amp;0F)) &amp; 0F</text>
+
+            <line class="ln thin" x1="10" y1="226" x2="850" y2="226"></line>
+
+            <text class="h" x="10" y="254">Computer Link &middot; resposta do RBP &mdash; o terceiro byte junto</text>
+            <rect class="bx rx" x="10" y="272" width="78" height="30"></rect>
+            <rect class="bx tint" x="62" y="272" width="26" height="30"></rect>
+            <text x="36" y="292" text-anchor="middle">0010</text><text x="75" y="292" text-anchor="middle">00</text>
+            <rect class="bx rx" x="94" y="272" width="78" height="30"></rect>
+            <rect class="bx tint" x="146" y="272" width="26" height="30"></rect>
+            <text x="120" y="292" text-anchor="middle">2040</text><text x="159" y="292" text-anchor="middle">00</text>
+            <rect class="bx rx" x="178" y="272" width="78" height="30"></rect>
+            <rect class="bx tint" x="230" y="272" width="26" height="30"></rect>
+            <text x="204" y="292" text-anchor="middle">0070</text><text x="243" y="292" text-anchor="middle">00</text>
+            <rect class="bx soft" x="262" y="272" width="78" height="30"></rect><text class="dim" x="301" y="292" text-anchor="middle">&hellip;</text>
+            <text class="sm" x="354" y="292">3 bytes por passo, na ordem do passo</text>
+            <text class="sm" x="10" y="324">o mesmo programa mínimo nos dois: STR X0001 / OUT Y0001 / END</text>
+          </svg>
+        </div>
+        <figcaption><b>Figura 3.</b> Os dois protocolos carregam exatamente os mesmos três valores por passo — a tinta marca o terceiro byte. O PG o exila num bloco próprio e o Host Protocol o mantém junto. Daí a regra prática: procurar <span class="m">00 10 00 20 40 00 00 70 00</span> contíguo dentro de um quadro PG nunca acha nada, é preciso reconstruir as palavras a partir dos dois blocos.</figcaption>
+      </figure>
+
+      <pre><span class="c">paginação, 80 passos por página, endereço em passos</span>
+0000 &rarr; <b>34 03 00 00 A0 28</b>
+0050 &rarr; <b>34 03 00 50 A0 D8</b>
+00A0 &rarr; <b>34 03 00 A0 A0 88</b>
+00F0 &rarr; <b>34 03 00 F0 A0 38</b>
+
+<span class="c">a leitura termina em F-00 END = 00 70, ou no passo 4000</span></pre>
+      <p class="note"><span class="mk mk-hyp">&#9675;</span> A travessia da fronteira 79/80 ainda não foi confirmada em bancada — é o próximo ensaio READ-ONLY recomendado.</p>
+    </div>
+  </section>
+
+  <!-- ============ 5. escrita 33 ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">PG &middot; escrever programa</p>
+      <h2>O <span class="m">33</span> corta o bloco por instrução, não por byte</h2>
+      <p>Aqui está o núcleo conceitual do protocolo. O PC12 conta duas coisas ao mesmo tempo: instruções lógicas e palavras de máquina. O quadro tem espaço para 80 palavras, mas o orquestrador fecha o bloco quando chega a 20 instruções — <code>cmp +0x7A, 0x14</code> no construtor em <code>0x004B7958</code>.</p>
+    </div>
+
+    <div class="stack">
+      <div>
+        <p class="striplabel"><span class="dir">&rarr; TX</span> &nbsp;quadro de escrita para W palavras já expandidas</p>
+        <div class="stripwrap">
+          <div class="strip">
+            <div class="cell head"><span class="f">CMD</span><span class="b">33</span></div>
+            <div class="cell"><span class="f">LEN = 3W+4</span><span class="b">3W+4</span></div>
+            <div class="cell"><span class="f">fixo</span><span class="b">00</span></div>
+            <div class="cell"><span class="f">início hi</span><span class="b">00</span></div>
+            <div class="cell"><span class="f">início lo</span><span class="b">00</span></div>
+            <div class="cell"><span class="f">2W</span><span class="b">2W</span></div>
+            <div class="cell wide flex"><span class="f">plano HIGH/LOW</span><span class="b">2W bytes</span></div>
+            <div class="cell wide flex"><span class="f">plano EXTERNAL</span><span class="b">W bytes</span></div>
+            <div class="cell sum"><span class="f">CHK</span><span class="b">&mdash;</span></div>
+          </div>
+        </div>
+      </div>
+
+      <figure>
+        <div class="figbox">
+          <svg class="dg" viewBox="0 0 860 302" role="img" aria-label="Régua dupla: 21 instruções lógicas F-13w de quatro passos expandem em 84 palavras de máquina; o corte do bloco cai depois da instrução 20, produzindo um quadro de 80 palavras e outro de 4 palavras começando no passo 0050.">
+            <text class="h" x="10" y="22">21 &times; F-13w ADD &mdash; StepSpan 4</text>
+
+            <text class="dim" x="10" y="56">instruções lógicas &middot; conta em +0x7A</text>
+            <g class="bx tx">
+              <rect x="10" y="66" width="28" height="26"></rect><rect x="40" y="66" width="28" height="26"></rect>
+              <rect x="70" y="66" width="28" height="26"></rect><rect x="100" y="66" width="28" height="26"></rect>
+              <rect x="130" y="66" width="28" height="26"></rect><rect x="160" y="66" width="28" height="26"></rect>
+              <rect x="190" y="66" width="28" height="26"></rect><rect x="220" y="66" width="28" height="26"></rect>
+              <rect x="250" y="66" width="28" height="26"></rect><rect x="280" y="66" width="28" height="26"></rect>
+              <rect x="310" y="66" width="28" height="26"></rect><rect x="340" y="66" width="28" height="26"></rect>
+              <rect x="370" y="66" width="28" height="26"></rect><rect x="400" y="66" width="28" height="26"></rect>
+              <rect x="430" y="66" width="28" height="26"></rect><rect x="460" y="66" width="28" height="26"></rect>
+              <rect x="490" y="66" width="28" height="26"></rect><rect x="520" y="66" width="28" height="26"></rect>
+              <rect x="550" y="66" width="28" height="26"></rect><rect x="580" y="66" width="28" height="26"></rect>
+            </g>
+            <rect class="bx wn" x="622" y="66" width="28" height="26"></rect>
+            <text class="dim" x="24" y="84" text-anchor="middle">1</text>
+            <text class="dim" x="594" y="84" text-anchor="middle">20</text>
+            <text class="wn" x="636" y="84" text-anchor="middle">21</text>
+
+            <line class="ln wn" x1="608" y1="58" x2="608" y2="236" stroke-dasharray="5 4"></line>
+            <text class="wn" x="616" y="50">cmp +0x7A, 0x14</text>
+
+            <text class="dim" x="10" y="130">palavras de máquina &middot; HIGH LOW EXTERNAL &middot; conta em +0x76</text>
+            <rect class="bx soft" x="10" y="140" width="598" height="26"></rect>
+            <text x="309" y="158" text-anchor="middle">80 palavras &middot; passos 0000&hellip;004F</text>
+            <rect class="bx wn" x="622" y="140" width="120" height="26"></rect>
+            <text class="wn" x="682" y="158" text-anchor="middle">4 palavras</text>
+
+            <line class="ln tick" x1="594" y1="92" x2="594" y2="140"></line>
+            <line class="ln tick" x1="636" y1="92" x2="636" y2="140"></line>
+
+            <text class="dim" x="10" y="206">quadros emitidos</text>
+            <rect class="bx tx" x="10" y="216" width="598" height="40"></rect>
+            <text class="tx" x="26" y="241">33 &middot; LEN=F4 &middot; start=0000 &middot; 2W=A0 &middot; 247 bytes</text>
+            <rect class="bx tx" x="622" y="216" width="220" height="40"></rect>
+            <text class="tx" x="638" y="241">33 &middot; LEN=10 &middot; start=0050</text>
+            <text class="sm" x="638" y="278">o 2&ordm; bloco começa no</text>
+            <text class="sm" x="638" y="294">cursor real de passos</text>
+          </svg>
+        </div>
+        <figcaption><b>Figura 4.</b> As duas réguas não andam juntas: 21 instruções de 4 passos são 84 palavras, mas o corte cai na instrução 20 — por isso o primeiro quadro sai cheio, com <span class="m">LEN=F4</span> e 247 bytes, e o segundo carrega uma única instrução começando em <span class="m">0050</span>, o cursor real de passos, não em &ldquo;instrução 21&rdquo;.</figcaption>
+      </figure>
+
+      <pre><span class="c">exemplos produzidos pelo construtor original, conferidos por emulação</span>
+W=1, start=0000  <b>33 07 00 00 00 02 00 10 01 B2</b>
+W=2, start=0050  <b>33 0A 00 00 50 04 00 10 20 41 01 07 F5</b>
+
+<span class="c">limites</span>
+1 &lt;= W &lt;= 80              <span class="c">teto do quadro</span>
+20 instruções por bloco   <span class="c">teto do orquestrador &mdash; é este que fecha o bloco</span>
+3 tentativas por quadro   <span class="c">não 15</span></pre>
+
+      <div class="rule-card is-warn">
+        <p class="rt"><span class="mk mk-hyp">&#9675;</span> O ACK do <span class="m">33</span> é hipótese operacional, não especificação</p>
+        <p class="rb">Sabemos a <em>condição de sucesso</em> do PC12: as três bandeiras zeradas. Daí não se deduz o payload. O valor <span class="m">00 00 FF</span> satisfaz o parser genérico e foi observado no ciclo físico de 2026-09-11, no teste e na restauração — mas o parser aceitar não é o mesmo que o TP02 ter respondido isso por definição.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. palavra de maquina ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">PG &middot; codificação</p>
+      <h2>A palavra de máquina</h2>
+      <p>Booleanos, funções e constantes usam três esquemas distintos dentro do mesmo par de bytes. Todas as linhas da tabela vêm de captura física no TP02-60MR, e batem byte a byte com o que o coletor do PC12 produz offline.</p>
+    </div>
+
+    <div class="stack">
+      <pre><span class="c">booleanos</span>
+LOW &amp; 78 = opcode     <b>10</b> STR  <b>18</b> STR NOT  <b>20</b> AND  <b>28</b> AND NOT  <b>30</b> OR  <b>38</b> OR NOT  <b>40</b> OUT
+LOW &amp; 07 = bit
+HIGH     = base da classe + grupo      grupo = (n-1)&gt;&gt;3   bit = (n-1)&amp;07
+           X &rarr; <b>00</b>+grupo    Y &rarr; <b>20</b>+grupo    C &rarr; <b>40</b>+grupo
+
+<span class="c">constantes diretas &mdash; partição de 7 bits</span>
+HIGH = 80 | (valor &gt;&gt; 7)     LOW = valor &amp; 7F
+10 &rarr; <b>80 0A</b>        1000 &rarr; <b>87 68</b>
+
+<span class="c">funções</span>
+b0 = número da função        b1 = família de forma e largura</pre>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Instrução</th><th>Palavras</th><th>Passos</th><th>Evidência</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>STR X0001</td><td class="hex">00 10</td><td>1</td><td class="st"><span class="mk mk-hw">&#9679;</span> hardware</td></tr>
+            <tr><td>OUT Y0001</td><td class="hex">20 40</td><td>1</td><td class="st"><span class="mk mk-hw">&#9679;</span> hardware</td></tr>
+            <tr><td>F-00 END</td><td class="hex">00 70</td><td>1</td><td class="st"><span class="mk mk-hw">&#9679;</span> hardware</td></tr>
+            <tr><td>TMR V0001 &middot; K1000</td><td class="hex">00 60 &nbsp; 87 68</td><td>2</td><td class="st"><span class="mk mk-hw">&#9679;</span> hardware</td></tr>
+            <tr><td>CNT V0002 &middot; K10</td><td class="hex">01 68 &nbsp; 80 0A</td><td>2</td><td class="st"><span class="mk mk-hw">&#9679;</span> hardware</td></tr>
+            <tr><td>F-23 SET Y0001</td><td class="hex">17 71 &nbsp; C8 80</td><td>2</td><td class="st"><span class="mk mk-hw">&#9679;</span><span class="mk mk-off">&#9680;</span> ambos</td></tr>
+            <tr><td>F-24 RST Y0001</td><td class="hex">18 71 &nbsp; C8 80</td><td>2</td><td class="st"><span class="mk mk-hw">&#9679;</span><span class="mk mk-off">&#9680;</span> ambos</td></tr>
+            <tr><td>F-13w ADD D0002,D0001,10</td><td class="hex">0D 77 &nbsp; F0 01 &nbsp; F0 00 &nbsp; 80 0A</td><td>4</td><td class="st"><span class="mk mk-hw">&#9679;</span><span class="mk mk-off">&#9680;</span> ambos</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">O RST se distingue do SET pelo <b>HIGH</b> — <span class="m">18</span> contra <span class="m">17</span> — e não pelo EXTERNAL, que vale <span class="m">00</span> nos dois. A hipótese contrária circulou no projeto até ser medida no coletor original.</p>
+    </div>
+  </section>
+
+  <!-- ============ 7. inventario ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">PG &middot; espaço de comandos</p>
+      <h2>Dezesseis opcodes, catorze operações</h2>
+      <p>Os opcodes vêm de dois métodos independentes sobre o binário: varredura das escritas imediatas no buffer de TX, e emulação x86 das funções de transmissão. A ajuda oficial do fabricante fecha o lado semântico em catorze itens de menu — nenhuma outra operação de PG existe no produto original.</p>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>CMD</th><th>Papel</th><th>Contexto no binário</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="hex">CON-ICB</td><td>handshake, informa RUN/STOP</td><td>cadeia + <span class="m">0D</span> em execução</td><td class="st"><span class="mk mk-hw">&#9679;</span> hardware</td></tr>
+          <tr><td class="hex">F0</td><td>preflight obrigatório</td><td>&mdash;</td><td class="st"><span class="mk mk-hyp">&#9675;</span> semântica aberta</td></tr>
+          <tr><td class="hex">38</td><td>hint de tamanho do programa</td><td><span class="m">This Function Need Password !</span></td><td class="st"><span class="mk mk-hw">&#9679;</span> nos casos ensaiados</td></tr>
+          <tr><td class="hex">34</td><td>ler programa &middot; também serve ao Compare</td><td><span class="m">Compare PLC Program...</span></td><td class="st"><span class="mk mk-hw">&#9679;</span> hardware</td></tr>
+          <tr><td class="hex">33</td><td>escrever programa</td><td>construtor em <span class="m">0x004B7958</span></td><td class="st"><span class="mk mk-off">&#9680;</span> offline + ciclo físico</td></tr>
+          <tr><td class="hex">0A</td><td>ler memória e registradores</td><td>password, checksum, timeout</td><td class="st"><span class="mk mk-hw">&#9679;</span> hardware</td></tr>
+          <tr><td class="hex">09</td><td>escrever memória &middot; LEN 4, 5, 17</td><td>password, checksum, timeout</td><td class="st"><span class="mk mk-hyp">&#9675;</span> inferência</td></tr>
+          <tr><td class="hex">14</td><td>ramo de senha &middot; 6 sítios</td><td><span class="m">PassWord Message</span> &middot; <span class="m">PassWord Error</span></td><td class="st"><span class="mk mk-hyp">&#9675;</span> forte, não provado</td></tr>
+          <tr><td class="hex">01 02 03 04 11 13 35</td><td>não atribuídos</td><td>&mdash;</td><td class="st"><span class="mk mk-hyp">&#9675;</span> aberto</td></tr>
+          <tr><td class="hex">0F 00 F0</td><td>Clear All Memory</td><td>recuperado por emulação</td><td class="st"><span class="mk mk-blk">&#10005;</span> bloqueado</td></tr>
+          <tr><td class="hex">37</td><td>ligado a firmware</td><td><span class="m">Please BIOS Refresh Repeat Again !</span></td><td class="st"><span class="mk mk-blk">&#10005;</span> bloqueado</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid2" style="margin-top:20px">
+      <div class="rule-card">
+        <p class="rt">As catorze operações do menu PLC</p>
+        <p class="rb">Write &middot; Read &middot; Run! &middot; Stop! &middot; Password &middot; EEPROM &middot; Set RTC &middot; Clear System &middot; Clear Data &middot; Clear Program &middot; Clear All Memory &middot; Compare Program &middot; COM Port &middot; Set TimeOut Value.</p>
+      </div>
+      <div class="rule-card">
+        <p class="rt">O que a senha protege</p>
+        <p class="rb">Depois de definida, é exigida para RUN!, STOP!, READ e WRITE, e para gravar o programa no pacote EEPROM. A documentação confirma a função e o alcance — não atribui o comando.</p>
+      </div>
+      <div class="rule-card is-danger">
+        <p class="rt"><span class="mk mk-blk">&#10005;</span> Por que dois ficam bloqueados</p>
+        <p class="rb">Enviar opcode de efeito desconhecido a um PLC vivo pode apagar programa, alterar saídas ou corromper firmware. <span class="m">0F 00 F0</span> apaga tudo; <span class="m">37</span> senta ao lado de uma mensagem de firmware.</p>
+      </div>
+      <div class="rule-card">
+        <p class="rt">Limite estrutural do método</p>
+        <p class="rb">A varredura só acha quadro montado por escrita imediata. O <span class="m">CON-ICB</span> é o contraexemplo conhecido: está como cadeia e só apareceu na emulação. Concluir que a lista é completa seria erro.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 8. computer link ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">Computer Link</p>
+      <h2>A rota ASCII documentada</h2>
+      <p>Aqui não há engenharia reversa: o WEG documenta o Host Protocol, com <code>PSR</code> para estado, <code>RBP</code> para ler e <code>WBP</code> para escrever programa. É a rota que o OpenLadder usa quando pode escolher.</p>
+    </div>
+
+    <div class="stack">
+      <div>
+        <p class="striplabel"><span class="dir">&rarr; TX</span> &nbsp;ler três passos a partir de 0000</p>
+        <div class="stripwrap">
+          <div class="strip">
+            <div class="cell head"><span class="f">início</span><span class="b">::</span></div>
+            <div class="cell"><span class="f">estação</span><span class="b">01</span></div>
+            <div class="cell"><span class="f">cmd</span><span class="b">?</span></div>
+            <div class="cell"><span class="f">resp 0-F</span><span class="b">5</span></div>
+            <div class="cell"><span class="f">comando</span><span class="b">RBP</span></div>
+            <div class="cell"><span class="f">passo</span><span class="b">0000</span></div>
+            <div class="cell"><span class="f">qtd</span><span class="b">03</span></div>
+            <div class="cell sum"><span class="f">CHK</span><span class="b">24</span></div>
+            <div class="cell"><span class="f">fim</span><span class="b">CR</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Checksum ASCII por complemento de dois — regra diferente da soma que fecha em <span class="m">FF</span> do PG. O <span class="m">WBP</span> grava de 1 a 100 passos por quadro, é recusado em RUN, e cobre a faixa <span class="m">0000..4000</span> no TP02-40MR/60MR.</p>
+
+      <div>
+        <h3 style="margin-bottom:6px">A sequência de escrita que o writer executa</h3>
+        <ol class="steps">
+          <li><p class="sb"><b>PSR</b> — consulta o estado e <b>exige STOP</b>. Sem isso a escrita não começa.</p></li>
+          <li><p class="sb"><b>RBP</b> — backup prévio da faixa que vai ser sobrescrita.</p></li>
+          <li><p class="sb"><b>WBP</b> — grava bloco a bloco, até 100 passos por quadro.</p></li>
+          <li><p class="sb"><b>RBP</b> — relê e compara <b>byte a byte</b> cada bloco gravado.</p></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 9. logica invariante ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">O padrão comum</p>
+      <h2>A lógica que se repete nos dois protocolos</h2>
+      <p>Apesar de um ser binário proprietário e o outro ASCII documentado, a disciplina de escrita é a mesma nos dois — e é ela que o OpenLadder reproduz.</p>
+    </div>
+    <ol class="steps">
+      <li><p class="sb"><b>Portão de estado.</b> Nada é escrito sem o PLC confirmar STOP. No PG, o HELLO em RUN interrompe antes do <span class="m">F0</span>; no Host Protocol, o <span class="m">WBP</span> é recusado em RUN pelo próprio PLC.</p></li>
+      <li><p class="sb"><b>Backup antes de escrever.</b> Ler a faixa inteira e guardar, antes de qualquer alteração.</p></li>
+      <li><p class="sb"><b>Escrita em blocos com teto.</b> 20 instruções lógicas por quadro no PG; 100 passos no <span class="m">WBP</span>. O teto é do orquestrador, não do meio físico.</p></li>
+      <li><p class="sb"><b>Readback de verificação.</b> Reler e comparar byte a byte — não confiar no ACK como prova de conteúdo.</p></li>
+      <li><p class="sb"><b>Falha explícita em vez de retransmissão cega.</b> O PG tenta três vezes e para. Depois de um quadro duvidoso, a regra do laboratório é manter o PLC em STOP e descobrir por leitura o que está gravado, antes de qualquer ação nova.</p></li>
+    </ol>
+  </section>
+
+  <!-- ============ 10. pendencias ============ -->
+  <section>
+    <div class="shead">
+      <p class="eyebrow">Fronteira do conhecido</p>
+      <h2>O que ainda não é fato</h2>
+      <p>A distinção que o projeto mantém, e que vale repetir: saber a condição de sucesso do PC12 não é saber o que o PLC responde. Código, comentário e nota de versão não substituem captura física arquivada.</p>
+    </div>
+    <ul class="plain">
+      <li><span class="mk mk-hyp">&#9675;</span><span>A <b>semântica exata do <span class="m">F0</span></b>. Ele é exigido no preâmbulo, responde <span class="m">00 02 10 22 CB</span>, e não deve ser tratado como STOP.</span></li>
+      <li><span class="mk mk-hyp">&#9675;</span><span>O <b>payload físico do ACK do <span class="m">33</span></b> e as formas de <b>NAK</b>. Estudar erro sem repetir escrita automaticamente.</span></li>
+      <li><span class="mk mk-hyp">&#9675;</span><span>A <b>paginação do <span class="m">34</span> acima de 80 passos</b> — a fronteira 79/80 nunca foi cruzada em bancada.</span></li>
+      <li><span class="mk mk-hyp">&#9675;</span><span>A <b>atribuição de comando</b> para Password, EEPROM, Set RTC e as operações Clear.</span></li>
+      <li><span class="mk mk-hyp">&#9675;</span><span>A <b>captura contínua</b> do handshake completo no fio, para documentar início e finalização de uma sessão de escrita real.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <p class="eyebrow">Procedência</p>
+    <p class="src">docs/TP02_PG_LATEST.md &mdash; ponto canônico de retomada<br>
+      docs/TP02-PG-EMULATOR.md &mdash; emulador PG e quadros nativos<br>
+      docs/tp02-pg-frame-inventory.md &mdash; varredura e emulação dos quadros<br>
+      docs/TP02-COMPUTER-LINK-READ-WRITE.md &middot; docs/TP02-COMPUTER-LINK-WBP.md<br>
+      docs/pc12-ajuda-oficial.md &mdash; documentação do fabricante extraída da ajuda<br>
+      docs/data/pc12-pg33-*.txt &mdash; evidências das emulações offline</p>
+    <p class="note">Alvo dos ensaios: WEG TP02-60MR / TP02-40/60MR(T) V2.2.4K. Todo quadro novo passa pela trava de segurança do laboratório antes de ser transmitido a equipamento vivo.</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,215 @@
+ARQUIVO DE AJUDA: src/OpenLadderStudio.Desktop/Tp022.hlp
+====================================================================================================
+WinHelp HC31  minor=33  flags=0 (0 = sem compressao)
+arquivos internos: |CONTEXT |CTXOMAP |FONT |KWBTREE |KWDATA |KWMAP |SYSTEM |TOPIC |TTLBTREE
+bitmaps: 75 (|bm0..|bm74)
+  |SYSTEM Contents   4 bytes
+  |SYSTEM Window     90 bytes
+  |SYSTEM LCID       10 bytes
+  |SYSTEM CharSet    8 bytes
+
+topicos: 33   titulos em |TTLBTREE: 33
+
+====================================================================================================
+TEXTO DOS TOPICOS
+====================================================================================================
+
+---------- topico 0  TOPICPOS=12  
+Screen Shot(1)PC12 Main Menu:    File Menu    Edit Menu    PLC Menu    Monitor Menu    Help Menu    BTools Menu(Like(5))    LTools Menu(Like(4))    CTools Menu    View Menu(2)PC12 Tool Bar.(3)User Program Edit Screen.(4)Ladder Edit Tool Bar
+(5)Boolean Edit Tool Bar(6)Filename of Editing Program.(7)TP02 base module indication.(8)PC Communication Port Selection.(9)TP02 Operation Status.(10)RTC(Real Time Clock) Display (availabe for 40/60 I/O base modules only).Others :(1)System Requirements(2)Filenames Definition(3)Double Click Modification(fast way to modify instructions)(4)Self-Diagnostic Error:
+   A).Stack Over.   B).Stack Under.   C).F08 ENDS Error.   D).FUN. Double Used.   E).MCR Error.   F).No Enough JCS.   G).No Enough JCR.   H).T/C Double Used.   I).FOR/NEXT Error.   J).LABEL Not Exist.   K).Double OUT.   L).Short Circuit.   M).Open Circuit.
+   N).OUT Error.   O).Grammar Error.
+
+---------- topico 1  TOPICPOS=1757  
+System Requirements(1)An IBM-compatible personal computer with P-133 or higher processor.(2)A hard disk with 10M bytes of free space.(3)32M bytes RAM (64M bytes are recommended).Note:     When you run PC12, please close all of other application softwares and/or programs because running PC12 software needs a lot of memory!!Back Screen Shot
+
+---------- topico 2  TOPICPOS=2253  
+Filenames DefinitionWhen you save a PC12 program , you will get the following files:(1) FileName.PLC : PC12 User Program.(2) FileName.sys1: Data file for System Memory WSxxx.(3) FileName.sys2: Data file for Special Coils SCxxx.(4) FileName.cnt : To save the position of end of Ladder program.(5) FileName.reg1: Data file for Registers Vxxxx.(6) FileName.reg2: Data file for Registers Dxxxx.(7) FileName.reg3: Data file for Registers WCxxx.
+(8) FileName.sym : Data file for Symbols.(9) FileName.file: Data file for File Registers.(10)FileName.cmt : Data file for Program Comments.(11)FileName.typ : TP02 base module setting. Back Screen Shot
+
+---------- topico 3  TOPICPOS=3165  
+
+---------- topico 4  TOPICPOS=3252  
+File Menu(1)New :   -->To create a new program file.    -->Fast Button on Tool Bar.(2)Open :   -->To open a program file.    -->Fast Button on Tool Bar.(3)Load :   -->To load another file into this program.(4)Save :   -->To save the program in editing.    -->Fast Button on Tool Bar.(5)Save As :
+   -->To save the program in editing with a new file name.(6)Print... :   -->To print the program or parameters.    -->Fast Button on Tool Bar.(7)Print Preview... :   -->To preview program's print-out format before printing it.    -->Fast Button on Tool Bar.(8)Print Setup... :   -->To select the printer and define its parameters.(9)Exit:   -->To quit PC12 software.
+Back Screen Shot
+
+---------- topico 5  TOPICPOS=16731  
+Edit Menu(1)PLC Type Selection :-->To select the base module type 20/28 or 40/60 points.-->Program Capacity: 1.5K words for 20/28 points base module,                         4K words for 40/60 points base module.(2)Clear Memory :-->To clear the program and/or system settings in PC12 by        following selection(s).       A.Clear Program :Clear all Instructions.
+       B.Clear Symbol  :Clear all Symbols defined in Coils/Registers.       C.Clear System  :Reset all settings of System Memory(WSxxx) and         Special Coils(SCxxx) to be default values.       D.Clear Register/Data/Text:Clear all settings of Registers         (Vxxxx/Dxxxx/WCxxx) & Text Files(FL001~130).(3)Boolean :-->Boolean programming mode. -->Fast Button on Tool Bar.-->The function will convert Ladder programming mode to Boolean
+       programming mode.(4)Ladder :-->Ladder programming mode. -->Fast Button on Tool Bar.-->The function will convert Boolean programming mode to Ladder       programming mode.(5)Data Memory :-->To edit the data values or contents of registers Vxxxx, Dxxxx,       WCxxx and Text Files FL001~130. -->Fast Button on Tool Bar.(6)System Memory :-->To set the TP02 System parameters including System Memory
+       (WSxxx) & Special Coils(SCxxx). -->Fast Button on Tool Bar.-->Please refer to TP02 series user's Manual for proper settings       in either binary, decimal or hexadecimal notation.(7)Symbol :-->To edit symbols for Xxxxx, Yxxxx, Dxxxx, Vxxxx, Sxxxx, Cxxxx,       SCxxx.       Example: X0001="Motor Start" -->Fast Button on Tool Bar.(8)Used Table :-->To check the status of output points(Yxxxx, Cxxxx, SCxxx) &
+       TMR/CNT(Vxxxx, Dxxxx) to know which of them have been used in       the program. -->Fast Button on Tool Bar.(9)Check Logic :-->To check the program logic correct or not.       You may need to use this function before you write the program       into TP02.       The error messages include:        A).Stack Over.        B).Stack Under.        C).F08 ENDS Error.        D).FUN. Double Used.
+        E).MCR Error.        F).No Enough JCS.        G).No Enough JCR.        H).T/C Double Used.        I).FOR/NEXT Error.        J).LABEL Not Exist.        K).Double OUT.        L).Short Circuit.        M).Open Circuit.        N).OUT Error.        O).Grammar Error. -->Fast Button on Tool Bar.
+-->You are recommended to use this function before writing the       program into TP02 to save the process time for writing.(10)Sort Right :-->To align the last cell of each line in the program in the right       side of the edit screen. -->Fast Button on Tool Bar.(11)Sort Left :-->To align the first cell of each line in the program in the left       side of the edit screen. -->Fast Button on Tool Bar.
+Back Screen Shot
+
+---------- topico 6  TOPICPOS=32977  
+PLC Menu-->Caution:  You can use all functions on this menu when PC12 is                 linking with TP02.                 Please select Com Port(13) and Set TimeOut Value(14)                 before using other functions on this menu.(1)Write :-->To select the items shown above to be written to TP02.(2)Read :-->To read the selected data from TP02.
+(3)Run ! :-->To execute the program while PC12 is linking with TP02.-->If any of the following error messages is received, please       check the program & TP02 system.            A).Stack Over.            B).Stack Under.            C).F08 ENDS Error.            D).FUN. Double Used.            E).MCR Error.            F).No Enough JCS.
+            G).No Enough JCR.            H).T/C Double Used.            I).FOR/NEXT Error.            J).LABEL Not Exist.            K).Double OUT.            L).Short Circuit.            M).Open Circuit.            N).OUT Error.            O).Grammar Error.(4)Stop ! :-->To stop executing the program while PC12 is linking with TP02.
+(5)Password :-->To set or change the TP02's password.-->A.To change password, you need to input the correct password         that you set previously.       B.After password being setting, you have to input the password         to be able to perform the RUN!/STOP!/READ/WRITE functions &         write TP02 program into EEPROM pack.(6)EEPROM :-->To save or load TP02 programs between EEPROM pack & TP02.
+-->When TP02 is powered on, the program stored in EEPROM pack will       be automatically loaded to TP02.-->This function is only available for TP02 40/60 point base       modules.(7)Set RTC :-->To set the Real Time Clock in TP02(Year/ Month/ Day/ Hour/       Minute/ Second).(8)Clear System :-->To clear the settings of System Memory(WSxxx) and Special Coils       (SCxxx) in TP02.(9)Clear Data :
+-->To clear the settings of Registers(Vxxxx, Dxxxx, WCxxx) and       Text Files(FL001~130) in TP02.(10)Clear Program :-->To clear user program in TP02.(11)Clear All Memory :-->To clear System(WSxxx/SCxxx) & Data(Vxxxx/Dxxxx/WCxxx) & user       program in TP02.(12)Compare Program :-->To compare PC12 program in editing with TP02 user program if       they are the same or different.
+(13)COM Port :-->To select computer communication port to link TP02 directly or       through Modem.(14)Set TimeOut Value :-->The respond time after PC12 send a command to TP02.-->If you select Modem Link, please Set Time-Out Value to be 8 or       above.       If you select TP02 Link, please Set Time-Out Value to be 1, but       if TP02 is linking with OP05/06/36(OP-Series HMI), please Set
+       Time-Out Value to be 10 or above.Back Screen Shot
+
+---------- topico 7  TOPICPOS=49164  
+Monitor Menu-->Caution: To be Monitoring TP02, it must be in the Run mode.(1)Boolean :-->To be on-line monitoring the program in Boolean display.(2)Ladder :-->To be on-line monitoring the program in Ladder display.(3)Register I/O Coils Data :-->To be on-line monitoring the Data/Register in the program.(4)Abort :-->To stop Monitoring the program.
+(5)Set or Reset I/O Coil :-->To set or reset I/O point during monitoring.-->Set/Reset function is different from Force/Unforce function.       Example: (X0001 is disconnected)       1st Scan Time : Set X0001 Þ X0001=1       2nd Scan Time :           Þ X0001=0-->Sometimes this function may not work since Windows system is       very busy during Monitoring mode. Please click it again.(6)Modify Register Value :
+-->To change the values of TP02 registers during Monitoring mode.-->Sometimes this function may not work since Windows system is       very busy during Monitoring mode. Please click it again.(7)Scan Time :-->To know the current scan time of TP02.-->The maximum Scan Time of TP02 is 200ms. If the speed time of       executing a program is larger than 200ms, TP02 will enter Error       Mode.(8)RTC :
+-->To monitor the PLC's Real Time Clock including Hour, Minute,       and Second values.-->When you need to disable RTC function, please select this item       again.(9)Show Code Type :-->To select show code type DEC or HEX Code of the Register Value       in the program during Monitoring mode.Back Screen Shot
+
+---------- topico 8  TOPICPOS=51245  
+Help Menu(1)Help Topics :-->Open PC12 On-Line Help file. -->Fast Button in PC12 Tool Bar.(2)About :-->About PC12 Information.Back Screen Shot
+
+---------- topico 9  TOPICPOS=51584  
+BTools Menu-->You can use the BTools Menu shown above or Boolean Edit Tool       Bar shown below to be Boolean programming.(1)STR :-->You can click it or press the Hot Key 'S' for input of       STR/STR NOT instruction. -->Float Button in Boolean Edit Tool Bar.(2)AND :-->You can click it or press the Hot Key 'A' for input of       AND/AND NOT/AND-STR instruction.
+ -->Float Button in Boolean Edit Tool Bar.(3)OR :-->You can click it or press the Hot Key 'R' for input of       OR/OR NOT/OR-STR instruction. -->Float Button in Boolean Edit Tool Bar.(4)OUT :-->You can click it or press the Hot Key 'O'(not Zero) for input       of OUT instruction. -->Float Button in Boolean Edit Tool Bar.(5)TMR :-->You can click it or press the Hot Key 'T' for input of
+       TMR(Timer) instruction. -->Float Button in Boolean Edit Tool Bar.(6)CNT :-->You can click it or press the Hot Key 'C' for input of       CNT(Counter) instruction. -->Float Button in Boolean Edit Tool Bar.(7)FUN :-->You can click it or press the Hot Key 'F' for input of       FUN instruction. -->Float Button in Boolean Edit Tool Bar.Back Screen Shot
+
+---------- topico 10  TOPICPOS=65548  
+LTools Menu-->You can use the LTools Menu shown above or Ladder Edit Tool Bar       shown below to be Ladder programming. (1)Comment :-->You can use this function to give comment(s) in the program. -->Fast Button in PC12 Tool Bar.-->When you read a Program in TP02 & Edit/Modify the program in       Boolean Mode, the Comment will be deleted.       So you must always Edit/Modify the program in Ladder Mode, and
+       write to TP02.(2)STR :-->You can click it or press the Hot Key 'S' for input of       STR instruction. -->Float Button in Ladder Edit Tool Bar.(3)STR NOT :-->You can click it or press the Hot Key 'N' for input of       STR NOT instruction. -->Float Button in Ladder Edit Tool Bar.(4)OUT :-->You can click it or press the Hot Key 'O'(not Zero) for input       of OUT instruction.
+ -->Float Button in Ladder Edit Tool Bar.(5)TMR :-->You can click it or press the Hot Key 'T' for input of       TMR(Timer) instruction. -->Float Button in Ladder Edit Tool Bar.(6)CNT :-->You can click it or press the Hot Key 'C' for input of       CNT(Counter) instruction. -->Float Button in Ladder Edit Tool Bar.(7)FUN :-->You can click it or press the Hot Key 'F' for input of
+       FUN instruction. -->Float Button in Ladder Edit Tool Bar.(8)AND :-->You can click it or press the Hot Key 'A' for input of       AND instruction. -->Float Button in Ladder Edit Tool Bar.(9)OR :-->You can click it or press the Hot Key 'R' for input of       OR instruction. -->Float Button in Ladder Edit Tool Bar.-->Press the Hot Key 'D' to delete OR instruction line.
+ -->Float Button in Ladder Edit Tool Bar.(10)AND extension Line :-->You can click it or press the Hot Key 'Shift'+'A' to extend       AND instruction Line. -->Float Button in Ladder Edit Tool Bar.(11)OR extension Line :-->You can click it or press the Hot Key 'Shift'+'R' to extend       OR instruction Line. -->Float Button in Ladder Edit Tool Bar.(12)F-00 End :-->You can click it or press the Hot Key 'E' for input of
+       F-00 End instruction. -->Float Button in Ladder Edit Tool Bar.Back Screen Shot
+
+---------- topico 11  TOPICPOS=68480  
+CTools Menu-->You can use the CTools Menu shown above or fast buttons shown       below in the PC12 Tool Bar to perform the listed functions.(1)Insert ! :-->Insert a instruction into the program. -->Float Button in PC12 Tool Bar.-->The Hot Key for 'Insert' function is 'Ins' or 'Insert'.(2)Delete ! :-->Delete a instruction in the program.
+ -->Float Button in PC12 Tool Bar.-->A Block of instructions will be deleted if the block is defined       before selecting 'Delete' function.(3)Cut :-->Cut a instruction or defined Block in the program to the Memory       Buffer. -->Float Button in PC12 Tool Bar.-->The Hot Key for 'Cut' function is 'Ctrl'+'X'.(4)Copy :-->Copy a instruction or defined Block in the program to the
+       Memory Buffer. -->Float Button in PC12 Tool Bar.-->The Hot Key for 'Copy' function is 'Ctrl'+'C'.(5)Paste :-->Paste a instruction or defined Block from the Memory Buffer to       the program. -->Float Button in PC12 Tool Bar.-->The Hot Key for 'Paste' function is 'Ctrl'+'V'.(6)Search :-->To search the Coil/Register/Function/Symbol. -->Float Button in PC12 Tool Bar.
+(7)Replace :-->To search and replace I/O Coils. -->Float Button in PC12 Tool Bar.(8)Goto ? :-->Go to the address(in Boolean programming mode) or Line(in       Ladder programming mode) of the program. -->Float Button in PC12 Tool Bar.Back Screen Shot
+
+---------- topico 12  TOPICPOS=82782  
+View Menu(1)B-Tools :-->To open the Boolean Edit Tool Bar when it is closed.(2)L-Tools :-->To open the Ladder Edit Tool Bar when it is closed.(3)Zoom In :-->To Zoom In edit screen in Ladder programming mode. -->Fast Button in PC12 Tool Bar.-->This function is not available for Boolean programming mode.(4)Zoom Out :
+-->To Zoom Out edit screen in Ladder programminig mode. -->Fast Button in PC12 Tool Bar.-->This function is not available for Boolean programming mode.Back Screen Shot
+
+---------- topico 13  TOPICPOS=83612  
+Double Click ModificationIt's a fast way to modify the setting(s)/parameter(s) of a instruction by making a double click of the selected cell.-->Double click operation is not allowed to change the original       instruction but only the setting(s)/parameter(s).Back Screen Shot
+
+---------- topico 14  TOPICPOS=84037  
+
+---------- topico 15  TOPICPOS=84124  
+Stack Over  ÞToo many 'STR' numbers.Example:  0000    STR   X0001  ; STR  0001    STR   C0001  ; STR  0002    OUT   Y0001  ; (two 'STR' numbers)   .       .      .   .       .      .Since one 'OUT' instruction only needs one 'STR' instruction, the "Stack Over" error occurs.Back Screen Shot
+
+---------- topico 16  TOPICPOS=84596  
+Stack Under  Þ'STR' number is not enough.Example:  0000    STR   X0001  ; STR Number =1  0001    CNT   V0001           0002          00010   .       .      .   .       .      .Since one 'CNT' instruction needs two 'STR' instructions, the "Stack Under" error occurs.Back Screen Shot
+
+---------- topico 17  TOPICPOS=85055  
+F08 ENDS Error Þ'F07 SKIP' and 'F08 ENDS' functions are not used in pair.Example:  0000    F-07   X0001          0001    STR    C0001          0002    OUT    Y0001   .       .      .   .       .      .           The "F08 ENDS Error" error occurs because there is no function 'F-08' in the program.Back Screen Shot
+
+---------- topico 18  TOPICPOS=98359  
+FUN.Double Used  ÞIf this error occurs, please check each of the functions, 'F52', 'F53', 'F55', 'F58' and 'F59', if they are double used in the program.Example:  0000    F-52   V0001          0001           Y0001          0002           X0001  0003    F-52   V0001          0004           Y0001          0005           X0001There are two 'F-52' functions in the program, so the "FUN.Double Used" error occurs.Back Screen Shot
+
+---------- topico 19  TOPICPOS=98945  
+MCR Error  Þ'F01 MCS' and 'F02 MCR' functions are not used in pair.Example:  0000    F-01   MCS          0001    STR    C0001          0002    OUT    Y0001   .       .      .   .       .      .           There is no 'F-02 MCR' in the program, so the "MCR Error" error occurs.Back Screen Shot
+
+---------- topico 20  TOPICPOS=99927  
+No Enough JCS  ÞThe 'F03 JCS' number is not enough.Example:  0000    F-04   JCR          0001    STR    C0001          0002    OUT    Y0001   .       .       .   .       .       .           There is no 'F-03 JCS' function, so the "No Enough JCS" error occurs.Back Screen Shot
+
+---------- topico 21  TOPICPOS=100360  
+No Enough JCR  ÞThe 'F04 JCR' number is not enough.Example:  0000    F-03   JCS          0001    STR    C0001          0002    OUT    Y0001   .       .       .   .       .       .           There is no 'F-04 JCR' function, so the "No Enough JCR" error occurs.Back Screen Shot
+
+---------- topico 22  TOPICPOS=100793  
+T/C Double Used  ÞThe register for Timer/Counter is used already.Example:  0000    TMR   V0001  ; V0001 used for TMR  0001          00001          0002    CNT   V0001  ; V0001 double used for CNT    .       .      .   .       .      .           Since the register V0001 is already used for Timer, it can not be used for Counter again.Back Screen Shot
+
+---------- topico 23  TOPICPOS=101309  
+FOR/NEXT Error  Þ'F46 FOR' and 'F47 NEXT' functions are not used in pair.Example:  0000    F-46   FOR     0001           00001          0002    CNT    V0001      .       .       .   .       .       .           There is no 'F-47 NEXT' function, so the "FOR/NEXT Error" error occurs.Back Screen Shot
+
+---------- topico 24  TOPICPOS=101768  
+LABEL Not Exist  ÞThe 'F42 LABEL' function does not exist in the program.Example:  0000    F-43   JMP     0001           LB001          0002    STR    X0001      .       .       .   .       .       .           There is no 'F-42 LB001' function, so the "LABEL Not Exist" error occurs.Back Screen Shot
+
+---------- topico 25  TOPICPOS=102225  
+Double OUT  ÞOutput Coil is used already.Example:  0000    STR   X0001         0001    OUT   Y0001  ; The 1st output coil Y0001.  0002    OUT   Y0001  ; The 2nd output coil Y0001.   .       .      .   .       .      .Since the output coil Y0001 is double used, so the "Double OUT" error occurs.Back Screen Shot
+
+---------- topico 26  TOPICPOS=115009  
+Short CircuitExample:Back Screen Shot
+
+---------- topico 27  TOPICPOS=115558  
+Open CircuitExample:Back Screen Shot
+
+---------- topico 28  TOPICPOS=115723  
+OUT ErrorExample:Back Screen Shot
+
+---------- topico 29  TOPICPOS=116413  
+Grammar ErrorExample A:Example B:Back Screen Shot
+
+---------- topico 30  TOPICPOS=117165  
+
+---------- topico 31  TOPICPOS=117252  
+
+---------- topico 32  TOPICPOS=117337  
+
+
+ARQUIVO DE AJUDA: src/OpenLadderStudio.Desktop/HELPDLG.HLP
+====================================================================================================
+WinHelp HC31  minor=33  flags=0 (0 = sem compressao)
+arquivos internos: |CONTEXT |CTXOMAP |FONT |SYSTEM |TOPIC |TTLBTREE
+bitmaps: 0
+  |SYSTEM Contents   4 bytes
+  |SYSTEM Macro      'BrowseButtons()'
+  |SYSTEM Window     90 bytes
+  |SYSTEM LCID       10 bytes
+  |SYSTEM CharSet    3 bytes
+
+topicos: 14   titulos em |TTLBTREE: 14
+
+====================================================================================================
+TEXTO DOS TOPICOS
+====================================================================================================
+
+---------- topico 0  TOPICPOS=12  
+Hit1
+Application Instruction(Please press mouse right button for learn how to work).
+
+---------- topico 1  TOPICPOS=232  
+Hit02
+Fast select to Application Instructions.
+
+---------- topico 2  TOPICPOS=418  
+Hit03
+Operand (Coil).
+
+---------- topico 3  TOPICPOS=574  
+Hit04
+Operand (S1).
+
+---------- topico 4  TOPICPOS=728  
+Hit05
+Operand (S2).
+
+---------- topico 5  TOPICPOS=879  
+Hit06
+Operand (D).
+
+---------- topico 6  TOPICPOS=1029  
+Hit07
+Symbol of Operand (Coil).
+
+---------- topico 7  TOPICPOS=1192  
+Hit08
+Symbol of Operand (S1).
+
+---------- topico 8  TOPICPOS=1353  
+Hit09
+Symbol of Operand (S2).
+
+---------- topico 9  TOPICPOS=1514  
+Hit10
+Symbol of Operand (D).
+
+---------- topico 10  TOPICPOS=1674  
+Hit11
+Select Time has reset coil or not.
+
+---------- topico 11  TOPICPOS=1846  
+Hit12
+Operand (S).
+
+---------- topico 12  TOPICPOS=1996  
+Hit13
+Symbol of Operand (S).
+
+---------- topico 13  TOPICPOS=2156  

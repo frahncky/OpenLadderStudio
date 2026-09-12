@@ -40,6 +40,9 @@ STACK = 0x3C000000
 DUMMY_ESI = 0x3D000000
 
 EXPECTED_HL = bytes.fromhex('18 71 C8 80')
+# EXTERNAL medido no coletor original, igual ao de F-23 SET. O valor 01 00 usado
+# antes era hipotese nao verificada e nunca chegou a Tp02TargetCompiler.
+EXPECTED_EXT = bytes.fromhex('00 00')
 
 
 def put32(mu, addr, value):
@@ -135,7 +138,7 @@ def emulate(exe):
     high_low = bytes(mu.mem_read(TX_BUF + 6, hl_bytes))
     external = bytes(mu.mem_read(OBJ + 0xE0, ext_cursor))
 
-    ok = (high_low == EXPECTED_HL and external == bytes.fromhex('01 00')
+    ok = (high_low == EXPECTED_HL and external == EXPECTED_EXT
           and hl_bytes == 4 and tx_cursor == 10 and ext_cursor == 2
           and span == 2 and cursor == 2 and instruction_count == 1 and ('24', 24) in state['atoi'])
 
@@ -163,7 +166,7 @@ def main():
             '',
             ('OK' if row['ok'] else 'DIVERGE') + ' HIGH/LOW=[' + hx(row['high_low']) + ']',
             'expected       =[' + hx(EXPECTED_HL) + ']',
-            'EXTERNAL=[' + hx(row['external']) + '] expected=[01 00]',
+            'EXTERNAL=[' + hx(row['external']) + '] expected=[' + hx(EXPECTED_EXT) + ']',
             'counters HL=%d TX=%d EXT=%d StepSpan=%d cursor=%d instructions=%d' %
             (row['hl_bytes'], row['tx_cursor'], row['ext_cursor'], row['span'], row['cursor'], row['instruction_count']),
             'atoi=' + repr(row['state']['atoi']),
@@ -174,7 +177,7 @@ def main():
             lines += [
                 'O coletor original do PC12 expandiu F-24 RST Y0001 em 18 71 | C8 80.',
                 'Os pares HIGH/LOW coincidem byte a byte com a leitura física PG34.',
-                'O primeiro EXTERNAL vale 01 no caminho PG33; isso confirma que EXTERNAL não é BRAW do PG34.',
+                'EXTERNAL = 00 00, igual ao de F-23 SET: no caminho PG33 o RST se distingue pelo HIGH, nao pelo EXTERNAL.',
             ]
         lines.append('Nenhum byte foi transmitido fora do Unicorn.')
         rc = 0 if row['ok'] else 1

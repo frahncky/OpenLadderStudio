@@ -2,6 +2,11 @@
 
 > Estado canônico em 2026-09-11 após a captura física de instruções variáveis, paginação READ-ONLY do `34`, reconstrução OFFLINE do `Write PLC Program`/PG33 e validação física completa do PG33 e restauração confirmada no PC12.
 
+Visão geral em uma página, com a anatomia dos quadros, o diagrama de sessão e a
+geometria de programa dos dois protocolos: `docs/protocolo-pg-tp02.html`. É
+apresentação derivada deste documento, não evidência — quando os dois divergirem,
+este aqui vale.
+
 ## Ambiente e segurança
 
 ```text
@@ -318,6 +323,38 @@ Evidência:
 docs/data/pc12-pg33-f23-full-emulation.txt
 ```
 
+## F-24 RST completo confirmado OFFLINE
+
+Programa sintético:
+
+```text
+F-24 RST Y0001
+```
+
+O coletor original produziu:
+
+```text
+18 71 | C8 80
+EXTERNAL = 00 | 00
+StepSpan = 2
+cursor = 2
+logical instructions = 1
+```
+
+Coincide byte a byte nos pares HIGH/LOW com a captura física PG34.
+
+O `EXTERNAL` vale `00 00`, igual ao de F-23: no caminho PG33 o RST se distingue
+do SET pelo **HIGH** (`18` contra `17`), não pelo `EXTERNAL`. O script trazia
+`01 00` como expectativa — hipótese nunca verificada, corrigida em 2026-09-12
+junto com a frase de sucesso que dela derivava. A hipótese não havia chegado ao
+produto: `Tp02TargetCompiler` já registrava F-24 com `external = 0x00`.
+
+Evidência:
+
+```text
+docs/data/pc12-pg33-f24-full-emulation.txt
+```
+
 ## Bloco máximo confirmado OFFLINE
 
 Vinte instruções:
@@ -462,6 +499,7 @@ helper de operandos
 D0001/D0002/K10/K1000
 F-13w completo
 F-23 SET completo
+F-24 RST completo
 bloco máximo W=80 / LEN=F4 / 247 bytes
 divisão 20+1 e start real do segundo bloco
 gate de sucesso/retry: máximo 3 tentativas
@@ -564,14 +602,36 @@ readback final
 relatório PASS/FAIL
 ```
 
+## Documentação oficial do fabricante
+
+Os arquivos de ajuda do PC12 original (`Tp022.hlp` / `PC12HELP.HLP`) foram
+extraídos em 2026-09-12 por `scripts/extract_pc12_help.py`. São a única
+documentação do fabricante no repositório. O que eles acrescentam ao trabalho
+de PG:
+
+```text
+o menu PLC tem exatamente 14 operações; o espaço de comandos a investigar é fechado
+Password protege RUN!/STOP!/READ/WRITE e a gravação em EEPROM
+Compare Program é leitura por 34 mais comparação local, não comando próprio
+capacidade: 1.5K palavras no módulo 20/28 e 4K no 40/60
+tempo de resposta recomendado: 1 no enlace direto, 10 ou mais com OP05/06/36 no barramento
+```
+
+Eles **não** resolvem a semântica do F0, o ACK físico do `0x33` nem os NAK.
+Sobre o `14`, corroboram que a função de senha existe e o que ela protege, mas
+não atribuem o comando; a regra de não presumir semântica de senha continua.
+
+Detalhes e cruzamento com o mapa de funções: `docs/pc12-ajuda-oficial.md`.
+
 ## Próximas prioridades
 
 OFFLINE:
 
 ```text
-1. repetir o coletor completo para F-24 RST e, se útil, TMR/CNT;
+1. [FEITO em 2026-09-12] coletor completo de F-24 RST;
 2. mapear o preâmbulo e a finalização da sessão Write PLC Program sem executar I/O;
-3. manter o ACK físico como pendente até existir captura real arquivada.
+3. manter o ACK físico como pendente até existir captura real arquivada;
+4. se útil, repetir o coletor completo para TMR/CNT.
 ```
 
 Bancada READ-ONLY:
