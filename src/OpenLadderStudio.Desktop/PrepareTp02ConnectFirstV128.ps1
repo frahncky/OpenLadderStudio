@@ -31,8 +31,9 @@ $fieldReplacement = @'
         private PlcDeviceProfile currentProfile;
         private IPlcDriver currentDriver;
 
-        // v1.28: fluxo igual ao software original: primeiro CONECTAR; somente
-        // depois os comandos operacionais ficam disponiveis na tela principal.
+        // v1.28: fluxo igual ao software original: CONECTAR estabelece a sessao.
+        // Os comandos permanecem visiveis/clicaveis; sem conexao eles apenas
+        // sinalizam SEM CONEXAO e nao transmitem nada ao PLC.
         private bool tp02HomeConnectedV128;
         private string tp02HomePortV128 = string.Empty;
         private string tp02HomeStateV128 = string.Empty;
@@ -165,9 +166,9 @@ $barReplacement = @'
                 tp02HomePortV128 = string.Empty;
                 tp02HomeStateV128 = string.Empty;
                 UpdateTp02HomeButtonsV128();
-                statusText.Text = "TP02: falha de conexao";
+                statusText.Text = "TP02: SEM CONEXAO";
                 MessageBox.Show(this,
-                    "Nao foi possivel conectar ao TP02.\r\n\r\n" + error,
+                    "SEM CONEXAO COM O TP02.\r\n\r\n" + error,
                     "OpenLadder Studio - TP02", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -206,23 +207,20 @@ $barReplacement = @'
         private void UpdateTp02HomeButtonsV128()
         {
             bool connected = tp02HomeConnectedV128;
-            bool stopState = connected && string.Equals(tp02HomeStateV128, "STOP", StringComparison.Ordinal);
-            bool runState = connected && string.Equals(tp02HomeStateV128, "RUN", StringComparison.Ordinal);
 
             if (tp02ConnectButtonV128 != null)
             {
                 tp02ConnectButtonV128.Enabled = true;
                 tp02ConnectButtonV128.Text = connected ? "DESCONECTAR" : "CONECTAR";
             }
-            if (tp02ReadButtonV128 != null) tp02ReadButtonV128.Enabled = connected;
-            if (tp02WriteButtonV128 != null) tp02WriteButtonV128.Enabled = stopState;
-            if (tp02VerifyButtonV128 != null) tp02VerifyButtonV128.Enabled = stopState;
 
-            // A disponibilidade visual segue o estado atual do PLC. O clique ainda
-            // respeita a trava de seguranca existente ate o quadro remoto RUN/STOP
-            // ser validado fisicamente.
-            if (tp02StopButtonV128 != null) tp02StopButtonV128.Enabled = runState;
-            if (tp02RunButtonV128 != null) tp02RunButtonV128.Enabled = stopState;
+            // Igual ao software original: os comandos nao somem nem ficam cinza.
+            // Sem conexao, o clique apenas sinaliza SEM CONEXAO e nao transmite bytes.
+            if (tp02ReadButtonV128 != null) tp02ReadButtonV128.Enabled = true;
+            if (tp02WriteButtonV128 != null) tp02WriteButtonV128.Enabled = true;
+            if (tp02VerifyButtonV128 != null) tp02VerifyButtonV128.Enabled = true;
+            if (tp02StopButtonV128 != null) tp02StopButtonV128.Enabled = true;
+            if (tp02RunButtonV128 != null) tp02RunButtonV128.Enabled = true;
 
             if (tp02ConnectionLabelV128 != null)
             {
@@ -257,9 +255,13 @@ $cmdReplacement = @'
 
             if (!tp02HomeConnectedV128)
             {
+                statusText.Text = "TP02: SEM CONEXAO";
+                if (connectionValue != null) connectionValue.Text = "Sem conexao";
                 MessageBox.Show(this,
-                    "Primeiro clique em CONECTAR e aguarde a confirmacao do TP02.",
-                    "OpenLadder Studio - TP02", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "SEM CONEXAO COM O TP02.\r\n\r\nClique em CONECTAR para estabelecer a comunicacao antes de executar "
+                    + normalized + ".\r\n\r\nNenhum byte foi transmitido.",
+                    "OpenLadder Studio - SEM CONEXAO",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -269,8 +271,8 @@ $cmdReplacement = @'
             {
                 ResetTp02HomeConnectionV128("Controlador alterado; conecte novamente.");
                 MessageBox.Show(this,
-                    "O controlador ativo mudou. Clique em CONECTAR novamente.",
-                    "OpenLadder Studio - TP02", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "SEM CONEXAO COM O TP02.\r\n\r\nO controlador ativo mudou. Clique em CONECTAR novamente.",
+                    "OpenLadder Studio - SEM CONEXAO", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -279,7 +281,7 @@ $cmdReplacement = @'
                 !string.Equals(tp02HomeStateV128, "STOP", StringComparison.Ordinal))
             {
                 MessageBox.Show(this,
-                    normalized + " exige o TP02 em STOP.",
+                    normalized + " exige o TP02 em STOP.\r\n\r\nEstado atual detectado: " + tp02HomeStateV128 + ".",
                     "OpenLadder Studio - TP02", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -374,4 +376,4 @@ $dialogMethods = @'
 $shell = $shell.Substring(0, $readIndex) + $dialogMethods + $shell.Substring($readIndex)
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 Connect-First V128 aplicado: CONECTAR primeiro; comandos liberados somente apos link confirmado.'
+Write-Host 'TP02 Connect-First V128 aplicado: comandos sempre clicaveis; sem conexao sinalizam e nao transmitem bytes.'
