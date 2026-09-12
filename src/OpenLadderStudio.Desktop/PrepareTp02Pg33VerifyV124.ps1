@@ -6,6 +6,7 @@ $v126 = Join-Path $PSScriptRoot 'PrepareTp02HomeControlsV126.ps1'
 $v127 = Join-Path $PSScriptRoot 'PrepareTp02FastPgV127.ps1'
 $v128 = Join-Path $PSScriptRoot 'PrepareTp02ConnectFirstV128.ps1'
 $v130 = Join-Path $PSScriptRoot 'PrepareUiHotfixV130Safe.ps1'
+$v131 = Join-Path $PSScriptRoot 'PrepareTp02ConnectRobustV131.ps1'
 
 if (-not (Test-Path -LiteralPath $core)) { throw 'PrepareTp02Pg33VerifyV124Core.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v125)) { throw 'PrepareTp02PgControlV125.ps1 nao encontrado.' }
@@ -13,6 +14,7 @@ if (-not (Test-Path -LiteralPath $v126)) { throw 'PrepareTp02HomeControlsV126.ps
 if (-not (Test-Path -LiteralPath $v127)) { throw 'PrepareTp02FastPgV127.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v128)) { throw 'PrepareTp02ConnectFirstV128.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v130)) { throw 'PrepareUiHotfixV130Safe.ps1 nao encontrado.' }
+if (-not (Test-Path -LiteralPath $v131)) { throw 'PrepareTp02ConnectRobustV131.ps1 nao encontrado.' }
 
 & $core
 & $v125
@@ -20,3 +22,4 @@ if (-not (Test-Path -LiteralPath $v130)) { throw 'PrepareUiHotfixV130Safe.ps1 na
 & $v127
 & $v128
 & $v130
+& $v131
