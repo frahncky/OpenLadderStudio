@@ -12,6 +12,56 @@ internal static class Tp02PgProtocolSelfTest
     }
     private static string Hex(byte[] bytes) { return BitConverter.ToString(bytes).Replace('-', ' '); }
 
+    private static void MonitorChecks()
+    {
+        byte[] data = new byte[] { 0x12, 0x34, 0x56, 0x78 };
+        Tp02PgProtocol.MonitorResult r;
+
+        r = Tp02PgProtocol.DecodeMonitor(0, 0, 0, data, 0);
+        Check(r.Consumed == 0 && !r.HasState && !r.HasValue, "monitor tipo 0 não consome resposta");
+        r = Tp02PgProtocol.DecodeMonitor(3, 0, 0, data, 0);
+        Check(r.Consumed == 0 && !r.HasState && !r.HasValue, "monitor tipo 3 preserva posição");
+
+        r = Tp02PgProtocol.DecodeMonitor(1, 1, 0, new byte[] { 0x02 }, 0);
+        Check(r.Consumed == 1 && r.HasState && r.IsOn, "monitor tipo 1 ativo-alto");
+        r = Tp02PgProtocol.DecodeMonitor(1, 1, 0, new byte[] { 0x00 }, 0);
+        Check(!r.IsOn, "monitor tipo 1 Off com bit limpo");
+        r = Tp02PgProtocol.DecodeMonitor(2, 1, 0, new byte[] { 0x00 }, 0);
+        Check(r.Consumed == 1 && r.HasState && r.IsOn, "monitor tipo 2 ativo-baixo");
+        r = Tp02PgProtocol.DecodeMonitor(2, 1, 0, new byte[] { 0x02 }, 0);
+        Check(!r.IsOn, "monitor tipo 2 Off com bit setado");
+
+        r = Tp02PgProtocol.DecodeMonitor(4, 0, 1, data, 0);
+        Check(r.Consumed == 4 && r.HasValue && r.Value == 0x12u, "monitor tipo 4 largura 1 usa b0");
+        r = Tp02PgProtocol.DecodeMonitor(4, 0, 2, data, 0);
+        Check(r.Value == 0x3412u, "monitor tipo 4 largura 2 little-endian");
+        r = Tp02PgProtocol.DecodeMonitor(4, 0, 3, data, 0);
+        Check(r.Value == 0x78563412u, "monitor tipo 4 largura 3 little-endian 32");
+
+        r = Tp02PgProtocol.DecodeMonitor(7, 0, 1, data, 0);
+        Check(r.Consumed == 4 && r.HasValue && r.Value == 0x34u, "monitor tipo 7 largura 1 usa b1");
+        r = Tp02PgProtocol.DecodeMonitor(7, 0, 2, data, 0);
+        Check(r.Value == 0x1234u, "monitor tipo 7 largura 2 big-endian");
+        r = Tp02PgProtocol.DecodeMonitor(7, 0, 3, data, 0);
+        Check(r.Value == 0x56781234u, "monitor tipo 7 largura 3 por palavras");
+
+        r = Tp02PgProtocol.DecodeMonitor(5, 0x34, 0, data, 0);
+        Check(r.Consumed == 2 && r.HasState && r.IsOn, "monitor tipo 5 igualdade em b1");
+        r = Tp02PgProtocol.DecodeMonitor(5, 0x35, 0, data, 0);
+        Check(!r.IsOn, "monitor tipo 5 desigual fica Off");
+        r = Tp02PgProtocol.DecodeMonitor(6, 0x35, 0, data, 0);
+        Check(r.Consumed == 2 && r.HasState && r.IsOn, "monitor tipo 6 desigualdade em b1");
+        r = Tp02PgProtocol.DecodeMonitor(6, 0x34, 0, data, 0);
+        Check(!r.IsOn, "monitor tipo 6 igualdade fica Off");
+
+        try { Tp02PgProtocol.DecodeMonitor(4, 0, 2, new byte[] { 1, 2, 3 }, 0); Check(false, "monitor Q4 incompleto rejeitado"); }
+        catch (ArgumentException) { Check(true, "monitor Q4 incompleto rejeitado"); }
+        try { Tp02PgProtocol.DecodeMonitor(1, 8, 0, new byte[] { 0 }, 0); Check(false, "monitor seletor de bit inválido rejeitado"); }
+        catch (ArgumentOutOfRangeException) { Check(true, "monitor seletor de bit inválido rejeitado"); }
+        try { Tp02PgProtocol.DecodeMonitor(7, 0, 4, data, 0); Check(false, "monitor largura inválida rejeitada"); }
+        catch (ArgumentOutOfRangeException) { Check(true, "monitor largura inválida rejeitada"); }
+    }
+
     public static int Main()
     {
         Check(Hex(Tp02PgProtocol.ProgramMode) == "01 00 FE", "modo Program do PC12");
@@ -56,12 +106,15 @@ internal static class Tp02PgProtocolSelfTest
             "F0 classificado como preflight de sessão, não STOP");
         Check(catalog[6].Function.IndexOf("V, D, WC, FILE", StringComparison.Ordinal) >= 0,
             "0A cataloga as áreas de leitura encontradas");
+        Check(catalog[6].Evidence.IndexOf("parser nativo", StringComparison.Ordinal) >= 0,
+            "0A registra parser do monitor tipos 0..7");
         int allowed = 0;
         for (int i = 0; i < catalog.Count; i++) if (catalog[i].TransmitAllowed) allowed++;
         Check(allowed == 5, "somente cinco operações qualificadas para TX");
         byte[] copy = Tp02PgProtocol.Copy(Tp02PgProtocol.Run);
         copy[0] = 0xFF;
         Check(Tp02PgProtocol.Run[0] == 0x02, "cópia defensiva");
+        MonitorChecks();
         if (failures != 0) return 1;
         Console.WriteLine("Tp02PgProtocolSelfTest: OK (offline; nenhum TX)");
         return 0;
