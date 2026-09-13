@@ -1,0 +1,30 @@
+PC12 SHA256=05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+
+PG14 — gate de autorizacao
+004AF763  14 00 EB  Compare PLC Program           sucessores: 004AF8D4:38, 004AFA54:34
+004B19E8  14 00 EB  Read PLC Program              sucessores: 004B1B79:38, 004B1D62:34
+004B687F  14 00 EB  Write PLC Program             sucessores: 004B7958:33
+004BBD3B  14 00 EB  manutencao/estado protegido   sucessores: (sem opcode posterior antes do retorno)
+004BC238  14 00 EB  EEPROM                        sucessores: 004BC3C9:12, 004BC3E0:13
+
+Classificacao PG14: AUTHORIZATION_GATE
+- quadro constante; nao carrega bytes da senha
+- a comparacao da senha ocorre localmente antes do builder
+- o mesmo gate protege Compare/Read/Write Program e EEPROM
+- portanto nao e comando de transferencia da senha
+
+F0 — helpers do PC12
+0046F2E2  F0 00 0F
+0046F358  F0 00 0F
+0046F458  F0 00 0F
+helper 0046F2BE  callers=1  0046F37E
+helper 0046F300  callers=22  004ADAFD 004ADB24 004ADB4B 004ADB72 004ADB99 004AE74E 004AE758 004AE80C 004AE99D 004AE9BA 004AED2A 004AED48 004AED66 004B1071 004B108F 004B10AD 004B5DE9 004B5E10 004B5E37 004B5E5E 004BE801 004C2318
+helper 0046F409  callers=2  004AE41E 004AE569
+
+Classificacao F0: SESSION_PREFLIGHT
+- 46F300 salva o quadro corrente, troca temporariamente para F0 e restaura o contexto
+- 46F409 faz o mesmo e ainda inspeciona bit 7 do buffer/status
+- os 24 callers dos wrappers mostram reutilizacao transversal
+- isso sustenta preflight/qualificacao de sessao; nao sustenta chamar F0 de STOP
+
+RESULT=PASS

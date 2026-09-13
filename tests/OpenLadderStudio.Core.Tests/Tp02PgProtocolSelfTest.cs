@@ -22,19 +22,25 @@ internal static class Tp02PgProtocolSelfTest
         Check(Hex(Tp02PgProtocol.Candidate11) == "11 00 EE", "candidato 11");
         Check(Hex(Tp02PgProtocol.EepromToPlc) == "12 00 ED", "EEPROM para PLC");
         Check(Hex(Tp02PgProtocol.PlcToEeprom) == "13 00 EC", "PLC para EEPROM");
+        Check(Hex(Tp02PgProtocol.AuthorizationGate) == "14 00 EB", "gate de autorização PG14");
         Check(Hex(Tp02PgProtocol.Presence) == "F0 00 0F", "consulta F0");
         byte[][] frames = { Tp02PgProtocol.ProgramMode, Tp02PgProtocol.Run,
             Tp02PgProtocol.Candidate03, Tp02PgProtocol.Candidate04,
-            Tp02PgProtocol.ClearAllMemory, Tp02PgProtocol.Candidate11, Tp02PgProtocol.Presence };
+            Tp02PgProtocol.ClearAllMemory, Tp02PgProtocol.Candidate11,
+            Tp02PgProtocol.EepromToPlc, Tp02PgProtocol.PlcToEeprom,
+            Tp02PgProtocol.AuthorizationGate, Tp02PgProtocol.Presence };
         for (int i = 0; i < frames.Length; i++)
             Check(Tp02PgProtocol.HasValidChecksum(frames[i]), "checksum do quadro " + i);
         Check(!Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Run), "RUN qualificado não bloqueado");
-        Check(!Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Presence), "F0 de presença não bloqueado");
+        Check(!Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Presence), "F0 de preflight não bloqueado");
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.ProgramMode), "Program/STOP bloqueado");
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.ClearAllMemory), "Clear All bloqueado");
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Candidate03), "03 bloqueado");
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Candidate04), "04 bloqueado");
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Candidate11), "11 bloqueado");
+        Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.EepromToPlc), "12 EEPROM bloqueado");
+        Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.PlcToEeprom), "13 EEPROM bloqueado");
+        Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.AuthorizationGate), "14 autorização bloqueado");
         System.Collections.Generic.IList<Tp02PgProtocol.CommandInfo> catalog = Tp02PgProtocol.GetCommandCatalog();
         Check(catalog.Count == 18, "catálogo completo com handshake e 17 opcodes");
         Check(catalog[0].Code == "HELLO" && catalog[17].Code == "F0", "ordem estável do catálogo");
@@ -44,6 +50,10 @@ internal static class Tp02PgProtocolSelfTest
         Check(catalog[8].Function == "Clear Data", "11 mapeado ao Clear Data");
         Check(catalog[9].Code == "12" && catalog[9].Function == "EEPROM PACK → PLC", "12 e direção EEPROM para PLC");
         Check(catalog[10].Code == "13" && catalog[10].Function == "PLC → EEPROM PACK", "13 e direção PLC para EEPROM");
+        Check(catalog[11].Code == "14" && catalog[11].Function.IndexOf("Autorizar operação protegida", StringComparison.Ordinal) >= 0,
+            "14 classificado como gate de autorização");
+        Check(catalog[17].Function.IndexOf("Preflight/qualificação", StringComparison.Ordinal) >= 0,
+            "F0 classificado como preflight de sessão, não STOP");
         Check(catalog[6].Function.IndexOf("V, D, WC, FILE", StringComparison.Ordinal) >= 0,
             "0A cataloga as áreas de leitura encontradas");
         int allowed = 0;

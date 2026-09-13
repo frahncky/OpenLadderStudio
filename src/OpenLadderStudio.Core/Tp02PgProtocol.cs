@@ -30,9 +30,10 @@ namespace OpenLadderStudio.Core
         internal static readonly byte[] Candidate04 = BuildShortFrame(0x04);
         internal static readonly byte[] ClearAllMemory = BuildShortFrame(0x0F);
         internal static readonly byte[] Candidate11 = BuildShortFrame(0x11);
-        internal static readonly byte[] Presence = BuildShortFrame(0xF0);
         internal static readonly byte[] EepromToPlc = BuildShortFrame(0x12);
         internal static readonly byte[] PlcToEeprom = BuildShortFrame(0x13);
+        internal static readonly byte[] AuthorizationGate = BuildShortFrame(0x14);
+        internal static readonly byte[] Presence = BuildShortFrame(0xF0);
 
         internal static IList<CommandInfo> GetCommandCatalog()
         {
@@ -49,13 +50,13 @@ namespace OpenLadderStudio.Core
                 new CommandInfo("11", "11 00 EE", "Clear Data", "Menu 310 -> handler 004AE491; exige STOP", false),
                 new CommandInfo("12", "12 00 ED", "EEPROM PACK → PLC", "Diálogo 30 e seleção nativa emulados", false),
                 new CommandInfo("13", "13 00 EC", "PLC → EEPROM PACK", "Diálogo 30 e seleção nativa emulados", false),
-                new CommandInfo("14", "14 00 EB", "Etapa após comparação local de senha", "Ramos igual/diferente emulados; efeito no firmware pendente", false),
+                new CommandInfo("14", "14 00 EB", "Autorizar operação protegida (gate de senha)", "5 builders: Compare/Read/Write/EEPROM; senha comparada localmente", false),
                 new CommandInfo("33", "33 LEN ... CHK", "Gravar programa", "Construtor original emulado offline", false),
                 new CommandInfo("34", "34 03 END QTD CHK", "Ler programa", "Confirmado no PC12 e em bancada", true),
                 new CommandInfo("35", "35 03 END BIT CHK", "SET/RESET de X, Y e C", "5.632 quadros emulados; banco diferente do PG0A", false),
                 new CommandInfo("37", "37 02 FF FF C8", "Atualizar BIOS/firmware", "Contexto BIOS Refresh no PC12", false),
                 new CommandInfo("38", "38 00 C7", "Metadados/preâmbulo do programa", "Confirmado no fluxo de leitura", true),
-                new CommandInfo("F0", "F0 00 0F", "Status/preflight da conexão", "Confirmado no PC12 e no TP02", true)
+                new CommandInfo("F0", "F0 00 0F", "Preflight/qualificação da sessão PG", "3 builders; wrappers com 24 callers; confirmado no PC12 e TP02", true)
             }.AsReadOnly();
         }
 
@@ -86,7 +87,8 @@ namespace OpenLadderStudio.Core
         {
             return Equal(frame, ClearAllMemory) || Equal(frame, ProgramMode)
                 || Equal(frame, Candidate03) || Equal(frame, Candidate04)
-                || Equal(frame, Candidate11);
+                || Equal(frame, Candidate11) || Equal(frame, EepromToPlc)
+                || Equal(frame, PlcToEeprom) || Equal(frame, AuthorizationGate);
         }
 
         internal static byte[] Copy(byte[] frame)
