@@ -24,6 +24,8 @@ namespace OpenLadderStudio.Core
             }
         }
 
+        internal enum MonitorQ4Type { Type4 = 4, Type7 = 7 }
+
         internal static readonly byte[] ProgramMode = BuildShortFrame(0x01);
         internal static readonly byte[] Run = BuildShortFrame(0x02);
         internal static readonly byte[] Candidate03 = BuildShortFrame(0x03);
@@ -45,7 +47,7 @@ namespace OpenLadderStudio.Core
                 new CommandInfo("03", "03 00 FC", "Clear Program / preparar gravação", "Menu 321 e preflight do PG33; 5 chamadas", false),
                 new CommandInfo("04", "04 00 FB", "Clear System", "Menu 309 -> handler 004AE346; exige STOP", false),
                 new CommandInfo("09", "09 LEN [END QTD DADOS]... CHK", "Escrita V/D/WC, FL, WS/SC e RTC", "10 locais emulados; lotes de até 40 registradores", false),
-                new CommandInfo("0A", "0A LEN [END QTD]... CHK", "Leitura V, D, WC, FILE, bits, sistema, RTC e monitor Ladder", "16 builders emulados; dispatcher 27 IDs; Q=1/2/4; Q4 tipos 4/7 com ordem de 32 bits fechada", false),
+                new CommandInfo("0A", "0A LEN [END QTD]... CHK", "Leitura V, D, WC, FILE, bits, sistema, RTC e monitor Ladder", "16 builders emulados; dispatcher 27 IDs; Q=1/2/4; decoder Q4 tipos 4/7 integrado; 70006=CNT", false),
                 new CommandInfo("0F", "0F 00 F0", "Apagar toda a memória", "Clear All Memory confirmado no PC12", false),
                 new CommandInfo("11", "11 00 EE", "Clear Data", "Menu 310 -> handler 004AE491; exige STOP", false),
                 new CommandInfo("12", "12 00 ED", "EEPROM PACK → PLC", "Diálogo 30 e seleção nativa emulados", false),
@@ -82,6 +84,31 @@ namespace OpenLadderStudio.Core
             for (int i = 0; i < frame.Length; i++) sum = (sum + frame[i]) & 0xFF;
             return sum == 0xFF;
         }
+
+        /// <summary>Seleciona a ordem Q=4 exatamente como o PC12: seletor não-zero => tipo 4; zero => tipo 7.</summary>
+        internal static MonitorQ4Type MonitorQ4TypeFromSelector(bool selectorNonZero)
+        {
+            return selectorNonZero ? MonitorQ4Type.Type4 : MonitorQ4Type.Type7;
+        }
+
+        /// <summary>Decodifica resposta PG com quatro bytes conforme os dois consumidores nativos do monitor.</summary>
+        internal static uint DecodeMonitorQ4(byte[] response, MonitorQ4Type type)
+        {
+            if (response == null || response.Length != 7 || response[1] != 4 || !HasValidChecksum(response))
+                throw new ArgumentException("Resposta Q=4 incompleta ou checksum inválido.");
+            if (response[0] != 0)
+                throw new ArgumentException("Resposta Q=4 de erro/status: " + response[0].ToString("X2"));
+
+            uint b0 = response[2], b1 = response[3], b2 = response[4], b3 = response[5];
+            if (type == MonitorQ4Type.Type4)
+                return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
+            if (type == MonitorQ4Type.Type7)
+                return b1 | (b0 << 8) | (b3 << 16) | (b2 << 24);
+            throw new ArgumentException("Tipo Q=4 não reconhecido.");
+        }
+
+        internal static string FormatMonitorQ4Decimal(uint value) { return value.ToString("D10"); }
+        internal static string FormatMonitorQ4Hex(uint value) { return value.ToString("X8"); }
 
         internal static bool IsBlocked(byte[] frame)
         {
