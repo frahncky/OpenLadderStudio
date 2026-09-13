@@ -42,7 +42,10 @@ namespace OpenLadderStudio.Core
             if (request == null || request.Length != 6 || request[0] != 0x34 || request[1] != 0x03
                 || request[4] != 0xA0 || Sum8(request) != 0xFF)
                 throw new ArgumentException("Pedido PG34 inválido.");
-            return (request[2] << 8) | request[3];
+            int start = (request[2] << 8) | request[3];
+            if (start < 0 || start >= MaxProgramSteps)
+                throw new ArgumentException("START PG34 fora da faixa do TP02.");
+            return start;
         }
 
         internal static IList<byte[]> BuildReadPlan(int capacitySteps)
