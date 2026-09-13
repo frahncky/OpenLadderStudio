@@ -1,0 +1,22 @@
+PC12_PG34_PAGING_STATIC
+file=pc12.exe
+sha256=05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+initial_builder=0x004AFA54 match=true
+initial_builder=0x004B1D62 match=true
+dynamic_builder=0x004B0DFC high_low_q_checksum=true
+dynamic_builder=0x004B2BE1 two_start_bytes_q_checksum=true
+cursor_format_va=0x004F4FB2 value=%04X
+cursor_format_ref=0x004B0D4B
+start=0 frame=34 03 00 00 A0 28
+start=80 frame=34 03 00 50 A0 D8
+start=160 frame=34 03 00 A0 A0 88
+start=240 frame=34 03 00 F0 A0 38
+start=320 frame=34 03 01 40 A0 E7
+start=400 frame=34 03 01 90 A0 97
+start=1440 frame=34 03 05 A0 A0 83
+start=3920 frame=34 03 0F 50 A0 C9
+boundary_00FF_to_0100=start240_then320
+capacity_1500_pages=19 last_start=1440
+capacity_4000_pages=50 last_start=3920
+checksum_note=swapping_start_bytes_preserves_additive_checksum
+RESULT=PASS
