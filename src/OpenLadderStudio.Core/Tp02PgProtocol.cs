@@ -45,7 +45,7 @@ namespace OpenLadderStudio.Core
                 new CommandInfo("03", "03 00 FC", "Clear Program / preparar gravação", "Menu 321 e preflight do PG33; 5 chamadas", false),
                 new CommandInfo("04", "04 00 FB", "Clear System", "Menu 309 -> handler 004AE346; exige STOP", false),
                 new CommandInfo("09", "09 LEN [END QTD DADOS]... CHK", "Escrita V/D/WC, FL, WS/SC e RTC", "10 locais emulados; lotes de até 40 registradores", false),
-                new CommandInfo("0A", "0A LEN [END QTD]... CHK", "Leitura V, D, WC, FILE, bits, sistema, RTC e monitor Ladder", "16 builders emulados; dispatcher do monitor com 27 IDs e Q=1/2/4 bytes", false),
+                new CommandInfo("0A", "0A LEN [END QTD]... CHK", "Leitura V, D, WC, FILE, bits, sistema, RTC e monitor Ladder", "16 builders emulados; dispatcher 27 IDs; Q=1/2/4; Q4 tipos 4/7 com ordem de 32 bits fechada", false),
                 new CommandInfo("0F", "0F 00 F0", "Apagar toda a memória", "Clear All Memory confirmado no PC12", false),
                 new CommandInfo("11", "11 00 EE", "Clear Data", "Menu 310 -> handler 004AE491; exige STOP", false),
                 new CommandInfo("12", "12 00 ED", "EEPROM PACK → PLC", "Diálogo 30 e seleção nativa emulados", false),
