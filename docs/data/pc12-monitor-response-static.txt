@@ -1,0 +1,17 @@
+PC12_MONITOR_RESPONSE_STATIC
+file=pc12.exe
+sha256=05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+jump_targets=type0=0x004C4F29 type1=0x004C4F47 type2=0x004C5142 type3=0x004C56B6 type4=0x004C5303 type5=0x004C5488 type6=0x004C54DF type7=0x004C5536
+labels={0: '        ', 1: 'Off  ', 2: 'Off  ', 5: 'Off  ', 6: 'Off  '}
+numeric_formats_type4=['%03d', '%05d', '%010u']
+numeric_formats_type7=['%03d', '%05d', '%010u']
+consumption=type0=0 type1=1 type2=1 type3=0 type4=4 type5=2 type6=2 type7=4
+type4_width1=b0
+type4_width2=b0|(b1<<8)
+type4_width3=b0|(b1<<8)|(b2<<16)|(b3<<24)
+type7_width1=b1
+type7_width2=(b0<<8)|b1
+type7_width3=((b0<<8)|b1)|(((b2<<8)|b3)<<16)
+type1=active_high_bit; type2=active_low_bit
+type5=payload[1]==selector; type6=payload[1]!=selector
+RESULT=PASS
