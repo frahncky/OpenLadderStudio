@@ -5,6 +5,12 @@ Relatório: `TP02-PG-Lab-20260909-181259.txt`, perfil `Fallback - DTR on RTS off
 
 Esta é a primeira sessão em que um comando de **leitura** do TP02 devolveu **dados**.
 
+**Revisão em 12/09:** a emulação do original mostrou que a unidade do endereço
+depende da área. Em V/D/WC o passo é por registrador, enquanto a quantidade
+indica bytes; em FL o passo é por arquivo. A contiguidade e a varredura por
+passo `qtd` propostas abaixo eram hipóteses desta sessão e não devem ser
+generalizadas. Ver [variantes de memória](tp02-pg-memory-variants-2026-09-12.md).
+
 ## Fatos observados
 
 | Consulta | TX | Resultado |

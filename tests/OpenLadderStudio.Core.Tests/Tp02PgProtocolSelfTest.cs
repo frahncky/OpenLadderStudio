@@ -20,6 +20,8 @@ internal static class Tp02PgProtocolSelfTest
         Check(Hex(Tp02PgProtocol.Candidate04) == "04 00 FB", "candidato 04");
         Check(Hex(Tp02PgProtocol.ClearAllMemory) == "0F 00 F0", "Clear All Memory");
         Check(Hex(Tp02PgProtocol.Candidate11) == "11 00 EE", "candidato 11");
+        Check(Hex(Tp02PgProtocol.EepromToPlc) == "12 00 ED", "EEPROM para PLC");
+        Check(Hex(Tp02PgProtocol.PlcToEeprom) == "13 00 EC", "PLC para EEPROM");
         Check(Hex(Tp02PgProtocol.Presence) == "F0 00 0F", "consulta F0");
         byte[][] frames = { Tp02PgProtocol.ProgramMode, Tp02PgProtocol.Run,
             Tp02PgProtocol.Candidate03, Tp02PgProtocol.Candidate04,
@@ -34,12 +36,14 @@ internal static class Tp02PgProtocolSelfTest
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Candidate04), "04 bloqueado");
         Check(Tp02PgProtocol.IsBlocked(Tp02PgProtocol.Candidate11), "11 bloqueado");
         System.Collections.Generic.IList<Tp02PgProtocol.CommandInfo> catalog = Tp02PgProtocol.GetCommandCatalog();
-        Check(catalog.Count == 17, "catálogo completo com handshake e 16 opcodes");
-        Check(catalog[0].Code == "HELLO" && catalog[16].Code == "F0", "ordem estável do catálogo");
+        Check(catalog.Count == 18, "catálogo completo com handshake e 17 opcodes");
+        Check(catalog[0].Code == "HELLO" && catalog[17].Code == "F0", "ordem estável do catálogo");
         Check(catalog[3].Function.IndexOf("Clear Program", StringComparison.Ordinal) >= 0,
             "03 mapeado ao Clear Program sem promover TX");
         Check(catalog[4].Function == "Clear System", "04 mapeado ao Clear System");
         Check(catalog[8].Function == "Clear Data", "11 mapeado ao Clear Data");
+        Check(catalog[9].Code == "12" && catalog[9].Function == "EEPROM PACK → PLC", "12 e direção EEPROM para PLC");
+        Check(catalog[10].Code == "13" && catalog[10].Function == "PLC → EEPROM PACK", "13 e direção PLC para EEPROM");
         Check(catalog[6].Function.IndexOf("V, D, WC, FILE", StringComparison.Ordinal) >= 0,
             "0A cataloga as áreas de leitura encontradas");
         int allowed = 0;

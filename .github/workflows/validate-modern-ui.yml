@@ -56,6 +56,21 @@ jobs:
           OpenLadderSimTest.exe
           if errorlevel 1 exit /b 1
 
+      - name: Testar memória e relógio sem conexão com PLC
+        shell: cmd
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          OpenLadderTP02PgMemoryUiTest.exe
+          if errorlevel 1 exit /b 1
+
+      - name: Guardar telas do teste de memória
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TP02-Memory-UI
+          path: artifacts/tp02-memory-ui/*.png
+          if-no-files-found: ignore
+
       - name: Testar inicialização da interface
         shell: powershell
         working-directory: src/OpenLadderStudio.Desktop
