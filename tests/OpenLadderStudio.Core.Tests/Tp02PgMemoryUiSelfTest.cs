@@ -36,7 +36,8 @@ internal static class Tp02PgMemoryUiSelfTest
         {
             if (!child.Visible) continue;
             Check(child.Left >= 0 && child.Top >= 0 && child.Right <= parent.ClientSize.Width + 1
-                && child.Bottom <= parent.ClientSize.Height + 1, "controle cabe no painel: " + child.GetType().Name);
+                && child.Bottom <= parent.ClientSize.Height + 1, "controle cabe no painel: " + child.GetType().Name
+                    + " " + child.Bounds + " em " + parent.ClientSize);
             if (child is TableLayoutPanel || child is FlowLayoutPanel) Bounds(child);
         }
     }
@@ -81,7 +82,10 @@ internal static class Tp02PgMemoryUiSelfTest
                     using (Bitmap picture = new Bitmap(form.Width, form.Height))
                     {
                         form.DrawToBitmap(picture, new Rectangle(Point.Empty, picture.Size));
-                        picture.Save(Path.Combine(pictures, "memory-scale-" + ((int)(scale * 100)) + ".png"), ImageFormat.Png);
+                        string file = Path.Combine(pictures, "memory-scale-" + ((int)(scale * 100)) + ".png");
+                        picture.Save(file, ImageFormat.Png);
+                        // Permite inspecionar a tela também quando o transporte de artefatos não está disponível.
+                        if (scale == 1.0f) Console.WriteLine("UI_SCREENSHOT_PNG=" + Convert.ToBase64String(File.ReadAllBytes(file)));
                     }
                     input.Text = "00 06 04 D2 01 00 0F FF 15";
                     Generate(form);

@@ -34,6 +34,7 @@ namespace ModernPC12
             layout.Dock = DockStyle.Fill;
             layout.Padding = new Padding(16);
             layout.ColumnCount = 1;
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             layout.RowCount = 7;
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
