@@ -1,0 +1,28 @@
+PC12_MONITOR_Q4_RESPONSE_STATIC
+source=pc12.exe
+sha256=05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+
+Q4 producer sites:
+0x004C3AB9 -> Q=04, descriptor type=7, aux=2
+0x004C3B45 -> Q=04, descriptor type=4 or 7, aux=2
+0x004C3CCA -> Q=04, descriptor type=4 or 7, aux=operand selector
+0x004C3E21 -> Q=04, descriptor type=4 or 7, aux=operand selector
+0x004C3F4F -> Q=04, descriptor type=4 or 7, aux=operand selector
+
+Q4 consumer type 4 @ 0x004C5303:
+raw32 = b0 | (b1<<8) | (b2<<16) | (b3<<24)
+decimal format=%010u
+hex formats= %08X  / %08X  
+response index advances by 4
+
+Q4 consumer type 7 @ 0x004C5536:
+raw32 = b1 | (b0<<8) | (b3<<16) | (b2<<24)
+Equivalent: each 16-bit word is received big-endian while the low word precedes the high word.
+decimal format=%010u
+hex formats= %08X  / %08X  
+response index advances by 4
+
+Selector:
+byte [object+0x12DE] selects descriptor type 4 when nonzero, type 7 when zero in the Q4 producer branches.
+
+RESULT=PASS
