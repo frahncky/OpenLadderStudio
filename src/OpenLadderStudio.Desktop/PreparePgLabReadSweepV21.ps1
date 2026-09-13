@@ -18,7 +18,8 @@ function Replace-Required([string]$source, [string]$needle, [string]$replacement
 # v1.11: a bancada confirmou que 0A e uma LEITURA que devolve dados. O pedido
 # 0A 03 [end_hi][end_lo][qtd] chk devolve resposta CMD=00 LEN=qtd payload. Aqui
 # entra o tipo de etapa read_sweep_0a: a partir de um quadro 0A base, varre
-# enderecos contiguos (passo = qtd) montando novos quadros 0A com checksum e
+# enderecos da mesma area (passo por registrador, arquivo ou byte de bits),
+# respeitando seu limite e montando novos quadros 0A com checksum,
 # capturando cada resposta, com retentativa por endereco. Trava intrinseca: o
 # motor so consegue emitir CMD 0A (nunca escrita/apagamento/firmware).
 
@@ -64,8 +65,17 @@ $text = Replace-Required $text @'
             }
             int startAddr = (baseFrame[2] << 8) | baseFrame[3];
             int readLen = baseFrame[4];
-            if (readLen <= 0) readLen = 1;
-            int maxReads = 40;
+            System.Collections.Generic.IList<byte[]> pages;
+            try
+            {
+                pages = OpenLadderStudio.Core.Tp02PgMemoryProtocol.CreateSweep(baseFrame, 40);
+            }
+            catch (ArgumentException ex)
+            {
+                LogEvent("BLOQUEIO", step.name + " - " + ex.Message, string.Empty, null, totalWatch.ElapsedMilliseconds);
+                return;
+            }
+            int maxReads = pages.Count;
             int perAddrTries = 3;
             int perTimeout = step.timeoutMs > 0 ? step.timeoutMs : 3500;
             int gap = step.passiveAfterMs > 0 ? step.passiveAfterMs : 200;
@@ -73,8 +83,8 @@ $text = Replace-Required $text @'
             LogEvent("VARREDURA", "0A read-only: inicio=0x" + startAddr.ToString("X4", CultureInfo.InvariantCulture) + " tamanho=0x" + readLen.ToString("X2", CultureInfo.InvariantCulture) + " leituras=" + maxReads.ToString(CultureInfo.InvariantCulture) + " tentativas/end=" + perAddrTries.ToString(CultureInfo.InvariantCulture), string.Empty, null, totalWatch.ElapsedMilliseconds);
             for (int n = 0; n < maxReads && !cancelRequested; n++)
             {
-                int addr = (startAddr + n * readLen) & 0xFFFF;
-                byte[] tx = BuildRead0AFrame(addr, readLen);
+                byte[] tx = pages[n];
+                int addr = (tx[2] << 8) | tx[3];
                 if (tx[0] != 0x0A || tx.Length != 6) break;
                 string addrHex = "0x" + addr.ToString("X4", CultureInfo.InvariantCulture);
                 string txHexN = ToHex(tx);

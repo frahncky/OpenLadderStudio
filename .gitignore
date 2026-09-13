@@ -37,6 +37,8 @@ src/OpenLadderStudio.Desktop/lastfile.dir
 
 # Local validation artifacts.
 artifacts/
+src/OpenLadderStudio.Desktop/OpenLadderTP02PgMemoryTest.exe
+src/OpenLadderStudio.Desktop/OpenLadderTP02PgMemoryUiTest.exe
 
 # Python
 __pycache__/

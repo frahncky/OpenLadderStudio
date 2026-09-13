@@ -181,7 +181,7 @@ if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePgLabPaginationV30.ps1"
 if errorlevel 1 goto :erro
 
-"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02PgLabProgram /out:"OpenLadderTP02PgLab.exe" /reference:System.dll /reference:System.Security.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll "StudioDiagnostics.cs" "Tp02OpenAiAgent.cs" "Tp02PersistentOpenAiAgent.cs" "..\OpenLadderStudio.Core\Tp02Pg34Decoder.cs" "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" "TP02PgLab.build.cs"
+"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02PgLabProgram /out:"OpenLadderTP02PgLab.exe" /reference:System.dll /reference:System.Security.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll "StudioDiagnostics.cs" "Tp02OpenAiAgent.cs" "Tp02PersistentOpenAiAgent.cs" "..\OpenLadderStudio.Core\Tp02Pg34Decoder.cs" "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "TP02PgLab.build.cs"
 if errorlevel 1 goto :erro
 
 del /q "TP02PgLab.build.cs" >nul 2>&1

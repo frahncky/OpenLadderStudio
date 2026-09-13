@@ -7,6 +7,19 @@ geometria de programa dos dois protocolos: `docs/protocolo-pg-tp02.html`. É
 apresentação derivada deste documento, não evidência — quando os dois divergirem,
 este aqui vale.
 
+## Integração de memória e relógios — 2026-09-13
+
+A v1.42 incorpora a pesquisa de 12/09 ao catálogo e à ferramenta offline
+**Ferramentas > Comandos PG do PC12 > Memória e relógio…**. Inclui montadores
+09/0A/35, respostas de memória/RTC/scan e correção do passo de `read_sweep_0a`.
+São 17 opcodes identificados mais o handshake; isso não significa que todos
+estejam qualificados para transmissão ou testados fisicamente.
+
+Os detalhes e limites estão nas [notas da v1.42](releases/v1.42.md), na pesquisa
+[monitor/EEPROM/relógios](tp02-pg-monitor-eeprom-clock-2026-09-12.md) e nas
+[variantes de memória](tp02-pg-memory-variants-2026-09-12.md). A referência
+histórica de v1.22 e o ensaio físico abaixo pertencem ao estado de 11/09.
+
 ## Ambiente e segurança
 
 ```text
