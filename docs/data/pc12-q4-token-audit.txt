@@ -1,0 +1,25 @@
+PC12_Q4_TOKEN_AUDIT
+file=pc12.exe
+sha256=05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+token70006_cmp=0x00454FE1 bytes=3D 76 11 01 00
+token70006_error=X:%04d/Y:%04d CNT Circuit is incorrect !
+token70007_seed=0x0041AA43 bytes=BF 77 11 01 00
+token70007_backscan_cmp1=0x0041AAB8 bytes=81 FF 77 11 01 00
+token70007_backscan_cmp2=0x0041AACF bytes=81 FF 77 11 01 00
+token70009_cmp=0x00455273 bytes=3D 79 11 01 00
+token70009_error_family=X:%04d/Y:%04d OUT Circuit is incorrect !
+token70017_cmp=0x0044808A bytes=81 FA 81 11 01 00
+token70017_companions=70008,70016,70020
+token70027_pair_token70008=0x00420FB7 bytes=68 78 11 01 00
+token70027_literal=70027
+token70027_shape=70027 NNNNN 00000
+token70027_structural_cmp=0x0044BC65 bytes=3D 8B 11 01 00
+q4_ids=70006,70007,70009,70017,70027
+id=70006 token=0x11176 class=1
+id=70007 token=0x11177 class=1
+id=70009 token=0x11179 class=2
+id=70017 token=0x11181 class=2
+id=70027 token=0x1118B class=1
+classification=70006:CNT;70007:structural-continuation;70009:output-circuit-family;70017:special-topology-family;70027:boolean-ladder-structural
+type_selection=per-branch/object-state;not-fixed-per-token
+RESULT=PASS
