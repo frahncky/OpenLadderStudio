@@ -75,6 +75,8 @@ namespace ModernPC12
         {
             Text = "OpenLadder - Validação física TP02 READ-ONLY";
             StartPosition = FormStartPosition.CenterScreen;
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96F, 96F);
             MinimumSize = new Size(900, 620);
             Size = new Size(1060, 720);
             Font = new Font("Segoe UI", 9.0f);
