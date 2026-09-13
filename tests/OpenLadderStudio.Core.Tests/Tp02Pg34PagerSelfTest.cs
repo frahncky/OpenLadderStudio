@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using OpenLadderStudio.Core;
 
 internal static class Tp02Pg34PagerSelfTest
@@ -42,8 +43,31 @@ internal static class Tp02Pg34PagerSelfTest
             "request pagina 2");
         Check(Hex(Tp02Pg34Pager.BuildReadRequest(240)) == "34 03 00 F0 A0 38",
             "request pagina 3");
+        Check(Hex(Tp02Pg34Pager.BuildReadRequest(320)) == "34 03 01 40 A0 E7",
+            "request cruza 0x00FF em ordem HIGH,LOW");
+        Check(Hex(Tp02Pg34Pager.BuildReadRequest(1440)) == "34 03 05 A0 A0 83",
+            "ultima pagina da capacidade 1.5K");
+        Check(Hex(Tp02Pg34Pager.BuildReadRequest(3920)) == "34 03 0F 50 A0 C9",
+            "ultima pagina da capacidade 4K");
+
+        byte[] boundary = Tp02Pg34Pager.BuildReadRequest(320);
+        Check(Tp02Pg34Pager.DecodeStartStep(boundary) == 320,
+            "decode START preserva 16 bits");
+
+        IList<byte[]> plan4k = Tp02Pg34Pager.BuildReadPlan(4000);
+        Check(plan4k.Count == 50, "plano 4K contém 50 páginas");
+        Check(Tp02Pg34Pager.DecodeStartStep(plan4k[0]) == 0, "plano 4K inicia em zero");
+        Check(Tp02Pg34Pager.DecodeStartStep(plan4k[3]) == 240, "plano antes da fronteira");
+        Check(Tp02Pg34Pager.DecodeStartStep(plan4k[4]) == 320, "plano após fronteira 0x00FF");
+        Check(Tp02Pg34Pager.DecodeStartStep(plan4k[49]) == 3920, "plano 4K termina em 3920");
+
+        IList<byte[]> plan15k = Tp02Pg34Pager.BuildReadPlan(1500);
+        Check(plan15k.Count == 19, "plano 1.5K contém 19 páginas");
+        Check(Tp02Pg34Pager.DecodeStartStep(plan15k[18]) == 1440, "plano 1.5K termina em 1440");
+
         Check(Tp02Pg34Pager.NextStartStep(0) == 80, "next 0 -> 80");
         Check(Tp02Pg34Pager.NextStartStep(80) == 160, "next 80 -> 160");
+        Check(Tp02Pg34Pager.NextStartStep(240) == 320, "next cruza 0x00FF");
         Check(Tp02Pg34Pager.NextStartStep(3920) == 4000, "ultima pagina -> limite 4000");
 
         byte[] page = BuildPageWithEnd(10);
@@ -52,6 +76,7 @@ internal static class Tp02Pg34PagerSelfTest
         Check(Tp02Pg34Pager.TryFindEnd(page, out local), "END deve ser localizado");
         Check(local == 10, "END local=10");
         Check(Tp02Pg34Pager.GlobalStep(80, local) == 90, "END global=90");
+        Check(Tp02Pg34Pager.GlobalStep(320, local) == 330, "END global após fronteira");
 
         byte[] broken = (byte[])page.Clone();
         broken[broken.Length - 1] ^= 0x01;
@@ -62,6 +87,16 @@ internal static class Tp02Pg34PagerSelfTest
         try { Tp02Pg34Pager.BuildReadRequest(4000); }
         catch (ArgumentOutOfRangeException) { threw = true; }
         Check(threw, "startStep=4000 deve ser rejeitado");
+
+        threw = false;
+        try { Tp02Pg34Pager.DecodeStartStep(new byte[] { 0x34, 0x03, 0x40, 0x01, 0xA0, 0xE7 }); }
+        catch (ArgumentException) { threw = true; }
+        Check(threw, "quadro LOW,HIGH incorreto não passa checksum nativo");
+
+        threw = false;
+        try { Tp02Pg34Pager.BuildReadPlan(4001); }
+        catch (ArgumentOutOfRangeException) { threw = true; }
+        Check(threw, "plano acima de 4K rejeitado");
 
         if (failures != 0)
         {
