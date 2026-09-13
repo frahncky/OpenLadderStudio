@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace OpenLadderStudio.Core
 {
@@ -9,6 +10,10 @@ namespace OpenLadderStudio.Core
     /// 16 bits como contador inicial de passos do programa. A resposta física
     /// conhecida tem LEN=F0, Região A de 160 bytes (80 pares HIGH/LOW) e
     /// Região B de 80 bytes. Por isso cada página cobre 80 passos físicos.
+    ///
+    /// A ordem HIGH,LOW foi confirmada estaticamente nos dois builders nativos
+    /// do PC12 e no caminho que formata o cursor como %04X antes de recompor
+    /// os dois bytes do START.
     ///
     /// Esta classe somente constrói/valida quadros de LEITURA. Não contém
     /// qualquer primitiva de escrita, download, erase ou RUN/STOP remoto.
@@ -30,6 +35,27 @@ namespace OpenLadderStudio.Core
             byte[] frame = new byte[] { 0x34, 0x03, hi, lo, 0xA0, 0x00 };
             frame[5] = Checksum(frame, 5);
             return frame;
+        }
+
+        internal static int DecodeStartStep(byte[] request)
+        {
+            if (request == null || request.Length != 6 || request[0] != 0x34 || request[1] != 0x03
+                || request[4] != 0xA0 || Sum8(request) != 0xFF)
+                throw new ArgumentException("Pedido PG34 inválido.");
+            int start = (request[2] << 8) | request[3];
+            if (start < 0 || start >= MaxProgramSteps)
+                throw new ArgumentException("START PG34 fora da faixa do TP02.");
+            return start;
+        }
+
+        internal static IList<byte[]> BuildReadPlan(int capacitySteps)
+        {
+            if (capacitySteps < 1 || capacitySteps > MaxProgramSteps)
+                throw new ArgumentOutOfRangeException("capacitySteps");
+            List<byte[]> plan = new List<byte[]>();
+            for (int start = 0; start < capacitySteps; start += StepsPerPage)
+                plan.Add(BuildReadRequest(start));
+            return plan.AsReadOnly();
         }
 
         internal static int NextStartStep(int startStep)

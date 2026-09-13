@@ -143,7 +143,7 @@ namespace ModernPC12
             folderButton.Click += delegate { OpenSessionFolder(); };
             command.Controls.Add(folderButton);
 
-            Label safe = LabelAt("Nao envia RUN, STOP, limpeza ou escrita. A v1.10 faz pre-estabilizacao segura e retries automaticos.",
+            Label safe = LabelAt("Nao envia RUN, STOP, limpeza ou escrita. A v1.47 usa o START PG34 em ordem HIGH,LOW do PC12.",
                 8.3f, FontStyle.Regular, Warning, 680, 35);
             safe.MaximumSize = new Size(430, 42);
             command.Controls.Add(safe);
@@ -252,7 +252,7 @@ namespace ModernPC12
             CreateSessionDirectory();
             programBox.Clear();
             logBox.Clear();
-            AppendLog("Sessao READ-ONLY v1.10 iniciada.");
+            AppendLog("Sessao READ-ONLY v1.47 iniciada.");
             AppendLog("Porta: " + portName + " | 19200 8O1 | DTR=off | RTS=off.");
             AppendLog("Seguranca: somente HELLO, F0, 38 e 34 podem ser transmitidos.");
             SetBusy(true);
@@ -280,7 +280,7 @@ namespace ModernPC12
                         ShowProgram(result);
                         SetStatus("LEITURA PG APROVADA", Success);
                         string pageNotice = result.CrossedPageBoundary
-                            ? "\r\nATENCAO: leitura cruzou 80 passos; a paginacao acima da primeira pagina ainda e experimental."
+                            ? "\r\nA leitura cruzou 80 passos usando a paginação HIGH,LOW reconstruída do PC12; a confirmação final em TP02 físico continua registrada no log."
                             : string.Empty;
                         MessageBox.Show(this,
                             "Programa lido pelo PG/PC12.\r\n\r\n"
@@ -389,7 +389,7 @@ namespace ModernPC12
                     if (startStep > 0)
                     {
                         result.CrossedPageBoundary = true;
-                        AppendLogSafe("PAGINACAO EXPERIMENTAL: passo inicial "
+                        AppendLogSafe("PAGINACAO PG34 PC12: passo inicial "
                             + startStep.ToString("0000", CultureInfo.InvariantCulture) + ".");
                     }
 
@@ -570,11 +570,14 @@ namespace ModernPC12
 
         private static byte[] Build34Request(int startStep)
         {
+            if (startStep < 0 || startStep >= MaxProgramSteps)
+                throw new ArgumentOutOfRangeException("startStep");
             byte[] frame = new byte[6];
             frame[0] = 0x34;
             frame[1] = 0x03;
-            frame[2] = (byte)(startStep & 0xFF);
-            frame[3] = (byte)((startStep >> 8) & 0xFF);
+            // Ordem nativa confirmada no PC12: START_H, START_L.
+            frame[2] = (byte)((startStep >> 8) & 0xFF);
+            frame[3] = (byte)(startStep & 0xFF);
             frame[4] = 0xA0;
             int sum = 0;
             for (int i = 0; i < 5; i++) sum = (sum + frame[i]) & 0xFF;
@@ -798,7 +801,7 @@ namespace ModernPC12
             File.WriteAllLines(Path.Combine(sessionDirectory, "program-words.txt"), result.Words.ToArray(), Encoding.ASCII);
             File.WriteAllLines(Path.Combine(sessionDirectory, "program-il.txt"), result.Il.ToArray(), Encoding.UTF8);
             StringBuilder summary = new StringBuilder();
-            summary.AppendLine("OpenLadder Studio - TP02 PG/PC12 READ-ONLY v1.10");
+            summary.AppendLine("OpenLadder Studio - TP02 PG/PC12 READ-ONLY v1.47");
             summary.AppendLine("Data: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
             summary.AppendLine("Perfil: 19200 8O1 DTR=off RTS=off");
             summary.AppendLine("HELLO: " + result.Hello + " (" + result.PlcState + ")");
@@ -808,6 +811,7 @@ namespace ModernPC12
             summary.AppendLine("END: " + result.EndStep.ToString("0000", CultureInfo.InvariantCulture));
             summary.AppendLine("BRAW divergentes: " + result.BrawMismatches.ToString(CultureInfo.InvariantCulture));
             summary.AppendLine("UNKNOWN: " + result.UnknownSteps.ToString(CultureInfo.InvariantCulture));
+            summary.AppendLine("PG34 START: ordem HIGH,LOW reproduzida do PC12 original.");
             summary.AppendLine("Seguranca: nenhum comando de escrita/RUN/STOP/limpeza foi enviado.");
             File.WriteAllText(Path.Combine(sessionDirectory, "read-summary.txt"), summary.ToString(), Encoding.UTF8);
         }
