@@ -87,10 +87,18 @@ namespace ModernPC12
             actions.Dock = DockStyle.Fill;
             Button generate = new Button();
             generate.Text = "Gerar / interpretar"; generate.AutoSize = true;
+            generate.FlatStyle = FlatStyle.Flat;
+            generate.FlatAppearance.BorderSize = 0;
+            generate.BackColor = OpenLadderPalette.Accent;
+            generate.ForeColor = OpenLadderPalette.OnAccent;
             generate.Click += delegate { Generate(); };
             actions.Controls.Add(generate);
             Button copy = new Button();
             copy.Text = "Copiar resultado"; copy.AutoSize = true;
+            copy.FlatStyle = FlatStyle.Flat;
+            copy.FlatAppearance.BorderColor = OpenLadderPalette.Border;
+            copy.BackColor = OpenLadderPalette.Chrome;
+            copy.ForeColor = OpenLadderPalette.Fore;
             copy.Click += delegate { if (output.TextLength > 0) Clipboard.SetText(output.Text); };
             actions.Controls.Add(copy);
             layout.Controls.Add(actions, 0, 4);
@@ -107,6 +115,7 @@ namespace ModernPC12
             operation.SelectedIndexChanged += delegate { UpdateInputs(); };
             area.SelectedIndexChanged += delegate { UpdateNumberLimit(); };
             operation.SelectedIndex = 0;
+            OpenLadderPalette.Skin(this);
         }
 
         private Tp02PgMemoryProtocol.Area SelectedArea

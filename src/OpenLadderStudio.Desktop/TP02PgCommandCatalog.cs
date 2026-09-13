@@ -81,6 +81,10 @@ namespace ModernPC12
             memory.Size = new Size(180, 30);
             memory.Location = new Point(20, ClientSize.Height - 42);
             memory.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            memory.FlatStyle = FlatStyle.Flat;
+            memory.FlatAppearance.BorderSize = 0;
+            memory.BackColor = OpenLadderPalette.Accent;
+            memory.ForeColor = OpenLadderPalette.OnAccent;
             memory.Click += delegate { using (TP02PgMemoryForm form = new TP02PgMemoryForm()) form.ShowDialog(this); };
             Controls.Add(memory);
 
@@ -89,6 +93,10 @@ namespace ModernPC12
             close.Size = new Size(100, 30);
             close.Location = new Point(ClientSize.Width - 120, ClientSize.Height - 42);
             close.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            close.FlatStyle = FlatStyle.Flat;
+            close.FlatAppearance.BorderColor = OpenLadderPalette.Border;
+            close.BackColor = OpenLadderPalette.Chrome;
+            close.ForeColor = OpenLadderPalette.Fore;
             close.DialogResult = DialogResult.OK;
             Controls.Add(close);
             AcceptButton = close;
