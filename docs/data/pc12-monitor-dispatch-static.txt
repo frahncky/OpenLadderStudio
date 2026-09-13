@@ -1,0 +1,49 @@
+PC12_MONITOR_DISPATCH_STATIC
+file=pc12.exe
+sha256=05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+dispatcher_ids=70001..70027
+class_bytes=04 04 00 00 04 01 01 03 02 00 00 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 01
+targets=class0=0x004C3FFD class1=0x004C3A89 class2=0x004C3BA4 class3=0x004C3988 class4=0x004C39A9
+id=70001 class=4 target=0x004C39A9
+id=70002 class=4 target=0x004C39A9
+id=70003 class=0 target=0x004C3FFD
+id=70004 class=0 target=0x004C3FFD
+id=70005 class=4 target=0x004C39A9
+id=70006 class=1 target=0x004C3A89
+id=70007 class=1 target=0x004C3A89
+id=70008 class=3 target=0x004C3988
+id=70009 class=2 target=0x004C3BA4
+id=70010 class=0 target=0x004C3FFD
+id=70011 class=0 target=0x004C3FFD
+id=70012 class=0 target=0x004C3FFD
+id=70013 class=0 target=0x004C3FFD
+id=70014 class=0 target=0x004C3FFD
+id=70015 class=0 target=0x004C3FFD
+id=70016 class=0 target=0x004C3FFD
+id=70017 class=2 target=0x004C3BA4
+id=70018 class=0 target=0x004C3FFD
+id=70019 class=0 target=0x004C3FFD
+id=70020 class=0 target=0x004C3FFD
+id=70021 class=0 target=0x004C3FFD
+id=70022 class=0 target=0x004C3FFD
+id=70023 class=0 target=0x004C3FFD
+id=70024 class=0 target=0x004C3FFD
+id=70025 class=0 target=0x004C3FFD
+id=70026 class=0 target=0x004C3FFD
+id=70027 class=1 target=0x004C3A89
+q4_site=0x004C3AB9 bytes=C6 87 A8 A7 4F 00 04
+q4_site=0x004C3B45 bytes=C6 87 A8 A7 4F 00 04
+q4_site=0x004C3CCA bytes=C6 87 A8 A7 4F 00 04
+q4_site=0x004C3E21 bytes=C6 87 A8 A7 4F 00 04
+q4_site=0x004C3F4F bytes=C6 87 A8 A7 4F 00 04
+text_link=70013:TMR observed=true
+text_link=70020:CNT observed=true
+text_link=70026:TMR observed=true
+text_link=70015:OUT observed=true
+text_link=70022:F-05 observed=true
+text_link=70023:F-06 observed=true
+text_link=70016:F-34 observed=true
+text_link=70024:F-41 observed=true
+q4_reachable_ids=70006,70007,70009,70017,70027
+q4_reachable_classes=1,2
+RESULT=PASS
