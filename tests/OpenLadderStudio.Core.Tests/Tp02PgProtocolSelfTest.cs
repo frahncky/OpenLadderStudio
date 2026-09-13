@@ -11,6 +11,11 @@ internal static class Tp02PgProtocolSelfTest
         Console.Error.WriteLine("FALHA: " + message);
     }
     private static string Hex(byte[] bytes) { return BitConverter.ToString(bytes).Replace('-', ' '); }
+    private static void Reject(Action action, string message)
+    {
+        try { action(); Check(false, message); }
+        catch (ArgumentException) { Check(true, message); }
+    }
 
     public static int Main()
     {
@@ -56,9 +61,30 @@ internal static class Tp02PgProtocolSelfTest
             "F0 classificado como preflight de sessão, não STOP");
         Check(catalog[6].Function.IndexOf("V, D, WC, FILE", StringComparison.Ordinal) >= 0,
             "0A cataloga as áreas de leitura encontradas");
+        Check(catalog[6].Evidence.IndexOf("70006=CNT", StringComparison.Ordinal) >= 0,
+            "0A registra a identidade CNT comprovada do token 70006");
         int allowed = 0;
         for (int i = 0; i < catalog.Count; i++) if (catalog[i].TransmitAllowed) allowed++;
         Check(allowed == 5, "somente cinco operações qualificadas para TX");
+
+        byte[] q4 = { 0x00, 0x04, 0x01, 0x02, 0x03, 0x04, 0xF1 };
+        uint type4 = Tp02PgProtocol.DecodeMonitorQ4(q4, Tp02PgProtocol.MonitorQ4Type.Type4);
+        uint type7 = Tp02PgProtocol.DecodeMonitorQ4(q4, Tp02PgProtocol.MonitorQ4Type.Type7);
+        Check(type4 == 0x04030201u, "Q4 tipo 4 preserva ordem nativa");
+        Check(type7 == 0x03040102u, "Q4 tipo 7 troca bytes por palavra como PC12");
+        Check(Tp02PgProtocol.MonitorQ4TypeFromSelector(true) == Tp02PgProtocol.MonitorQ4Type.Type4,
+            "seletor não-zero escolhe tipo 4");
+        Check(Tp02PgProtocol.MonitorQ4TypeFromSelector(false) == Tp02PgProtocol.MonitorQ4Type.Type7,
+            "seletor zero escolhe tipo 7");
+        Check(Tp02PgProtocol.FormatMonitorQ4Decimal(type4) == "0067305985", "Q4 decimal %010u");
+        Check(Tp02PgProtocol.FormatMonitorQ4Hex(type4) == "04030201", "Q4 hexadecimal %08X");
+        Reject(delegate { Tp02PgProtocol.DecodeMonitorQ4(new byte[] { 0, 2, 1, 2, 0xFA }, Tp02PgProtocol.MonitorQ4Type.Type4); },
+            "Q4 rejeita comprimento diferente de quatro bytes");
+        Reject(delegate { Tp02PgProtocol.DecodeMonitorQ4(new byte[] { 0, 4, 1, 2, 3, 4, 0xF0 }, Tp02PgProtocol.MonitorQ4Type.Type4); },
+            "Q4 rejeita checksum inválido");
+        Reject(delegate { Tp02PgProtocol.DecodeMonitorQ4(q4, (Tp02PgProtocol.MonitorQ4Type)99); },
+            "Q4 rejeita tipo interno desconhecido");
+
         byte[] copy = Tp02PgProtocol.Copy(Tp02PgProtocol.Run);
         copy[0] = 0xFF;
         Check(Tp02PgProtocol.Run[0] == 0x02, "cópia defensiva");
