@@ -47,18 +47,28 @@ internal static class Tp02Pg34PagerSelfTest
             "request cruza 0x00FF em ordem HIGH,LOW");
         Check(Hex(Tp02Pg34Pager.BuildReadRequest(1440)) == "34 03 05 A0 A0 83",
             "ultima pagina da capacidade 1.5K");
+        Check(Hex(Tp02Pg34Pager.BuildReadRequest(3760)) == "34 03 0E B0 A0 6A",
+            "regressao v1.53: start=3760 deve usar START_H=0E START_L=B0");
+        Check(Hex(Tp02Pg34Pager.BuildReadRequest(3840)) == "34 03 0F 00 A0 19",
+            "regressao v1.53: start=3840 deve usar START_H=0F START_L=00");
         Check(Hex(Tp02Pg34Pager.BuildReadRequest(3920)) == "34 03 0F 50 A0 C9",
             "ultima pagina da capacidade 4K");
 
         byte[] boundary = Tp02Pg34Pager.BuildReadRequest(320);
         Check(Tp02Pg34Pager.DecodeStartStep(boundary) == 320,
             "decode START preserva 16 bits");
+        Check(Tp02Pg34Pager.DecodeStartStep(Tp02Pg34Pager.BuildReadRequest(3760)) == 3760,
+            "decode preserva start=3760");
+        Check(Tp02Pg34Pager.DecodeStartStep(Tp02Pg34Pager.BuildReadRequest(3840)) == 3840,
+            "decode preserva start=3840");
 
         IList<byte[]> plan4k = Tp02Pg34Pager.BuildReadPlan(4000);
         Check(plan4k.Count == 50, "plano 4K contém 50 páginas");
         Check(Tp02Pg34Pager.DecodeStartStep(plan4k[0]) == 0, "plano 4K inicia em zero");
         Check(Tp02Pg34Pager.DecodeStartStep(plan4k[3]) == 240, "plano antes da fronteira");
         Check(Tp02Pg34Pager.DecodeStartStep(plan4k[4]) == 320, "plano após fronteira 0x00FF");
+        Check(Tp02Pg34Pager.DecodeStartStep(plan4k[47]) == 3760, "plano 4K preserva pagina 3760");
+        Check(Tp02Pg34Pager.DecodeStartStep(plan4k[48]) == 3840, "plano 4K preserva pagina 3840");
         Check(Tp02Pg34Pager.DecodeStartStep(plan4k[49]) == 3920, "plano 4K termina em 3920");
 
         IList<byte[]> plan15k = Tp02Pg34Pager.BuildReadPlan(1500);
@@ -91,7 +101,7 @@ internal static class Tp02Pg34PagerSelfTest
         threw = false;
         try { Tp02Pg34Pager.DecodeStartStep(new byte[] { 0x34, 0x03, 0x40, 0x01, 0xA0, 0xE7 }); }
         catch (ArgumentException) { threw = true; }
-        Check(threw, "quadro LOW,HIGH incorreto não passa checksum nativo");
+        Check(threw, "quadro LOW,HIGH fora da faixa deve ser rejeitado");
 
         threw = false;
         try { Tp02Pg34Pager.BuildReadPlan(4001); }
