@@ -19,13 +19,17 @@ $shellPath = Join-Path (Get-Location) 'UniversalStudioShell.build.cs'
 if (-not (Test-Path -LiteralPath $shellPath)) { throw 'V153: UniversalStudioShell.build.cs nao encontrado.' }
 $shell = [System.IO.File]::ReadAllText($shellPath)
 
-$pattern = '(?s)        private ProgramSnapshot ReadCanonicalSnapshotOnOpenPort\(SerialPort port, string tag\)\s*\{.*?\r?\n        \}\r?\n\r?\n(?=        private )'
-$matches = [System.Text.RegularExpressions.Regex]::Matches($shell, $pattern)
-if ($matches.Count -ne 1) {
-    throw "V153: ReadCanonicalSnapshotOnOpenPort esperado exatamente uma vez; encontrado: $($matches.Count)."
+# Nao recortamos o corpo antigo por regex. O shell gerado possui varios helpers
+# logo depois deste metodo e um recorte amplo pode remove-los. Em vez disso,
+# renomeamos somente a assinatura legada e inserimos o novo metodo antes dela.
+$legacySignature = '        private ProgramSnapshot ReadCanonicalSnapshotOnOpenPort(SerialPort port, string tag)'
+$legacyCount = [System.Text.RegularExpressions.Regex]::Matches(
+    $shell, [System.Text.RegularExpressions.Regex]::Escape($legacySignature)).Count
+if ($legacyCount -ne 1) {
+    throw "V153: assinatura ReadCanonicalSnapshotOnOpenPort esperada exatamente uma vez; encontrado: $legacyCount."
 }
 
-$replacement = @'
+$newMethod = @'
         private ProgramSnapshot ReadCanonicalSnapshotOnOpenPort(SerialPort port, string tag)
         {
             if (port == null || !port.IsOpen)
@@ -97,13 +101,14 @@ $replacement = @'
 
 '@
 
-$shell = [System.Text.RegularExpressions.Regex]::Replace($shell, $pattern, $replacement, 1)
+$renamedLegacy = '        private ProgramSnapshot ReadCanonicalSnapshotFirstPageLegacyV153(SerialPort port, string tag)'
+$insertion = $newMethod + $renamedLegacy
+$shell = $shell.Replace($legacySignature, $insertion)
 
-# Corrige textos legados que podiam sugerir que uma falha de readback longo
-# ocorreu antes da escrita. A mensagem produtiva deve refletir o estagio real.
+# Corrige o texto do metodo legado caso ele apareca em diagnostico interno.
 $shell = $shell.Replace(
     'F-00 END nao encontrado na primeira pagina; PG33 bloqueado antes da escrita.',
-    'F-00 END nao encontrado no readback PG34 multipagina.')
+    'F-00 END nao encontrado na primeira pagina do leitor legado V153.')
 
 [System.IO.File]::WriteAllText($shellPath, $shell, [System.Text.Encoding]::UTF8)
-Write-Host 'TP02 PG34 Paged Readback V153 aplicado: leitura 0/80/160/... ate F-00 END, sem qualquer escrita.'
+Write-Host 'TP02 PG34 Paged Readback V153 aplicado: leitura 0/80/160/... ate F-00 END, sem remover helpers do leitor PG.'
