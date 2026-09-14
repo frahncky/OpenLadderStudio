@@ -15,6 +15,7 @@ $v135 = Join-Path $PSScriptRoot 'PrepareTp02BarVersionV135.ps1'
 $v136 = Join-Path $PSScriptRoot 'PrepareTp02PgRunV136.ps1'
 $v137 = Join-Path $PSScriptRoot 'PrepareTp02PgRunPreflightV137.ps1'
 $v152 = Join-Path $PSScriptRoot 'PrepareTp02Pg33MultiBlockV152.ps1'
+$v153 = Join-Path $PSScriptRoot 'PrepareTp02Pg34PagedReadbackV153.ps1'
 
 if (-not (Test-Path -LiteralPath $core)) { throw 'PrepareTp02Pg33VerifyV124Core.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v125)) { throw 'PrepareTp02PgControlV125.ps1 nao encontrado.' }
@@ -31,6 +32,7 @@ if (-not (Test-Path -LiteralPath $v135)) { throw 'PrepareTp02BarVersionV135.ps1 
 if (-not (Test-Path -LiteralPath $v136)) { throw 'PrepareTp02PgRunV136.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v137)) { throw 'PrepareTp02PgRunPreflightV137.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v152)) { throw 'PrepareTp02Pg33MultiBlockV152.ps1 nao encontrado.' }
+if (-not (Test-Path -LiteralPath $v153)) { throw 'PrepareTp02Pg34PagedReadbackV153.ps1 nao encontrado.' }
 
 & $core
 & $v125
@@ -46,4 +48,5 @@ if (-not (Test-Path -LiteralPath $v152)) { throw 'PrepareTp02Pg33MultiBlockV152.
 & $v136
 & $v137
 & $v152
+& $v153
 & $v135
