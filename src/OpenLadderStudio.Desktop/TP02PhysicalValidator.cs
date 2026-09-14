@@ -25,9 +25,7 @@ namespace ModernPC12
 
     /// <summary>
     /// Barreira final antes de SerialPort.Write da bancada física PG.
-    /// A v1.49 não aceita mais qualquer PG0A bem-formado: somente quadros de
-    /// leitura gerados pelos codecs conhecidos entram na allowlist. PG34 fica
-    /// restrito às páginas 0 e 80 usadas pela campanha.
+    /// Somente leituras já reconstruídas e os quadros de sessão conhecidos podem sair pela serial.
     /// </summary>
     internal static class TP02PhysicalValidationSafety
     {
@@ -47,18 +45,14 @@ namespace ModernPC12
                 return start == 0 || start == 80;
             }
 
-            if (frame[0] == 0x0A)
-                return IsKnownRead(frame);
-
+            if (frame[0] == 0x0A) return IsKnownRead(frame);
             return false;
         }
 
         private static bool IsKnownRead(byte[] frame)
         {
             if (frame == null || frame.Length != 6 || frame[1] != 0x03 || frame[4] == 0) return false;
-
-            if (Same(frame, Tp02PgMemoryProtocol.ReadClock()) || Same(frame, Tp02PgMemoryProtocol.ReadScanTimes()))
-                return true;
+            if (Same(frame, Tp02PgMemoryProtocol.ReadClock()) || Same(frame, Tp02PgMemoryProtocol.ReadScanTimes())) return true;
 
             foreach (Tp02PgMemoryProtocol.Area area in Enum.GetValues(typeof(Tp02PgMemoryProtocol.Area)))
             {
@@ -67,7 +61,6 @@ namespace ModernPC12
                     if (Same(frame, requests[i])) return true;
             }
 
-            // Amostras rápidas também são permitidas, pois são produzidas pelo codec nativo.
             if (Same(frame, Tp02PgMemoryProtocol.BuildRead(Tp02PgMemoryProtocol.Area.V, 1, 2))) return true;
             if (Same(frame, Tp02PgMemoryProtocol.BuildRead(Tp02PgMemoryProtocol.Area.D, 1, 2))) return true;
             if (Same(frame, Tp02PgMemoryProtocol.BuildRead(Tp02PgMemoryProtocol.Area.WC, 1, 2))) return true;
@@ -105,7 +98,7 @@ namespace ModernPC12
 
         internal TP02PhysicalValidatorForm()
         {
-            Text = "OpenLadder - Validação física TP02 READ-ONLY v1.49";
+            Text = "OpenLadder - Validação física TP02 READ-ONLY v1.50";
             StartPosition = FormStartPosition.CenterScreen;
             AutoScaleMode = AutoScaleMode.Dpi;
             AutoScaleDimensions = new SizeF(96F, 96F);
@@ -127,14 +120,14 @@ namespace ModernPC12
             Controls.Add(top);
 
             Label title = new Label();
-            title.Text = "TP02 - VALIDAÇÃO FÍSICA READ-ONLY v1.49";
+            title.Text = "TP02 - VALIDAÇÃO FÍSICA READ-ONLY v1.50";
             title.Font = new Font("Segoe UI", 14.0f, FontStyle.Bold);
             title.AutoSize = true;
             title.Location = new Point(18, 14);
             top.Controls.Add(title);
 
             Label info = new Label();
-            info.Text = "Allowlist exata: CON-ICB, F0, 38, PG34 P0/P80 e PG0A conhecido. 09, 33, 35, Clear, RUN, STOP e EEPROM permanecem bloqueados.";
+            info.Text = "Allowlist exata: CON-ICB, F0, 38, PG34 P0/P80 e PG0A conhecido. Recuperação automática da COM antes de abortar HELLO.";
             info.AutoSize = true;
             info.MaximumSize = new Size(1050, 0);
             info.ForeColor = Color.FromArgb(224, 170, 64);
@@ -219,9 +212,10 @@ namespace ModernPC12
             bool full = exhaustive.Checked;
             CreateSession();
             log.Clear();
-            Append("Campanha física READ-ONLY v1.49.");
+            Append("Campanha física READ-ONLY v1.50.");
             Append("Porta: " + portName + " | 19200 8O1 | DTR=OFF | RTS=OFF.");
             Append("Varredura PG0A: " + (full ? "COMPLETA" : "RÁPIDA") + ".");
+            Append("HELLO: até 2 ciclos; entre eles a COM é fechada/reaberta e estabilizada.");
             Append("Bloqueados por código: 09, 33, 35, Clear, RUN, STOP, 12/13 EEPROM e demais opcodes.");
             SetBusy(true);
             SetStatus("EXECUTANDO", Color.FromArgb(224, 170, 64));
@@ -262,24 +256,38 @@ namespace ModernPC12
             });
         }
 
+        private SerialPort OpenPort(string portName)
+        {
+            SerialPort port = new SerialPort(portName, 19200, Parity.Odd, 8, StopBits.One);
+            port.Handshake = Handshake.None;
+            port.DtrEnable = false;
+            port.RtsEnable = false;
+            port.ReadTimeout = 100;
+            port.WriteTimeout = 1500;
+            port.Open();
+            port.DiscardInBuffer();
+            port.DiscardOutBuffer();
+            return port;
+        }
+
+        private static void ClosePort(SerialPort port)
+        {
+            if (port == null) return;
+            try { if (port.IsOpen) port.Close(); } catch { }
+            try { port.Dispose(); } catch { }
+        }
+
         private List<CheckResult> RunCampaign(string portName, bool full)
         {
             List<CheckResult> results = new List<CheckResult>();
             SerialPort port = null;
             try
             {
-                port = new SerialPort(portName, 19200, Parity.Odd, 8, StopBits.One);
-                port.Handshake = Handshake.None;
-                port.DtrEnable = false;
-                port.RtsEnable = false;
-                port.ReadTimeout = 100;
-                port.WriteTimeout = 1500;
-                port.Open();
-                port.DiscardInBuffer();
-                port.DiscardOutBuffer();
+                port = OpenPort(portName);
+                AppendSafe("PG STARTUP: COM aberta em 19200 8O1 DTR=off RTS=off; estabilizando...");
                 Thread.Sleep(1400);
 
-                string hello = ValidateHello(port);
+                string hello = ValidateHello(ref port, portName);
                 Add(results, "HELLO", "PASS", hello);
 
                 byte[] f0raw = ExchangeRaw(port, TP02PhysicalValidationSafety.F0, 3600, 260, "F0");
@@ -294,40 +302,64 @@ namespace ModernPC12
                 byte[] page0 = ReadPg34(port, results, 0, "PG34-P0", null);
                 ReadPg34(port, results, 80, "PG34-P80", page0);
 
-                if (full)
-                    ValidateAllAreas(port, results);
-                else
-                    ValidateQuickReads(port, results);
+                if (full) ValidateAllAreas(port, results);
+                else ValidateQuickReads(port, results);
 
                 ValidateClock(port, results);
                 ValidateScan(port, results);
-
                 WriteSummary(results, hello, portName, full);
                 return results;
             }
             finally
             {
-                if (port != null)
-                {
-                    try { if (port.IsOpen) port.Close(); } catch { }
-                    try { port.Dispose(); } catch { }
-                }
+                ClosePort(port);
             }
         }
 
-        private string ValidateHello(SerialPort port)
+        private string ValidateHello(ref SerialPort port, string portName)
         {
             byte[] stop = new byte[] { 0x80, 0x01, 0x09, 0x75 };
             byte[] runState = new byte[] { 0xC0, 0x01, 0x09, 0x35 };
-            for (int i = 1; i <= 6; i++)
+
+            for (int cycle = 1; cycle <= 2; cycle++)
             {
-                byte[] raw = ExchangeRaw(port, TP02PhysicalValidationSafety.Hello,
-                    i == 1 ? 2600 : 3000, 240, "HELLO-" + i.ToString(CultureInfo.InvariantCulture));
-                if (Contains(raw, stop)) return "80 01 09 75 (STOP)";
-                if (Contains(raw, runState)) return "C0 01 09 35 (RUN)";
-                Thread.Sleep(350);
+                if (cycle == 2)
+                {
+                    AppendSafe("HELLO RECOVERY: primeiro ciclo sem resposta; fechando a COM...");
+                    ClosePort(port);
+                    port = null;
+                    Thread.Sleep(700);
+                    AppendSafe("HELLO RECOVERY: reabrindo " + portName + " em 19200 8O1 DTR=off RTS=off.");
+                    port = OpenPort(portName);
+                    Thread.Sleep(1900);
+                    AppendSafe("HELLO RECOVERY: COM estabilizada; iniciando segundo ciclo.");
+                }
+
+                for (int attempt = 1; attempt <= 6; attempt++)
+                {
+                    string label = "HELLO-C" + cycle.ToString(CultureInfo.InvariantCulture)
+                        + "-" + attempt.ToString(CultureInfo.InvariantCulture);
+                    byte[] raw = ExchangeRaw(port, TP02PhysicalValidationSafety.Hello,
+                        attempt == 1 ? 2600 : 3000, 240, label);
+                    if (Contains(raw, stop))
+                    {
+                        AppendSafe("HELLO ESTÁVEL: STOP confirmado no ciclo " + cycle.ToString(CultureInfo.InvariantCulture)
+                            + ", tentativa " + attempt.ToString(CultureInfo.InvariantCulture) + ".");
+                        return "80 01 09 75 (STOP); ciclo=" + cycle.ToString(CultureInfo.InvariantCulture)
+                            + "; tentativa=" + attempt.ToString(CultureInfo.InvariantCulture);
+                    }
+                    if (Contains(raw, runState))
+                    {
+                        AppendSafe("HELLO ESTÁVEL: RUN confirmado no ciclo " + cycle.ToString(CultureInfo.InvariantCulture)
+                            + ", tentativa " + attempt.ToString(CultureInfo.InvariantCulture) + ".");
+                        return "C0 01 09 35 (RUN); ciclo=" + cycle.ToString(CultureInfo.InvariantCulture)
+                            + "; tentativa=" + attempt.ToString(CultureInfo.InvariantCulture);
+                    }
+                    Thread.Sleep(350);
+                }
             }
-            throw new TimeoutException("HELLO não confirmado em 6 tentativas.");
+
+            throw new TimeoutException("HELLO não confirmado após 2 ciclos e recuperação automática da COM.");
         }
 
         private byte[] ReadPg34(SerialPort port, List<CheckResult> results, int start, string label, byte[] page0)
@@ -358,10 +390,8 @@ namespace ModernPC12
                 + "; diferente-P0=" + (different ? "sim" : "não")
                 + "; dados=" + (hasProgramData ? "sim" : "não")
                 + (hasEnd ? "; END global=" + (start + localEnd).ToString(CultureInfo.InvariantCulture) : "; END ausente");
-            if (conclusive)
-                Add(results, label, "PASS", detail + "; evidência de segunda página CONCLUSIVA");
-            else
-                Add(results, label, "PARTIAL", detail + "; resposta física aceita, mas o programa atual não prova conteúdo >80");
+            if (conclusive) Add(results, label, "PASS", detail + "; evidência de segunda página CONCLUSIVA");
+            else Add(results, label, "PARTIAL", detail + "; resposta física aceita, mas o programa atual não prova conteúdo >80");
             return frame;
         }
 
@@ -477,6 +507,7 @@ namespace ModernPC12
         {
             if (!TP02PhysicalValidationSafety.IsAllowed(request))
                 throw new InvalidOperationException("BLOQUEIO DE SEGURANÇA: quadro fora da allowlist READ-ONLY: " + ToHex(request));
+            if (port == null || !port.IsOpen) throw new InvalidOperationException("Porta serial não está aberta.");
             port.DiscardInBuffer();
             AppendSafe(label + " TX: " + ToHex(request));
             SaveHex(label + "-tx.hex", request);
@@ -541,11 +572,12 @@ namespace ModernPC12
         {
             string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
             StringBuilder text = new StringBuilder();
-            text.AppendLine("OpenLadder Studio - TP02 Physical Validation v1.49");
+            text.AppendLine("OpenLadder Studio - TP02 Physical Validation v1.50");
             text.AppendLine("Data: " + now);
             text.AppendLine("Porta: " + portName);
             text.AppendLine("Perfil: 19200 8O1 DTR=OFF RTS=OFF");
             text.AppendLine("HELLO: " + hello);
+            text.AppendLine("Recuperação HELLO: até 2 ciclos com fechamento/reabertura automática da COM.");
             text.AppendLine("PG0A: " + (full ? "varredura completa X/Y/C/SC/V/D/WC/FL/WS" : "amostras rápidas"));
             text.AppendLine("Allowlist: CON-ICB, F0, 38, PG34 P0/P80 e PG0A conhecido somente.");
             text.AppendLine("Não enviados: 09, 33, 35, Clear, RUN, STOP, 12/13 EEPROM, 14 e demais opcodes.");
@@ -561,11 +593,12 @@ namespace ModernPC12
 
             StringBuilder json = new StringBuilder();
             json.Append("{\r\n");
-            json.Append("  \"version\": \"1.49\",\r\n");
+            json.Append("  \"version\": \"1.50\",\r\n");
             json.Append("  \"timestamp\": \"").Append(Json(now)).Append("\",\r\n");
             json.Append("  \"port\": \"").Append(Json(portName)).Append("\",\r\n");
             json.Append("  \"serial\": \"19200 8O1 DTR=OFF RTS=OFF\",\r\n");
             json.Append("  \"hello\": \"").Append(Json(hello)).Append("\",\r\n");
+            json.Append("  \"helloRecoveryCycles\": 2,\r\n");
             json.Append("  \"fullPg0A\": ").Append(full ? "true" : "false").Append(",\r\n");
             json.Append("  \"results\": [\r\n");
             for (int i = 0; i < results.Count; i++)
