@@ -6,26 +6,32 @@ if (-not (Test-Path -LiteralPath $sourcePath)) { throw 'TP02FullProtocolCapture.
 $text = [IO.File]::ReadAllText($sourcePath)
 
 function Replace-Required([string]$input,[string]$needle,[string]$replacement,[string]$label) {
-    if (-not $input.Contains($needle)) { throw "Ancora nao encontrada ($label)." }
+    if (-not $input.Contains($needle)) { throw "Ancora nao encontrada ($label): $needle" }
     return $input.Replace($needle,$replacement)
 }
 
-# BuildTp02FullCapture.bat restaura este fonte diretamente do commit antes de
-# executar este script. Por isso podemos usar ancoras exatas e deterministicas.
-$text = Replace-Required $text '                    port = AcquirePort(PortName, out state);' '                    port = AcquireQualifiedPortV159(PortName, out state);' 'AcquirePort'
-$text = Replace-Required $text '                    CaptureF0(port, "BASE-F0");' '                    // v1.59: F0 ja foi confirmado na mesma sessao pela aquisicao qualificada.' 'CaptureF0 main'
-$text = Replace-Required $text '            ExchangeRaw(port, Frame38, 2200, 140, prefix + "-38", "program-read");' '            ExchangeExpectedV159(port, Frame38, 2, 6, 3200, 220, prefix + "-38", "program-read");' 'PG38 retry'
-$text = Replace-Required $text '                byte[] raw = ExchangeRaw(port, request, 5000, 180, prefix + "-34-" + start.ToString("0000", CultureInfo.InvariantCulture), "program-read");' '                byte[] raw = ExchangeExpectedV159(port, request, Tp02Pg34Pager.PayloadLength, 4, 5500, 260, prefix + "-34-" + start.ToString("0000", CultureInfo.InvariantCulture), "program-read");' 'PG34 retry'
+# Ancoras minimais de codigo: independentes de indentacao e textos PT-BR.
+$text = Replace-Required $text 'AcquirePort(PortName, out state)' 'AcquireQualifiedPortV159(PortName, out state)' 'AcquirePort call'
+$text = Replace-Required $text 'CaptureF0(port, "BASE-F0")' 'CaptureF0AlreadyQualifiedV159(port)' 'CaptureF0 call'
+$text = Replace-Required $text 'ExchangeRaw(port, Frame38, 2200, 140, prefix + "-38", "program-read")' 'ExchangeExpectedV159(port, Frame38, 2, 6, 3200, 220, prefix + "-38", "program-read")' 'PG38 call'
+$text = Replace-Required $text 'ExchangeRaw(port, request, 5000, 180, prefix + "-34-" + start.ToString("0000", CultureInfo.InvariantCulture), "program-read")' 'ExchangeExpectedV159(port, request, Tp02Pg34Pager.PayloadLength, 4, 5500, 260, prefix + "-34-" + start.ToString("0000", CultureInfo.InvariantCulture), "program-read")' 'PG34 call'
 
-$anchor = '        private static List<PortProfile> BuildProfiles(string portName)'
-$idx = $text.IndexOf($anchor,[StringComparison]::Ordinal)
-if ($idx -lt 0) { throw 'Ancora BuildProfiles nao encontrada.' }
+$anchor = 'BuildProfiles(string portName)'
+$methodPos = $text.IndexOf($anchor,[StringComparison]::Ordinal)
+if ($methodPos -lt 0) { throw 'Ancora BuildProfiles nao encontrada.' }
+$idx = $text.LastIndexOf('        private static List<PortProfile>', $methodPos, [StringComparison]::Ordinal)
+if ($idx -lt 0) { throw 'Inicio de BuildProfiles nao encontrado.' }
 
 $methods = @'
+        private static void CaptureF0AlreadyQualifiedV159(SerialPort port)
+        {
+            // Intencionalmente vazio: AcquireQualifiedPortV159 ja confirmou F0
+            // nesta mesma abertura da COM. Evita repetir F0 imediatamente.
+            if (port == null || !port.IsOpen) throw new InvalidOperationException("Sessao PG v1.59 nao esta aberta.");
+        }
+
         // v1.59: HELLO isolado prova presenca, mas nao prova que a sessao PG ja aceita
-        // os comandos seguintes. O TP02 fisico observado em 2026-09-15 respondeu HELLO
-        // e ficou silencioso quando F0 foi enviado imediatamente. Esta aquisicao so retorna
-        // uma porta quando HELLO e F0 forem confirmados NA MESMA abertura da COM.
+        // os comandos seguintes. So retornamos a porta apos HELLO+F0 na mesma sessao.
         private static SerialPort AcquireQualifiedPortV159(string portName, out string state)
         {
             List<PortProfile> profiles = BuildProfiles(portName);
