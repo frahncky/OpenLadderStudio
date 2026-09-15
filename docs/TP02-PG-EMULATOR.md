@@ -156,7 +156,7 @@ Compile e inicie com:
 
 ```bat
 BuildTp02Emulator.bat
-StartTp02EmulatorV156.bat COM11
+RunTp02EmulatorV156.bat COM11
 ```
 
 O atalho `--scenario=v156` configura automaticamente:
