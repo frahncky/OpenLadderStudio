@@ -32,6 +32,8 @@ jobs:
           if errorlevel 1 exit /b 1
           call BuildTp02Lab.bat
           if errorlevel 1 exit /b 1
+          call BuildTp02FullCapture.bat
+          if errorlevel 1 exit /b 1
           if not exist OpenLadderStudio.ico exit /b 1
           if not exist OpenLadderStudio.icon.png exit /b 1
           if not exist OpenLadderStudio.exe exit /b 1
@@ -41,6 +43,8 @@ jobs:
           if not exist OpenLadderMemoryMap.exe exit /b 1
           if not exist OpenLadderUpdater.exe exit /b 1
           if not exist OpenLadderTP02PgLab.exe exit /b 1
+          if not exist OpenLadderTP02PhysicalValidator.exe exit /b 1
+          if not exist OpenLadderTP02FullCapture.exe exit /b 1
           if not exist OpenLadderTP02Capture.exe exit /b 1
           if not exist OpenLadderSimulator.exe exit /b 1
           if not exist OpenLadderSimTest.exe exit /b 1
@@ -147,6 +151,8 @@ jobs:
             src/OpenLadderStudio.Desktop/OpenLadderTP02PgLink.exe
             src/OpenLadderStudio.Desktop/OpenLadderTP02Capture.exe
             src/OpenLadderStudio.Desktop/OpenLadderTP02PgLab.exe
+            src/OpenLadderStudio.Desktop/OpenLadderTP02PhysicalValidator.exe
+            src/OpenLadderStudio.Desktop/OpenLadderTP02FullCapture.exe
             src/OpenLadderStudio.Desktop/OpenLadderSimulator.exe
             src/OpenLadderStudio.Desktop/TP02-PG-Tests.json
             src/OpenLadderStudio.Desktop/version.txt
