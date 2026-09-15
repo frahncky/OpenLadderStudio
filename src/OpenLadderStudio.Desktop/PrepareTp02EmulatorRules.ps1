@@ -79,8 +79,8 @@ foreach ($raw in [IO.File]::ReadAllLines($rulesPath)) {
 
 $out = $text.Insert($idx, $cases.ToString())
 
-# Quando houver programa recebido por PG33, 38/34 passam a refletir esse banco.
-# Sem PG33, TP02PgReadback preserva os vetores/fixtures historicos.
+# Quando houver programa recebido por PG33 (ou seed de bancada), 38/34 refletem
+# esse banco. Sem banco ativo, TP02PgReadback preserva o fixture historico.
 $old38 = 'Send("EMU -> PC12 38", Response38);'
 $new38 = 'Send("EMU -> PC12 38", TP02PgReadback.Build38(ProgramWords, ProgramWordValid, HighestProgramStep, Response38));'
 if (-not $out.Contains($old38)) { throw 'Ponto de integracao do comando 38 nao encontrado.' }
@@ -91,5 +91,130 @@ $new34 = 'Send("EMU -> PC12 34", TP02PgReadback.Build34(frame, ProgramWords, Pro
 if (-not $out.Contains($old34)) { throw 'Ponto de integracao do comando 34 nao encontrado.' }
 $out = $out.Replace($old34, $new34)
 
+# O self-test integrado usa exatamente o mesmo decoder PG33 do emulador.
+$privateDecode = '        private static bool TryDecodePg33('
+$internalDecode = '        internal static bool TryDecodePg33('
+if (-not $out.Contains($privateDecode)) { throw 'TryDecodePg33 privado nao encontrado.' }
+$out = $out.Replace($privateDecode, $internalDecode)
+
+# Argumentos do cenario v1.56 sao tratados sem poluir o parser historico.
+$parseAnchor = @'
+                if (!a.StartsWith("--", StringComparison.Ordinal) && port.Length == 0)
+                    port = a;
+'@
+$parseReplacement = @'
+                if (TP02PgV156Scenario.TryApplyArgument(a))
+                    continue;
+                if (!a.StartsWith("--", StringComparison.Ordinal) && port.Length == 0)
+                    port = a;
+'@
+if (-not $out.Contains($parseAnchor)) { throw 'Ancora ParseArguments v1.56 nao encontrada.' }
+$out = $out.Replace($parseAnchor, $parseReplacement)
+
+# Self-test roda sem COM; o cenario completo pode tambem desabilitar ACK generico.
+$mainAnchor = @'
+            string portName = ParseArguments(args);
+            if (string.IsNullOrEmpty(portName))
+                portName = AskPort();
+'@
+$mainReplacement = @'
+            string portName = ParseArguments(args);
+            if (TP02PgV156Scenario.DisableUnknownAck)
+                AutoAckUnknown = false;
+
+            if (string.Equals(TP02PgV156Scenario.SelfTestMode, "ALL", StringComparison.Ordinal))
+            {
+                Environment.ExitCode = TP02PgReadbackSelfTest.RunAll(true);
+                return;
+            }
+            if (string.Equals(TP02PgV156Scenario.SelfTestMode, "V156", StringComparison.Ordinal))
+            {
+                Environment.ExitCode = TP02PgReadbackSelfTest.RunV156Scenario(true);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(portName))
+                portName = AskPort();
+'@
+if (-not $out.Contains($mainAnchor)) { throw 'Ancora Main/self-test v1.56 nao encontrada.' }
+$out = $out.Replace($mainAnchor, $mainReplacement)
+
+# O seed boundary323 representa exatamente o programa de 323 words validado em
+# bancada; fica ativo antes de qualquer HELLO/F0/PG34 do cliente.
+$seedAnchor = @'
+            SeedMemory();
+            PrepareCaptureDirectory();
+'@
+$seedReplacement = @'
+            SeedMemory();
+            PrepareCaptureDirectory();
+            int seededHighestV156 = TP02PgV156Scenario.SeedProgramIfRequested(ProgramWords, ProgramWordValid);
+            if (seededHighestV156 >= 0)
+            {
+                HighestProgramStep = seededHighestV156;
+                Log("V156 SEED", "boundary323 carregado: 323 words; END=0322.");
+                SaveProgramDump();
+            }
+'@
+if (-not $out.Contains($seedAnchor)) { throw 'Ancora SeedMemory v1.56 nao encontrada.' }
+$out = $out.Replace($seedAnchor, $seedReplacement)
+
+# Simula HELLO tardio sem fechar/reabrir a porta virtual. No cenario padrao a
+# primeira resposta vem na 5a tentativa, como observado em bancada.
+$helloAnchor = @'
+            LogFrame("PC12 -> EMU HELLO", request, false);
+            SleepFor(220);
+
+            byte[] response = HelloC0 ? HelloResponseC0 : HelloResponse80;
+            Send("EMU -> PC12 HELLO", response);
+'@
+$helloReplacement = @'
+            LogFrame("PC12 -> EMU HELLO", request, false);
+            string helloGateV156;
+            if (!TP02PgV156Scenario.ShouldRespondHello(out helloGateV156))
+            {
+                Log("V156 HELLO SILENCIOSO", helloGateV156);
+                return;
+            }
+            Log("V156 HELLO GATE", helloGateV156);
+            SleepFor(220);
+
+            byte[] response = HelloC0 ? HelloResponseC0 : HelloResponse80;
+            Send("EMU -> PC12 HELLO", response);
+'@
+if (-not $out.Contains($helloAnchor)) { throw 'Ancora HandleHello v1.56 nao encontrada.' }
+$out = $out.Replace($helloAnchor, $helloReplacement)
+
+# F0 pode ficar mudo nas primeiras tentativas, mas permanece na mesma sessao.
+$f0Anchor = @'
+                case 0xF0:
+                    SleepFor(220);
+                    Send("EMU -> PC12 F0", F0Response);
+                    break;
+'@
+$f0Replacement = @'
+                case 0xF0:
+                {
+                    string f0GateV156;
+                    if (!TP02PgV156Scenario.ShouldRespondF0(out f0GateV156))
+                    {
+                        Log("V156 F0 SILENCIOSO", f0GateV156);
+                        break;
+                    }
+                    Log("V156 F0 GATE", f0GateV156);
+                    SleepFor(220);
+                    Send("EMU -> PC12 F0", F0Response);
+                    break;
+                }
+'@
+if (-not $out.Contains($f0Anchor)) { throw 'Ancora F0 v1.56 nao encontrada.' }
+$out = $out.Replace($f0Anchor, $f0Replacement)
+
+# Deixa o cenario visivel no console para evitar confundir emulacao com PLC real.
+$headerAnchor = '            Console.WriteLine(" ATENCAO     : use COM virtual; nao use a COM fisica do PLC.");'
+$headerReplacement = '            Console.WriteLine(" V156        : " + TP02PgV156Scenario.Describe());' + "`r`n" + $headerAnchor
+if (-not $out.Contains($headerAnchor)) { throw 'Ancora do cabecalho v1.56 nao encontrada.' }
+$out = $out.Replace($headerAnchor, $headerReplacement)
+
 [IO.File]::WriteAllText($outputPath, $out, [Text.Encoding]::UTF8)
-Write-Host ("TP02 emulator build source preparado: {0} regra(s) externa(s) + readback PG33/38/34." -f $count)
+Write-Host ("TP02 emulator build source preparado: {0} regra(s) externa(s) + readback PG33/38/34 + cenario v1.56." -f $count)
