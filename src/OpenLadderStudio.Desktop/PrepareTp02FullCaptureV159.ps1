@@ -3,7 +3,24 @@ $ErrorActionPreference = 'Stop'
 $sourcePath = Join-Path (Get-Location) 'TP02FullProtocolCapture.cs'
 $buildPath = Join-Path (Get-Location) 'TP02FullProtocolCapture.build.cs'
 if (-not (Test-Path -LiteralPath $sourcePath)) { throw 'TP02FullProtocolCapture.cs nao encontrado.' }
-$text = [IO.File]::ReadAllText($sourcePath)
+
+# O `git show > arquivo` executado pelo cmd do Windows pode produzir uma copia
+# UTF-16 sem BOM. ReadAllText assume UTF-8 nesse caso e insere NUL entre os
+# caracteres, fazendo Contains() falhar apesar de findstr enxergar o texto.
+[byte[]]$sourceBytes = [IO.File]::ReadAllBytes($sourcePath)
+if ($sourceBytes.Length -ge 4 -and $sourceBytes[0] -eq 0xFF -and $sourceBytes[1] -eq 0xFE) {
+    $text = [Text.Encoding]::Unicode.GetString($sourceBytes,2,$sourceBytes.Length-2)
+}
+elseif ($sourceBytes.Length -ge 4 -and $sourceBytes[0] -eq 0xFE -and $sourceBytes[1] -eq 0xFF) {
+    $text = [Text.Encoding]::BigEndianUnicode.GetString($sourceBytes,2,$sourceBytes.Length-2)
+}
+elseif ($sourceBytes.Length -ge 4 -and $sourceBytes[1] -eq 0 -and $sourceBytes[3] -eq 0) {
+    $text = [Text.Encoding]::Unicode.GetString($sourceBytes)
+}
+else {
+    $text = [Text.Encoding]::UTF8.GetString($sourceBytes)
+    if ($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1) }
+}
 
 function Replace-Required([string]$input,[string]$needle,[string]$replacement,[string]$label) {
     if (-not $input.Contains($needle)) { throw "Ancora nao encontrada ($label): $needle" }
@@ -133,5 +150,5 @@ $methods = @'
 '@
 $text = $text.Substring(0,$idx) + $methods + $text.Substring($idx)
 
-[IO.File]::WriteAllText($buildPath,$text,[Text.Encoding]::UTF8)
+[IO.File]::WriteAllText($buildPath,$text,(New-Object Text.UTF8Encoding($false)))
 Write-Host 'TP02 Full Capture v1.59 aplicado: HELLO+F0 mesma sessao e retries PG38/PG34.'
