@@ -1,6 +1,12 @@
 param(
     [string]$Port = '',
-    [string[]]$Actions = @('STOP','RUN','MONITOR_START','MONITOR_STOP','READ_PROGRAM','WRITE_PROGRAM','CLEAR_SYSTEM','CLEAR_DATA','CLEAR_PROGRAM','CLEAR_ALL_MEMORY'),
+    [string[]]$Actions = @(
+        'STOP','RUN','READ_PROGRAM','WRITE_PROGRAM',
+        'CLEAR_SYSTEM','CLEAR_DATA','CLEAR_PROGRAM','CLEAR_ALL_MEMORY',
+        'EEPROM_PACK_TO_PLC','PLC_TO_EEPROM_PACK',
+        'SET_RTC','RTC_MONITOR','SCAN_TIME','MODIFY_REGISTER',
+        'SET_RESET_IO_COIL','BIOS_REFRESH'
+    ),
     [ValidateSet('SILENT','GENERIC')][string]$AckMode = 'GENERIC',
     [int]$CaptureSeconds = 8,
     [switch]$Rebuild,
@@ -25,18 +31,57 @@ function Sum8([byte[]]$data) {
     return $sum
 }
 
-function Get-StaticClassification([byte[]]$data) {
-    if ($null -eq $data -or $data.Length -ne 3) { return 'UNCLASSIFIED' }
-    $hex = Hex $data
-    switch ($hex) {
-        '01 00 FE' { return 'STOP_PROGRAM_MODE_STATIC_CONFIRMED' }
-        '02 00 FD' { return 'RUN_STATIC_CONFIRMED' }
-        '03 00 FC' { return 'CLEAR_PROGRAM_STATIC_CONFIRMED' }
-        '04 00 FB' { return 'CLEAR_SYSTEM_STATIC_CONFIRMED' }
-        '0F 00 F0' { return 'CLEAR_ALL_MEMORY_STATIC_CONFIRMED_DESTRUCTIVE' }
-        '11 00 EE' { return 'CLEAR_DATA_STATIC_CONFIRMED' }
-        default { return 'UNCLASSIFIED' }
+function Get-Classification([byte[]]$data) {
+    if ($null -eq $data -or $data.Length -lt 3) { return 'UNCLASSIFIED' }
+    $cmd = [int]$data[0]
+    $len = [int]$data[1]
+
+    switch ($cmd) {
+        0x01 { if ((Hex $data) -eq '01 00 FE') { return 'STOP_PROGRAM_MODE_STATIC_CONFIRMED' } }
+        0x02 { if ((Hex $data) -eq '02 00 FD') { return 'RUN_STATIC_CONFIRMED' } }
+        0x03 { if ((Hex $data) -eq '03 00 FC') { return 'CLEAR_PROGRAM_STATIC_CONFIRMED_DESTRUCTIVE' } }
+        0x04 { if ((Hex $data) -eq '04 00 FB') { return 'CLEAR_SYSTEM_STATIC_CONFIRMED_DESTRUCTIVE' } }
+        0x09 {
+            if ($data.Length -ge 6) {
+                $addr = ([int]$data[2] * 256) + [int]$data[3]
+                $count = [int]$data[4]
+                if ($addr -eq 0x53F9 -and $count -eq 0x0E) { return 'SET_RTC_WRITE_09_STATIC_CONFIRMED' }
+                if ($len -eq 5 -and $count -eq 2) { return 'MODIFY_REGISTER_WRITE_09_STATIC_CONFIRMED' }
+            }
+            return 'WRITE_MEMORY_REGISTER_SYSTEM_09_STATIC_CONFIRMED'
+        }
+        0x0A {
+            if ($data.Length -ge 6) {
+                $addr = ([int]$data[2] * 256) + [int]$data[3]
+                $count = [int]$data[4]
+                if ($addr -eq 0x53F9 -and $count -eq 6) { return 'RTC_MONITOR_READ_0A_STATIC_CONFIRMED' }
+                if ($addr -eq 0x53F9 -and $count -eq 0x0E) { return 'SET_RTC_PREREAD_0A_STATIC_CONFIRMED' }
+                if ($addr -eq 0x6000 -and $count -eq 6) { return 'SCAN_TIME_READ_0A_STATIC_CONFIRMED' }
+            }
+            return 'READ_MEMORY_REGISTER_MONITOR_0A_CONFIRMED'
+        }
+        0x0F { if ((Hex $data) -eq '0F 00 F0') { return 'CLEAR_ALL_MEMORY_STATIC_CONFIRMED_DESTRUCTIVE' } }
+        0x11 { if ((Hex $data) -eq '11 00 EE') { return 'CLEAR_DATA_STATIC_CONFIRMED_DESTRUCTIVE' } }
+        0x12 { if ((Hex $data) -eq '12 00 ED') { return 'EEPROM_PACK_TO_PLC_STATIC_CONFIRMED_DESTRUCTIVE' } }
+        0x13 { if ((Hex $data) -eq '13 00 EC') { return 'PLC_TO_EEPROM_PACK_STATIC_CONFIRMED' } }
+        0x14 { if ((Hex $data) -eq '14 00 EB') { return 'PASSWORD_SECURITY_PREFLIGHT_STATIC_CONFIRMED' } }
+        0x33 { return 'WRITE_PROGRAM_DATA_33_CONFIRMED' }
+        0x34 { return 'READ_PROGRAM_PAGE_34_CONFIRMED' }
+        0x35 {
+            if ($len -eq 3 -and $data.Length -eq 6) { return 'SET_RESET_IO_COIL_35_STATIC_CONFIRMED' }
+            return 'SET_RESET_IO_COIL_35_CANDIDATE'
+        }
+        0x37 {
+            if ($len -eq 2 -and $data.Length -eq 5 -and $data[2] -eq 0xFF -and $data[3] -eq 0xFF) {
+                return 'BIOS_REFRESH_FINAL_37_STATIC_CONFIRMED_CRITICAL'
+            }
+            return 'BIOS_REFRESH_UPDATE_37_STATIC_CONFIRMED_CRITICAL'
+        }
+        0x38 { if ((Hex $data) -eq '38 00 C7') { return 'READ_PROGRAM_PREAMBLE_38_CONFIRMED' } }
+        0xF0 { if ((Hex $data) -eq 'F0 00 0F') { return 'PREFLIGHT_STATUS_F0_CONFIRMED' } }
     }
+
+    return 'UNCLASSIFIED'
 }
 
 function Decode([string]$path, [string]$label) {
@@ -50,7 +95,7 @@ function Decode([string]$path, [string]$label) {
         TotalLength = $b.Length
         ChecksumOk = ((Sum8 $b) -eq 0xFF)
         Hex = Hex $b
-        Classification = Get-StaticClassification $b
+        Classification = Get-Classification $b
     }
 }
 
@@ -114,28 +159,46 @@ function Capture-Action([string]$label, [string]$portName, [string]$exe, [string
     return $dedup
 }
 
+function Bytes([string]$hex) {
+    return [byte[]]($hex.Split(' ') | ForEach-Object { [Convert]::ToByte($_,16) })
+}
+
 function Run-SelfTest {
     $cases = @(
         @{ Hex='01 00 FE'; Name='STOP_PROGRAM_MODE_STATIC_CONFIRMED' },
         @{ Hex='02 00 FD'; Name='RUN_STATIC_CONFIRMED' },
-        @{ Hex='03 00 FC'; Name='CLEAR_PROGRAM_STATIC_CONFIRMED' },
-        @{ Hex='04 00 FB'; Name='CLEAR_SYSTEM_STATIC_CONFIRMED' },
+        @{ Hex='03 00 FC'; Name='CLEAR_PROGRAM_STATIC_CONFIRMED_DESTRUCTIVE' },
+        @{ Hex='04 00 FB'; Name='CLEAR_SYSTEM_STATIC_CONFIRMED_DESTRUCTIVE' },
         @{ Hex='0F 00 F0'; Name='CLEAR_ALL_MEMORY_STATIC_CONFIRMED_DESTRUCTIVE' },
-        @{ Hex='11 00 EE'; Name='CLEAR_DATA_STATIC_CONFIRMED' }
+        @{ Hex='11 00 EE'; Name='CLEAR_DATA_STATIC_CONFIRMED_DESTRUCTIVE' },
+        @{ Hex='12 00 ED'; Name='EEPROM_PACK_TO_PLC_STATIC_CONFIRMED_DESTRUCTIVE' },
+        @{ Hex='13 00 EC'; Name='PLC_TO_EEPROM_PACK_STATIC_CONFIRMED' },
+        @{ Hex='14 00 EB'; Name='PASSWORD_SECURITY_PREFLIGHT_STATIC_CONFIRMED' },
+        @{ Hex='38 00 C7'; Name='READ_PROGRAM_PREAMBLE_38_CONFIRMED' },
+        @{ Hex='F0 00 0F'; Name='PREFLIGHT_STATUS_F0_CONFIRMED' },
+        @{ Hex='0A 03 53 F9 06 A0'; Name='RTC_MONITOR_READ_0A_STATIC_CONFIRMED' },
+        @{ Hex='0A 03 53 F9 0E 98'; Name='SET_RTC_PREREAD_0A_STATIC_CONFIRMED' },
+        @{ Hex='0A 03 60 00 06 8C'; Name='SCAN_TIME_READ_0A_STATIC_CONFIRMED' },
+        @{ Hex='09 05 50 01 02 12 34 58'; Name='MODIFY_REGISTER_WRITE_09_STATIC_CONFIRMED' },
+        @{ Hex='35 03 10 20 80 17'; Name='SET_RESET_IO_COIL_35_STATIC_CONFIRMED' },
+        @{ Hex='37 02 FF FF C8'; Name='BIOS_REFRESH_FINAL_37_STATIC_CONFIRMED_CRITICAL' }
     )
+
     $checks = 0
     foreach ($c in $cases) {
-        [byte[]]$b = $c.Hex.Split(' ') | ForEach-Object { [Convert]::ToByte($_,16) }
+        [byte[]]$b = Bytes $c.Hex
         if ((Sum8 $b) -ne 0xFF) { throw ('Checksum falhou: ' + $c.Hex) }
-        if ((Get-StaticClassification $b) -ne $c.Name) { throw ('Classificacao falhou: ' + $c.Hex) }
+        if ((Get-Classification $b) -ne $c.Name) { throw ('Classificacao falhou: ' + $c.Hex) }
         $checks += 2
     }
-    [byte[]]$unknown = 0x7E,0x00,0x81
+
+    [byte[]]$unknown = Bytes '7E 00 81'
     if ((Sum8 $unknown) -ne 0xFF) { throw 'Fixture desconhecido nao fecha FF.' }
-    if ((Get-StaticClassification $unknown) -ne 'UNCLASSIFIED') { throw 'Fixture desconhecido foi classificado indevidamente.' }
+    if ((Get-Classification $unknown) -ne 'UNCLASSIFIED') { throw 'Fixture desconhecido foi classificado indevidamente.' }
     $checks += 2
+
     Write-Host ('TP02 PG command discovery self-test: PASS checks=' + $checks)
-    Write-Host 'static=01_STOP_PROGRAM+02_RUN+03_CLEAR_PROGRAM+04_CLEAR_SYSTEM+0F_CLEAR_ALL+11_CLEAR_DATA; physical_plc=NAO UTILIZADO'
+    Write-Host 'catalog=01,02,03,04,09,0A,0F,11,12,13,14,33,34,35,37,38,F0; physical_plc=NAO UTILIZADO'
 }
 
 if ($SelfTest) {
@@ -149,6 +212,7 @@ if ($Actions.Count -eq 0) { throw 'Informe pelo menos uma acao.' }
 if (-not $VirtualOnlyConfirmed) {
     Write-Host 'ATENCAO: esta rotina e SOMENTE para par COM virtual + PC12 original.'
     Write-Host 'Nao conecte o emulador a uma COM fisica do PLC.'
+    Write-Host 'CLEAR, EEPROM->PLC e BIOS_REFRESH sao destrutivos no hardware real.'
     $confirm = (Read-Host 'Digite VIRTUAL para continuar').Trim().ToUpperInvariant()
     if ($confirm -ne 'VIRTUAL') { throw 'Execucao cancelada: bancada virtual nao confirmada.' }
 }
@@ -186,9 +250,9 @@ $report = New-Object Text.StringBuilder
 [void]$report.AppendLine(('EmulatorPort=' + $Port))
 [void]$report.AppendLine(('UnknownAck=' + $AckMode))
 [void]$report.AppendLine('PhysicalPLC=NO')
-[void]$report.AppendLine('STATIC_CONFIRMED_REQUESTS=01 00 FE STOP/PROGRAM; 02 00 FD RUN; 03 00 FC CLEAR_PROGRAM; 04 00 FB CLEAR_SYSTEM; 0F 00 F0 CLEAR_ALL_MEMORY; 11 00 EE CLEAR_DATA')
-[void]$report.AppendLine('SYNTHETIC_EMPTY_SUCCESS=00 00 FF (parser-compatible; physical response not yet captured)')
-[void]$report.AppendLine('WARNING=03/04/0F/11 sao comandos destrutivos; esta rotina e exclusivamente para COM virtual.')
+[void]$report.AppendLine('CATALOG=01,02,03,04,09,0A,0F,11,12,13,14,33,34,35,37,38,F0')
+[void]$report.AppendLine('SYNTHETIC_EMPTY_SUCCESS=00 00 FF (parser-compatible; physical response not implied)')
+[void]$report.AppendLine('WARNING=03/04/0F/11/12 e BIOS 37 podem ser destrutivos; uso somente em bancada virtual.')
 [void]$report.AppendLine('')
 
 foreach ($r in $results) {
@@ -199,7 +263,7 @@ foreach ($r in $results) {
 }
 
 if ($results.Count -eq 0) { [void]$report.AppendLine('RESULT=nenhum quadro desconhecido novo capturado.') }
-[void]$report.AppendLine('NEXT=usar a bancada virtual para observar sequencias posteriores; manter 00 00 FF como ACK sintetico ate captura da resposta real do TP02.')
+[void]$report.AppendLine('NEXT=separar semantica da requisicao, resposta fisica real e efeito de estado antes de promover regra nativa.')
 
 [IO.File]::WriteAllText($txtPath,$report.ToString(),[Text.Encoding]::UTF8)
 if ($results.Count -gt 0) {
