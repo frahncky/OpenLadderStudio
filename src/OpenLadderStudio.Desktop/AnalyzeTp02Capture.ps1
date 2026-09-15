@@ -1,6 +1,7 @@
 param(
     [string]$Path,
-    [string]$Compare
+    [string]$Compare,
+    [switch]$SelfTest
 )
 
 Set-StrictMode -Version 2.0
@@ -98,16 +99,75 @@ function Format-Hex {
     return $text
 }
 
-function Get-KnownName {
-    param([byte]$Cmd)
-    switch ($Cmd) {
+function Get-FrameKind {
+    param([byte[]]$Data, [int]$Offset, [int]$Total)
+
+    if ($Total -lt 3) { return 'QUADRO_CURTO_INVALIDO' }
+    [byte]$cmd = $Data[$Offset]
+    [int]$payloadLen = $Data[$Offset + 1]
+
+    switch ($cmd) {
+        0x01 { return '01 STOP / Program Mode (estatico PC12)' }
+        0x02 { return '02 RUN (estatico PC12)' }
+        0x03 { return '03 Clear Program - DESTRUTIVO' }
+        0x04 { return '04 Clear System - DESTRUTIVO' }
+
+        0x09 {
+            if ($payloadLen -ge 3 -and $Total -ge 6) {
+                $addr = ([int]$Data[$Offset + 2] * 256) + [int]$Data[$Offset + 3]
+                $count = [int]$Data[$Offset + 4]
+                if ($addr -eq 0x53F9 -and $count -eq 0x0E) {
+                    return '09 Set RTC / escrita de 14 bytes em 0x53F9'
+                }
+                if ($payloadLen -eq 5 -and $count -eq 0x02) {
+                    return '09 Modify Register / escrita de palavra (2 bytes)'
+                }
+            }
+            return '09 escrita de memoria/registrador/sistema'
+        }
+
+        0x0A {
+            if ($payloadLen -ge 3 -and $Total -ge 6) {
+                $addr = ([int]$Data[$Offset + 2] * 256) + [int]$Data[$Offset + 3]
+                $count = [int]$Data[$Offset + 4]
+                if ($addr -eq 0x53F9 -and $count -eq 0x06) {
+                    return '0A Monitor RTC: leitura 6 bytes em 0x53F9'
+                }
+                if ($addr -eq 0x53F9 -and $count -eq 0x0E) {
+                    return '0A Set RTC pre-read: leitura 14 bytes em 0x53F9'
+                }
+                if ($addr -eq 0x6000 -and $count -eq 0x06) {
+                    return '0A Scan Time: atual/max/min em 0x6000'
+                }
+            }
+            return '0A leitura de memoria/registrador/monitor'
+        }
+
+        0x0F { return '0F Clear All Memory - DESTRUTIVO' }
+        0x11 { return '11 Clear Data - DESTRUTIVO' }
+        0x12 { return '12 EEPROM PACK -> PLC - GRAVACAO/DESTRUTIVO' }
+        0x13 { return '13 PLC -> EEPROM PACK' }
+        0x14 { return '14 password/security preflight para operacao privilegiada' }
         0x33 { return '33 Write Program Data (confirmado offline PC12)' }
-        0xF0 { return 'F0 preflight/status' }
-        0x38 { return '38 preambulo leitura' }
-        0x34 { return '34 leitura de programa' }
-        0x0A { return '0A leitura de memoria' }
-        0x14 { return '14 consulta auxiliar' }
-        0x0F { return '0F candidato destrutivo/clear - NAO usar em PLC fisico' }
+        0x34 { return '34 leitura de pagina do programa' }
+
+        0x35 {
+            if ($payloadLen -eq 3 -and $Total -eq 6) {
+                return '35 Set/Reset I/O Coil em monitor'
+            }
+            return '35 Set/Reset I/O Coil'
+        }
+
+        0x37 {
+            if ($payloadLen -eq 2 -and $Total -eq 5 -and
+                $Data[$Offset + 2] -eq 0xFF -and $Data[$Offset + 3] -eq 0xFF) {
+                return '37 BIOS Refresh final 37 02 FF FF C8 - CRITICO'
+            }
+            return '37 BIOS Refresh/Update - CRITICO'
+        }
+
+        0x38 { return '38 preambulo de leitura do programa' }
+        0xF0 { return 'F0 preflight/status PG' }
         default { return 'DESCONHECIDO' }
     }
 }
@@ -223,46 +283,46 @@ function Parse-Capture {
         if (($i + 2) -lt $data.Length) {
             $payloadLen = [int]$data[$i + 1]
             $total = $payloadLen + 3
-            if ($total -ge 3 -and ($i + $total) -le $data.Length) {
-                if (Test-SumFF -Data $data -Offset $i -Length $total) {
-                    $seq++
-                    $cmd = [byte]$data[$i]
-                    $kind = Get-KnownName -Cmd $cmd
-                    $pgStart = '-'
-                    $pgWords = -1
-                    $w1a = $false
-                    $wordsHex = ''
+            if ($total -ge 3 -and ($i + $total) -le $data.Length -and
+                (Test-SumFF -Data $data -Offset $i -Length $total)) {
 
-                    if ($cmd -eq 0x33) {
-                        $pg = Decode-Pg33 -Data $data -Offset $i -Total $total
-                        if ($pg.Valid) {
-                            $pgStart = ('0x{0:X4}' -f $pg.Start)
-                            $pgWords = $pg.WordCount
-                            $w1a = $pg.W1A
-                            $wordsHex = $pg.WordsHex
-                            if ($w1a) { $kind += ' | W1A reconhecido' }
-                        }
-                        else {
-                            $kind += ' | GEOMETRIA INVALIDA: ' + $pg.Reason
-                        }
+                $seq++
+                $cmd = [byte]$data[$i]
+                $kind = Get-FrameKind -Data $data -Offset $i -Total $total
+                $pgStart = '-'
+                $pgWords = -1
+                $w1a = $false
+                $wordsHex = ''
+
+                if ($cmd -eq 0x33) {
+                    $pg = Decode-Pg33 -Data $data -Offset $i -Total $total
+                    if ($pg.Valid) {
+                        $pgStart = ('0x{0:X4}' -f $pg.Start)
+                        $pgWords = $pg.WordCount
+                        $w1a = $pg.W1A
+                        $wordsHex = $pg.WordsHex
+                        if ($w1a) { $kind += ' | W1A reconhecido' }
                     }
-
-                    $frames.Add((New-FrameObject `
-                        -Seq $seq `
-                        -Offset $i `
-                        -Cmd ('0x{0:X2}' -f $cmd) `
-                        -Len $payloadLen `
-                        -Total $total `
-                        -Checksum 'FF OK' `
-                        -Kind $kind `
-                        -Hex (Format-Hex -Data $data -Offset $i -Length $total) `
-                        -Pg33Start $pgStart `
-                        -Pg33Words $pgWords `
-                        -W1A $w1a `
-                        -WordsHex $wordsHex))
-                    $i += $total
-                    continue
+                    else {
+                        $kind += ' | GEOMETRIA INVALIDA: ' + $pg.Reason
+                    }
                 }
+
+                $frames.Add((New-FrameObject `
+                    -Seq $seq `
+                    -Offset $i `
+                    -Cmd ('0x{0:X2}' -f $cmd) `
+                    -Len $payloadLen `
+                    -Total $total `
+                    -Checksum 'FF OK' `
+                    -Kind $kind `
+                    -Hex (Format-Hex -Data $data -Offset $i -Length $total) `
+                    -Pg33Start $pgStart `
+                    -Pg33Words $pgWords `
+                    -W1A $w1a `
+                    -WordsHex $wordsHex))
+                $i += $total
+                continue
             }
         }
 
@@ -318,6 +378,17 @@ function Show-Analysis {
         }
     }
 
+    $critical = @($Result.Frames | Where-Object {
+        $_.Kind -match 'DESTRUTIVO|CRITICO|EEPROM PACK -> PLC'
+    })
+    if ($critical.Count -gt 0) {
+        Write-Host ''
+        Write-Host 'ATENCAO - quadros destrutivos/criticos detectados:' -ForegroundColor Yellow
+        foreach ($f in $critical) {
+            Write-Host ('  #{0} {1}: {2}' -f $f.Seq,$f.Cmd,$f.Kind) -ForegroundColor Yellow
+        }
+    }
+
     Write-Host ''
     Write-Host 'Resumo por opcode:'
     $Result.Frames |
@@ -370,6 +441,63 @@ function Compare-Analysis {
             }
         }
     }
+}
+
+function Convert-HexToBytes {
+    param([string]$Hex)
+    return [byte[]]($Hex.Split(' ') | ForEach-Object { [Convert]::ToByte($_,16) })
+}
+
+function Run-SelfTest {
+    $cases = @(
+        @{ Hex='01 00 FE'; Match='STOP / Program Mode' },
+        @{ Hex='02 00 FD'; Match='02 RUN' },
+        @{ Hex='03 00 FC'; Match='Clear Program' },
+        @{ Hex='04 00 FB'; Match='Clear System' },
+        @{ Hex='0F 00 F0'; Match='Clear All Memory' },
+        @{ Hex='11 00 EE'; Match='Clear Data' },
+        @{ Hex='12 00 ED'; Match='EEPROM PACK -> PLC' },
+        @{ Hex='13 00 EC'; Match='PLC -> EEPROM PACK' },
+        @{ Hex='14 00 EB'; Match='password/security' },
+        @{ Hex='38 00 C7'; Match='preambulo de leitura' },
+        @{ Hex='F0 00 0F'; Match='preflight/status' },
+        @{ Hex='0A 03 53 F9 06 A0'; Match='Monitor RTC' },
+        @{ Hex='0A 03 53 F9 0E 98'; Match='Set RTC pre-read' },
+        @{ Hex='0A 03 60 00 06 8C'; Match='Scan Time' },
+        @{ Hex='09 05 50 01 02 12 34 58'; Match='Modify Register' },
+        @{ Hex='35 03 10 20 80 17'; Match='Set/Reset I/O Coil' },
+        @{ Hex='37 02 FF FF C8'; Match='BIOS Refresh final' }
+    )
+
+    $checks = 0
+    foreach ($c in $cases) {
+        [byte[]]$b = Convert-HexToBytes $c.Hex
+        if (-not (Test-SumFF -Data $b -Offset 0 -Length $b.Length)) {
+            throw ('Checksum falhou: ' + $c.Hex)
+        }
+        $kind = Get-FrameKind -Data $b -Offset 0 -Total $b.Length
+        if ($kind -notmatch [regex]::Escape($c.Match)) {
+            throw ('Classificacao falhou: ' + $c.Hex + ' => ' + $kind)
+        }
+        $checks += 2
+    }
+
+    [byte[]]$unknown = Convert-HexToBytes '7E 00 81'
+    if (-not (Test-SumFF -Data $unknown -Offset 0 -Length $unknown.Length)) {
+        throw 'Fixture desconhecido nao fecha FF.'
+    }
+    if ((Get-FrameKind -Data $unknown -Offset 0 -Total $unknown.Length) -ne 'DESCONHECIDO') {
+        throw 'Fixture desconhecido foi classificado indevidamente.'
+    }
+    $checks += 2
+
+    Write-Host ('TP02 capture analyzer self-test: PASS checks=' + $checks)
+    Write-Host 'catalog=01,02,03,04,09,0A,0F,11,12,13,14,33,34,35,37,38,F0; physical_plc=NAO UTILIZADO'
+}
+
+if ($SelfTest) {
+    Run-SelfTest
+    exit 0
 }
 
 if ([string]::IsNullOrWhiteSpace($Path)) {
