@@ -46,6 +46,7 @@ Source: "..\src\OpenLadderStudio.Desktop\OpenLadderModbus.exe"; DestDir: "{app}"
 Source: "..\src\OpenLadderStudio.Desktop\OpenLadderMemoryMap.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\OpenLadderStudio.Desktop\OpenLadderTP02PgLab.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\OpenLadderStudio.Desktop\OpenLadderTP02PhysicalValidator.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\src\OpenLadderStudio.Desktop\OpenLadderTP02FullCapture.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\OpenLadderStudio.Desktop\OpenLadderTP02Capture.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\OpenLadderStudio.Desktop\OpenLadderSimulator.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\OpenLadderStudio.Desktop\TP02-PG-Tests.json"; DestDir: "{app}"; Flags: ignoreversion
@@ -70,10 +71,12 @@ Name: "{userdocs}\OpenLadder Studio\Dumps"
 Name: "{userdocs}\OpenLadder Studio\Calibration"
 Name: "{userdocs}\OpenLadder Studio\Backups"
 Name: "{userdocs}\OpenLadder Studio\TP02 Physical Validation"
+Name: "{userdocs}\OpenLadder Studio\TP02 Full Protocol Capture"
 
 [Icons]
 Name: "{group}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
 Name: "{group}\Validação física TP02 (READ-ONLY)"; Filename: "{app}\OpenLadderTP02PhysicalValidator.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
+Name: "{group}\Captura completa protocolo TP02 (laboratório)"; Filename: "{app}\OpenLadderTP02FullCapture.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"
 Name: "{autodesktop}\OpenLadder Studio"; Filename: "{app}\OpenLadderStudio.exe"; WorkingDir: "{app}"; IconFilename: "{app}\OpenLadderStudio.ico"; Tasks: desktopicon
 
 [Run]
