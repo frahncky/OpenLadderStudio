@@ -5,26 +5,25 @@ $buildPath = Join-Path (Get-Location) 'TP02FullProtocolCapture.build.cs'
 if (-not (Test-Path -LiteralPath $sourcePath)) { throw 'TP02FullProtocolCapture.cs nao encontrado.' }
 $text = [IO.File]::ReadAllText($sourcePath)
 
-function Replace-Required([string]$input,[string]$needle,[string]$replacement,[string]$label) {
-    if (-not $input.Contains($needle)) { throw "Ancora nao encontrada: $label" }
-    return $input.Replace($needle,$replacement)
+function Replace-RegexRequired([string]$input,[string]$pattern,[string]$replacement,[string]$label) {
+    $rx = New-Object System.Text.RegularExpressions.Regex($pattern,[System.Text.RegularExpressions.RegexOptions]::Multiline)
+    $matches = $rx.Matches($input)
+    if ($matches.Count -ne 1) { throw "Ancora regex invalida ($label): encontrados $($matches.Count)" }
+    return $rx.Replace($input,$replacement,1)
 }
 
-# Usar ancoras de codigo, nao textos de interface: Build.bat normaliza PT-BR antes deste script.
-$text = Replace-Required $text '                    port = AcquirePort(PortName, out state);' '                    port = AcquireQualifiedPortV159(PortName, out state);' 'AcquirePort'
-$text = Replace-Required $text '                    CaptureF0(port, "BASE-F0");' '                    // v1.59: F0 ja foi confirmado por AcquireQualifiedPortV159 na mesma sessao.' 'CaptureF0 main'
+# Build.bat normaliza textos PT-BR antes deste script. Portanto todas as ancoras
+# abaixo dependem apenas da estrutura C#, nunca de frases, acentos ou indentacao exata.
+$text = Replace-RegexRequired $text '^(?<indent>\s*)port\s*=\s*AcquirePort\s*\(\s*PortName\s*,\s*out\s+state\s*\)\s*;\s*$' '${indent}port = AcquireQualifiedPortV159(PortName, out state);' 'AcquirePort'
+$text = Replace-RegexRequired $text '^(?<indent>\s*)CaptureF0\s*\(\s*port\s*,\s*"[^"]*"\s*\)\s*;\s*$' '${indent}// v1.59: F0 ja foi confirmado por AcquireQualifiedPortV159 na mesma sessao.' 'CaptureF0 main'
 
-$old38 = '            ExchangeRaw(port, Frame38, 2200, 140, prefix + "-38", "program-read");'
-$new38 = '            ExchangeExpectedV159(port, Frame38, 2, 6, 3200, 220, prefix + "-38", "program-read");'
-$text = Replace-Required $text $old38 $new38 'PG38 retry'
+$text = Replace-RegexRequired $text '^(?<indent>\s*)ExchangeRaw\s*\(\s*port\s*,\s*Frame38\s*,\s*2200\s*,\s*140\s*,(?<tail>.*)\)\s*;\s*$' '${indent}ExchangeExpectedV159(port, Frame38, 2, 6, 3200, 220,${tail});' 'PG38 retry'
+$text = Replace-RegexRequired $text '^(?<indent>\s*)byte\[\]\s+raw\s*=\s*ExchangeRaw\s*\(\s*port\s*,\s*request\s*,\s*5000\s*,\s*180\s*,(?<tail>.*)\)\s*;\s*$' '${indent}byte[] raw = ExchangeExpectedV159(port, request, Tp02Pg34Pager.PayloadLength, 4, 5500, 260,${tail});' 'PG34 retry'
 
-$old34 = '                byte[] raw = ExchangeRaw(port, request, 5000, 180, prefix + "-34-" + start.ToString("0000", CultureInfo.InvariantCulture), "program-read");'
-$new34 = '                byte[] raw = ExchangeExpectedV159(port, request, Tp02Pg34Pager.PayloadLength, 4, 5500, 260, prefix + "-34-" + start.ToString("0000", CultureInfo.InvariantCulture), "program-read");'
-$text = Replace-Required $text $old34 $new34 'PG34 retry'
-
-$anchor = '        private static List<PortProfile> BuildProfiles(string portName)'
-$idx = $text.IndexOf($anchor,[StringComparison]::Ordinal)
-if ($idx -lt 0) { throw 'Ancora BuildProfiles nao encontrada.' }
+$anchorRx = New-Object System.Text.RegularExpressions.Regex('(?m)^\s*private\s+static\s+List<PortProfile>\s+BuildProfiles\s*\(\s*string\s+portName\s*\)')
+$anchorMatch = $anchorRx.Match($text)
+if (-not $anchorMatch.Success) { throw 'Ancora BuildProfiles nao encontrada.' }
+$idx = $anchorMatch.Index
 
 $methods = @'
         // v1.59: HELLO isolado prova presenca, mas nao prova que a sessao PG ja aceita
