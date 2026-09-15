@@ -5,24 +5,21 @@ $buildPath = Join-Path (Get-Location) 'TP02FullProtocolCapture.build.cs'
 if (-not (Test-Path -LiteralPath $sourcePath)) { throw 'TP02FullProtocolCapture.cs nao encontrado.' }
 $text = [IO.File]::ReadAllText($sourcePath)
 
-function Replace-RegexRequired([string]$input,[string]$pattern,[string]$replacement,[string]$label) {
-    $rx = New-Object System.Text.RegularExpressions.Regex($pattern,[System.Text.RegularExpressions.RegexOptions]::Multiline)
-    $matches = $rx.Matches($input)
-    if ($matches.Count -ne 1) { throw "Ancora regex invalida ($label): encontrados $($matches.Count)" }
-    return $rx.Replace($input,$replacement,1)
+function Replace-Required([string]$input,[string]$needle,[string]$replacement,[string]$label) {
+    if (-not $input.Contains($needle)) { throw "Ancora nao encontrada ($label)." }
+    return $input.Replace($needle,$replacement)
 }
 
-# Strings PowerShell com aspas simples nao interpretam barra invertida; por isso
-# os metacaracteres regex usam uma unica barra (\s, \(, \[ etc. no regex efetivo).
-$text = Replace-RegexRequired $text '^(?<indent>\s*)port\s*=\s*AcquirePort\s*\(\s*PortName\s*,\s*out\s+state\s*\)\s*;\s*$' '${indent}port = AcquireQualifiedPortV159(PortName, out state);' 'AcquirePort'
-$text = Replace-RegexRequired $text '^(?<indent>\s*)CaptureF0\s*\(\s*port\s*,\s*"[^"]*"\s*\)\s*;\s*$' '${indent}// v1.59: F0 ja foi confirmado por AcquireQualifiedPortV159 na mesma sessao.' 'CaptureF0 main'
-$text = Replace-RegexRequired $text '^(?<indent>\s*)ExchangeRaw\s*\(\s*port\s*,\s*Frame38\s*,\s*2200\s*,\s*140\s*,(?<tail>.*)\)\s*;\s*$' '${indent}ExchangeExpectedV159(port, Frame38, 2, 6, 3200, 220,${tail});' 'PG38 retry'
-$text = Replace-RegexRequired $text '^(?<indent>\s*)byte\[\]\s+raw\s*=\s*ExchangeRaw\s*\(\s*port\s*,\s*request\s*,\s*5000\s*,\s*180\s*,(?<tail>.*)\)\s*;\s*$' '${indent}byte[] raw = ExchangeExpectedV159(port, request, Tp02Pg34Pager.PayloadLength, 4, 5500, 260,${tail});' 'PG34 retry'
+# BuildTp02FullCapture.bat restaura este fonte diretamente do commit antes de
+# executar este script. Por isso podemos usar ancoras exatas e deterministicas.
+$text = Replace-Required $text '                    port = AcquirePort(PortName, out state);' '                    port = AcquireQualifiedPortV159(PortName, out state);' 'AcquirePort'
+$text = Replace-Required $text '                    CaptureF0(port, "BASE-F0");' '                    // v1.59: F0 ja foi confirmado na mesma sessao pela aquisicao qualificada.' 'CaptureF0 main'
+$text = Replace-Required $text '            ExchangeRaw(port, Frame38, 2200, 140, prefix + "-38", "program-read");' '            ExchangeExpectedV159(port, Frame38, 2, 6, 3200, 220, prefix + "-38", "program-read");' 'PG38 retry'
+$text = Replace-Required $text '                byte[] raw = ExchangeRaw(port, request, 5000, 180, prefix + "-34-" + start.ToString("0000", CultureInfo.InvariantCulture), "program-read");' '                byte[] raw = ExchangeExpectedV159(port, request, Tp02Pg34Pager.PayloadLength, 4, 5500, 260, prefix + "-34-" + start.ToString("0000", CultureInfo.InvariantCulture), "program-read");' 'PG34 retry'
 
-$anchorRx = New-Object System.Text.RegularExpressions.Regex('(?m)^\s*private\s+static\s+List<PortProfile>\s+BuildProfiles\s*\(\s*string\s+portName\s*\)')
-$anchorMatch = $anchorRx.Match($text)
-if (-not $anchorMatch.Success) { throw 'Ancora BuildProfiles nao encontrada.' }
-$idx = $anchorMatch.Index
+$anchor = '        private static List<PortProfile> BuildProfiles(string portName)'
+$idx = $text.IndexOf($anchor,[StringComparison]::Ordinal)
+if ($idx -lt 0) { throw 'Ancora BuildProfiles nao encontrada.' }
 
 $methods = @'
         // v1.59: HELLO isolado prova presenca, mas nao prova que a sessao PG ja aceita
