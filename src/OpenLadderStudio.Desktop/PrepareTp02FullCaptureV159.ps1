@@ -10,18 +10,9 @@ function Replace-Required([string]$input,[string]$needle,[string]$replacement,[s
     return $input.Replace($needle,$replacement)
 }
 
-$oldMain = @'
-                    port = AcquirePort(PortName, out state);
-                    Log("Enlace qualificado em " + ActiveProfile.Name + " | estado=" + state + ".");
-                    CaptureF0(port, "BASE-F0");
-                    SnapshotBaseline(port, state);
-'@
-$newMain = @'
-                    port = AcquireQualifiedPortV159(PortName, out state);
-                    Log("Enlace PG qualificado por HELLO+F0 na mesma sessao em " + ActiveProfile.Name + " | estado=" + state + ".");
-                    SnapshotBaseline(port, state);
-'@
-$text = Replace-Required $text $oldMain $newMain 'main HELLO/F0'
+# Usar ancoras de codigo, nao textos de interface: Build.bat normaliza PT-BR antes deste script.
+$text = Replace-Required $text '                    port = AcquirePort(PortName, out state);' '                    port = AcquireQualifiedPortV159(PortName, out state);' 'AcquirePort'
+$text = Replace-Required $text '                    CaptureF0(port, "BASE-F0");' '                    // v1.59: F0 ja foi confirmado por AcquireQualifiedPortV159 na mesma sessao.' 'CaptureF0 main'
 
 $old38 = '            ExchangeRaw(port, Frame38, 2200, 140, prefix + "-38", "program-read");'
 $new38 = '            ExchangeExpectedV159(port, Frame38, 2, 6, 3200, 220, prefix + "-38", "program-read");'
@@ -36,9 +27,9 @@ $idx = $text.IndexOf($anchor,[StringComparison]::Ordinal)
 if ($idx -lt 0) { throw 'Ancora BuildProfiles nao encontrada.' }
 
 $methods = @'
-        // v1.59: o HELLO isolado prova presença, mas não prova que a sessão PG já aceita
-        // os comandos seguintes. O TP02 físico observado em 2026-09-15 respondeu HELLO
-        // e ficou silencioso quando F0 foi enviado imediatamente. Esta aquisição só retorna
+        // v1.59: HELLO isolado prova presenca, mas nao prova que a sessao PG ja aceita
+        // os comandos seguintes. O TP02 fisico observado em 2026-09-15 respondeu HELLO
+        // e ficou silencioso quando F0 foi enviado imediatamente. Esta aquisicao so retorna
         // uma porta quando HELLO e F0 forem confirmados NA MESMA abertura da COM.
         private static SerialPort AcquireQualifiedPortV159(string portName, out string state)
         {
@@ -84,14 +75,13 @@ $methods = @'
                             {
                                 ActiveProfile = profile;
                                 state = detected;
+                                RememberProfileV159(portName, profile);
                                 Log("V159: F0 confirmado na mesma sessao: 00 02 10 22 CB.");
                                 return port;
                             }
                             Thread.Sleep(450);
                         }
 
-                        // Não reutilizar indefinidamente uma sessão que respondeu HELLO mas não F0.
-                        // Faz mais um HELLO na mesma COM; se também falhar, passa ao próximo perfil.
                         byte[] rehello = ExchangeRaw(port, Hello, 1000, 120,
                             "V159-ACQUIRE-" + (p + 1).ToString("00", CultureInfo.InvariantCulture)
                             + "-REHELLO", "qualification");
@@ -107,6 +97,22 @@ $methods = @'
             state = string.Empty;
             throw new IOException("Nenhum perfil confirmou HELLO+F0 na mesma sessao PG. "
                 + (last == null ? string.Empty : last.Message));
+        }
+
+        private static void RememberProfileV159(string portName, PortProfile profile)
+        {
+            try
+            {
+                string root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenLadderStudio");
+                Directory.CreateDirectory(root);
+                string path = Path.Combine(root, "tp02-pg-last-profile.txt");
+                string content = "PORT=" + portName + Environment.NewLine
+                    + "NAME=" + profile.Name + Environment.NewLine
+                    + "DTR=" + (profile.Dtr ? "1" : "0") + Environment.NewLine
+                    + "RTS=" + (profile.Rts ? "1" : "0") + Environment.NewLine;
+                File.WriteAllText(path, content, Encoding.UTF8);
+            }
+            catch { }
         }
 
         private static byte[] ExchangeExpectedV159(SerialPort port, byte[] request, int expectedLen,
