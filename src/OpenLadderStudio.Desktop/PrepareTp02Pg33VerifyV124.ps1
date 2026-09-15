@@ -19,6 +19,7 @@ $v153 = Join-Path $PSScriptRoot 'PrepareTp02Pg34PagedReadbackV153.ps1'
 $v154 = Join-Path $PSScriptRoot 'PrepareTp02Pg34EndianFixV154.ps1'
 $v155 = Join-Path $PSScriptRoot 'PrepareTp02RunLogicGuardV155.ps1'
 $v156 = Join-Path $PSScriptRoot 'PrepareTp02ProgrammingLinkV156.ps1'
+$v157 = Join-Path $PSScriptRoot 'PrepareTp02FastConnectV157.ps1'
 
 if (-not (Test-Path -LiteralPath $core)) { throw 'PrepareTp02Pg33VerifyV124Core.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v125)) { throw 'PrepareTp02PgControlV125.ps1 nao encontrado.' }
@@ -39,6 +40,7 @@ if (-not (Test-Path -LiteralPath $v153)) { throw 'PrepareTp02Pg34PagedReadbackV1
 if (-not (Test-Path -LiteralPath $v154)) { throw 'PrepareTp02Pg34EndianFixV154.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v155)) { throw 'PrepareTp02RunLogicGuardV155.ps1 nao encontrado.' }
 if (-not (Test-Path -LiteralPath $v156)) { throw 'PrepareTp02ProgrammingLinkV156.ps1 nao encontrado.' }
+if (-not (Test-Path -LiteralPath $v157)) { throw 'PrepareTp02FastConnectV157.ps1 nao encontrado.' }
 
 & $core
 & $v125
@@ -58,4 +60,5 @@ if (-not (Test-Path -LiteralPath $v156)) { throw 'PrepareTp02ProgrammingLinkV156
 & $v154
 & $v155
 & $v156
+& $v157
 & $v135
