@@ -111,7 +111,7 @@ $parseReplacement = @'
 if (-not $out.Contains($parseAnchor)) { throw 'Ancora ParseArguments v1.56 nao encontrada.' }
 $out = $out.Replace($parseAnchor, $parseReplacement)
 
-# Self-test roda sem COM; o cenario completo pode tambem desabilitar ACK generico.
+# Self-test roda sem COM; ALL executa a matriz ampla e V156 preserva o teste focal.
 $mainAnchor = @'
             string portName = ParseArguments(args);
             if (string.IsNullOrEmpty(portName))
@@ -124,7 +124,7 @@ $mainReplacement = @'
 
             if (string.Equals(TP02PgV156Scenario.SelfTestMode, "ALL", StringComparison.Ordinal))
             {
-                Environment.ExitCode = TP02PgReadbackSelfTest.RunAll(true);
+                Environment.ExitCode = TP02PgComprehensiveSelfTest.RunAll(true);
                 return;
             }
             if (string.Equals(TP02PgV156Scenario.SelfTestMode, "V156", StringComparison.Ordinal))
@@ -217,4 +217,4 @@ if (-not $out.Contains($headerAnchor)) { throw 'Ancora do cabecalho v1.56 nao en
 $out = $out.Replace($headerAnchor, $headerReplacement)
 
 [IO.File]::WriteAllText($outputPath, $out, [Text.Encoding]::UTF8)
-Write-Host ("TP02 emulator build source preparado: {0} regra(s) externa(s) + readback PG33/38/34 + cenario v1.56." -f $count)
+Write-Host ("TP02 emulator build source preparado: {0} regra(s) externa(s) + readback PG33/38/34 + matriz completa + cenario v1.56." -f $count)
