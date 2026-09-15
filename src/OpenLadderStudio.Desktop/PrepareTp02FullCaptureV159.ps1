@@ -12,11 +12,10 @@ function Replace-RegexRequired([string]$input,[string]$pattern,[string]$replacem
     return $rx.Replace($input,$replacement,1)
 }
 
-# Build.bat normaliza textos PT-BR antes deste script. Portanto todas as ancoras
-# abaixo dependem apenas da estrutura C#, nunca de frases, acentos ou indentacao exata.
+# Strings PowerShell com aspas simples nao interpretam barra invertida; por isso
+# os metacaracteres regex usam uma unica barra (\s, \(, \[ etc. no regex efetivo).
 $text = Replace-RegexRequired $text '^(?<indent>\s*)port\s*=\s*AcquirePort\s*\(\s*PortName\s*,\s*out\s+state\s*\)\s*;\s*$' '${indent}port = AcquireQualifiedPortV159(PortName, out state);' 'AcquirePort'
 $text = Replace-RegexRequired $text '^(?<indent>\s*)CaptureF0\s*\(\s*port\s*,\s*"[^"]*"\s*\)\s*;\s*$' '${indent}// v1.59: F0 ja foi confirmado por AcquireQualifiedPortV159 na mesma sessao.' 'CaptureF0 main'
-
 $text = Replace-RegexRequired $text '^(?<indent>\s*)ExchangeRaw\s*\(\s*port\s*,\s*Frame38\s*,\s*2200\s*,\s*140\s*,(?<tail>.*)\)\s*;\s*$' '${indent}ExchangeExpectedV159(port, Frame38, 2, 6, 3200, 220,${tail});' 'PG38 retry'
 $text = Replace-RegexRequired $text '^(?<indent>\s*)byte\[\]\s+raw\s*=\s*ExchangeRaw\s*\(\s*port\s*,\s*request\s*,\s*5000\s*,\s*180\s*,(?<tail>.*)\)\s*;\s*$' '${indent}byte[] raw = ExchangeExpectedV159(port, request, Tp02Pg34Pager.PayloadLength, 4, 5500, 260,${tail});' 'PG34 retry'
 
