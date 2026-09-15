@@ -11,7 +11,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
-      - 'src/OpenLadderStudio.Desktop/StartTp02EmulatorV156.bat'
+      - 'src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat'
       - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat'
@@ -26,7 +26,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
-      - 'src/OpenLadderStudio.Desktop/StartTp02EmulatorV156.bat'
+      - 'src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat'
       - 'docs/TP02-PG-EMULATOR.md'
       - '.github/workflows/validate-tp02-emulator.yml'
   workflow_dispatch:
@@ -91,7 +91,7 @@ jobs:
           name: tp02-pg-emulator-v156-bench
           path: |
             src/OpenLadderStudio.Desktop/OpenLadderTP02Emulator.exe
-            src/OpenLadderStudio.Desktop/StartTp02EmulatorV156.bat
+            src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat
             src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1
             src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat
             src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat
