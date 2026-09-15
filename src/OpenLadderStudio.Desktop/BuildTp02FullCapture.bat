@@ -15,7 +15,16 @@ if not exist "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" exit /b 1
 if not exist "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" exit /b 1
 if not exist "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" exit /b 1
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02FullCaptureV159.ps1"
+rem O Build principal pode normalizar TP02FullProtocolCapture.cs no working tree.
+rem Recuperamos a versao imutavel do commit para a preparacao v1.59.
+set "FULLCAP_SOURCE=TP02FullProtocolCapture.cs"
+where git >nul 2>&1
+if not errorlevel 1 (
+  git show HEAD:src/OpenLadderStudio.Desktop/TP02FullProtocolCapture.cs > "TP02FullProtocolCapture.original.cs" 2>nul
+  if not errorlevel 1 if exist "TP02FullProtocolCapture.original.cs" set "FULLCAP_SOURCE=TP02FullProtocolCapture.original.cs"
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02FullCaptureV159.ps1" -SourceFile "%FULLCAP_SOURCE%"
 if errorlevel 1 goto :erro
 if not exist "TP02FullProtocolCapture.build.cs" goto :erro
 
@@ -26,9 +35,11 @@ if errorlevel 1 goto :erro
 if errorlevel 1 goto :erro
 
 del /q "TP02FullProtocolCapture.build.cs" >nul 2>&1
+del /q "TP02FullProtocolCapture.original.cs" >nul 2>&1
 echo OpenLadderTP02FullCapture.exe v1.59 criado e autoteste offline aprovado.
 exit /b 0
 
 :erro
 del /q "TP02FullProtocolCapture.build.cs" >nul 2>&1
+del /q "TP02FullProtocolCapture.original.cs" >nul 2>&1
 exit /b 1
