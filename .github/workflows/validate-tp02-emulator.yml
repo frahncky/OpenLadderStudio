@@ -7,6 +7,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulator.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgReadback.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgReadbackSelfTest.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgComprehensiveSelfTest.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgV156Scenario.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
@@ -22,6 +23,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulator.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgReadback.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgReadbackSelfTest.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgComprehensiveSelfTest.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgV156Scenario.cs'
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
@@ -64,7 +66,7 @@ jobs:
         working-directory: src/OpenLadderStudio.Desktop
         run: BuildTp02Emulator.bat
 
-      - name: Run all emulator self-tests
+      - name: Run full emulator test matrix
         shell: cmd
         working-directory: src/OpenLadderStudio.Desktop
         run: |
@@ -98,6 +100,7 @@ jobs:
             src/OpenLadderStudio.Desktop/TP02PgEmulator.cs
             src/OpenLadderStudio.Desktop/TP02PgReadback.cs
             src/OpenLadderStudio.Desktop/TP02PgReadbackSelfTest.cs
+            src/OpenLadderStudio.Desktop/TP02PgComprehensiveSelfTest.cs
             src/OpenLadderStudio.Desktop/TP02PgV156Scenario.cs
             src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt
             src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1
