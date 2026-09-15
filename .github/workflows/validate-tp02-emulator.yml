@@ -16,7 +16,10 @@ on:
       - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat'
       - 'docs/TP02-PG-EMULATOR.md'
+      - 'docs/TP02-PG-OPCODE-MAP.md'
       - '.github/workflows/validate-tp02-emulator.yml'
   pull_request:
     paths:
@@ -29,7 +32,13 @@ on:
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
       - 'src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat'
+      - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat'
       - 'docs/TP02-PG-EMULATOR.md'
+      - 'docs/TP02-PG-OPCODE-MAP.md'
       - '.github/workflows/validate-tp02-emulator.yml'
   workflow_dispatch:
 
@@ -46,7 +55,8 @@ jobs:
           $files = @(
             'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1',
             'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1',
-            'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
+            'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1',
+            'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1'
           )
           foreach ($file in $files) {
             $errors = $null
@@ -60,6 +70,13 @@ jobs:
               exit 1
             }
           }
+
+      - name: Run command discovery offline self-test
+        shell: powershell
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          .\DiscoverTp02PgCommands.ps1 -SelfTest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build TP02 emulator
         shell: cmd
@@ -96,6 +113,8 @@ jobs:
             src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat
             src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1
             src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat
+            src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1
+            src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat
             src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat
             src/OpenLadderStudio.Desktop/TP02PgEmulator.cs
             src/OpenLadderStudio.Desktop/TP02PgReadback.cs
@@ -105,4 +124,5 @@ jobs:
             src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt
             src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1
             docs/TP02-PG-EMULATOR.md
+            docs/TP02-PG-OPCODE-MAP.md
           if-no-files-found: error
