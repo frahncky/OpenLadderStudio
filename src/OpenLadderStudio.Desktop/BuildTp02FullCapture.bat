@@ -15,16 +15,15 @@ if not exist "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" exit /b 1
 if not exist "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" exit /b 1
 if not exist "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" exit /b 1
 
-rem O Build principal pode normalizar TP02FullProtocolCapture.cs no working tree.
-rem Recuperamos a versao imutavel do commit para a preparacao v1.59.
-set "FULLCAP_SOURCE=TP02FullProtocolCapture.cs"
+rem Build.bat pode ter normalizado este fonte no working tree. Para o Full Capture,
+rem restauramos a versao imutavel do commit antes de aplicar o patch v1.59.
 where git >nul 2>&1
 if not errorlevel 1 (
   git show HEAD:src/OpenLadderStudio.Desktop/TP02FullProtocolCapture.cs > "TP02FullProtocolCapture.original.cs" 2>nul
-  if not errorlevel 1 if exist "TP02FullProtocolCapture.original.cs" set "FULLCAP_SOURCE=TP02FullProtocolCapture.original.cs"
+  if not errorlevel 1 if exist "TP02FullProtocolCapture.original.cs" copy /y "TP02FullProtocolCapture.original.cs" "TP02FullProtocolCapture.cs" >nul
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02FullCaptureV159.ps1" -SourceFile "%FULLCAP_SOURCE%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02FullCaptureV159.ps1"
 if errorlevel 1 goto :erro
 if not exist "TP02FullProtocolCapture.build.cs" goto :erro
 
