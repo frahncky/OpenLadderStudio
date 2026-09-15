@@ -19,9 +19,18 @@ rem Build.bat pode ter normalizado este fonte no working tree. Para o Full Captu
 rem restauramos a versao imutavel do commit antes de aplicar o patch v1.59.
 where git >nul 2>&1
 if not errorlevel 1 (
+  echo ===== V159 DIAG: git show AcquirePort =====
+  git show HEAD:src/OpenLadderStudio.Desktop/TP02FullProtocolCapture.cs | findstr /n /c:"AcquirePort" /c:"CaptureF0" /c:"Frame38"
   git show HEAD:src/OpenLadderStudio.Desktop/TP02FullProtocolCapture.cs > "TP02FullProtocolCapture.original.cs" 2>nul
   if not errorlevel 1 if exist "TP02FullProtocolCapture.original.cs" copy /y "TP02FullProtocolCapture.original.cs" "TP02FullProtocolCapture.cs" >nul
 )
+
+echo ===== V159 DIAG: working file after restore =====
+findstr /n /c:"AcquirePort" /c:"CaptureF0" /c:"Frame38" "TP02FullProtocolCapture.cs"
+
+echo ===== V159 DIAG: source hashes =====
+certutil -hashfile "TP02FullProtocolCapture.cs" SHA256 | findstr /v /c:"hash" /c:"CertUtil"
+if exist "TP02FullProtocolCapture.original.cs" certutil -hashfile "TP02FullProtocolCapture.original.cs" SHA256 | findstr /v /c:"hash" /c:"CertUtil"
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02FullCaptureV159.ps1"
 if errorlevel 1 goto :erro
