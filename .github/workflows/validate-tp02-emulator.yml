@@ -71,6 +71,13 @@ jobs:
             }
           }
 
+      - name: Run capture analyzer offline self-test
+        shell: powershell
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          .\AnalyzeTp02Capture.ps1 -SelfTest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Run command discovery offline self-test
         shell: powershell
         working-directory: src/OpenLadderStudio.Desktop
@@ -111,6 +118,7 @@ jobs:
           path: |
             src/OpenLadderStudio.Desktop/OpenLadderTP02Emulator.exe
             src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat
+            src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1
             src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1
             src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat
             src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1
