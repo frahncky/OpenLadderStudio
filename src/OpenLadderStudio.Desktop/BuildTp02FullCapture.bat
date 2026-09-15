@@ -14,7 +14,7 @@ if not exist "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" exit /b 1
 if not exist "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" exit /b 1
 if not exist "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" exit /b 1
 
-"%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02FullProtocolCaptureProgram /out:"OpenLadderTP02FullCapture.exe" /reference:System.dll "StudioDiagnostics.cs" "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" "TP02FullProtocolCapture.cs"
+"%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02FullProtocolCaptureProgram /out:"OpenLadderTP02FullCapture.exe" /reference:System.dll /reference:System.Windows.Forms.dll "StudioDiagnostics.cs" "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" "TP02FullProtocolCapture.cs"
 if errorlevel 1 exit /b 1
 
 ".\OpenLadderTP02FullCapture.exe" --self-test
