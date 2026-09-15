@@ -1,21 +1,29 @@
 # TP02 PG Emulator - regras externas de resposta
 # Formato:
 #   CMD_HEX|DELAY_MS|RESPONSE_HEX|LABEL
-# Exemplo:
-#   A1|150|00 00 FF|ACK temporario para candidato A1
 #
-# Regras so devem ser adicionadas depois que o opcode aparecer em captura do PC12.
-# O build injeta estas regras no switch do emulador sem alterar TP02PgEmulator.cs.
+# Estas regras representam SEMANTICAS DE REQUISICAO confirmadas no PC12, mas
+# usam 00 00 FF como ACK SINTETICO/ESTRUTURAL. Nao significam que o TP02 fisico
+# devolva exatamente esses tres bytes.
 #
-# Para descobrir RUN/STOP sem tocar no PLC fisico, execute:
-#   DiscoverTp02PgRunStop.bat
-# A rotina usa PC12 original + par COM virtual + emulador com --no-auto-ack,
-# captura STOP e RUN separadamente e gera TP02-PG-RUNSTOP-DISCOVERY-*.txt.
-# Nao copie automaticamente os candidatos para este arquivo: primeiro confirme
-# o quadro e a resposta/semantica esperada.
+# O build injeta estas regras no switch do emulador. Uso exclusivo em COM virtual.
+# Comandos nativos e proibidos aqui: F0 38 34 33 0A 14
 #
-# Comandos ja tratados nativamente e portanto proibidos aqui:
-#   F0 38 34 33 0A 14
-#
-# 33 = Write PLC Program / Program Data confirmado por analise estatica do
-# pc12.exe e emulacao Unicorn offline do construtor original.
+# Controle
+01|150|00 00 FF|STOP Program Mode - ACK sintetico
+02|150|00 00 FF|RUN - ACK sintetico
+# Limpeza - destrutivos no hardware real
+03|150|00 00 FF|Clear Program - ACK sintetico
+04|150|00 00 FF|Clear System - ACK sintetico
+0F|150|00 00 FF|Clear All Memory - ACK sintetico
+11|150|00 00 FF|Clear Data - ACK sintetico
+# Escrita generica de memoria/registrador/sistema. O ACK permite ao PC12
+# prosseguir na bancada; o efeito de memoria ainda nao e aplicado por esta regra.
+09|150|00 00 FF|Write Memory Register System - ACK sintetico
+# EEPROM PACK
+12|180|00 00 FF|EEPROM PACK to PLC - ACK sintetico
+13|180|00 00 FF|PLC to EEPROM PACK - ACK sintetico
+# Monitor Set/Reset I/O Coil
+35|150|00 00 FF|Set Reset IO Coil - ACK sintetico
+# BIOS Refresh. Somente bancada virtual; nao reproduz gravacao de firmware.
+37|180|00 00 FF|BIOS Refresh Update - ACK sintetico virtual
