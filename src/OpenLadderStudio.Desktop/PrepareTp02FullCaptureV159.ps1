@@ -10,10 +10,10 @@ if (-not (Test-Path -LiteralPath $sourcePath)) { throw 'TP02FullProtocolCapture.
 if ($sourceBytes.Length -ge 2 -and $sourceBytes[0] -eq 0xFF -and $sourceBytes[1] -eq 0xFE) {
     $text = [Text.Encoding]::Unicode.GetString($sourceBytes,2,$sourceBytes.Length-2)
 }
-elif ($sourceBytes.Length -ge 2 -and $sourceBytes[0] -eq 0xFE -and $sourceBytes[1] -eq 0xFF) {
+elseif ($sourceBytes.Length -ge 2 -and $sourceBytes[0] -eq 0xFE -and $sourceBytes[1] -eq 0xFF) {
     $text = [Text.Encoding]::BigEndianUnicode.GetString($sourceBytes,2,$sourceBytes.Length-2)
 }
-elif ($sourceBytes.Length -ge 4 -and $sourceBytes[1] -eq 0 -and $sourceBytes[3] -eq 0) {
+elseif ($sourceBytes.Length -ge 4 -and $sourceBytes[1] -eq 0 -and $sourceBytes[3] -eq 0) {
     $text = [Text.Encoding]::Unicode.GetString($sourceBytes)
 }
 else {
