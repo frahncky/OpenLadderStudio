@@ -1,6 +1,6 @@
 param(
     [string]$Port = '',
-    [string[]]$Actions = @('STOP','RUN','MONITOR_START','MONITOR_STOP','READ_PROGRAM','WRITE_PROGRAM','CLEAR_PROGRAM'),
+    [string[]]$Actions = @('STOP','RUN','MONITOR_START','MONITOR_STOP','READ_PROGRAM','WRITE_PROGRAM','CLEAR_SYSTEM','CLEAR_DATA','CLEAR_PROGRAM','CLEAR_ALL_MEMORY'),
     [ValidateSet('SILENT','GENERIC')][string]$AckMode = 'GENERIC',
     [int]$CaptureSeconds = 8,
     [switch]$Rebuild,
@@ -31,10 +31,10 @@ function Get-StaticClassification([byte[]]$data) {
     switch ($hex) {
         '01 00 FE' { return 'STOP_PROGRAM_MODE_STATIC_CONFIRMED' }
         '02 00 FD' { return 'RUN_STATIC_CONFIRMED' }
-        '03 00 FC' { return 'CONTROL_03_STATIC_CONFIRMED_SEMANTICS_PENDING' }
-        '04 00 FB' { return 'CONTROL_04_STATIC_CONFIRMED_SEMANTICS_PENDING' }
-        '0F 00 F0' { return 'DESTRUCTIVE_CLEAR_CANDIDATE_DO_NOT_SEND_TO_PHYSICAL_PLC' }
-        '11 00 EE' { return 'CONTROL_11_STATIC_CONFIRMED_SEMANTICS_PENDING' }
+        '03 00 FC' { return 'CLEAR_PROGRAM_STATIC_CONFIRMED' }
+        '04 00 FB' { return 'CLEAR_SYSTEM_STATIC_CONFIRMED' }
+        '0F 00 F0' { return 'CLEAR_ALL_MEMORY_STATIC_CONFIRMED_DESTRUCTIVE' }
+        '11 00 EE' { return 'CLEAR_DATA_STATIC_CONFIRMED' }
         default { return 'UNCLASSIFIED' }
     }
 }
@@ -118,10 +118,10 @@ function Run-SelfTest {
     $cases = @(
         @{ Hex='01 00 FE'; Name='STOP_PROGRAM_MODE_STATIC_CONFIRMED' },
         @{ Hex='02 00 FD'; Name='RUN_STATIC_CONFIRMED' },
-        @{ Hex='03 00 FC'; Name='CONTROL_03_STATIC_CONFIRMED_SEMANTICS_PENDING' },
-        @{ Hex='04 00 FB'; Name='CONTROL_04_STATIC_CONFIRMED_SEMANTICS_PENDING' },
-        @{ Hex='0F 00 F0'; Name='DESTRUCTIVE_CLEAR_CANDIDATE_DO_NOT_SEND_TO_PHYSICAL_PLC' },
-        @{ Hex='11 00 EE'; Name='CONTROL_11_STATIC_CONFIRMED_SEMANTICS_PENDING' }
+        @{ Hex='03 00 FC'; Name='CLEAR_PROGRAM_STATIC_CONFIRMED' },
+        @{ Hex='04 00 FB'; Name='CLEAR_SYSTEM_STATIC_CONFIRMED' },
+        @{ Hex='0F 00 F0'; Name='CLEAR_ALL_MEMORY_STATIC_CONFIRMED_DESTRUCTIVE' },
+        @{ Hex='11 00 EE'; Name='CLEAR_DATA_STATIC_CONFIRMED' }
     )
     $checks = 0
     foreach ($c in $cases) {
@@ -135,7 +135,7 @@ function Run-SelfTest {
     if ((Get-StaticClassification $unknown) -ne 'UNCLASSIFIED') { throw 'Fixture desconhecido foi classificado indevidamente.' }
     $checks += 2
     Write-Host ('TP02 PG command discovery self-test: PASS checks=' + $checks)
-    Write-Host 'static=01_STOP_PROGRAM+02_RUN+03+04+0F+11; physical_plc=NAO UTILIZADO'
+    Write-Host 'static=01_STOP_PROGRAM+02_RUN+03_CLEAR_PROGRAM+04_CLEAR_SYSTEM+0F_CLEAR_ALL+11_CLEAR_DATA; physical_plc=NAO UTILIZADO'
 }
 
 if ($SelfTest) {
@@ -186,9 +186,9 @@ $report = New-Object Text.StringBuilder
 [void]$report.AppendLine(('EmulatorPort=' + $Port))
 [void]$report.AppendLine(('UnknownAck=' + $AckMode))
 [void]$report.AppendLine('PhysicalPLC=NO')
-[void]$report.AppendLine('STATIC_CONFIRMED_REQUESTS=01 00 FE STOP/PROGRAM; 02 00 FD RUN')
-[void]$report.AppendLine('STATIC_PENDING=03 00 FC; 04 00 FB; 0F 00 F0; 11 00 EE')
-[void]$report.AppendLine('WARNING=0F e tratado como candidato destrutivo ate confirmacao semantica; nao enviar ao PLC fisico.')
+[void]$report.AppendLine('STATIC_CONFIRMED_REQUESTS=01 00 FE STOP/PROGRAM; 02 00 FD RUN; 03 00 FC CLEAR_PROGRAM; 04 00 FB CLEAR_SYSTEM; 0F 00 F0 CLEAR_ALL_MEMORY; 11 00 EE CLEAR_DATA')
+[void]$report.AppendLine('SYNTHETIC_EMPTY_SUCCESS=00 00 FF (parser-compatible; physical response not yet captured)')
+[void]$report.AppendLine('WARNING=03/04/0F/11 sao comandos destrutivos; esta rotina e exclusivamente para COM virtual.')
 [void]$report.AppendLine('')
 
 foreach ($r in $results) {
@@ -199,7 +199,7 @@ foreach ($r in $results) {
 }
 
 if ($results.Count -eq 0) { [void]$report.AppendLine('RESULT=nenhum quadro desconhecido novo capturado.') }
-[void]$report.AppendLine('NEXT=confirmar resposta e semantica antes de promover qualquer candidato para regra nativa.')
+[void]$report.AppendLine('NEXT=usar a bancada virtual para observar sequencias posteriores; manter 00 00 FF como ACK sintetico ate captura da resposta real do TP02.')
 
 [IO.File]::WriteAllText($txtPath,$report.ToString(),[Text.Encoding]::UTF8)
 if ($results.Count -gt 0) {
