@@ -10,19 +10,21 @@ Este documento registra **somente estatísticas agregadas** de duas capturas fí
 | Sessão qualificada | 8ª | 7ª |
 | HELLO transmitidos / respondidos | 44 / 2 | 41 / 2 |
 | HELLO sem bytes de resposta | 42 | 39 |
-| Respostas HELLO, em ms | 229 / 229 | 229 / 230 |
-| Tentativas HELLO silenciosas, mediana em ms | 1803 | 1804 |
+| Tempo registrado do HELLO respondido, ms | 229 / 229 | 229 / 230 |
+| HELLO silenciosos, mediana em ms | 1803 | 1804 |
 | F0 transmitidos / respondidos | 2 / 1 | 2 / 1 |
-| F0 respondido, em ms | 241 | 251 |
-| F0 silencioso, em ms | 1600 | 1606 |
-| Tempo até HELLO+F0, em s | 105,253 | 97,221 |
-| Tempo acumulado de espera sem bytes HELLO/F0, em s | 77,344 | 71,964 |
+| Tempo registrado do F0 respondido, ms | 241 | 251 |
+| Tempo do F0 silencioso, ms | 1600 | 1606 |
+| Tempo até HELLO+F0, s | 105,253 | 97,221 |
+| Tempo acumulado sem bytes HELLO/F0, s | 77,344 | 71,964 |
 | PG38/PG34/0A com resposta | 110 / 110 | 110 / 110 |
-| Páginas de programa iguais entre as capturas | sim | sim |
+| Páginas de programa iguais nas capturas | sim | sim |
+
+**Precisão da medição:** `ExchangeRaw` inicia o cronômetro antes da escrita e `ReadBurst` continua até haver **220 ms de silêncio depois do último byte** durante HELLO/F0. Portanto, 229–251 ms são *tempo total da troca incluindo a janela de silêncio*, não latência até o primeiro byte. A captura v1.61 não registra timestamp por byte; não usar esses números para afirmar latência elétrica nem para encurtar timeouts sem testes específicos.
 
 **Interpretação limitada:** o silêncio ocorre predominantemente antes da qualificação, enquanto as operações de leitura observadas após a qualificação responderam. Duas medições não identificam a causa física: cabo, conversor, driver, estado do PLC e temporização ainda não foram isolados. A redução de uma sessão não prova melhora causal.
 
-## Como repetir sem conectar ao PLC
+## Como repetir a análise sem conectar ao PLC
 
 A ferramenta `scripts/diagnose_tp02_link.py` utiliza apenas `responses.csv` e os marcadores temporais de `session.log` dentro do ZIP; não abre COM nem transmite comandos. Exige Python 3 no computador que executa a análise.
 
@@ -30,10 +32,16 @@ A ferramenta `scripts/diagnose_tp02_link.py` utiliza apenas `responses.csv` e os
 python3 scripts/diagnose_tp02_link.py primeira-captura.zip segunda-captura.zip --out comparacao.json
 ```
 
-Também aceita um único ZIP ou pasta extraída. Saídas: medianas e limites de latência HELLO/F0/leitura, tempo até qualificação, sessões e tentativas, latência perdida em espera sem resposta, identidade das páginas PG34 e resultado do auditor SAFE. **Nunca exporta quadros de memória, dados de registradores ou o texto integral do log.**
+Aceita um único ZIP ou pasta extraída. Saídas: duração registrada das trocas HELLO/F0/leitura, tempo até qualificação, sessões e tentativas, tempo perdido aguardando respostas ausentes, comparação de páginas PG34 e resultado do auditor SAFE. **Nunca exporta quadros de memória, dados de registradores ou o texto integral do log.** A validação sintética é executada por `.github/workflows/audit-tp02-safe-capture.yml`.
 
-A validação sintética é executada por `.github/workflows/audit-tp02-safe-capture.yml`. Nenhum teste de CI abre uma porta serial. O auditor e os tempos de leitura não validam PG33 no PLC físico.
+## Identificar a COM1 sem abrir a porta
+
+No Windows 7 ou posterior, execute `scripts/windows/ExecutarDiagnosticoCOM1.bat` com `Tp02DriverProbe.ps1` na mesma pasta. O script usa `Get-WmiObject` apenas para consultar metadados (`Win32_PnPEntity`, `Win32_SerialPort`, `Win32_PnPSignedDriver`). Não instancia `SerialPort`, não abre a COM e não transmite nada ao TP02.
+
+A saída é `TP02-Porta-COM1-diagnostico.txt`, na mesma pasta do script. Contém descrição, fabricante, serviço, versão/fornecedor do driver e indicação de USB/PCI/ACPI *se* a enumeração do Windows permitir. **Não exporta PNPDeviceID, VID/PID, número de série, nome do usuário ou programa do PLC.** Se a WMI não localizar o dispositivo, o resultado é inconclusivo; confira manualmente o Gerenciador de Dispositivos. O resultado só identifica a porta do computador, não comprova pinagem nem saúde do cabo.
+
+Para outra porta: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tp02DriverProbe.ps1 -Port COM2`. O teste de CI usa WMI *simulada*, sem acesso a COM física.
 
 ## Próxima investigação controlada
 
-Preservar v1.61 e as configurações comprovadas. Investigar no computador a identidade e o driver da COM1, a topologia do cabo/conversor e eventuais aplicativos concorrentes pela porta, sem trocar vários parâmetros ao mesmo tempo. Uma captura adicional com **uma única condição física documentadamente diferente** pode ajudar a comparar aquisição; não realizar testes de escrita, RUN/STOP, Clear ou BIOS.
+Preservar v1.61, 19200 8O1, DTR/RTS OFF e os intervalos atuais. Examinar primeiro o metadado da COM1 e a topologia do cabo/conversor. Se novos testes físicos forem necessários, variar **uma única condição documentada** por vez e permanecer em SAFE: sem escrita, RUN/STOP, Clear ou BIOS. O auditor e os tempos de leitura não validam PG33 no PLC físico.
