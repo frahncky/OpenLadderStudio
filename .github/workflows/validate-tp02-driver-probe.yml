@@ -1,0 +1,61 @@
+name: Validate TP02 COM metadata probe (offline)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/windows/Tp02DriverProbe.ps1'
+      - 'scripts/windows/ExecutarDiagnosticoCOM1.bat'
+      - 'tests/test_tp02_driver_probe_static.py'
+      - '.github/workflows/validate-tp02-driver-probe.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/windows/Tp02DriverProbe.ps1'
+      - 'scripts/windows/ExecutarDiagnosticoCOM1.bat'
+      - 'tests/test_tp02_driver_probe_static.py'
+      - '.github/workflows/validate-tp02-driver-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  metadata-only:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run portable safety and privacy tests
+        shell: cmd
+        run: python -m unittest discover -s tests -p test_tp02_driver_probe_static.py -v
+      - name: Parse Windows PowerShell and exercise mocked WMI
+        shell: powershell
+        run: |
+          $file = (Resolve-Path 'scripts/windows/Tp02DriverProbe.ps1').Path
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$null, [ref]$errors) | Out-Null
+          if ($errors -and $errors.Count -gt 0) { throw ($errors | Out-String) }
+          function Get-WmiObject {
+            [CmdletBinding()]
+            param([string]$Class)
+            $id = 'USB\VID_1234&PID_5678\PRIVATE-SERIAL'
+            if ($Class -eq 'Win32_PnPEntity') {
+              return (New-Object PSObject -Property @{ Name = 'USB Serial Port (COM1)'; Manufacturer = 'Fixture Vendor'; PNPDeviceID = $id; Service = 'mockdriver'; Status = 'OK' })
+            }
+            if ($Class -eq 'Win32_PnPSignedDriver') {
+              return (New-Object PSObject -Property @{ DeviceID = $id; DriverProviderName = 'Fixture Provider'; DriverVersion = '3.4.5.6'; DriverDate = '20260916000000.000000+000'; IsSigned = $true })
+            }
+            if ($Class -eq 'Win32_SerialPort') {
+              return (New-Object PSObject -Property @{ DeviceID = 'COM1'; Name = 'USB Serial Port (COM1)'; Status = 'OK' })
+            }
+            throw ('Unexpected WMI query: ' + $Class)
+          }
+          $output = Join-Path $env:RUNNER_TEMP 'tp02-mock-driver.txt'
+          & $file -Port COM1 -Out $output
+          $text = [IO.File]::ReadAllText($output)
+          if (-not $text.Contains('VersaoDriver=3.4.5.6')) { throw 'Driver version was not associated with COM1.' }
+          if (-not $text.Contains('TransporteProvavel=USB')) { throw 'Transport classification missing.' }
+          if ($text.Contains('PRIVATE-SERIAL') -or $text.Contains('VID_1234')) { throw 'PnP identifier leaked into the report.' }
+          $invalid = $false
+          try { & $file -Port COM257 -Out $output } catch { $invalid = $true }
+          if (-not $invalid) { throw 'Invalid COM port was accepted.' }
+          Write-Host 'TP02 driver probe: mock WMI PASS; no physical COM accessed.'
