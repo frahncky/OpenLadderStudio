@@ -1,0 +1,26 @@
+name: Audit TP02 SAFE captures (offline)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/analyze_tp02_full_capture.py'
+      - 'tests/test_analyze_tp02_full_capture.py'
+      - '.github/workflows/audit-tp02-safe-capture.yml'
+  pull_request:
+    paths:
+      - 'scripts/analyze_tp02_full_capture.py'
+      - 'tests/test_analyze_tp02_full_capture.py'
+      - '.github/workflows/audit-tp02-safe-capture.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-capture-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test offline SAFE capture auditor with synthetic frames
+        run: python3 -m unittest discover -s tests -p test_analyze_tp02_full_capture.py -v
