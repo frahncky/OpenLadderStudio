@@ -5,12 +5,16 @@ on:
     branches: [main]
     paths:
       - 'scripts/analyze_tp02_full_capture.py'
+      - 'scripts/diagnose_tp02_link.py'
       - 'tests/test_analyze_tp02_full_capture.py'
+      - 'tests/test_diagnose_tp02_link.py'
       - '.github/workflows/audit-tp02-safe-capture.yml'
   pull_request:
     paths:
       - 'scripts/analyze_tp02_full_capture.py'
+      - 'scripts/diagnose_tp02_link.py'
       - 'tests/test_analyze_tp02_full_capture.py'
+      - 'tests/test_diagnose_tp02_link.py'
       - '.github/workflows/audit-tp02-safe-capture.yml'
   workflow_dispatch:
 
@@ -22,5 +26,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Test offline SAFE capture auditor with synthetic frames
-        run: python3 -m unittest discover -s tests -p test_analyze_tp02_full_capture.py -v
+      - name: Test offline SAFE auditor and link latency on synthetic frames
+        run: python3 -m unittest discover -s tests -p 'test_*tp02*.py' -v
