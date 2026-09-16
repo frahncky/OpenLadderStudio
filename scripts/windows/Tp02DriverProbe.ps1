@@ -5,8 +5,9 @@ param(
 )
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
-if ($Port -notmatch '^COM([1-9][0-9]{0,2})$') { throw 'Porta invalida: use COM1, COM2, ... COM256.' }
-if ([int]$Matches[1] -gt 256) { throw 'Porta fora do intervalo COM1..COM256.' }
+$portMatch = [regex]::Match($Port, '^COM([1-9][0-9]{0,2})$')
+if (-not $portMatch.Success) { throw 'Porta invalida: use COM1, COM2, ... COM256.' }
+if ([int]$portMatch.Groups[1].Value -gt 256) { throw 'Porta fora do intervalo COM1..COM256.' }
 if ([string]::IsNullOrEmpty($Out)) {
     $Out = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) ('TP02-Porta-' + $Port + '-diagnostico.txt')
 }
