@@ -39,6 +39,7 @@ src/OpenLadderStudio.Desktop/lastfile.dir
 artifacts/
 src/OpenLadderStudio.Desktop/OpenLadderTP02PgMemoryTest.exe
 src/OpenLadderStudio.Desktop/OpenLadderTP02PgMemoryUiTest.exe
+src/OpenLadderStudio.Desktop/OpenLadderTP02Pc12GoldenTest.exe
 
 # Python
 __pycache__/

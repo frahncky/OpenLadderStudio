@@ -113,6 +113,12 @@ if errorlevel 1 goto :erro
 ".\OpenLadderTP02PgMemoryTest.exe"
 if errorlevel 1 goto :erro
 
+"%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:Tp02Pc12GoldenVectorsSelfTest /out:"OpenLadderTP02Pc12GoldenTest.exe" /reference:System.dll "StudioDiagnostics.cs" "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "..\OpenLadderStudio.Core\Tp02TargetCompiler.cs" "..\OpenLadderStudio.Core\Tp02Pg33DryRunFrame.cs" "..\OpenLadderStudio.Core\Tp02Pg33DryRunProgram.cs" "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" "..\..\tests\OpenLadderStudio.Core.Tests\Tp02Pc12GoldenVectorsSelfTest.cs"
+if errorlevel 1 goto :erro
+
+".\OpenLadderTP02Pc12GoldenTest.exe" "..\..\tests\OpenLadderStudio.Core.Tests\Data\pc12-golden-vectors.tsv"
+if errorlevel 1 goto :erro
+
 "%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:Tp02PgMemoryUiSelfTest /out:"OpenLadderTP02PgMemoryUiTest.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "TP02PgMemoryForm.cs" "..\..\tests\OpenLadderStudio.Core.Tests\Tp02PgMemoryUiSelfTest.cs"
 if errorlevel 1 goto :erro
 

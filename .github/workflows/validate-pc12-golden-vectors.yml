@@ -1,0 +1,40 @@
+name: Validar vetores PC12 do Core
+
+# Regenera os quadros de referência executando o pc12.exe no emulador
+# (Unicorn, offline, nenhum TX) e falha se o arquivo versionado em
+# tests/OpenLadderStudio.Core.Tests/Data estiver desatualizado. A comparação
+# com o Core roda no Build.bat (Tp02Pc12GoldenVectorsSelfTest).
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/emulate_pc12_*.py'
+      - 'scripts/export_pc12_golden_vectors.py'
+      - 'src/OpenLadderStudio.Desktop/pc12.exe'
+      - 'tests/OpenLadderStudio.Core.Tests/Data/pc12-golden-vectors.tsv'
+      - '.github/workflows/validate-pc12-golden-vectors.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'scripts/emulate_pc12_*.py'
+      - 'scripts/export_pc12_golden_vectors.py'
+      - 'src/OpenLadderStudio.Desktop/pc12.exe'
+      - 'tests/OpenLadderStudio.Core.Tests/Data/pc12-golden-vectors.tsv'
+      - '.github/workflows/validate-pc12-golden-vectors.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar emulador
+        run: python3 -m pip install 'unicorn==2.1.4' 'pefile==2024.8.26' 'capstone==5.0.9'
+
+      - name: Conferir vetores contra o PC12 emulado
+        run: python3 scripts/export_pc12_golden_vectors.py --check
