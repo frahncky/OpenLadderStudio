@@ -13,6 +13,9 @@ using Area = OpenLadderStudio.Core.Tp02PgMemoryProtocol.Area;
 internal static class Tp02Pc12GoldenVectorsSelfTest
 {
     private const string Rejected = "REJEITADO";
+    // Resultado esperado calculado a partir do vetor PC12: mesmos quadros sem o
+    // 21º byte que o ramo HEX acrescenta a cada arquivo FL.
+    private const string Pc12WithoutHexExtraByte = "PC12 sem o byte extra do ramo HEX";
     private const string DataFile = "pc12-golden-vectors.tsv";
 
     private static int checks;
@@ -36,10 +39,10 @@ internal static class Tp02Pc12GoldenVectorsSelfTest
     {
         Dictionary<string, Divergence> known = new Dictionary<string, Divergence>();
         const string flHex = "Anomalia nativa do ramo HEX do PC12: monta 21 bytes por FL e lê além do NUL. O OpenLadder envia os 20 bytes declarados.";
-        known["FLBATCH HEX 1"] = new Divergence("bytes=26", flHex);
-        known["FLBATCH HEX 9"] = new Divergence("bytes=210", flHex);
-        known["FLBATCH HEX 10"] = new Divergence("bytes=233", flHex);
-        known["FLBATCH HEX 11"] = new Divergence("bytes=233,26", flHex);
+        known["FLBATCH HEX 1"] = new Divergence(Pc12WithoutHexExtraByte, flHex);
+        known["FLBATCH HEX 9"] = new Divergence(Pc12WithoutHexExtraByte, flHex);
+        known["FLBATCH HEX 10"] = new Divergence(Pc12WithoutHexExtraByte, flHex);
+        known["FLBATCH HEX 11"] = new Divergence(Pc12WithoutHexExtraByte, flHex);
         const string ws = "WS039/WS040 ficam fora da seleção de escrita de sistema identificada; o OpenLadder bloqueia.";
         known["REG WS 39 4660"] = new Divergence(Rejected, ws);
         known["REG WS 39 32768"] = new Divergence(Rejected, ws);
@@ -87,10 +90,36 @@ internal static class Tp02Pc12GoldenVectorsSelfTest
         return w.High.ToString("X2") + " " + w.Low.ToString("X2") + "|" + w.External.ToString("X2");
     }
 
-    private static string Sizes(IList<byte[]> frames)
+    private static string Frames(IList<byte[]> frames)
     {
-        StringBuilder sb = new StringBuilder("bytes=");
-        for (int i = 0; i < frames.Count; i++) sb.Append(i == 0 ? "" : ",").Append(frames[i].Length);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < frames.Count; i++) sb.Append(i == 0 ? "" : " | ").Append(Hex(frames[i]));
+        return sb.ToString();
+    }
+
+    private static byte Checksum(List<byte> frame)
+    {
+        int sum = 0;
+        foreach (byte b in frame) sum = (sum + b) & 0xFF;
+        return (byte)((0xFF - sum) & 0xFF);
+    }
+
+    /// <summary>Remove o 21º byte de cada FL nos quadros HEX do PC12 e recalcula LEN e checksum.</summary>
+    private static string StripHexExtraByte(string pc12)
+    {
+        StringBuilder sb = new StringBuilder();
+        foreach (string text in pc12.Split(new string[] { " | " }, StringSplitOptions.None))
+        {
+            byte[] raw = Bytes(text.Split(' '), 0);
+            List<byte> frame = new List<byte>();
+            frame.Add(raw[0]); frame.Add(0);
+            for (int i = 2; i + 24 <= raw.Length - 1; i += 24)
+                for (int j = 0; j < 23; j++) frame.Add(raw[i + j]);
+            frame[1] = (byte)(frame.Count - 2);
+            frame.Add(Checksum(frame));
+            if (sb.Length > 0) sb.Append(" | ");
+            sb.Append(Hex(frame.ToArray()));
+        }
         return sb.ToString();
     }
 
@@ -128,20 +157,38 @@ internal static class Tp02Pc12GoldenVectorsSelfTest
             }
             case "BATCH":
             {
+                // Registros sintéticos de emulate_pc12_memory_variants.main().
+                Area area = ParseArea(p[1]);
                 int n = int.Parse(p[2]);
                 List<int> numbers = new List<int>();
                 List<ushort> values = new List<ushort>();
-                for (int i = 1; i <= n; i++) { numbers.Add(i); values.Add(0); }
-                return Sizes(Tp02PgMemoryProtocol.BuildRegisterWrites(ParseArea(p[1]), numbers, values));
+                for (int i = 0; i < n; i++)
+                {
+                    numbers.Add((i * 257) % Tp02PgMemoryProtocol.Limit(area) + 1);
+                    values.Add((ushort)((i * 32767 + 0x1234) & 0xFFFF));
+                }
+                return Frames(Tp02PgMemoryProtocol.BuildRegisterWrites(area, numbers, values));
             }
             case "FLBATCH":
             {
+                // Arquivos sintéticos de emulate_pc12_memory_variants.file_write().
                 // O Core tem um único caminho FL: ASCII e HEX do PC12 comparam com ele.
+                bool hexMode = p[1] == "HEX";
                 int n = int.Parse(p[2]);
                 List<int> numbers = new List<int>();
                 List<byte[]> values = new List<byte[]>();
-                for (int i = 1; i <= n; i++) { numbers.Add(i); values.Add(new byte[20]); }
-                return Sizes(Tp02PgMemoryProtocol.BuildFileWrites(numbers, values));
+                for (int i = 0; i < n; i++)
+                {
+                    int number = (i * 17) % 130 + 1;
+                    byte[] data = new byte[20];
+                    if (hexMode)
+                        for (int j = 0; j < 20; j++) data[j] = (byte)((i * 29 + j * 13) & 0xFF);
+                    else
+                        data = Encoding.ASCII.GetBytes(string.Format("FILE {0:D3} ABCDEFGHIJK", number));
+                    numbers.Add(number);
+                    values.Add(data);
+                }
+                return Frames(Tp02PgMemoryProtocol.BuildFileWrites(numbers, values));
             }
             case "READ":
                 return Hex(Tp02PgMemoryProtocol.BuildRead(ParseArea(p[1]), int.Parse(p[2]), int.Parse(p[3])));
@@ -241,10 +288,11 @@ internal static class Tp02Pc12GoldenVectorsSelfTest
         if (Known.TryGetValue(command, out known))
         {
             divergences++;
+            string expected = known.OpenLadder == Pc12WithoutHexExtraByte ? StripHexExtraByte(pc12) : known.OpenLadder;
             if (actual == pc12)
                 Fail(label + ": agora coincide com o PC12; remova a divergência conhecida de " + command);
-            else if (actual != known.OpenLadder)
-                Fail(label + ": divergência conhecida mudou.\n  esperado OpenLadder: " + known.OpenLadder + "\n  obtido:              " + actual);
+            else if (actual != expected)
+                Fail(label + ": divergência conhecida mudou.\n  esperado OpenLadder: " + expected + "\n  obtido:              " + actual);
             return;
         }
         if (actual != pc12)

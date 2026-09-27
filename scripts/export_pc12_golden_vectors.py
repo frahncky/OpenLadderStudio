@@ -63,7 +63,40 @@ def run_emulators():
         if 'FAIL' in proc.stdout:
             raise SystemExit('ERRO: %s relatou FAIL contra o próprio modelo' % name)
         outputs[name] = proc.stdout
+    outputs.update(capture_batches())
     return outputs
+
+
+def capture_batches():
+    """Lotes PG09 e FL com os quadros completos, não só os tamanhos.
+
+    A saída de texto do emulador imprime apenas o tamanho de cada pacote;
+    aqui as mesmas rotinas são chamadas diretamente para guardar os bytes.
+    Os registros sintéticos seguem as fórmulas de emulate_pc12_memory_variants,
+    reproduzidas no autoteste C#.
+    """
+    sys.path.insert(0, os.path.join(ROOT, 'scripts'))
+    cwd = os.getcwd()
+    os.chdir(ROOT)
+    try:
+        import emulate_pc12_memory_variants as mv
+        emulator = mv.MonitorEmulator(mv.EXE)
+        mv.verify_imports(emulator)
+        join = lambda frames: ' | '.join(f.hex(' ').upper() for f in frames)
+        batches = []
+        for area in mv.BANKS:
+            for count in (1, 2, 39, 40, 41, 80, 81):
+                records = [((i * 257) % mv.LIMITS[area] + 1, (i * 32767 + 0x1234) & 65535)
+                           for i in range(count)]
+                batches.append((area, count, join(mv.scatter(emulator, area, records))))
+        files = []
+        for hex_mode in (False, True):
+            for count in (1, 9, 10, 11):
+                files.append(('HEX' if hex_mode else 'ASCII', count,
+                              join(mv.file_write(emulator, count, hex_mode))))
+        return {'batches': batches, 'files': files}
+    finally:
+        os.chdir(cwd)
 
 
 def hexnorm(text):
@@ -90,11 +123,10 @@ def extract(o):
         add('PG09 escrita de registrador', 'REG %s %d %s' % (m[1], int(m[2]), m[3]), m[4], '%s%s=%s' % (m[1], m[2], m[3]))
 
     mem = o['emulate_pc12_memory_variants']
-    for m in re.finditer(r'^(V|D|WC) (\d+) registros: pacotes=\[[^\]]*\] bytes=\[([^\]]*)\] PASS', mem, re.M):
-        add('PG09 lotes', 'BATCH %s %s' % (m[1], m[2]), 'bytes=' + m[3].replace(' ', ''), '%s registros %s' % (m[2], m[1]))
-    for kind in ('ASCII', 'HEX'):
-        for m in re.finditer(r'^FL %s (\d+) registros: bytes=\[([^\]]*)\] PASS' % kind, mem, re.M):
-            add('FL escrita', 'FLBATCH %s %s' % (kind, m[1]), 'bytes=' + m[2].replace(' ', ''), 'FL %s %s arquivos' % (kind, m[1]))
+    for area, count, frames in o['batches']:
+        add('PG09 lotes', 'BATCH %s %d' % (area, count), frames, '%d registros %s' % (count, area))
+    for kind, count, frames in o['files']:
+        add('FL escrita', 'FLBATCH %s %d' % (kind, count), frames, 'FL %s %d arquivos' % (kind, count))
     m = need(r'^D nao contiguo: ([0-9A-F ]+)$', mem, 'D não contíguo')
     add('PG09 lotes', 'REGS D 1,257,2048 4660,32768,65535', m[1], 'D não contíguo')
     for m in re.finditer(r'^(V|D|WC|FL) (\d+) paginas: primeira=([0-9A-F ]+) ultima=([0-9A-F ]+) PASS', mem, re.M):
