@@ -24,9 +24,10 @@ echo  HELLO       : resposta somente na 5a tentativa
 echo  F0          : resposta somente na 4a tentativa
 echo  PG33 ACK    : 00 00 FF emulado
 echo  Unknown ACK : OFF
+echo  Extra       : %~2 (ex.: --pg38=total16)
 echo  ATENCAO     : use SOMENTE par de COM virtual.
 echo ============================================================
 echo.
 
-OpenLadderTP02Emulator.exe "%PORT%" --scenario=v156 --pg33-ack --no-auto-ack
+OpenLadderTP02Emulator.exe "%PORT%" --scenario=v156 --pg33-ack --no-auto-ack %~2
 exit /b %ERRORLEVEL%

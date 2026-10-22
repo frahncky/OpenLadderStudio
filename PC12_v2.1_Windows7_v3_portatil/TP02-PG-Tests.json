@@ -78,6 +78,42 @@
       "expected": []
     },
     {
+      "id": "read-v-registers-first-block-static",
+      "name": "Leitura V0000-V0063 do PC12 - inferencia estatica",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "0A 03 50 00 80 22",
+      "timeoutMs": 1000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "read-d-registers-first-block-static",
+      "name": "Leitura D0000-D0063 do PC12 - inferencia estatica",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "0A 03 90 00 80 E2",
+      "timeoutMs": 1000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
+      "id": "read-wc-registers-first-block-static",
+      "name": "Leitura WC000-WC057 do PC12 - inferencia estatica",
+      "type": "txrx",
+      "enabled": false,
+      "sweepProfiles": false,
+      "safetyClass": "CANDIDATE",
+      "txHex": "0A 03 70 00 72 10",
+      "timeoutMs": 1000,
+      "passiveAfterMs": 5000,
+      "expected": []
+    },
+    {
       "id": "clear-all-memory",
       "name": "Clear All Memory - PC12 original (bloqueado, nunca transmitido)",
       "type": "txrx",

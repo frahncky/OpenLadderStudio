@@ -12,6 +12,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
+      - 'src/OpenLadderStudio.Desktop/RunTp02OfflineLab.bat'
       - 'src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat'
       - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
@@ -19,6 +20,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1'
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat'
       - 'docs/TP02-PG-EMULATOR.md'
+      - 'docs/TP02-OFFLINE-LAB.md'
       - 'docs/TP02-PG-OPCODE-MAP.md'
       - '.github/workflows/validate-tp02-emulator.yml'
   pull_request:
@@ -31,6 +33,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
       - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
       - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
+      - 'src/OpenLadderStudio.Desktop/RunTp02OfflineLab.bat'
       - 'src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat'
       - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
@@ -38,6 +41,7 @@ on:
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1'
       - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat'
       - 'docs/TP02-PG-EMULATOR.md'
+      - 'docs/TP02-OFFLINE-LAB.md'
       - 'docs/TP02-PG-OPCODE-MAP.md'
       - '.github/workflows/validate-tp02-emulator.yml'
   workflow_dispatch:
@@ -94,7 +98,7 @@ jobs:
         shell: cmd
         working-directory: src/OpenLadderStudio.Desktop
         run: |
-          OpenLadderTP02Emulator.exe --self-test-all
+          RunTp02OfflineLab.bat
           if errorlevel 1 exit /b 1
 
       - name: Run explicit v1.56 323-to-3 roundtrip
@@ -124,6 +128,7 @@ jobs:
             src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1
             src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat
             src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat
+            src/OpenLadderStudio.Desktop/RunTp02OfflineLab.bat
             src/OpenLadderStudio.Desktop/TP02PgEmulator.cs
             src/OpenLadderStudio.Desktop/TP02PgReadback.cs
             src/OpenLadderStudio.Desktop/TP02PgReadbackSelfTest.cs
@@ -132,5 +137,6 @@ jobs:
             src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt
             src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1
             docs/TP02-PG-EMULATOR.md
+            docs/TP02-OFFLINE-LAB.md
             docs/TP02-PG-OPCODE-MAP.md
           if-no-files-found: error
