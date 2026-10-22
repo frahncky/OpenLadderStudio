@@ -24,6 +24,12 @@ namespace ModernPC12
         private const int PayloadLength = 0xF0;
         private const int MaxProgramSteps = 4000;
 
+        // Hipotese de laboratorio (--pg38=total16): o campo do 38 ocupa os
+        // bytes 2-3 e cobre o programa inteiro. Nao ha captura fisica de
+        // programa com mais de 80 passos; o padrao continua limitado a pagina.
+        // Replay PC12 (22/10/2026): com 00 9E o PC12 leu 0000 e 0050 e parou.
+        internal static bool Pg38Total16;
+
         internal static byte[] Build38(
             Pg33MachineWord[] words,
             bool[] valid,
@@ -39,15 +45,15 @@ namespace ModernPC12
 
             // O campo observado no 38 e um offset HIGH/LOW dentro da pagina
             // de 80 passos. Para programas maiores, a primeira pagina e cheia.
-            int pageCount = Math.Min(count, StepsPerPage);
-            int lastPairOffset = 2 * (pageCount - 1);
+            int reportedCount = Pg38Total16 ? count : Math.Min(count, StepsPerPage);
+            int lastPairOffset = 2 * (reportedCount - 1);
 
             byte[] frame = new byte[]
             {
                 0x00,
                 0x02,
-                0x00,
-                (byte)lastPairOffset,
+                (byte)((lastPairOffset >> 8) & 0xFF),
+                (byte)(lastPairOffset & 0xFF),
                 0x00
             };
             frame[4] = Checksum(frame, 4);

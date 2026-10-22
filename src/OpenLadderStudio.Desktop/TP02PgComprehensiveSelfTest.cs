@@ -261,6 +261,28 @@ namespace ModernPC12
             byte[] gap38 = TP02PgReadback.Build38(gapWords, gapValid, 3, null);
             Check(gap38.Length == 5 && gap38[3] == 0x02, "PG38 deve parar na primeira lacuna");
 
+            // Hipotese total16: 323 passos ate END -> 2 * 322 = 0x0284.
+            Pg33MachineWord[] seedWords = new Pg33MachineWord[4000];
+            bool[] seedValid = new bool[4000];
+            int seedHighest = TP02PgV156Scenario.SeedBoundary323(seedWords, seedValid);
+            Check(TP02PgReadback.Build38(seedWords, seedValid, seedHighest, null)[3] == 0x9E,
+                "PG38 padrao deve limitar 323 passos a pagina (00 9E)");
+            TP02PgReadback.Pg38Total16 = true;
+            try
+            {
+                byte[] total38 = TP02PgReadback.Build38(seedWords, seedValid, seedHighest, null);
+                Check(total38.Length == 5 && total38[2] == 0x02 && total38[3] == 0x84,
+                    "PG38 total16 deve informar 02 84 para 323 passos");
+                Check(Sum8(total38) == 0xFF, "PG38 total16 checksum invalido");
+                byte[] small38 = TP02PgReadback.Build38(endWords, endValid, 9, null);
+                Check(small38.Length == 5 && small38[2] == 0x00 && small38[3] == 0x04,
+                    "PG38 total16 deve coincidir com a captura fisica de 3 passos");
+            }
+            finally
+            {
+                TP02PgReadback.Pg38Total16 = false;
+            }
+
             byte[] fallback = new byte[] { 0x00, 0x02, 0x00, 0x0A, 0xF3 };
             byte[] fallback38 = TP02PgReadback.Build38(null, null, -1, fallback);
             Check(fallback38.Length == fallback.Length, "PG38 fallback tamanho divergente");
@@ -360,6 +382,11 @@ namespace ModernPC12
             Check(TP02PgV156Scenario.HelloRespondOnAttempt == 8, "hello-on=8 nao aplicado");
             Check(TP02PgV156Scenario.TryApplyArgument("--f0-on=8"), "--f0-on=8 deveria ser reconhecido");
             Check(TP02PgV156Scenario.F0RespondOnAttempt == 8, "f0-on=8 nao aplicado");
+            Check(TP02PgV156Scenario.TryApplyArgument("--pg38=total16"), "--pg38=total16 deveria ser reconhecido");
+            Check(TP02PgReadback.Pg38Total16, "pg38=total16 nao aplicado");
+            Check(TP02PgV156Scenario.Describe().IndexOf("total16", StringComparison.Ordinal) >= 0, "Describe deveria indicar pg38 total16");
+            Check(TP02PgV156Scenario.TryApplyArgument("--pg38=page"), "--pg38=page deveria ser reconhecido");
+            Check(!TP02PgReadback.Pg38Total16, "pg38=page nao aplicado");
             Check(!TP02PgV156Scenario.TryApplyArgument("--nao-existe"), "argumento desconhecido nao deveria ser reconhecido");
 
             ExpectArgumentOutOfRange(delegate { TP02PgV156Scenario.TryApplyArgument("--hello-on=0"); }, "hello-on=0");

@@ -46,6 +46,23 @@ RunTp02EmulatorV156.bat COM11
 Esse passo abre somente a COM virtual indicada. Ele e util para observar o
 comportamento do PC12 contra respostas reproduziveis, sem PLC.
 
+### Hipotese PG38 de 16 bits
+
+No replay de 22/10/2026, o emulador respondeu `38` com `00 02 00 9E 5F`
+(campo limitado a uma pagina de 80 passos) e o PC12 leu apenas as paginas
+`0000` e `0050` do programa de 323 words. Para testar se o PC12 usa os bytes
+2-3 do `38` como `2 * (passos - 1)` do programa inteiro, rode:
+
+```bat
+RunTp02EmulatorV156.bat COM4 --pg38=total16
+```
+
+Com o seed de 323 words, o `38` passa a ser `00 02 02 84 77`. Se o PC12
+pedir `0000`, `0050`, `00A0`, `00F0` e `0140`, a hipotese ganha apoio no
+laboratorio virtual. Continua sendo hipotese: a unica captura fisica do `38`
+tem 3 passos (`00 02 00 04 F9`), em que os dois modos coincidem. O padrao
+continua `--pg38=page`.
+
 ## O que permanece pendente de hardware
 
 Somente uma validacao final controlada pode confirmar cabo, padrao eletrico

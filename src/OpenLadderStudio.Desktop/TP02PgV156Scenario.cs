@@ -37,6 +37,16 @@ namespace ModernPC12
                 SeedBoundary323Enabled = true;
                 return true;
             }
+            if (a.Equals("--pg38=total16", StringComparison.OrdinalIgnoreCase))
+            {
+                TP02PgReadback.Pg38Total16 = true;
+                return true;
+            }
+            if (a.Equals("--pg38=page", StringComparison.OrdinalIgnoreCase))
+            {
+                TP02PgReadback.Pg38Total16 = false;
+                return true;
+            }
             if (a.Equals("--self-test-v156", StringComparison.OrdinalIgnoreCase))
             {
                 SelfTestMode = "V156";
@@ -160,13 +170,15 @@ namespace ModernPC12
 
         internal static string Describe()
         {
-            if (!SeedBoundary323Enabled && HelloRespondOnAttempt == 1 && F0RespondOnAttempt == 1)
+            if (!SeedBoundary323Enabled && HelloRespondOnAttempt == 1 && F0RespondOnAttempt == 1
+                && !TP02PgReadback.Pg38Total16)
                 return "desativado";
 
             return "seed=" + (SeedBoundary323Enabled ? "boundary323" : "nenhum")
                 + " hello_on=" + HelloRespondOnAttempt.ToString(CultureInfo.InvariantCulture)
                 + " f0_on=" + F0RespondOnAttempt.ToString(CultureInfo.InvariantCulture)
-                + " unknown_ack=" + (DisableUnknownAck ? "OFF" : "padrao");
+                + " unknown_ack=" + (DisableUnknownAck ? "OFF" : "padrao")
+                + " pg38=" + (TP02PgReadback.Pg38Total16 ? "total16 (HIPOTESE)" : "pagina");
         }
     }
 }
