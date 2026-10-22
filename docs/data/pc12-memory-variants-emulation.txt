@@ -1,0 +1,96 @@
+PC12 PG09/0A — variantes de memoria
+SHA256 05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+TX interceptado antes de executar; entradas sinteticas; sem PLC/ACK.
+
+V 1 registros: pacotes=[1] bytes=[8] PASS
+V 2 registros: pacotes=[2] bytes=[13] PASS
+V 39 registros: pacotes=[39] bytes=[198] PASS
+V 40 registros: pacotes=[40] bytes=[203] PASS
+V 41 registros: pacotes=[40, 1] bytes=[203, 8] PASS
+V 80 registros: pacotes=[40, 40] bytes=[203, 203] PASS
+V 81 registros: pacotes=[40, 40, 1] bytes=[203, 203, 8] PASS
+D 1 registros: pacotes=[1] bytes=[8] PASS
+D 2 registros: pacotes=[2] bytes=[13] PASS
+D 39 registros: pacotes=[39] bytes=[198] PASS
+D 40 registros: pacotes=[40] bytes=[203] PASS
+D 41 registros: pacotes=[40, 1] bytes=[203, 8] PASS
+D 80 registros: pacotes=[40, 40] bytes=[203, 203] PASS
+D 81 registros: pacotes=[40, 40, 1] bytes=[203, 203, 8] PASS
+WC 1 registros: pacotes=[1] bytes=[8] PASS
+WC 2 registros: pacotes=[2] bytes=[13] PASS
+WC 39 registros: pacotes=[39] bytes=[198] PASS
+WC 40 registros: pacotes=[40] bytes=[203] PASS
+WC 41 registros: pacotes=[40, 1] bytes=[203, 8] PASS
+WC 80 registros: pacotes=[40, 40] bytes=[203, 203] PASS
+WC 81 registros: pacotes=[40, 40, 1] bytes=[203, 203, 8] PASS
+D nao contiguo: 09 0F 90 00 02 12 34 91 00 02 80 00 97 FF 02 FF FF 66
+
+V 16 paginas: primeira=0A 03 50 00 80 22 ultima=0A 03 53 C0 80 5F PASS
+D 32 paginas: primeira=0A 03 90 00 80 E2 ultima=0A 03 97 C0 80 1B PASS
+WC 16 paginas: primeira=0A 03 70 00 72 10 ultima=0A 03 73 57 72 B6 PASS
+FL 13 paginas: primeira=0A 03 80 00 C8 AA ultima=0A 03 80 78 C8 32 PASS
+FL ASCII 1 registros: bytes=[26] PASS
+FL ASCII 9 registros: bytes=[210] PASS
+FL ASCII 10 registros: bytes=[233] PASS
+FL ASCII 11 registros: bytes=[233, 26] PASS
+FL HEX 1 registros: bytes=[27] PASS
+FL HEX 9 registros: bytes=[219] PASS
+FL HEX 10 registros: bytes=[243] PASS
+FL HEX 11 registros: bytes=[243, 27] PASS
+FL HEX sentinela A alem do NUL: 09 18 80 00 14 00 0D 1A 27 34 41 4E 5B 68 75 82 8F 9C A9 B6 C3 D0 DD EA F7 0A 9A
+ANOMALIA NATIVA: HEX declara 20 bytes, mas monta 21; ultimo le alem do NUL.
+ASCII simples monta 20 bytes por FL. Nao copiar a anomalia como especificacao.
+
+Monitor: bancos X=20 Y=00 C=10 SC=A0 V=50 D=90 WC=70 PASS
+X/Y/C/SC: offset=(n-1)//8; V/D/WC: offset=n-1.
+2 blocos de 16 bytes e item individual de 2 bytes; flag 14D=0/1.
+
+V1018: 0A 03 53 F9 02 A4 PASS
+V1019: 0A 03 53 FA 02 A3 PASS
+V1020: 0A 03 53 FB 02 A2 PASS
+V1021: 0A 03 53 FC 02 A1 PASS
+V1022: 0A 03 53 FD 02 A0 PASS
+V1023: 0A 03 53 FE 02 9F PASS
+V1024: 0A 03 53 FF 02 9E PASS
+
+WS selecionados: 4,18,19,20,21,22,23,24,25,41,42,43,44,45,46,47,49,58,59,60,61,62,12,63,64,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86
+Cada escrita: 09 05 60 (numero-1) 02 valorH valorL CHK PASS
+SC001-008 -> A000 bits 0-7; SC017-023 -> A002 bits 0-6 PASS
+Somente inteiro 1 liga o bit; demais valores testados nao ligam.
+
+Ladder grade X0001: 0A 03 20 00 01 D1 PASS
+Ladder grade X0008,X0009,Y0384: 0A 09 20 00 01 20 01 01 00 2F 01 79 PASS
+Ladder grade C0001,C2048,SC001,SC128: 0A 0C 10 00 01 10 FF 01 A0 00 01 A0 0F 01 77 PASS
+Ladder grade S0101,S0816,X0384: 0A 09 50 00 02 50 07 02 20 2F 01 F1 PASS
+Ladder lista X0001: 0A 03 20 00 01 D1 PASS
+Ladder lista X0008,X0009,Y0384: 0A 09 20 00 01 20 01 01 00 2F 01 79 PASS
+Ladder lista C0001,C2048,SC001,SC128: 0A 0C 10 00 01 10 FF 01 A0 00 01 A0 0F 01 77 PASS
+Ladder lista S0101,S0816,X0384: 0A 09 50 00 02 50 07 02 20 2F 01 F1 PASS
+WS pagina 1: 0A 03 60 00 AC E6 PASS
+WS pagina 2: 0A 03 60 AC AC 3A PASS
+Layout WS original preservado; nao generalizar o passo V/D/WC para WS.
+
+Leitura WS039: 0A 03 60 26 02 6A PASS
+Escrita sintetica WS039: 09 05 60 26 02 12 34 23 PASS
+Escrita sintetica WS039: 09 05 60 26 02 80 00 E9 PASS
+Leitura WS040: 0A 03 60 27 02 69 PASS
+Escrita sintetica WS040: 09 05 60 27 02 AB CD F0 PASS
+Escrita sintetica WS040: 09 05 60 27 02 FF FF 6A PASS
+Leitura no handler de erro A: 0A 03 60 05 02 8B PASS
+Leitura no handler de erro B: 0A 03 60 04 02 8C PASS
+Sair de Remote I/O: 09 05 60 2A 02 00 00 65 PASS
+RTC hora/minuto/segundo: 0A 03 53 F9 06 A0 PASS
+
+lotes V/D/WC: 34 quadros PASS
+paginas V/D/WC/FL: 77 quadros PASS
+FL escrita: 11 quadros PASS
+monitor 0A: 324 quadros PASS
+RTC enderecos: 7 quadros PASS
+WS escrita: 180 quadros PASS
+SC escrita: 38 quadros PASS
+Ladder leitura multipla: 8 quadros PASS
+WS leitura: 2 quadros PASS
+WS039/040 e pedidos fixos: 10 quadros PASS
+TOTAL: 691 quadros PASS
+Aprovacao significa igualdade de bytes nativos com o modelo offline.
+Nao comprova aceitação, persistencia ou efeitos no hardware.

@@ -1,67 +1,20 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "2026.09.04.8",
-  "title": "TP02 PG - validacao controlada do status/preflight F0 00 0F",
-  "sweeps": 2,
-  "passiveCaptureMs": 5000,
-  "stopOnUnknown": true,
-  "campaign": {
-    "enabled": false,
-    "runs": 12,
-    "rearmBetweenRuns": true,
-    "rearmDelayMs": 900,
-    "attemptsPerRun": 8,
-    "rxWindowMs": 1800,
-    "interAttemptMs": 180,
-    "passiveAfterEachMs": 350,
-    "stopOnUnknown": true
-  },
+  "packageVersion": "2026.09.09.14",
+  "title": "TP02 PG - SESSAO LIMPA COM HELLO REPETIDO E 38 ESTRUTURAL (HELLO -> F0 -> 38 -> 34)",
+  "sweeps": 1,
+  "passiveCaptureMs": 500,
+  "stopOnUnknown": false,
   "serialProfiles": [
     {
-      "name": "Perfil A",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "None",
-      "stopBits": "One",
-      "dtr": false,
-      "rts": false,
-      "attempts": 4,
-      "rxWindowMs": 1300,
-      "interAttemptMs": 120
-    },
-    {
-      "name": "Perfil B",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "None",
-      "stopBits": "One",
-      "dtr": true,
-      "rts": true,
-      "attempts": 4,
-      "rxWindowMs": 1300,
-      "interAttemptMs": 120
-    },
-    {
-      "name": "Perfil C",
-      "baud": 19200,
-      "dataBits": 8,
-      "parity": "Odd",
-      "stopBits": "One",
-      "dtr": false,
-      "rts": false,
-      "attempts": 4,
-      "rxWindowMs": 1400,
-      "interAttemptMs": 150
-    },
-    {
-      "name": "Perfil validado TP02",
+      "name": "Sessao limpa TP02 - DTR on RTS off",
       "baud": 19200,
       "dataBits": 8,
       "parity": "Odd",
       "stopBits": "One",
       "dtr": true,
-      "rts": true,
-      "attempts": 8,
+      "rts": false,
+      "attempts": 6,
       "rxWindowMs": 1800,
       "interAttemptMs": 180
     }
@@ -69,7 +22,7 @@
   "steps": [
     {
       "id": "hello-pg",
-      "name": "Handshake PG PC12 + estado operacional",
+      "name": "1. HELLO PG - ate 6 tentativas na mesma sessao",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": true,
@@ -78,98 +31,55 @@
       "timeoutMs": 1800,
       "passiveAfterMs": 0,
       "expected": [
-        { "name": "HELLO-RUN", "hex": "C0 01 09 35" },
-        { "name": "HELLO-STOP", "hex": "80 01 09 75" },
-        { "name": "HELLO-0D-NAO-CLASSIFICADO", "hex": "0D 01 09 E8" }
+        {"name": "HELLO-STOP", "hex": "80 01 09 75"},
+        {"name": "HELLO-RUN", "hex": "C0 01 09 35"}
       ]
     },
     {
       "id": "status-preflight-f0",
-      "name": "Status/preflight do PC12 F0 00 0F - validacao unica",
+      "name": "2. F0 - uma unica tentativa apos HELLO-STOP valido",
       "type": "txrx",
       "enabled": true,
       "sweepProfiles": false,
       "safetyClass": "READ_ONLY_VERIFIED",
       "txHex": "F0 00 0F",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 1500,
-      "expected": []
-    },
-    {
-      "id": "capture-after-f0",
-      "name": "Escuta passiva apos status/preflight F0",
-      "type": "passive",
-      "enabled": true,
-      "sweepProfiles": false,
-      "safetyClass": "PASSIVE",
-      "txHex": "",
-      "timeoutMs": 0,
-      "passiveAfterMs": 3000,
-      "expected": []
+      "timeoutMs": 1600,
+      "passiveAfterMs": 0,
+      "expected": [
+        {"name": "F0-STOP-OBSERVADO-2026-09-09", "hex": "00 02 10 22 CB"}
+      ]
     },
     {
       "id": "read-program-preflight-38",
-      "name": "Read PLC Program - preambulo/metadados 38 00 C7 - depende do F0",
+      "name": "3. Preambulo 38 - validar estrutura apos F0 valido",
       "type": "txrx",
-      "enabled": false,
+      "enabled": true,
       "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
+      "safetyClass": "READ_ONLY_CANDIDATE",
       "txHex": "38 00 C7",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
-      "expected": []
+      "timeoutMs": 1600,
+      "passiveAfterMs": 0,
+      "expected": [
+        {"name": "38-OBSERVADO-02", "hex": "00 02 00 02 FB"},
+        {"name": "38-OBSERVADO-04", "hex": "00 02 00 04 F9"},
+        {"name": "38-OBSERVADO-0A", "hex": "00 02 00 0A F3"}
+      ]
     },
     {
       "id": "read-program-static",
-      "name": "Read PLC Program 34 03 00 00 A0 28 - depende da sequencia anterior",
+      "name": "4. Read PLC Program - bloco 34 base",
       "type": "txrx",
-      "enabled": false,
+      "enabled": true,
       "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
+      "safetyClass": "READ_ONLY_PROBE",
       "txHex": "34 03 00 00 A0 28",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
-      "expected": []
-    },
-    {
-      "id": "password-prelude-14",
-      "name": "Quadro 14 00 EB do ramo condicional de senha",
-      "type": "txrx",
-      "enabled": false,
-      "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
-      "txHex": "14 00 EB",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-1",
-      "name": "Read PLC System parte 1 - aguardando validacao da sessao",
-      "type": "txrx",
-      "enabled": false,
-      "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
-      "txHex": "0A 03 60 00 AC E6",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
-      "expected": []
-    },
-    {
-      "id": "read-system-part-2",
-      "name": "Read PLC System parte 2 - aguardando validacao da sessao",
-      "type": "txrx",
-      "enabled": false,
-      "sweepProfiles": false,
-      "safetyClass": "CANDIDATE",
-      "txHex": "0A 03 60 AC AC 3A",
-      "timeoutMs": 4000,
-      "passiveAfterMs": 5000,
+      "timeoutMs": 3200,
+      "passiveAfterMs": 0,
       "expected": []
     },
     {
       "id": "clear-all-memory",
-      "name": "Clear All Memory - PC12 original",
+      "name": "Clear All Memory - PC12 original (bloqueado, nunca transmitido)",
       "type": "txrx",
       "enabled": false,
       "sweepProfiles": false,
@@ -181,29 +91,19 @@
     }
   ],
   "safety": {
-    "readOnlyAllowlist": [
-      "F0 00 0F"
-    ],
-    "blockedTx": [
-      "0F 00 F0"
-    ],
+    "readOnlyAllowlist": ["F0 00 0F", "38 00 C7", "34 03 00 00 A0 28"],
+    "blockedTx": ["0F 00 F0"],
     "notes": [
-      "Esta validacao transmite somente um novo quadro apos HELLO valido: F0 00 0F, uma unica vez.",
-      "A analise estatica confirmou F0 00 0F dentro da rotina de preflight/status da conexao do PC12, antes do fluxo normal de operacao.",
-      "O PC12 configura F0 com modo de recepcao 2 e comprimento de dados 2; a rotina serial espera 5 bytes no total.",
-      "Depois do F0, o codigo de conexao consulta o bit 0x40 do primeiro byte recebido para distinguir o estado operacional do PLC.",
-      "O parser comum do PC12 usa o bit 0x80 do primeiro byte como indicacao de resposta de erro e exige checksum de soma modulo 256 igual a FF.",
-      "Uma resposta fisica F0 de 5 bytes ja havia sido observada anteriormente; esta etapa serve para reproduzir e caracterizar o quadro de forma controlada.",
-      "38 00 C7 foi testado isoladamente depois do HELLO em STOP e retornou zero bytes; permanece CANDIDATE ate a validacao do F0 na mesma sessao.",
-      "34 03 00 00 A0 28 foi testado isoladamente em STOP e RUN e retornou zero bytes em ambos os casos; permanece CANDIDATE.",
-      "14 00 EB permanece CANDIDATE por pertencer ao ramo condicional de senha.",
-      "Read PLC System permanece CANDIDATE e desabilitado.",
-      "C0 01 09 35 continua correlacionado experimentalmente com PLC em RUN: HELLO-RUN.",
-      "80 01 09 75 continua correlacionado experimentalmente com PLC em STOP: HELLO-STOP.",
-      "0D 01 09 E8 permanece fisicamente observado, mas nao classificado.",
-      "READ_ONLY_VERIFIED exige autorizacao manual do operador e entrada explicita na readOnlyAllowlist.",
-      "0F 00 F0 permanece bloqueado internamente e no pacote por estar associado ao Clear All Memory.",
-      "RUN/STOP remoto, escrita, download e apagamento permanecem fora deste teste."
+      "TESTE FOCADO: o laboratorio executa somente HELLO, F0, 38 e um bloco 34.",
+      "O perfil confirmado continua 19200 8O1, DTR=on, RTS=off.",
+      "Cada sessao pode enviar ate 6 HELLOs mantendo a mesma COM aberta.",
+      "O HELLO precisa confirmar STOP com 80 01 09 75. Se retornar C0 01 09 35, o teste termina pedindo STOP.",
+      "F0 00 0F continua sendo enviado apenas UMA vez por abertura da COM e precisa devolver 00 02 10 22 CB.",
+      "O comando 38 00 C7 ja apresentou quadros 00 02 00 02 FB, 00 02 00 04 F9 e 00 02 00 0A F3. Todos compartilham FLAGS=00, LEN=02, payload[0]=00 e checksum FF; por isso o segundo byte do payload passa a ser tratado como variavel do programa, sem semantica presumida.",
+      "34 03 00 00 A0 28 so e enviado depois de HELLO-STOP, F0 valido e quadro 38 estruturalmente valido. A resposta 34 e validada por LEN e soma modulo 256 = FF e salva em binario.",
+      "As varreduras 0A e a consulta 14 permanecem fora deste teste focado.",
+      "Nenhum comando de escrita, RUN/STOP remoto, download, apagamento ou firmware e enviado.",
+      "0F 00 F0 permanece bloqueado por estar associado a Clear All Memory."
     ]
   }
 }

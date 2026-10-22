@@ -1,0 +1,20 @@
+PC12 SCAN TIME / RTC - OFFLINE
+SHA256=05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+DIALOG 33 ('Real Time Clock Dialog', {113: 'Set', 107: '960', 108: '960', 109: '960', 110: '960', 111: '960', 112: '960', 101: 'Year:', 102: 'Month:', 103: 'Day:', 104: 'Hour:', 105: 'Minute', 106: 'Second:', 1: 'Button3', 2: 'Button4'})
+DIALOG 45 ('Scan Time Dialog', {106: 'Frame2', 101: 'Now PLC Scan Time =', 102: '999 ms', 103: 'ms', 104: 'Now PLC Max. Scan Time =', 105: 'Now PLC Min. Scan Time =', 107: '999 ms', 108: '999 ms', 109: 'ms', 110: 'ms', 1: 'Button2'})
+OK READ scan: 0A 03 60 00 06 8C
+OK READ rtc: 0A 03 53 F9 0E 98
+OK SCAN payload=04 D2 01 00 0F FF -> atual=1234 minimo=256 maximo=4095 (ms da tela)
+OK SCAN payload=00 0A 00 02 00 1E -> atual=10 minimo=2 maximo=30 (ms da tela)
+OK SCAN payload=FF FF 00 00 FF FF -> atual=65535 minimo=0 maximo=65535 (ms da tela)
+OK RTC read sec/min/hour/day/weekday/month/year=(59, 34, 12, 25, 7, 8, 26) -> UI={107: '26', 108: '08', 109: '25', 110: '12', 111: '34', 112: '59'}
+OK RTC write: 09 11 53 F9 0E 00 3B 00 22 00 0C 00 19 00 07 00 08 00 1A E0
+OK RTC read sec/min/hour/day/weekday/month/year=(0, 0, 0, 1, 0, 1, 0) -> UI={107: '00', 108: '01', 109: '01', 110: '00', 111: '00', 112: '00'}
+OK RTC write: 09 11 53 F9 0E 00 00 00 00 00 00 00 01 00 00 00 01 00 00 89
+OK RTC read sec/min/hour/day/weekday/month/year=(58, 57, 23, 31, 3, 12, 99) -> UI={107: '99', 108: '12', 109: '31', 110: '23', 111: '57', 112: '58'}
+OK RTC write: 09 11 53 F9 0E 00 3A 00 39 00 17 00 1F 00 03 00 0C 00 63 70
+RESULT=PASS cases=11
+A unidade ms vem do dialogo; nao houve medicao real de temporizacao.
+RTC: ano em dois digitos, sem inferir seculo. V1022=dia da semana (manual + enderecos).
+Fixture weekday=7 testa preservacao; a faixa documentada e 0..6.
+Nenhuma porta serial aberta; nenhum quadro enviado ao PLC.

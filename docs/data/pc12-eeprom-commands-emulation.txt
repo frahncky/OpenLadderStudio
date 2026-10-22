@@ -1,0 +1,37 @@
+PC12 EEPROM/PASSWORD GATE - OFFLINE
+SHA256=05c7d4f9bcc8c1307a1ea72c1d66e81741873c4f242ede0cc7d62b3fe91448b0
+DIALOG 30: ('EEPROM Dialog', {101: 'Select', 102: 'EEPRON PACK ---> PLC', 103: 'PLC ---> EEPROM PACK', 1: 'Button3', 2: 'Button4'})
+OWL ID=306 table=0x004F06A4 handler=0x004BBEDB
+OWL ID=102 table=0x004E1400 handler=0x00474515
+OWL ID=103 table=0x004E1418 handler=0x00474540
+OWL ID=104 table=0x004E104C handler=0x00473932
+OWL ID=105 table=0x004E1064 handler=0x00473CF6
+MENU 306: EEPROM
+MENU 403: Modify Register Value
+MENU 406: Set or Reset  I/O Coil
+PG14 builder sites: 004AF763, 004B19E8, 004B687F, 004BBD3B, 004BC238
+INVENTARIO C6 05 TX_BUF imm8 (17 codigos; nao prova exaustividade):
+  01 (1): 0046F595
+  02 (1): 0046F51F
+  03 (1): 0046F09F
+  04 (1): 0046F201
+  09 (10): 004B801F, 004B8526, 004B8A2F, 004B9084, 004B98DA, 004B9C9E, 004BA20E, 004BC811, 004BD5FE, 004C2502
+  0A (16): 004B2DD9, 004B3234, 004B36BC, 004B3B93, 004B413F, 004B4459, 004BC568, 004BD312, 004BD45E, 004BF443, 004BF871, 004C015F, 004C0A54, 004C153C, 004C37B3, 004C40F3
+  0F (1): 0046F115
+  11 (1): 0046F18B
+  12 (1): 004BC3C9
+  13 (1): 004BC3E0
+  14 (5): 004AF763, 004B19E8, 004B687F, 004BBD3B, 004BC238
+  33 (1): 004B7958
+  34 (2): 004AFA54, 004B1D62
+  35 (1): 004C2275
+  37 (2): 004BE37D, 004BE62D
+  38 (2): 004AF8D4, 004B1B79
+  F0 (3): 0046F2E2, 0046F358, 0046F458
+OK EEPROM option=1 native_selection=1 frame=12 00 ED
+OK EEPROM option=2 native_selection=2 frame=13 00 EC
+OK PG14 equal synthetic final comparison -> 14 00 EB
+OK PG14 unequal synthetic final comparison -> rejection, no TX
+RESULT=PASS cases=4
+Somente blocos nativos identificados; nao executa senha/UI/transferencia completas.
+TX interceptado antes da primeira instrucao; nenhum ACK ou efeito fisico validado.

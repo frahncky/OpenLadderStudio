@@ -1,0 +1,15 @@
+PC12 PG33 BATCH20 F-13w - UNICORN OFFLINE EMULATION
+====================================================================================================
+program=20 x F-13w ADD D0002,D0001,00010
+mode=OFFLINE; TX routine intercepted before I/O; no COM/PLC
+
+logical_instructions=20 cursor=80 HL_bytes=160 EXT_bytes=80
+frame bytes=247 CMD=33 LEN=F4 start=0000 HL_count=A0 checksum=8C
+first instruction progress=(4, 1, 8)
+last instruction progress=(80, 20, 160)
+clock_calls=1
+
+RESULT=PASS
+O coletor original acumulou 20 instruções lógicas de 4 passos = 80 palavras.
+O builder original produziu 33 F4 00 00 00 A0 ... com 247 bytes e checksum válido.
+Nenhum byte foi transmitido fora do Unicorn.

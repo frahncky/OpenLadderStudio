@@ -2,6 +2,55 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [0.99] - 2026-09-09
+
+### Protocolo TP02 PG
+- **varredura do programa (0x0000)**: a v0.97 baixou toda a faixa `0x6000–0x7AE0` em hardware (40 leituras, todas respondendo), confirmando o primitivo `0A 03 [end][qtd] chk → 00 LEN payload`. Essa é a área de sistema/registradores; o programa Ladder mora em `0x0000–0x4000` pelo RBP. A v0.99 acrescenta uma etapa `read_sweep_0a` a partir de `0x0000` para ler o programa pelo mesmo comando de leitura;
+- **relatório limpo + decodificação**: na varredura, o motor deixa de emitir as dezenas de linhas `FRAME FF` por endereço (ruído — a resposta já é quadro completo) e passa a registrar `RX RAW` + `DECOD` (`CMD=00`, `LEN`, contagem de bytes não-zero, só para quadro completo com checksum `FF`). Assim dá para ver de imediato quais endereços guardam dados.
+
+### Segurança
+- tudo continua leitura: montagem intrínseca a `CMD=0A`, modo READ-ONLY, limite de leituras, denylist por quadro antes de transmitir e parada no silêncio. `0F 00 F0` segue bloqueado; `38 00 C7` segue exigindo F0 validado.
+
+## [0.98] - 2026-09-09
+
+### Protocolo TP02 PG
+- **decodificação do dump 0A no relatório (motor PG Lab 1.12)**: para cada endereço que responde na varredura `0A`, o relatório passa a incluir uma linha `DECOD` com `CMD=00`, o `LEN` retornado e quantos bytes do payload são não-zero. Assim o operador vê de imediato quais endereços guardam dados (`nao-zero>0`) e quais são área vazia, sem segmentar os bytes à mão;
+- é só interpretação da resposta já capturada — nenhuma transmissão nova.
+
+### Segurança
+- sem efeito sobre o que é transmitido; todas as travas da varredura `0A` permanecem (intrínseca a `CMD=0A`, READ-ONLY, limite de leituras, denylist por quadro, parada no silêncio). `0F 00 F0` segue bloqueado e o `38 00 C7` segue exigindo F0 validado.
+
+## [0.97] - 2026-09-09
+
+### Protocolo TP02 PG
+- **varredura de leitura 0A (motor PG Lab 1.11)**: a bancada da v0.96 confirmou que o `0A` é uma leitura — `0A 03 [end_hi][end_lo][qtd] chk` devolve `CMD=00 · LEN=qtd · payload`, e a leitura de `0x60AC` retornou dados (`00 AC 00 00 …`). Novo tipo de etapa `read_sweep_0a`: a partir de um quadro `0A` base, o motor monta novos quadros `0A` com checksum, varre endereços contíguos (passo = `qtd`) e captura cada resposta, com retentativa por endereço e parada após 6 endereços silenciosos. O pacote `2026.09.09.9` acrescenta a varredura a partir de `0x6000`;
+- novo registro de bancada `docs/tp02-pg-leitura-0a-2026-09-09.md`: generalização do enquadramento de resposta `CMD=00 / LEN / payload` (F0, `14 → 00 00 FF` reproduzido 3/3, e `0A → 00 AC …`).
+
+### Segurança
+- a montagem da varredura é intrínseca a `CMD=0A` (leitura): o motor não consegue produzir escrita, RUN/STOP remoto, download, apagamento ou firmware por essa via; roda só no modo READ-ONLY, é limitada em número de leituras e para no silêncio. `0F 00 F0` segue bloqueado e o `38 00 C7` segue exigindo F0 validado na mesma sessão.
+
+## [0.96] - 2026-09-09
+
+### Protocolo TP02 PG
+- **F0 com retentativas (motor PG Lab 1.10)**: a matriz F0 pós-handshake passa a ser repetida em até 3 rodadas na mesma sessão (até 18 tentativas, contra 6), parando assim que uma variante devolver `00 02 10 22 CB`. A primeira execução da varredura completa em hardware mostrou o HELLO respondendo enquanto o F0 ficava mudo nas 6 variantes — e, sem F0 validado, o `38 00 C7` é bloqueado e a leitura de programa não abre. Como o TP02 ignora sequências de tentativas, mais rodadas de F0 seguem o mesmo princípio já aplicado às leituras na v0.95;
+- novo registro de bancada `docs/tp02-pg-sessao-varredura-2026-09-09.md`: enlace em `DTR=on/RTS=off` com `80 01 09 75` (STOP); F0 mudo nas 6 variantes; `34` e os dois `0A` em silêncio; e o achado `14 00 EB → 00 00 FF` (candidato a resposta vazia `CMD=00 / LEN=0`, a confirmar).
+
+### Segurança
+- nenhum opcode novo: cada rodada transmite só `F0 00 0F`, já `READ_ONLY_VERIFIED`; o `38 00 C7` continua exigindo F0 validado na mesma sessão; escrita, RUN/STOP remoto, download, apagamento, firmware e `0F 00 F0` seguem bloqueados.
+
+## [0.95] - 2026-09-09
+
+### Protocolo TP02 PG
+- **varredura completa em uma única execução**: o Teste Único passa a rodar toda a bateria READ-ONLY de descoberta na mesma sessão serial — handshake → matriz F0 → `38` → `34` → dois `0A` → `14` — e grava um só relatório TXT e JSON. Não é mais preciso rodar cada consulta em execução separada nem acrescentar uma por versão;
+- cada leitura é **repetida na mesma sessão** (`38` ×5, `34` ×5, cada `0A` ×5, `14` ×3): como o TP02 costuma ignorar várias tentativas seguidas, a repetição separa silêncio real de tentativa ignorada. Antes, cada consulta saía uma única vez e o `RX []` era ambíguo;
+- `sweeps = 2` na busca do enlace e quatro capturas passivas intercaladas para registrar quadros espontâneos com soma módulo 256 = `FF`;
+- pacote `2026.09.09.7`, entregue pelo atualizador do laboratório sem reinstalar o programa;
+- novo guia consolidado `docs/tp02-pg-varredura-completa.md` com o mapa de opcodes do PC12 e o critério de fechamento da fase de leitura.
+
+### Segurança
+- a bateria transmite apenas os seis quadros READ-ONLY já validados, cada um travado pela lista interna do motor **e** pela `readOnlyAllowlist` do pacote; `38 00 C7` só sai após F0 validado na mesma sessão;
+- nenhum quadro novo é gerado; escrita, download/WBP, RUN/STOP remoto, apagamento e firmware seguem sem transmissão, e `0F 00 F0` (Clear All Memory) continua bloqueado. Opcodes de efeito desconhecido (`01`, `02`, `03`, `04`, `11`, `13`, `37`, `09`) ficam só documentados.
+
 ## [0.86] - 2026-09-09
 
 ### Interface

@@ -1,0 +1,23 @@
+PC12 PG33 OPERAND HELPER - UNICORN OFFLINE EMULATION
+================================================================================================
+entry=0x004BCA65 mode=OFFLINE; CRT string/format wrappers intercepted locally; no COM/TX/PLC
+
+OK: D0002    HIGH/LOW=[F0 01] EXT=[00] fields=F0/01/00 steps=783 strcpy=2 sprintf=1
+  CRT sprintf fmt='%04X' -> '0001'
+  expected HIGH/LOW=[F0 01] EXT=[00] counters HL=2 TX=8 EXT=1
+OK: D0001    HIGH/LOW=[F0 00] EXT=[00] fields=F0/00/00 steps=784 strcpy=2 sprintf=1
+  CRT sprintf fmt='%04X' -> '0000'
+  expected HIGH/LOW=[F0 00] EXT=[00] counters HL=2 TX=8 EXT=1
+OK: 00010    HIGH/LOW=[80 0A] EXT=[00] fields=80/0A/00 steps=793 strcpy=2 sprintf=1
+  CRT sprintf fmt='%04X' -> '000A'
+  expected HIGH/LOW=[80 0A] EXT=[00] counters HL=2 TX=8 EXT=1
+OK: 00000    HIGH/LOW=[80 00] EXT=[00] fields=80/00/00 steps=798 strcpy=2 sprintf=1
+  CRT sprintf fmt='%04X' -> '0000'
+  expected HIGH/LOW=[80 00] EXT=[00] counters HL=2 TX=8 EXT=1
+OK: 01000    HIGH/LOW=[87 68] EXT=[00] fields=87/68/00 steps=792 strcpy=2 sprintf=1
+  CRT sprintf fmt='%04X' -> '03E8'
+  expected HIGH/LOW=[87 68] EXT=[00] counters HL=2 TX=8 EXT=1
+
+RESULT=PASS
+Os operandos do ADD coincidem com as palavras fisicamente observadas no quadro 34.
+Nenhum byte foi transmitido fora do Unicorn.

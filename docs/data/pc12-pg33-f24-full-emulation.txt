@@ -1,0 +1,16 @@
+PC12 PG33 F-24 RST FULL COLLECTOR - UNICORN OFFLINE EMULATION
+====================================================================================================
+program=F-24 RST Y0001
+mode=OFFLINE; no COM, no TX routine, no PLC
+
+OK HIGH/LOW=[18 71 C8 80]
+expected       =[18 71 C8 80]
+EXTERNAL=[00 00] expected=[00 00]
+counters HL=4 TX=10 EXT=2 StepSpan=2 cursor=2 instructions=1
+atoi=[('24', 24)]
+
+RESULT=PASS
+O coletor original do PC12 expandiu F-24 RST Y0001 em 18 71 | C8 80.
+Os pares HIGH/LOW coincidem byte a byte com a leitura física PG34.
+EXTERNAL = 00 00, igual ao de F-23 SET: no caminho PG33 o RST se distingue pelo HIGH, nao pelo EXTERNAL.
+Nenhum byte foi transmitido fora do Unicorn.

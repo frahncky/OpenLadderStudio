@@ -1,0 +1,20 @@
+PC12 PG33 BUILDER - UNICORN OFFLINE EMULATION
+============================================================================================
+entry=0x004B7958 tx_hook=0x0046F5E6
+mode=OFFLINE; rotina TX interceptada antes de qualquer I/O
+
+OK: one-boolean-word  start=0x0000 machine_words=1 clock_calls=1
+  PC12 : 33 07 00 00 00 02 00 10 01 B2
+  model: 33 07 00 00 00 02 00 10 01 B2
+OK: two-machine-words  start=0x0050 machine_words=2 clock_calls=1
+  PC12 : 33 0A 00 00 50 04 00 10 20 41 01 07 F5
+  model: 33 0A 00 00 50 04 00 10 20 41 01 07 F5
+OK: address-0E34-three-words  start=0x0E34 machine_words=3 clock_calls=1
+  PC12 : 33 0D 00 0E 34 06 02 11 21 40 00 39 04 07 0C B3
+  model: 33 0D 00 0E 34 06 02 11 21 40 00 39 04 07 0C B3
+OK: max-80-machine-words  start=0x0F00 machine_words=80 clock_calls=1
+  PC12/model bytes=247 LEN=F4 HL=A0 checksum=71
+
+RESULT=PASS
+W=80 valida dinamicamente offline o construtor máximo: LEN=F4, HIGH/LOW=A0, 247 bytes.
+Nenhum byte foi transmitido fora do Unicorn.

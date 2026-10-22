@@ -227,6 +227,11 @@ namespace ModernPC12
             ferramentas.DropDownItems.Add(DropItem("Decodificador TP02", delegate { ShowDecoder(); }));
             ferramentas.DropDownItems.Add(DropItem("Calibração TP02", delegate { ShowCalibration(); }));
             ferramentas.DropDownItems.Add(DropItem("IL para Ladder", delegate { ShowIl(); }));
+            ferramentas.DropDownItems.Add(DropItem("Comandos PG do PC12", delegate
+            {
+                using (TP02PgCommandCatalogForm catalog = new TP02PgCommandCatalogForm())
+                    catalog.ShowDialog(this);
+            }));
             ferramentas.DropDownItems.Add(new ToolStripSeparator());
             ferramentas.DropDownItems.Add(DropItem("Atualizações", delegate { ShowUpdater(); }));
 

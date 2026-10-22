@@ -1,0 +1,1 @@
+A campanha v1.50 de 2026-09-14 confirmou HELLO após recuperação, mas F0 saiu cedo demais (~34 ms) e todos os estágios seguintes ficaram sem RX. A v1.51 deve espelhar o leitor PG funcional: warm-up, sessão limpa, 450 ms HELLO→F0, até quatro F0 com 350 ms entre tentativas, 420 ms F0→38 e fail-fast por estágio.

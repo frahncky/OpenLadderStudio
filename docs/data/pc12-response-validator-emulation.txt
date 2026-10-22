@@ -1,0 +1,31 @@
+PC12 RX VALIDATOR - UNICORN OFFLINE EMULATION
+============================================================================================
+entry=0x0046F684 stop=0x0046F719
+mode=OFFLINE; nenhum helper de recepção, COM ou TX é executado
+
+OK: physical-f0-known bypass=0 RX=[00 02 10 22 CB]
+  got      timeout=00 checksum=00 error=00 bit20=00
+  expected timeout=00 checksum=00 error=00 bit20=00
+OK: generic-00-00-ff bypass=0 RX=[00 00 FF]
+  got      timeout=00 checksum=00 error=00 bit20=00
+  expected timeout=00 checksum=00 error=00 bit20=00
+OK: status-bit80 bypass=0 RX=[80 00 7F]
+  got      timeout=00 checksum=00 error=01 bit20=00
+  expected timeout=00 checksum=00 error=01 bit20=00
+OK: bad-checksum bypass=0 RX=[00 00 FE]
+  got      timeout=00 checksum=01 error=00 bit20=00
+  expected timeout=00 checksum=01 error=00 bit20=00
+OK: bad-checksum-with-bypass bypass=1 RX=[00 00 FE]
+  got      timeout=00 checksum=00 error=00 bit20=00
+  expected timeout=00 checksum=00 error=00 bit20=00
+OK: status-bit20 bypass=0 RX=[20 00 DF]
+  got      timeout=00 checksum=00 error=00 bit20=01
+  expected timeout=00 checksum=00 error=00 bit20=01
+
+RESULT=PASS
+Conclusão: o validador é genérico; ele não identifica um ACK PG33 único.
+Um quadro como 00 00 FF ser aceito aqui significa apenas que satisfaz as regras
+genéricas do parser, NÃO que esse seja o payload realmente devolvido pelo TP02 ao 0x33.
+O efeito de 0x5301AE como desvio da rejeição de checksum é fato deste caminho,
+mas a semântica de alto nível desse global permanece não classificada.
+Nenhum byte foi transmitido fora do Unicorn.

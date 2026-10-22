@@ -1,0 +1,24 @@
+PC12 PG33 RETRY/ACK GATE - UNICORN OFFLINE EMULATION
+====================================================================================================
+range=0x004B7A07..0x004B7C50 tx_hook=0x0046F5E6
+mode=OFFLINE; TX routine replaced by synthetic generic flags; no COM/PLC
+
+OK: immediate-success            calls=1 expected=1 final_flags=(0, 0, 0)
+OK: timeout-then-success         calls=2 expected=2 final_flags=(0, 0, 0)
+OK: checksum-then-success        calls=2 expected=2 final_flags=(0, 0, 0)
+OK: status-error-then-success    calls=2 expected=2 final_flags=(0, 0, 0)
+OK: two-timeouts-then-success    calls=3 expected=3 final_flags=(0, 0, 0)
+OK: mixed-failures-then-success  calls=3 expected=3 final_flags=(0, 0, 0)
+OK: all-timeout                  calls=3 expected=3 final_flags=(1, 0, 0)
+OK: all-checksum-error           calls=3 expected=3 final_flags=(0, 1, 0)
+OK: all-status-error             calls=3 expected=3 final_flags=(0, 0, 1)
+
+direct RX_BUF/RX_LEN references in caller retry range: 0
+
+RESULT=PASS
+O chamador PG33 aceita sucesso quando timeout/checksum/error estão todos zerados.
+Falha em qualquer uma das três flags provoca nova tentativa; o máximo confirmado é 3 chamadas por quadro.
+Sucesso na primeira, segunda ou terceira chamada encerra as tentativas restantes.
+Nesta faixa o chamador não lê RX_BUF/RX_LEN diretamente; o conteúdo específico do ACK é abstraído pela rotina genérica.
+Assim, o payload físico exato do ACK não pode ser deduzido deste chamador apenas pelas condições de sucesso.
+Nenhum byte foi transmitido fora do Unicorn.

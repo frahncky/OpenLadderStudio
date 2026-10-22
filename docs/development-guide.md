@@ -55,6 +55,14 @@ O primeiro código extraído, o codec do formato `.pladder`, está em `src/OpenL
 5. Execute `OpenLadderCoreTest.exe` quando a mudança tocar o formato `.pladder` e `OpenLadderSimTest.exe` quando tocar o motor de varredura ou as plantas simuladas. O build já executa os dois.
 6. Execute `src/OpenLadderStudio.Desktop/Build.bat` em uma máquina Windows com .NET Framework antes de publicar executáveis.
 
+## Vetores de referência do PC12
+
+`tests/OpenLadderStudio.Core.Tests/Data/pc12-golden-vectors.tsv` guarda os quadros que o `pc12.exe` original monta, extraídos pelos emuladores `scripts/emulate_pc12_*.py` (Unicorn, offline, nenhum TX). O autoteste `Tp02Pc12GoldenVectorsSelfTest`, executado pelo `Build.bat`, confere byte a byte os construtores do Core (PG35, PG09, leituras 0A, RTC, quadros curtos, 34 e PG33) contra esses vetores.
+
+- Diferença intencional entre o OpenLadder e o PC12 é declarada na lista `Known` do autoteste, com o resultado exato do OpenLadder e o motivo. Qualquer outra diferença falha o build.
+- Ao mudar um emulador ou o `pc12.exe`, regenere o arquivo com `python3 scripts/export_pc12_golden_vectors.py` (requer `unicorn==2.1.4`, `pefile==2024.8.26` e `capstone`). O workflow `validate-pc12-golden-vectors.yml` falha se o arquivo versionado estiver desatualizado.
+- Os vetores provam igualdade com o PC12, não aceitação pelo TP02: efeito no equipamento continua exigindo teste de bancada.
+
 ## Estratégia de migração
 
 1. Continue a extração de contratos e modelos puros para `OpenLadderStudio.Core`; o codec `.pladder` já foi migrado.

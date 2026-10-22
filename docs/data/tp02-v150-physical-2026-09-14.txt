@@ -1,0 +1,7 @@
+Campanha v1.50 - 2026-09-14 09:38:40
+COM1 | 19200 8O1 | DTR=OFF | RTS=OFF
+HELLO confirmado: 80 01 09 75 (STOP), ciclo 2, tentativa 5.
+F0 enviado ~34 ms após confirmação do HELLO e não houve RX.
+38, PG34 P0/P80, PG0A X/Y/C/SC/V/D/WC/FL/WS, RTC e scan também ficaram sem RX após a falha de F0.
+Interpretação: as falhas posteriores a F0 não são evidências independentes; a sessão PG não ficou qualificada para continuar.
+Ajuste recomendado: warm-up, sessão limpa, 450 ms HELLO->F0, retry de F0 e fail-fast por estágio.

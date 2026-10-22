@@ -5,6 +5,15 @@ on:
     branches: [ main ]
     paths:
       - 'scripts/analyze_pc12_protocol.py'
+      - 'scripts/analyze_pc12_writeprog.py'
+      - 'scripts/analyze_pc12_write_tx.py'
+      - 'scripts/analyze_pc12_write_fields.py'
+      - 'scripts/analyze_pc12_tx_response.py'
+      - 'scripts/emulate_pc12_response_validator.py'
+      - 'scripts/emulate_pc12_pg33_builder.py'
+      - 'scripts/emulate_pc12_pg33_success_tail.py'
+      - 'scripts/emulate_pc12_pg33_record_boundary.py'
+      - 'scripts/emulate_pc12_readprog.py'
       - '.github/workflows/analyze-pc12-protocol.yml'
       - 'src/OpenLadderStudio.Desktop/pc12.exe'
   workflow_dispatch:
@@ -13,7 +22,7 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +33,126 @@ jobs:
           python3 scripts/analyze_pc12_protocol.py \
             src/OpenLadderStudio.Desktop/pc12.exe \
             -o protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Analisar Write PLC Program offline
+        shell: bash
+        run: |
+          {
+            echo
+            echo 'WRITE PLC PROGRAM - OFFLINE STATIC ANALYSIS'
+            echo '================================================================================'
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+          python3 scripts/analyze_pc12_writeprog.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-write-program-analysis.txt
+          cat protocol-analysis/pc12-write-program-analysis.txt \
+            >> protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Isolar chamadas TX do Write PLC Program
+        shell: bash
+        run: |
+          python3 scripts/analyze_pc12_write_tx.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-write-tx-analysis.txt
+          {
+            echo
+            echo 'WRITE PLC PROGRAM - FOCUSED TX ANALYSIS'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-write-tx-analysis.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Rastrear campos internos do quadro PG33
+        shell: bash
+        run: |
+          python3 scripts/analyze_pc12_write_fields.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-write-fields-analysis.txt
+          {
+            echo
+            echo 'WRITE PLC PROGRAM - PG33 OBJECT FIELD TRACE'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-write-fields-analysis.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Mapear parser de resposta da rotina TX
+        shell: bash
+        run: |
+          python3 scripts/analyze_pc12_tx_response.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-tx-response-analysis.txt
+          {
+            echo
+            echo 'TX/RESPONSE ROUTINE - OFFLINE STATIC ANALYSIS'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-tx-response-analysis.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Conferir a geometria da leitura de programa
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_readprog.py --so-geometria \
+            | tee -a protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Instalar emulador Unicorn
+        run: python3 -m pip install 'unicorn==2.1.4'
+
+      - name: Emular validador RX sem hardware
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_response_validator.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-response-validator-emulation.txt
+          {
+            echo
+            echo 'RX VALIDATOR - UNICORN OFFLINE EMULATION'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-response-validator-emulation.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Emular construtor PG33 sem hardware
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_pg33_builder.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-pg33-builder-emulation.txt
+          {
+            echo
+            echo 'PG33 BUILDER - UNICORN OFFLINE EMULATION'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-pg33-builder-emulation.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Emular avanço e limite dos registros PG33
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_pg33_record_boundary.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-pg33-record-boundary-emulation.txt
+          {
+            echo
+            echo 'PG33 RECORD BOUNDARY - UNICORN OFFLINE EMULATION'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-pg33-record-boundary-emulation.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Emular transição de blocos PG33 sem hardware
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_pg33_success_tail.py \
+            src/OpenLadderStudio.Desktop/pc12.exe \
+            -o protocol-analysis/pc12-pg33-success-tail-emulation.txt
+          {
+            echo
+            echo 'PG33 SUCCESS TAIL - UNICORN OFFLINE EMULATION'
+            echo '================================================================================'
+            cat protocol-analysis/pc12-pg33-success-tail-emulation.txt
+          } >> protocol-analysis/pc12-protocol-analysis.txt
+
+      - name: Emular Read PLC Program sem hardware
+        shell: bash
+        run: |
+          python3 scripts/emulate_pc12_readprog.py --paginas 12 \
+            | tee -a protocol-analysis/pc12-protocol-analysis.txt
 
       - name: PE headers
         run: |
@@ -41,16 +170,48 @@ jobs:
             echo 'GNU STRINGS FILTER'
             echo '================================================================================'
             strings -tx -n 4 src/OpenLadderStudio.Desktop/pc12.exe \
-              | grep -Ei 'Read PLC Program|PLC Program|Clear All Memory|Clear Program|Download|Upload|RUN|STOP|CON-ICB' \
+              | grep -Ei 'Read PLC Program|Write PLC Program|PLC Program|Clear All Memory|Clear Program|Download|Upload|RUN|STOP|CON-ICB' \
               | head -n 300 || true
           } >> protocol-analysis/pc12-protocol-analysis.txt
 
       - name: Print report
         run: cat protocol-analysis/pc12-protocol-analysis.txt
 
+      - name: Persistir relatórios offline
+        if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
+        shell: bash
+        run: |
+          mkdir -p docs/data
+          cp protocol-analysis/pc12-write-program-analysis.txt docs/data/pc12-write-program-analysis.txt
+          cp protocol-analysis/pc12-write-tx-analysis.txt docs/data/pc12-write-tx-analysis.txt
+          cp protocol-analysis/pc12-write-fields-analysis.txt docs/data/pc12-write-fields-analysis.txt
+          cp protocol-analysis/pc12-tx-response-analysis.txt docs/data/pc12-tx-response-analysis.txt
+          cp protocol-analysis/pc12-response-validator-emulation.txt docs/data/pc12-response-validator-emulation.txt
+          cp protocol-analysis/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-builder-emulation.txt
+          cp protocol-analysis/pc12-pg33-record-boundary-emulation.txt docs/data/pc12-pg33-record-boundary-emulation.txt
+          cp protocol-analysis/pc12-pg33-success-tail-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt
+          if [ -z "$(git status --porcelain -- docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-tx-response-analysis.txt docs/data/pc12-response-validator-emulation.txt docs/data/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-record-boundary-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt)" ]; then
+            echo 'Relatórios offline sem alterações.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/data/pc12-write-program-analysis.txt docs/data/pc12-write-tx-analysis.txt docs/data/pc12-write-fields-analysis.txt docs/data/pc12-tx-response-analysis.txt docs/data/pc12-response-validator-emulation.txt docs/data/pc12-pg33-builder-emulation.txt docs/data/pc12-pg33-record-boundary-emulation.txt docs/data/pc12-pg33-success-tail-emulation.txt
+          git commit -m 'Atualizar relatórios offline PC12 Write PLC Program'
+          git push origin HEAD:main
+
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
           name: pc12-protocol-analysis
-          path: protocol-analysis/pc12-protocol-analysis.txt
+          path: |
+            protocol-analysis/pc12-protocol-analysis.txt
+            protocol-analysis/pc12-write-program-analysis.txt
+            protocol-analysis/pc12-write-tx-analysis.txt
+            protocol-analysis/pc12-write-fields-analysis.txt
+            protocol-analysis/pc12-tx-response-analysis.txt
+            protocol-analysis/pc12-response-validator-emulation.txt
+            protocol-analysis/pc12-pg33-builder-emulation.txt
+            protocol-analysis/pc12-pg33-record-boundary-emulation.txt
+            protocol-analysis/pc12-pg33-success-tail-emulation.txt
           retention-days: 30
