@@ -81,6 +81,11 @@ com o perfil de pagina longa:
 RunTp02EmulatorV156.bat COM4 --pg38=total16 --seed=semantic323
 ```
 
+No replay controlado de 23/10/2026, essa variante foi importada pelo PC12 sem
+a janela `DOUBLE OUT`. O PC12 solicitou as nove paginas de `0000` ate `0280`
+e nao transmitiu comandos de escrita. Registro local:
+`tp02-emulator-captures/TP02-Emulator-20261023-131815.txt`.
+
 ## O que permanece pendente de hardware
 
 Somente uma validacao final controlada pode confirmar cabo, padrao eletrico
