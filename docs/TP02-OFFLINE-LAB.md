@@ -57,11 +57,20 @@ No replay de 22/10/2026, o emulador respondeu `38` com `00 02 00 9E 5F`
 RunTp02EmulatorV156.bat COM4 --pg38=total16
 ```
 
-Com o seed de 323 words, o `38` passa a ser `00 02 02 84 77`. Se o PC12
-pedir `0000`, `0050`, `00A0`, `00F0` e `0140`, a hipotese ganha apoio no
-laboratorio virtual. Continua sendo hipotese: a unica captura fisica do `38`
-tem 3 passos (`00 02 00 04 F9`), em que os dois modos coincidem. O padrao
-continua `--pg38=page`.
+Com o seed de 323 words, o `38` passa a ser `00 02 02 84 77`. No replay
+controlado de 23/10/2026, o PC12 pediu nove paginas: `0000`, `0050`, `00A0`,
+`00F0`, `0140`, `0190`, `01E0`, `0230` e `0280`; depois iniciou leituras
+`0A` de memoria. Portanto, a previsao inicial de cinco paginas foi refutada:
+o PC12 usa o campo de 16 bits do `38`, mas a conversao exata para o limite de
+paginas ainda e desconhecida. O registro local e
+`tp02-emulator-captures/TP02-Emulator-20261023-130853.txt`.
+
+O editor PC12 exibiu `DOUBLE OUT` no endereco `0003` depois de importar o
+seed. Isso e uma validacao semantica esperada para o programa de fronteira,
+que repete `OUT C0001`; nao representa falha da comunicacao serial. Continua
+sendo hipotese: a unica captura fisica do `38` tem 3 passos
+(`00 02 00 04 F9`), em que os dois modos coincidem. O padrao continua
+`--pg38=page`.
 
 ## O que permanece pendente de hardware
 
