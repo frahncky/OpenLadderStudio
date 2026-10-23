@@ -72,6 +72,15 @@ sendo hipotese: a unica captura fisica do `38` tem 3 passos
 (`00 02 00 04 F9`), em que os dois modos coincidem. O padrao continua
 `--pg38=page`.
 
+Para testar a importacao no PC12 sem essa validacao semantica, ha tambem o
+seed opcional `--seed=semantic323`. Ele preserva 323 words e `F-00 END` em
+`0322`, mas usa `OUT C0001` ate `OUT C0161`, sem repetir uma saida. Exemplo
+com o perfil de pagina longa:
+
+```bat
+RunTp02EmulatorV156.bat COM4 --pg38=total16 --seed=semantic323
+```
+
 ## O que permanece pendente de hardware
 
 Somente uma validacao final controlada pode confirmar cabo, padrao eletrico

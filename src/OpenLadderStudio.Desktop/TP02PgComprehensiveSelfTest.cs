@@ -412,6 +412,27 @@ namespace ModernPC12
             Check(!valid[323], "seed nao deveria marcar step 323");
         }
 
+        private static void TestSeedSemantic323()
+        {
+            Pg33MachineWord[] words = new Pg33MachineWord[4000];
+            bool[] valid = new bool[4000];
+            int highest = TP02PgV156Scenario.SeedSemantic323(words, valid);
+            Check(highest == 322, "seed semantic323 highest deveria ser 322");
+            for (int rung = 0; rung < 161; rung++)
+            {
+                int contactStep = rung * 2;
+                int coilStep = contactStep + 1;
+                byte expectedHigh = (byte)(0x40 | ((rung >> 3) & 0x1F));
+                byte expectedLow = (byte)(0x40 | (rung & 0x07));
+                Check(valid[contactStep] && words[contactStep].High == 0x00 && words[contactStep].Low == 0x10,
+                    "seed semantic323 STR divergente rung=" + rung.ToString());
+                Check(valid[coilStep] && words[coilStep].High == expectedHigh && words[coilStep].Low == expectedLow,
+                    "seed semantic323 OUT C divergente rung=" + rung.ToString());
+            }
+            Check(valid[322] && words[322].High == 0x00 && words[322].Low == 0x70, "seed semantic323 END deveria estar em 0322");
+            Check(!valid[323], "seed semantic323 nao deveria marcar step 323");
+        }
+
         internal static int RunAll(bool verbose)
         {
             checks = 0;
@@ -425,6 +446,7 @@ namespace ModernPC12
             TestReadback38Boundaries();
             TestReadback34AllPages();
             TestSeedBoundary323();
+            TestSeedSemantic323();
             TestScenarioControls();
 
             if (failures != 0)

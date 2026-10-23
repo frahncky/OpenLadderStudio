@@ -11,6 +11,7 @@ namespace ModernPC12
     internal static class TP02PgV156Scenario
     {
         internal static bool SeedBoundary323Enabled;
+        internal static bool SeedSemantic323Enabled;
         internal static bool DisableUnknownAck;
         internal static int HelloRespondOnAttempt = 1;
         internal static int F0RespondOnAttempt = 1;
@@ -35,6 +36,11 @@ namespace ModernPC12
             if (a.Equals("--seed=boundary323", StringComparison.OrdinalIgnoreCase))
             {
                 SeedBoundary323Enabled = true;
+                return true;
+            }
+            if (a.Equals("--seed=semantic323", StringComparison.OrdinalIgnoreCase))
+            {
+                SeedSemantic323Enabled = true;
                 return true;
             }
             if (a.Equals("--pg38=total16", StringComparison.OrdinalIgnoreCase))
@@ -101,6 +107,7 @@ namespace ModernPC12
 
         internal static int SeedProgramIfRequested(Pg33MachineWord[] words, bool[] valid)
         {
+            if (SeedSemantic323Enabled) return SeedSemantic323(words, valid);
             if (!SeedBoundary323Enabled) return -1;
             return SeedBoundary323(words, valid);
         }
@@ -120,6 +127,32 @@ namespace ModernPC12
                 else
                     words[step] = new Pg33MachineWord(0x40, 0x40, 0x00); // OUT C0001
                 valid[step] = true;
+            }
+            words[322] = new Pg33MachineWord(0x00, 0x70, 0x00); // F-00 END
+            valid[322] = true;
+            return 322;
+        }
+
+        internal static int SeedSemantic323(Pg33MachineWord[] words, bool[] valid)
+        {
+            if (words == null) throw new ArgumentNullException("words");
+            if (valid == null) throw new ArgumentNullException("valid");
+            if (words.Length < 323 || valid.Length < 323)
+                throw new ArgumentException("Banco PG precisa ter pelo menos 323 posicoes.");
+
+            Array.Clear(valid, 0, valid.Length);
+            for (int rung = 0; rung < 161; rung++)
+            {
+                int contactStep = rung * 2;
+                int coilStep = contactStep + 1;
+                int coilIndex = rung;
+                byte high = (byte)(0x40 | ((coilIndex >> 3) & 0x1F));
+                byte low = (byte)(0x40 | (coilIndex & 0x07));
+
+                words[contactStep] = new Pg33MachineWord(0x00, 0x10, 0x00); // STR X0001
+                words[coilStep] = new Pg33MachineWord(high, low, 0x00); // OUT C0001..C0161
+                valid[contactStep] = true;
+                valid[coilStep] = true;
             }
             words[322] = new Pg33MachineWord(0x00, 0x70, 0x00); // F-00 END
             valid[322] = true;
@@ -174,7 +207,7 @@ namespace ModernPC12
                 && !TP02PgReadback.Pg38Total16)
                 return "desativado";
 
-            return "seed=" + (SeedBoundary323Enabled ? "boundary323" : "nenhum")
+            return "seed=" + (SeedSemantic323Enabled ? "semantic323" : (SeedBoundary323Enabled ? "boundary323" : "nenhum"))
                 + " hello_on=" + HelloRespondOnAttempt.ToString(CultureInfo.InvariantCulture)
                 + " f0_on=" + F0RespondOnAttempt.ToString(CultureInfo.InvariantCulture)
                 + " unknown_ack=" + (DisableUnknownAck ? "OFF" : "padrao")
