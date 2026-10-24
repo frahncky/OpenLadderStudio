@@ -297,7 +297,6 @@ $nav = @'
             v73ProjectRoot.NodeFont = new Font("Segoe UI Semibold", 9.1f, FontStyle.Bold);
             v73ProjectRoot.Tag = "ROOT";
 
-            TreeNode config = new TreeNode("Configuração do PLC"); config.Tag = "PLC_CONFIG";
             TreeNode programs = new TreeNode("Programas"); programs.Tag = "GROUP";
             TreeNode main = new TreeNode("Main (PRG)"); main.Tag = "MAIN";
             TreeNode fun = new TreeNode("FUN"); fun.Tag = "INFO_FUN"; fun.ForeColor = StudioTheme.Faint;
@@ -307,34 +306,17 @@ $nav = @'
             TreeNode variables = new TreeNode("Variáveis"); variables.Tag = "INFO_VARIABLES"; variables.ForeColor = StudioTheme.Faint;
             TreeNode libraries = new TreeNode("Bibliotecas"); libraries.Tag = "INFO_LIBRARIES"; libraries.ForeColor = StudioTheme.Faint;
 
-            TreeNode execution = new TreeNode("Execução"); execution.Tag = "GROUP";
-            TreeNode simulation = new TreeNode("Simulador"); simulation.Tag = "SIM";
-            TreeNode monitor = new TreeNode("Monitor on-line"); monitor.Tag = "MON";
-            execution.Nodes.Add(simulation); execution.Nodes.Add(monitor);
-
-            TreeNode system = new TreeNode("Sistema"); system.Tag = "GROUP";
-            TreeNode updates = new TreeNode("Atualizações"); updates.Tag = "UPD";
-            system.Nodes.Add(updates);
-
-            v73ProjectRoot.Nodes.Add(config);
             v73ProjectRoot.Nodes.Add(programs);
             v73ProjectRoot.Nodes.Add(variables);
             v73ProjectRoot.Nodes.Add(libraries);
-            v73ProjectRoot.Nodes.Add(execution);
-            v73ProjectRoot.Nodes.Add(system);
             v73ProjectTree.Nodes.Add(v73ProjectRoot);
             v73ProjectRoot.Expand();
             programs.Expand();
-            execution.Expand();
 
             v73ProjectTree.AfterSelect += delegate(object sender, TreeViewEventArgs e)
             {
                 string key = e.Node == null || e.Node.Tag == null ? string.Empty : e.Node.Tag.ToString();
-                if (key == "PLC_CONFIG") ShowDeviceManager();
-                else if (key == "MAIN") ShowLadder();
-                else if (key == "SIM") ShowSimulator();
-                else if (key == "MON") ShowMonitor();
-                else if (key == "UPD") ShowUpdater();
+                if (key == "MAIN") ShowLadder();
                 else if (key.StartsWith("INFO_", StringComparison.Ordinal))
                 {
                     if (statusText != null) statusText.Text = e.Node.Text + ": estrutura reservada para expansão do projeto.";
