@@ -171,9 +171,9 @@ $shell = $shell.Replace('            menu.Items.Add(exibir);', '            menu
 # Put line editing where it is immediately visible above the instruction
 # library. These controls used to be at the very bottom of a long scroll list.
 $shell = [regex]::Replace($shell,
-    '(?m)^[ \t]*(?:V73AddSection\(list, "EDIÇÃO"\);[ \t]*|V73AddInstruction\(list, "Selecionar"[^\r\n]*|V73AddAction\(list, "(?:Apagar selecionado|Adicionar linha|Remover linha)"[^\r\n]*)\r?\n', '')
+    '(?m)^[ \t]*(?:V73AddSection\(list, "EDI[^"\r\n]*"\);[ \t]*|V73AddInstruction\(list, "Selecionar"[^\r\n]*|V73AddAction\(list, "(?:Apagar selecionado|Adicionar linha|Remover linha)"[^\r\n]*)\r?\n', '')
 $editActions = @'
-            V73AddSection(list, "EDIÇÃO");
+            V73AddSection(list, "EDI\u00C7\u00C3O");
             V73AddInstruction(list, "Selecionar / mover", StudioIcon.Select, LadderTool.Select);
             V73AddAction(list, "Adicionar linha", StudioIcon.Plus, delegate { InvokeLadder("AddRung", null); });
             V73AddAction(list, "Excluir linha selecionada", StudioIcon.Minus, delegate { InvokeLadder("DeleteSelectedRung", null); });
@@ -181,7 +181,7 @@ $editActions = @'
 
 '@
 $shell = $shell.Replace('            V73AddSection(list, "CONTATOS");', $editActions + '            V73AddSection(list, "CONTATOS");')
-if ([regex]::Matches($shell, 'V73AddSection\(list, "EDIÇÃO"\);').Count -ne 1) {
+if ([regex]::Matches($shell, 'V73AddSection\(list, "EDI[^"\r\n]*"\);').Count -ne 1) {
     throw 'A paleta deve conter uma unica secao EDICAO.'
 }
 if ($shell.IndexOf('V73AddInstruction(list, "Selecionar / mover"') -gt $shell.IndexOf('V73AddSection(list, "CONTATOS")')) {

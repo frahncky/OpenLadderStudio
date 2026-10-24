@@ -75,6 +75,10 @@ jobs:
           path: artifacts/tp02-memory-ui/*.png
           if-no-files-found: ignore
 
+      - name: Validar organização da paleta Ladder
+        shell: powershell
+        run: .\scripts\ValidateLadderPalette.ps1
+
       - name: Testar inicialização da interface
         shell: powershell
         working-directory: src/OpenLadderStudio.Desktop
