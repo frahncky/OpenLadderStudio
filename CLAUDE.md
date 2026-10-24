@@ -17,8 +17,13 @@ Há agentes com o conhecimento detalhado de cada área em `.claude/agents/`. Del
 | `re-estatico` | engenharia reversa estática (REA/Ghidra) do software do fabricante |
 | `re-emulacao` | emulador, golden vectors, matriz offline |
 | `re-bancada` | roteiro e análise de testes no PLC físico (nunca transmite) |
+| `revisor` | verificação independente antes do PR (não corrige) |
 
-Para conduzir a engenharia reversa de ponta a ponta, use a skill `engenharia-reversa`. Ela orquestra os quatro últimos agentes, e a bancada física sempre volta para o humano.
+Há duas skills para conduzir o trabalho de ponta a ponta:
+- `desenvolver` orquestra uma melhoria do produto: especialista, depois `revisor`, depois PR e CI.
+- `engenharia-reversa` orquestra os agentes `re-*` e `driver-plc`. A bancada física sempre volta para o humano.
+
+A tela pode ser conferida sem abrir o app com `scripts/RenderUi.ps1 -Theme dark|light -Out <arquivo.png>`.
 
 ## Quatro coisas que quebram o build ou o produto
 
