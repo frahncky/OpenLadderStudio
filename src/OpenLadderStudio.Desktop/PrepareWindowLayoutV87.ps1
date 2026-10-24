@@ -7,6 +7,9 @@ $shellPath = Join-Path $root 'UniversalStudioShell.build.cs'
 if (-not (Test-Path -LiteralPath $shellPath)) { throw 'V87: UniversalStudioShell.build.cs nao encontrado.' }
 
 function Rep([string]$text, [string]$old, [string]$new, [string]$label) {
+    # O script pode vir com CRLF (checkout no Windows); o texto trabalhado usa LF.
+    $old = $old.Replace("`r`n", "`n")
+    $new = $new.Replace("`r`n", "`n")
     if (-not $text.Contains($old)) { throw "V87: ancora nao encontrada ($label). Ajuste PrepareWindowLayoutV87.ps1." }
     return $text.Replace($old, $new)
 }

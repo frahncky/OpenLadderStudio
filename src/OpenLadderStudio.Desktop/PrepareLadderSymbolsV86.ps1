@@ -8,6 +8,9 @@ $path = Join-Path $root 'LadderEditor.build.cs'
 if (-not (Test-Path -LiteralPath $path)) { throw 'V86: LadderEditor.build.cs nao encontrado.' }
 
 function Rep([string]$text, [string]$old, [string]$new, [string]$label) {
+    # O script pode vir com CRLF (checkout no Windows); o texto trabalhado usa LF.
+    $old = $old.Replace("`r`n", "`n")
+    $new = $new.Replace("`r`n", "`n")
     if (-not $text.Contains($old)) { throw "V86: ancora nao encontrada ($label). Ajuste PrepareLadderSymbolsV86.ps1." }
     return $text.Replace($old, $new)
 }
