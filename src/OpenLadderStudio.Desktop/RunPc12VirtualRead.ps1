@@ -12,10 +12,13 @@ $emulatorPort = 'COM4'
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $workspaceRoot = Split-Path -Parent (Split-Path -Parent $scriptRoot)
 $pc12Exe = Join-Path $workspaceRoot 'PC12_v2.1_Windows7_v3_portatil\PC12_v2.1_Windows7_v3_portatil\pc12.exe'
-$emulatorExe = Join-Path $scriptRoot 'OpenLadderTP02Emulator.exe'
+$pc12Project = Join-Path (Split-Path -Parent $pc12Exe) 'pc12.lad'
 $buildScript = Join-Path $scriptRoot 'BuildTp02Emulator.bat'
 $captureDirectory = Join-Path $scriptRoot 'tp02-emulator-captures'
-$runLog = Join-Path $captureDirectory ('PC12-VirtualRead-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.log')
+$runStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$emulatorExe = Join-Path $captureDirectory ('OpenLadderTP02Emulator.VirtualRun-' + $runStamp + '.exe')
+$emulatorProcessName = [System.IO.Path]::GetFileNameWithoutExtension($emulatorExe)
+$runLog = Join-Path $captureDirectory ('PC12-VirtualRead-' + $runStamp + '.log')
 
 function Write-RunLog([string]$message) {
     $line = "[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss.fff'), $message
@@ -24,21 +27,8 @@ function Write-RunLog([string]$message) {
 }
 
 function Assert-VirtualPair {
-    # Alguns ambientes bloqueiam a leitura de HARDWARE\\DEVICEMAP indefinidamente.
-    # A consulta recebe prazo curto; sem a prova VSerial, a rotina falha fechada.
-    $job = Start-Job -ScriptBlock {
-        $map = Get-ItemProperty 'HKLM:\HARDWARE\DEVICEMAP\SERIALCOMM'
-        @($map.PSObject.Properties | ForEach-Object { [pscustomobject]@{ Name = $_.Name; Value = [string]$_.Value } })
-    }
-    try {
-        if (-not (Wait-Job -Job $job -Timeout 5)) {
-            throw 'A verificacao das portas virtuais excedeu 5 segundos.'
-        }
-        $items = @(Receive-Job -Job $job | Where-Object { $_.Value -in $pc12Port, $emulatorPort })
-    }
-    finally {
-        Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
-    }
+    $map = Get-ItemProperty 'HKLM:\HARDWARE\DEVICEMAP\SERIALCOMM'
+    $items = @($map.PSObject.Properties | Where-Object { $_.Value -in $pc12Port, $emulatorPort })
     if ($items.Count -ne 2 -or ($items.Value -notcontains $pc12Port) -or ($items.Value -notcontains $emulatorPort) -or (($items.Name -join '|') -notmatch 'VSerial')) {
         throw "Recusado: $pc12Port e $emulatorPort devem ser o par VSerial virtual. Nenhuma porta fisica e aceita."
     }
@@ -50,9 +40,22 @@ function Add-NativeWindowApi {
 using System;
 using System.Runtime.InteropServices;
 namespace Pc12VirtualRead {
+  [StructLayout(LayoutKind.Sequential)]
+  public struct Rect { public int Left; public int Top; public int Right; public int Bottom; }
   public static class WindowApi {
     [DllImport("user32.dll", CharSet=CharSet.Auto)]
-    public static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll", CharSet=CharSet.Auto)]
+    public static extern IntPtr FindWindow(string className, string windowName);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetWindowRect(IntPtr hWnd, out Rect rect);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")]
+    public static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extraInfo);
   }
 }
 '@
@@ -60,13 +63,15 @@ namespace Pc12VirtualRead {
 
 New-Item -ItemType Directory -Force -Path $captureDirectory | Out-Null
 Write-RunLog "Inicio. Laboratorio virtual fixo: $pc12Port <-> $emulatorPort."
+$env:TP02_EMULATOR_OUT = $emulatorExe
 
 try {
 Assert-VirtualPair
 if (-not (Test-Path -LiteralPath $pc12Exe)) { throw "PC12 nao encontrado: $pc12Exe" }
+if (-not (Test-Path -LiteralPath $pc12Project)) { throw "Projeto local PC12 nao encontrado: $pc12Project" }
 if (-not (Test-Path -LiteralPath $buildScript)) { throw "Build do emulador nao encontrado: $buildScript" }
 
-Get-Process -Name 'OpenLadderTP02Emulator' -ErrorAction SilentlyContinue |
+Get-Process -Name @('OpenLadderTP02Emulator', $emulatorProcessName) -ErrorAction SilentlyContinue |
     ForEach-Object { Stop-Process -Id $_.Id -Force }
 Start-Sleep -Milliseconds 500
 
@@ -86,7 +91,7 @@ if ($null -ne $pc12) {
     Start-Sleep -Milliseconds 750
 }
 
-$pc12 = Start-Process -FilePath $pc12Exe -WorkingDirectory (Split-Path -Parent $pc12Exe) -PassThru
+$pc12 = Start-Process -FilePath $pc12Exe -ArgumentList $pc12Project -WorkingDirectory (Split-Path -Parent $pc12Exe) -PassThru
 Write-RunLog "PC12 iniciado (PID $($pc12.Id))."
 for ($attempt = 0; $attempt -lt 30; $attempt++) {
     Start-Sleep -Milliseconds 500
@@ -100,19 +105,37 @@ if ($pc12.MainWindowHandle -eq [IntPtr]::Zero) {
 }
 if ($pc12.MainWindowHandle -eq [IntPtr]::Zero) { throw 'A janela principal do PC12 nao ficou disponivel.' }
 
-# PLC > Com Port (0x133) abre o seletor do PC12. O controle inicial do
-# dialogo aceita a porta digitada; COM3 e fixo para este laboratorio fechado.
-[void][Pc12VirtualRead.WindowApi]::SendMessage($pc12.MainWindowHandle, 0x0111, [IntPtr]0x133, [IntPtr]::Zero)
-Write-RunLog 'Solicitado PLC > Com Port; configurando COM3.'
+# PLC > Com Port (0x133) abre o seletor. A ordem de foco observada no PC12
+# e COM1..COM4, TP02/Modem, Link/Unlink. A sequencia abaixo seleciona COM3,
+# TP02 e Link; Enter isolado acionaria o botao Unlink padrao.
+if (-not [Pc12VirtualRead.WindowApi]::PostMessage($pc12.MainWindowHandle, 0x0111, [IntPtr]0x133, [IntPtr]::Zero)) {
+    throw 'Nao foi possivel abrir o seletor de comunicacao do PC12.'
+}
 Start-Sleep -Milliseconds 500
-$shell = New-Object -ComObject WScript.Shell
-if (-not $shell.AppActivate($pc12.Id)) { throw 'Nao foi possivel ativar o PC12 para configurar COM3.' }
-$shell.SendKeys('COM3{ENTER}')
+$dialog = [IntPtr]::Zero
+for ($attempt = 0; $attempt -lt 10 -and $dialog -eq [IntPtr]::Zero; $attempt++) {
+    $dialog = [Pc12VirtualRead.WindowApi]::FindWindow($null, 'Communication Port')
+    if ($dialog -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 200 }
+}
+if ($dialog -eq [IntPtr]::Zero) { throw 'O seletor Communication Port do PC12 nao apareceu.' }
+$rect = New-Object Pc12VirtualRead.Rect
+if (-not [Pc12VirtualRead.WindowApi]::GetWindowRect($dialog, [ref]$rect)) { throw 'Nao foi possivel localizar os controles do seletor de porta.' }
+function Invoke-Pc12DialogClick([int]$x, [int]$y) {
+    [void][Pc12VirtualRead.WindowApi]::SetCursorPos($x, $y)
+    [Pc12VirtualRead.WindowApi]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
+    [Pc12VirtualRead.WindowApi]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 150
+}
+Invoke-Pc12DialogClick ($rect.Left + 32) ($rect.Top + 109) # COM3
+Invoke-Pc12DialogClick ($rect.Left + 32) ($rect.Top + 181) # TP02
+Invoke-Pc12DialogClick ($rect.Left + 63) ($rect.Top + 220) # Link
+Write-RunLog 'COM3 configurada com protocolo TP02 e Link ativado.'
 Start-Sleep -Milliseconds 750
 
-# A primeira chamada abre/inicializa a COM no PC12. Depois da sondagem F0
-# qualificada, a segunda chamada abaixo inicia a leitura efetiva.
-[void][Pc12VirtualRead.WindowApi]::SendMessage($pc12.MainWindowHandle, 0x0111, [IntPtr]0x12E, [IntPtr]::Zero)
+# A primeira chamada inicia a comunicacao e a sondagem F0.
+if (-not [Pc12VirtualRead.WindowApi]::PostMessage($pc12.MainWindowHandle, 0x0111, [IntPtr]0x12E, [IntPtr]::Zero)) {
+    throw 'Nao foi possivel solicitar a primeira leitura PLC no PC12.'
+}
 Write-RunLog 'Solicitada primeira leitura PLC (inicializacao F0).'
 
 $handshakeDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
@@ -129,7 +152,9 @@ do {
 if (-not $f0Ready) { throw "Timeout: PC12 nao qualificou F0 em $TimeoutSeconds segundos." }
 
 # WM_COMMAND / 0x12E foi enumerado da instalacao PC12 2.1: PLC > Read.
-[void][Pc12VirtualRead.WindowApi]::SendMessage($pc12.MainWindowHandle, 0x0111, [IntPtr]0x12E, [IntPtr]::Zero)
+if (-not [Pc12VirtualRead.WindowApi]::PostMessage($pc12.MainWindowHandle, 0x0111, [IntPtr]0x12E, [IntPtr]::Zero)) {
+    throw 'Nao foi possivel solicitar a leitura PLC no PC12.'
+}
 
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 do {
@@ -158,5 +183,6 @@ finally {
         Stop-Process -Id $emulator.Id -Force -ErrorAction SilentlyContinue
         Write-RunLog "Emulador PID $($emulator.Id) encerrado."
     }
+    Remove-Item Env:TP02_EMULATOR_OUT -ErrorAction SilentlyContinue
     Write-RunLog "Log da execucao: $runLog"
 }
