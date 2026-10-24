@@ -171,17 +171,7 @@ $menu = @'
             // quando o driver ativo nao o oferece (RefreshToolsForProfile).
             tp02Tools = MenuItem("Recursos do modelo");
             ToolStripMenuItem recursos = tp02Tools;
-            recursos.DropDownItems.Add(DropItem("Validação física final...", delegate { ShowTp02PhysicalValidation(); }));
-            recursos.DropDownItems.Add(DropItem("Validar escrita sem alterar o programa...", delegate { ShowTp02Pg33NoOpProbe(); }));
-            recursos.DropDownItems.Add(new ToolStripSeparator());
-            recursos.DropDownItems.Add(DropItem("Testar link de programação (PG)", delegate { LaunchInstalledTool("OpenLadderTP02PgLab.exe", "Laboratório PG TP02"); }));
             recursos.DropDownItems.Add(DropItem("Monitor MMI (somente leitura)", delegate { ShowTp02ReadOnlyMonitor(); }));
-            recursos.DropDownItems.Add(DropItem("Capturar tráfego serial", delegate { LaunchInstalledTool("OpenLadderTP02Capture.exe", "Captura serial PC12/TP02"); }));
-            recursos.DropDownItems.Add(new ToolStripSeparator());
-            recursos.DropDownItems.Add(DropItem("Analisar projeto e tráfego serial", delegate { ShowTp02BridgeLab(); }));
-            recursos.DropDownItems.Add(DropItem("Decodificar programa do controlador", delegate { ShowDecoder(); }));
-            recursos.DropDownItems.Add(DropItem("Calibrar instruções", delegate { ShowCalibration(); }));
-            recursos.DropDownItems.Add(DropItem("Converter IL para Ladder", delegate { ShowIl(); }));
             ferramentas.DropDownItems.Add(recursos);
 
             ToolStripMenuItem ajuda = MenuItem("Ajuda");
@@ -326,13 +316,6 @@ $shell = Rep $shell '"Leitura do programa - WEG TP02"' '"Leitura do programa do 
 $shell = Rep $shell '"Leitura RBP do TP02"' '"Leitura do programa do PLC"' 'status da leitura'
 $shell = Rep $shell '"Monitor MMI - WEG TP02"' '"Monitor do PLC (somente leitura)"' 'titulo da aba do monitor'
 $shell = Rep $shell '"Monitor TP02 em modo somente leitura"' '"Monitor do PLC em modo somente leitura"' 'status do monitor'
-$shell = Rep $shell '"Conex\u00E3o - WEG TP02"' '"Conex\u00E3o com o PLC"' 'titulo do dialogo de conexao'
-$shell = Rep $shell '"Escolha o tipo de comunica\u00E7\u00E3o com o TP02"' '"Escolha o tipo de comunica\u00E7\u00E3o com o PLC"' 'cabecalho do dialogo de conexao'
-$shell = Rep $shell '"O TP02 possui caminhos diferentes. Programa\u00E7\u00E3o PG e MMI/Computer Link n\u00E3o s\u00E3o a mesma interface."' '"Este modelo oferece mais de um caminho de comunica\u00E7\u00E3o. Programa\u00E7\u00E3o (PG) e MMI/Computer Link n\u00E3o s\u00E3o a mesma interface."' 'texto do dialogo de conexao'
-$shell = Rep $shell '"Decodificador TP02"' '"Decodificador de programa"' 'titulo da aba do decodificador'
-$shell = Rep $shell '"Calibração de opcodes TP02"' '"Calibração de instruções"' 'titulo da aba de calibracao'
-$shell = Rep $shell '"IL para Ladder - TP02"' '"IL para Ladder"' 'titulo da aba IL'
-$shell = Rep $shell '"Laborat\u00F3rio de an\u00E1lise TP02"' '"Laborat\u00F3rio de an\u00E1lise de protocolo"' 'titulo da aba do laboratorio'
 
 # ---------------------------------------------------------------- codigo morto
 # Removido aqui, e nao na origem, porque a origem esta amarrada: o V128 usa
@@ -340,17 +323,67 @@ $shell = Rep $shell '"Laborat\u00F3rio de an\u00E1lise TP02"' '"Laborat\u00F3rio
 # V52 usa a declaracao de toolValue como ancora. Como o V85 e o ultimo passo,
 # nenhuma ancora posterior pode quebrar. Cada item so sai se, depois da
 # remocao, o nome nao tiver mais nenhuma referencia no shell.
+# Casa as chaves ignorando literais de texto, de caractere e comentarios, para
+# que um "{0}" dentro de string.Format nao desequilibre a contagem.
+function Find-BlockEnd([string]$text, [int]$open) {
+    $depth = 0
+    $i = $open
+    $n = $text.Length
+    while ($i -lt $n) {
+        $c = $text[$i]
+        if ($c -eq '/' -and $i + 1 -lt $n -and $text[$i + 1] -eq '/') {
+            while ($i -lt $n -and $text[$i] -ne "`n") { $i++ }
+            continue
+        }
+        if ($c -eq '/' -and $i + 1 -lt $n -and $text[$i + 1] -eq '*') {
+            $close = $text.IndexOf('*/', $i + 2)
+            if ($close -lt 0) { return -1 }
+            $i = $close + 2
+            continue
+        }
+        if ($c -eq '@' -and $i + 1 -lt $n -and $text[$i + 1] -eq '"') {
+            $i += 2
+            while ($i -lt $n) {
+                if ($text[$i] -eq '"') {
+                    if ($i + 1 -lt $n -and $text[$i + 1] -eq '"') { $i += 2; continue }
+                    break
+                }
+                $i++
+            }
+            $i++
+            continue
+        }
+        if ($c -eq '"' -or $c -eq "'") {
+            $quote = $c
+            $i++
+            while ($i -lt $n -and $text[$i] -ne $quote) {
+                if ($text[$i] -eq '\') { $i++ }
+                $i++
+            }
+            $i++
+            continue
+        }
+        if ($c -eq '{') { $depth++ }
+        elseif ($c -eq '}') {
+            $depth--
+            if ($depth -eq 0) { return $i + 1 }
+        }
+        $i++
+    }
+    return -1
+}
+
 function Remove-Method([string]$text, [string]$signature, [string]$name) {
     $s = $text.IndexOf($signature)
     if ($s -lt 0) { throw "V85: metodo morto nao encontrado ($name)." }
     $lineStart = $text.LastIndexOf("`n", $s) + 1
-    $open = $text.IndexOf('{', $s)
-    $depth = 0
-    $end = -1
-    for ($i = $open; $i -lt $text.Length; $i++) {
-        if ($text[$i] -eq '{') { $depth++ }
-        elseif ($text[$i] -eq '}') { $depth--; if ($depth -eq 0) { $end = $i + 1; break } }
+    # leva junto o comentario de documentacao que antecede o membro
+    while ($lineStart -gt 0) {
+        $prevStart = $text.LastIndexOf("`n", $lineStart - 2) + 1
+        if ($text.Substring($prevStart, $lineStart - $prevStart).TrimStart().StartsWith('///')) { $lineStart = $prevStart } else { break }
     }
+    $open = $text.IndexOf('{', $s)
+    $end = Find-BlockEnd $text $open
     if ($end -lt 0) { throw "V85: fim do metodo morto nao encontrado ($name)." }
     if ($end -lt $text.Length -and $text[$end] -eq "`n") { $end++ }
     return $text.Substring(0, $lineStart) + $text.Substring($end)
@@ -398,6 +431,34 @@ foreach ($f in @('private bool tp02HomeConnectedV128;', 'private string tp02Home
     $shell = Remove-Field $shell ([regex]::Escape($f)) $f
 }
 foreach ($dead in @('ToggleTp02HomeConnectionV128', 'ResetTp02HomeConnectionV128', 'UpdateTp02HomeButtonsV128', 'ExecuteTp02HomeCommandV126', 'TryHomeConnectV128', 'UseHomePortV128', 'QueueHomeCommandV126', 'tp02HomeConnectedV128', 'tp02HomePortV128', 'tp02HomeStateV128', 'tp02HomeModelV128', 'tp02ConnectButtonV128', 'tp02ReadButtonV128', 'tp02WriteButtonV128', 'tp02VerifyButtonV128', 'tp02StopButtonV128', 'tp02RunButtonV128', 'tp02ConnectionLabelV128')) { Assert-NoRefs $shell $dead }
+
+# Ferramentas de pesquisa da fase de testes (laboratorio PG, captura, analise,
+# decodificador, calibracao, IL->Ladder, validacao fisica e prova PG33) saem do
+# shell. Sobram o monitor MMI, a leitura e a transferencia de programa.
+$shell = Rep $shell '            if (k == "DEC") { ShowDecoder(); return; }
+            if (k == "CAL") { ShowCalibration(); return; }
+            if (k == "IL") { ShowIl(); return; }
+' '' 'restauracao de abas de pesquisa'
+$shell = Rep $shell 'Form[] forms = new Form[] { ladderForm, bridgeForm, readerForm, decoderForm, calibrationForm, ilForm, updaterForm, modbusForm };' 'Form[] forms = new Form[] { ladderForm, readerForm, updaterForm, modbusForm };' 'lista de formularios a descartar'
+$shell = Rep $shell '                ShowTp02ConnectionCenter();' '                ShowTp02ReadOnlyMonitor();' 'conexao TP02 abre o monitor'
+foreach ($m in @(
+    @('private void ShowTp02ConnectionCenter()', 'ShowTp02ConnectionCenter'),
+    @('private void LaunchTp02Tool(', 'LaunchTp02Tool'),
+    @('private void LaunchInstalledTool(', 'LaunchInstalledTool'),
+    @('private void ShowTp02BridgeLab()', 'ShowTp02BridgeLab'),
+    @('private void ShowTp02PhysicalValidation()', 'ShowTp02PhysicalValidation'),
+    @('private void ShowTp02Pg33NoOpProbe()', 'ShowTp02Pg33NoOpProbe'),
+    @('private void ShowDecoder()', 'ShowDecoder'),
+    @('private void ShowCalibration()', 'ShowCalibration'),
+    @('private void ShowIl()', 'ShowIl'),
+    @('internal sealed class TP02PhysicalValidationForm : Form', 'TP02PhysicalValidationForm'),
+    @('internal sealed class TP02Pg33NoOpProbeForm : Form', 'TP02Pg33NoOpProbeForm'))) {
+    $shell = Remove-Method $shell $m[0] $m[1]
+}
+foreach ($f in @('private TP02BridgeForm bridgeForm;', 'private TP02AutoDecoderForm decoderForm;', 'private TP02CalibrationCampaignForm calibrationForm;', 'private TP02IlToLadderForm ilForm;')) {
+    $shell = Remove-Field $shell ([regex]::Escape($f)) $f
+}
+foreach ($dead in @('ShowTp02ConnectionCenter', 'LaunchTp02Tool', 'LaunchInstalledTool', 'ShowTp02BridgeLab', 'ShowTp02PhysicalValidation', 'ShowTp02Pg33NoOpProbe', 'ShowDecoder', 'ShowCalibration', 'ShowIl', 'TP02PhysicalValidationForm', 'TP02Pg33NoOpProbeForm', 'TP02BridgeForm', 'TP02AutoDecoderForm', 'TP02CalibrationCampaignForm', 'TP02IlToLadderForm', 'bridgeForm', 'decoderForm', 'calibrationForm', 'ilForm')) { Assert-NoRefs $shell $dead }
 
 $enc = New-Object System.Text.UTF8Encoding($true)
 [IO.File]::WriteAllText($shellPath, $shell, $enc)

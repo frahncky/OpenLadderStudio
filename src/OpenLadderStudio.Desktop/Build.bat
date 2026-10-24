@@ -50,10 +50,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUpdateResumeV50
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareUpdateNotification.ps1"
 if errorlevel 1 goto :erro
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePgLinkV38.ps1"
-if errorlevel 1 goto :erro
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PreparePgLinkV39.ps1"
-if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02ProgramTransferV90.ps1"
 if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02Pg33ProbeV111.ps1"
@@ -136,13 +132,7 @@ if errorlevel 1 goto :erro
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.LadderProgram /out:"OpenLadderEditor.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "LadderEditor.build.cs"
 if errorlevel 1 goto :erro
 
-"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02PgLinkV39Program /out:"OpenLadderTP02PgLink.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "DockOrder.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "PLCConnectionSettings.cs" "TP02PgFrameParserV33.cs" "TP02PgLinkV39.build.cs"
-if errorlevel 1 goto :erro
-
-"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02SerialCaptureProgram /out:"OpenLadderTP02Capture.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "DockOrder.cs" "TP02SerialCapture.cs"
-if errorlevel 1 goto :erro
-
-"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.UniversalStudioProgram /out:"OpenLadderStudio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "..\..\src\OpenLadderStudio.Core\Tp02TargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02LadderTargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02Pc12StaticReadFrames.cs" "..\..\src\OpenLadderStudio.Core\Tp02ComputerLinkProgramCodec.cs" "..\..\src\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "TP02PgMemoryForm.cs" "UniversalStudioShell.build.cs" "DockOrder.cs" "StudioUi.build.cs" "UniversalLadderAdapter.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "Tp02DryRunPreview.cs" "TP02ProgramTransferForm.cs" "TP02BridgeLab.cs" "TP02Control.cs" "TP02ControlV31.build.cs" "TP02PgCommandCatalog.cs" "TP02PgFrameParserV33.cs" "TP02PgLinkV34.cs" "TP02PgLinkV35.cs" "TP02PgLinkV37.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "TP02CalibrationCampaign.cs" "TP02AutoDecoder.cs" "TP02IlToLadder.cs" "PC12Updater.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "PLCDeviceManagerV16.cs" "PLCConnectionSettings.cs" "PLCMemoryMapV15.cs" "PLCMemoryMapManagerV15.build.cs" "ModbusCore.cs" "ModbusBulkReader.cs" "ModbusTrendHistory.cs" "ModbusMonitorV18.build.cs" "LadderSimulation.cs" "ProcessSimulation.cs" "SimulatedPlants.cs" "LadderSimulator.cs"
+"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.UniversalStudioProgram /out:"OpenLadderStudio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "..\..\src\OpenLadderStudio.Core\Tp02TargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02LadderTargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02Pc12StaticReadFrames.cs" "..\..\src\OpenLadderStudio.Core\Tp02ComputerLinkProgramCodec.cs" "..\..\src\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "TP02PgMemoryForm.cs" "UniversalStudioShell.build.cs" "DockOrder.cs" "StudioUi.build.cs" "UniversalLadderAdapter.cs" "TP02BridgeLab.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "Tp02DryRunPreview.cs" "TP02ProgramTransferForm.cs" "TP02Control.cs" "TP02ControlV31.build.cs" "TP02PgCommandCatalog.cs" "TP02PgFrameParserV33.cs" "TP02PgLinkV34.cs" "TP02PgLinkV35.cs" "TP02PgLinkV37.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "PC12Updater.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "PLCDeviceManagerV16.cs" "PLCConnectionSettings.cs" "PLCMemoryMapV15.cs" "PLCMemoryMapManagerV15.build.cs" "ModbusCore.cs" "ModbusBulkReader.cs" "ModbusTrendHistory.cs" "ModbusMonitorV18.build.cs" "LadderSimulation.cs" "ProcessSimulation.cs" "SimulatedPlants.cs" "LadderSimulator.cs"
 if errorlevel 1 goto :erro
 
 del /q "LadderEditor.build.cs" >nul 2>&1
@@ -151,8 +141,6 @@ del /q "PLCDeviceManagerV16.build.cs" >nul 2>&1
 del /q "PLCPlatform.build.cs" >nul 2>&1
 del /q "UniversalStudioShell.build.cs" >nul 2>&1
 del /q "TP02ControlV31.build.cs" >nul 2>&1
-del /q "TP02PgLinkV38.build.cs" >nul 2>&1
-del /q "TP02PgLinkV39.build.cs" >nul 2>&1
 del /q "StudioUi.build.cs" >nul 2>&1
 del /q "PLCMemoryMapManagerV15.build.cs" >nul 2>&1
 del /q "ModbusMonitorV15.build.cs" >nul 2>&1
@@ -167,8 +155,6 @@ del /q "PLCDeviceManagerV16.build.cs" >nul 2>&1
 del /q "PLCPlatform.build.cs" >nul 2>&1
 del /q "UniversalStudioShell.build.cs" >nul 2>&1
 del /q "TP02ControlV31.build.cs" >nul 2>&1
-del /q "TP02PgLinkV38.build.cs" >nul 2>&1
-del /q "TP02PgLinkV39.build.cs" >nul 2>&1
 del /q "StudioUi.build.cs" >nul 2>&1
 del /q "PLCMemoryMapManagerV15.build.cs" >nul 2>&1
 del /q "ModbusMonitorV15.build.cs" >nul 2>&1
