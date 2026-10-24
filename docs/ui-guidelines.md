@@ -64,9 +64,17 @@ superior, navegação e abas.
 
 A barra superior deve conter somente ações frequentes. A ordem recomendada é:
 
-`Novo | Abrir | Salvar || Desfazer | Rung | Validar || Monitor`
+`Novo | Abrir | Salvar || Desfazer | Refazer || Compilar | Simulador || Conectar | Ler | Transferir | Monitorar || zoom`
+
+Os quatro últimos botões de PLC formam o fluxo genérico de qualquer controlador:
+conectar, ler o programa, transferir o programa, monitorar. "Ler" usa a seta para
+baixo e "Transferir" a seta para cima (`StudioIcon.Download` e `StudioIcon.Upload`);
+os dois nunca devem compartilhar o mesmo desenho. Diagnóstico e demais utilitários
+ficam em **Ferramentas**, não na barra.
 
 Regras:
+
+- cada botão tem dica com a ação por extenso e o atalho, quando existe;
 
 - ícone acima e rótulo abaixo;
 - ícones com cor semântica;
@@ -74,6 +82,32 @@ Regras:
 - hover mais evidente que o estado normal;
 - foco de teclado sempre visível;
 - rótulos nunca devem ficar cortados na altura compacta.
+
+## Menus
+
+Ordem fixa: **Arquivo, Editar, Exibir, Projeto, PLC, Ferramentas, Ajuda**.
+
+- Arquivo e Editar mostram o atalho de teclado ao lado do item (`ShortcutKeyDisplayString`;
+  o tratamento real das teclas continua em `ProcessCmdKey`, para não disparar duas vezes).
+- Exibir reúne painéis, zoom e tema. Não repetir os mesmos itens em outro menu.
+- Projeto: programa, compilar/validar, simular e **Modelo do PLC**.
+- PLC: modelo, Conectar, Ler do PLC, Transferir para o PLC, Monitorar, Mapa de memória.
+- Ferramentas: utilitários genéricos (compatibilidade, diagnóstico) e o submenu
+  **Recursos do modelo**.
+- Ajuda: atalhos, atualizações, sobre.
+
+## Interface genérica e drivers
+
+O OpenLadder atende vários controladores, então menus, barra, rótulos e ícones usam termos
+neutros: *Conectar*, *Ler do PLC*, *Transferir para o PLC*, *Monitorar*. Nome de modelo
+(TP02, PC12) não aparece em item de menu nem em botão de uso comum.
+
+Tudo que pertence a um modelo fica em **Ferramentas > Recursos do modelo (modelo ativo)**, que
+só aparece quando o driver do controlador ativo o oferece. As telas de um fabricante são a
+implementação de um driver: entram no fluxo genérico por um ponto único
+(`ShowProgramTransfer`, `ShowCommunication`, `ShowMonitor`, `ShowReader`), que despacha pelo
+driver do perfil. Um novo driver acrescenta uma tela e um ramo nesse despacho, sem criar item
+de menu próprio.
 
 ## Navegação lateral
 
