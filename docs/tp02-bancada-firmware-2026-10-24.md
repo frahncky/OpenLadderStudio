@@ -255,3 +255,62 @@ A3 (F0 em RUN): o programa roda de fato; só com saídas desconectadas e
   com0com). O emulador grava o 33 sem limpar as palavras seguintes e lê o 34
   por palavra a partir de qualquer START. Essas são as hipóteses que C1 e B2
   vão confirmar ou derrubar.
+
+## Programas, ensaio offline e analisador de captura (re-emulacao, 2026-10-24)
+
+### Programas PB, PC, PD e PE
+
+Ficam em `docs/data/tp02-bancada-2026-10-26/`, em `.pladder` e com as palavras
+esperadas em `.tp02.hex`. O `README.md` traz a listagem para digitar no PC12,
+o END, o 38 previsto ("total" e "limitado") e o checksum de cada página 34.
+O formato nativo `.PLC` do PC12 não foi reconstruído e por isso não foi gerado.
+Duas diferenças em relação ao P0.3: o PE tem 82 passos e usa `F-23 SET C0040`
+de 2 palavras nos slots 79/80. Com isso o PC12 lê `34 @004F`; o F-13w no passo
+77 levaria a `004D`, fora da allowlist. O 38 do PE vale `00 02 00 A2 5B` (total)
+ou `00 02 00 9E 5F` (limitado).
+
+### Ensaio offline (sem COM)
+
+```text
+cd src\OpenLadderStudio.Desktop
+RunTp02BancadaEnsaio.bat [pasta-de-saída]
+```
+
+Para cada fase A1, A2 (PB/PC/PD/PE, 38 "página" e "total16"), A3 (F0 em RUN
+bit6/stop/silent/nak), B1 (PC e PD) e B2 (PE, `004F` nos modos
+word/align50/align00/nak/silent), o ensaio passa cada quadro pela allowlist
+real do validador (`TP02PhysicalValidationSafety.IsAllowed`). O que ela libera
+é respondido em processo pelo emulador. Em A3, o ensaio tenta ainda 38, 34,
+HELLO, 33, `03`, `0F 00 F0` e `02` com o PLC em RUN: o validador barra os sete
+e só HELLO e F0 saem. Em B2, `34 @004E` também é barrado. Ao final o
+analisador roda sobre os logs. Isto **não** substitui o ensaio por COM virtual
+(ver pendências).
+
+### Analisador de captura
+
+```text
+powershell -ExecutionPolicy Bypass -File AnalyzeTp02BancadaFirmware.ps1 -Path <log ou pasta> -Programa PC -Out relatorio.txt
+powershell -ExecutionPolicy Bypass -File AnalyzeTp02BancadaFirmware.ps1 -SelfTest [-EnsaioDir <pasta do ensaio>]
+```
+
+Lê os logs do validador físico (`session.log`), da captura completa ou em ponte
+(`session.log` e `protocol-report.txt`), da PG Lab, do emulador TP02 e os
+arquivos chave=valor da sessão física (`*_TX=` / `*_RX=`). Cada resposta é
+classificada como `ESPERADA`, `ALTERNATIVA PREVISTA` (com a alternativa) ou
+`INESPERADA`, e o relatório sai agrupado por pendência:
+
+```text
+A1         HELLO 80 01 09 75 e F0 00 02 10 22 CB
+Pend. 3    38 = 2*(N-1)                      alternativa: limitado à página (00 9E)
+Pend. 5    F0 em RUN = 40 02 10 22 8B         alternativas: 00 02 10 22 CB, silêncio, NAK
+Pend. 6/7  páginas 34 iguais ao modelo        alternativa: resíduo depois do END; BRAW errado = inesperada
+Pend. 4    34 @004F por palavra               alternativas: arredonda p/ 0050 ou 0000, NAK, silêncio
+Pend. 1/2  C1 ACK 00 00 FF; C2 silêncio/NAK   alternativa C2: ACK (firmware não valida a soma)
+Segurança  qualquer quadro além de F0 depois de HELLO RUN = INESPERADA (violação)
+```
+
+`-Programa` diz qual programa estava carregado (PA..PE); sem ele, o
+analisador tenta o nome do arquivo. Sem programa, o B2 usa as páginas `@0000`
+e `@0050` do mesmo log como referência. Um TX sem linha de RX no log aparece
+como "RX bruto ausente", que é diferente de silêncio. A saída é 3 quando há
+alguma `INESPERADA`.

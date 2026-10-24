@@ -200,7 +200,18 @@ CONECTAR
 --hello=80            estado STOP
 --hello=c0            estado RUN
 --fast                remove atrasos aproximados
+--seed-file=ARQ       carrega o programa de um *.tp02.hex (HHLLEE por linha)
+--f0-run=MODO         F0 com --hello=c0: stop (padrão histórico, 00 02 10 22 CB),
+                      bit6 (40 02 10 22 8B), silent ou nak             SINTÉTICO
+--pg34-unaligned=MODO 34 com START fora de múltiplo de 0x50: word (padrão),
+                      align50, align00, nak ou silent                  SINTÉTICO
 ```
+
+As opções `--f0-run` e `--pg34-unaligned` modelam as alternativas das fases
+A3 e B2 de `docs/tp02-bancada-firmware-2026-10-24.md`. São hipóteses para
+ensaiar ferramentas, não respostas do firmware. O NAK sintético é
+`80 01 10 6E`: o código `10` é um marcador, porque o código real é desconhecido.
+O padrão de cada opção preserva o comportamento anterior do emulador.
 
 No cenário v1.56, `--no-auto-ack` é aplicado por segurança mesmo que não seja informado explicitamente.
 
