@@ -32,7 +32,7 @@ $text = Replace-Required $text `
     'margem para o cabecalho'
 
 # ---------------------------------------------------------------------------
-# 2. Os rotulos C1..C8 saiam junto com o conteudo ao rolar a pagina, entao em
+# 2. Os rotulos de coluna saiam junto com o conteudo ao rolar a pagina, entao em
 #    programa grande o usuario perdia a referencia de coluna. O bloco sai daqui
 #    e volta no fim, desenhado numa faixa fixa.
 # ---------------------------------------------------------------------------
@@ -42,7 +42,7 @@ $text = Replace-Required $text @'
             {
                 for (int c = 0; c < LadderRung.ColumnCount; c++)
                 {
-                    string label = (c + 1).ToString("00");
+                    string label = "C" + (c + 1).ToString();
                     SizeF ls = g.MeasureString(label, outputFont);
                     g.DrawString(label, outputFont, outputText,
                         LeftRail + c * cellWidth + (cellWidth - ls.Width) / 2f, TopMargin - 27);
@@ -126,7 +126,7 @@ $text = Replace-Required $text @'
             g.SmoothingMode = SmoothingMode.None;
 
             // Larga o bastante para cobrir a faixa inteira em qualquer rolagem:
-            // parar no ultimo trilho deixava um vao a direita do C8.
+            // parar no ultimo trilho deixava um vao a direita da ultima coluna.
             int width = rightRail + ClientSize.Width + 80;
             using (Brush band = new SolidBrush(OpenLadderPalette.Chrome))
                 g.FillRectangle(band, -width, -HeaderHeight, width * 2, HeaderHeight * 2);
@@ -151,7 +151,7 @@ $text = Replace-Required $text @'
                             g.DrawLine(tick, left, 5, left, HeaderHeight - 5);
                     }
 
-                    string label = "C" + (c + 1).ToString();
+                    string label = (c + 1).ToString("00");
                     SizeF size = g.MeasureString(label, font);
                     using (Brush ink = new SolidBrush(active ? OpenLadderPalette.Accent : OpenLadderPalette.Muted))
                         g.DrawString(label, font, ink, left + (cellWidth - size.Width) / 2f, 3f);
