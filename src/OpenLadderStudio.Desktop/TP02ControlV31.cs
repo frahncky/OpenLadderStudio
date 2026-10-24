@@ -70,6 +70,37 @@ namespace ModernPC12
         private volatile bool probeCancel;
         private volatile bool linkConfirmed;
 
+        // Acender diagrama: varredura cíclica somente de leitura (MCR) dos bits que o
+        // programa do editor usa. A porta serial é compartilhada com os comandos
+        // manuais por serialGate, um quadro de cada vez.
+        private const int DiagramIntervalMs = 500;
+        private readonly object serialGate = new object();
+        private CheckBox diagramCheck;
+        private Thread diagramThread;
+        private volatile bool diagramStop;
+        private volatile bool manualPending;
+        private volatile string[] diagramAddresses = new string[0];
+        private bool diagramUpdating;
+
+        /// <summary>Endereços de bit (X, Y, C, SC) que o programa do editor usa. Null ou vazio impede a varredura.</summary>
+        internal Func<IList<string>> DiagramAddressProvider;
+
+        /// <summary>Bits lidos a cada varredura (endereço normalizado, ex.: X0001). Null: varredura parada, limpar destaque.</summary>
+        internal event Action<IDictionary<string, bool>> DiagramBitsRead;
+
+        private sealed class DiagramLink
+        {
+            public string PortName;
+            public int Baud;
+            public int DataBits;
+            public Parity Parity;
+            public StopBits StopBits;
+            public int Station;
+            public int ResponseCode;
+            public bool Dtr;
+            public bool Rts;
+        }
+
         public TP02ControlV31Form()
         {
             Text = "OpenLadder Studio - Controle TP02";
@@ -83,6 +114,8 @@ namespace ModernPC12
             BuildUi();
             LoadDefaults();
             FormClosing += delegate { probeCancel = true; };
+            FormClosing += delegate { StopDiagramScan(null); };
+            HandleDestroyed += delegate { StopDiagramScan(null); };
         }
 
         private void BuildUi()
@@ -238,6 +271,19 @@ namespace ModernPC12
             clear.Click += delegate { logBox.Clear(); };
             operations.Controls.Add(clear);
 
+            diagramCheck = CheckAt("Acender diagrama", 160, 194, false);
+            diagramCheck.ForeColor = TextPrimary;
+            diagramCheck.Font = new Font("Segoe UI Semibold", 8.8f, FontStyle.Bold);
+            diagramCheck.CheckedChanged += delegate { OnDiagramToggled(); };
+            operations.Controls.Add(diagramCheck);
+            Label diagramNote = LabelAt("Destaque no editor calculado a partir dos bits X, Y, C e SC lidos do PLC (somente leitura, a cada 0,5 s). Pressupõe que o programa no editor é o mesmo gravado no PLC.", 8.0f, FontStyle.Regular, TextSecondary, 310, 190);
+            diagramNote.AutoSize = false;
+            diagramNote.Size = new Size(910, 34);
+            diagramNote.AutoEllipsis = true;
+            operations.Controls.Add(diagramNote);
+            // A largura acompanha o painel: a nota quebra em duas linhas e, no limite, termina em reticências.
+            operations.Resize += delegate { diagramNote.Width = Math.Max(160, operations.ClientSize.Width - diagramNote.Left - 18); };
+
             logBox = new TextBox();
             logBox.Dock = DockStyle.Fill;
             logBox.Multiline = true;
@@ -317,6 +363,11 @@ namespace ModernPC12
             {
                 probeCancel = true;
                 Log("AUTO", "Cancelamento solicitado.");
+                return;
+            }
+            if (DiagramRunning())
+            {
+                Warn("Desligue \"Acender diagrama\" antes de iniciar a auto-detecção.");
                 return;
             }
             if (portCombo.SelectedItem == null)
@@ -652,6 +703,225 @@ namespace ModernPC12
             }
         }
 
+        private bool DiagramRunning()
+        {
+            return diagramThread != null && diagramThread.IsAlive;
+        }
+
+        private void OnDiagramToggled()
+        {
+            if (diagramUpdating) return;
+            if (diagramCheck.Checked) StartDiagramScan();
+            else StopDiagramScan("Acender diagrama desligado.");
+        }
+
+        private void SetDiagramChecked(bool value)
+        {
+            if (diagramCheck == null || diagramCheck.IsDisposed) return;
+            diagramUpdating = true;
+            try { diagramCheck.Checked = value; }
+            finally { diagramUpdating = false; }
+        }
+
+        private void StartDiagramScan()
+        {
+            if (DiagramRunning()) return;
+            if (ProbeBusy() || !linkConfirmed || portCombo.SelectedItem == null)
+            {
+                SetDiagramChecked(false);
+                if (!(probeThread != null && probeThread.IsAlive))
+                    Warn("Primeiro obtenha uma resposta PSR válida com TESTAR CONFIGURAÇÃO ou AUTO-DETECTAR TP02. O diagrama só acende com o enlace confirmado.");
+                return;
+            }
+
+            string[] addresses = CollectDiagramAddresses();
+            if (addresses == null || addresses.Length == 0)
+            {
+                SetDiagramChecked(false);
+                Warn("O programa do editor não usa contatos X, Y, C ou SC que possam ser lidos do PLC.");
+                return;
+            }
+
+            DiagramLink link = new DiagramLink();
+            link.PortName = portCombo.SelectedItem.ToString();
+            link.Baud = ParseSelectedInt(baudCombo, 19200);
+            link.DataBits = ParseSelectedInt(dataBitsCombo, 7);
+            link.Parity = ParseParity();
+            link.StopBits = ParseSelectedInt(stopBitsCombo, 1) == 2 ? StopBits.Two : StopBits.One;
+            link.Station = (int)stationBox.Value;
+            link.ResponseCode = (int)responseTimeBox.Value;
+            link.Dtr = dtrCheck.Checked;
+            link.Rts = rtsCheck.Checked;
+
+            diagramAddresses = addresses;
+            diagramStop = false;
+            Log("DIAGRAMA", "Varredura de leitura iniciada: " + addresses.Length.ToString(CultureInfo.InvariantCulture)
+                + " bit(s) por MCR a cada " + DiagramIntervalMs.ToString(CultureInfo.InvariantCulture) + " ms. Nenhuma escrita é enviada.");
+            diagramThread = new Thread(new ThreadStart(delegate { DiagramWorker(link); }));
+            diagramThread.IsBackground = true;
+            diagramThread.Start();
+        }
+
+        /// <summary>Para a varredura e limpa o destaque. Reason null: parada silenciosa (fechamento da tela).</summary>
+        /// <summary>Chamado quando a aba do monitor é fechada (o form só fica oculto).</summary>
+        internal void StopDiagram()
+        {
+            StopDiagramScan("Aba do monitor fechada.");
+        }
+
+        private void StopDiagramScan(string reason)
+        {
+            bool wasRunning = DiagramRunning() || (diagramCheck != null && diagramCheck.Checked);
+            diagramStop = true;
+            SetDiagramChecked(false);
+            if (!wasRunning) return;
+            if (reason != null && logBox != null && !logBox.IsDisposed) Log("DIAGRAMA", reason + " Destaque do editor limpo.");
+            RaiseDiagramBits(null);
+        }
+
+        private string[] CollectDiagramAddresses()
+        {
+            Func<IList<string>> provider = DiagramAddressProvider;
+            if (provider == null) return null;
+            IList<string> source;
+            try { source = provider(); }
+            catch { return null; }
+            if (source == null) return null;
+            List<string> result = new List<string>();
+            foreach (string a in source)
+            {
+                string normalized = NormalizeBitAddress(a, true);
+                if (normalized != null && !result.Contains(normalized)) result.Add(normalized);
+            }
+            return result.ToArray();
+        }
+
+        private void RaiseDiagramBits(IDictionary<string, bool> bits)
+        {
+            Action<IDictionary<string, bool>> handler = DiagramBitsRead;
+            if (handler == null) return;
+            try { handler(bits); }
+            catch { }
+        }
+
+        private void DiagramWorker(DiagramLink link)
+        {
+            string failure = null;
+            while (!diagramStop && linkConfirmed)
+            {
+                DateTime started = DateTime.UtcNow;
+                string[] addresses = diagramAddresses;
+                Dictionary<string, bool> bits = new Dictionary<string, bool>();
+                for (int i = 0; i < addresses.Length && failure == null; i++)
+                {
+                    if (diagramStop || !linkConfirmed) break;
+                    while (manualPending && !diagramStop) Thread.Sleep(20);
+                    bool state = false;
+                    lock (serialGate)
+                    {
+                        if (diagramStop || !linkConfirmed) break;
+                        failure = ReadBitOnce(link, addresses[i], out state);
+                    }
+                    if (failure == null) bits[addresses[i]] = state;
+                }
+                if (failure != null || diagramStop || !linkConfirmed) break;
+
+                PostDiagram(delegate { OnDiagramBits(bits); });
+
+                while (!diagramStop && (DateTime.UtcNow - started).TotalMilliseconds < DiagramIntervalMs) Thread.Sleep(50);
+            }
+
+            if (diagramStop) return;
+            string reason = failure != null ? "Varredura parada por erro de comunicação: " + failure : "Varredura parada: enlace com o PLC não confirmado.";
+            PostDiagram(delegate { OnDiagramFailed(reason); });
+        }
+
+        private void PostDiagram(MethodInvoker action)
+        {
+            try { if (!IsDisposed && IsHandleCreated) BeginInvoke(action); }
+            catch { }
+        }
+
+        private void OnDiagramBits(Dictionary<string, bool> bits)
+        {
+            if (diagramStop || IsDisposed) return;
+            RaiseDiagramBits(bits);
+            // O programa do editor pode mudar durante a varredura: a lista é refeita a cada ciclo.
+            string[] addresses = CollectDiagramAddresses();
+            if (addresses == null || addresses.Length == 0) { StopDiagramScan("O programa do editor deixou de ter contatos legíveis."); return; }
+            diagramAddresses = addresses;
+        }
+
+        private void OnDiagramFailed(string reason)
+        {
+            if (IsDisposed) return;
+            SetState("●  FALHA DE COMUNICAÇÃO", Danger);
+            StopDiagramScan(reason);
+        }
+
+        /// <summary>
+        /// Um quadro MCR (somente leitura) na thread da varredura. O comando é fixo:
+        /// esta rotina não monta nenhum outro. Devolve null em sucesso ou o motivo da falha.
+        /// </summary>
+        private static string ReadBitOnce(DiagramLink link, string address, out bool state)
+        {
+            state = false;
+            const string command = "MCR";
+            string frame = BuildFrameFor(link.Station, link.ResponseCode, command, address);
+            SerialPort port = null;
+            try
+            {
+                port = new SerialPort(link.PortName);
+                port.BaudRate = link.Baud;
+                port.DataBits = link.DataBits;
+                port.Parity = link.Parity;
+                port.StopBits = link.StopBits;
+                port.Encoding = Encoding.ASCII;
+                port.ReadTimeout = 2500;
+                port.WriteTimeout = 1500;
+                port.DtrEnable = link.Dtr;
+                port.RtsEnable = link.Rts;
+                port.Handshake = Handshake.None;
+                port.Open();
+                port.DiscardInBuffer();
+                port.DiscardOutBuffer();
+                port.Write(frame);
+
+                bool complete;
+                string response = ReadUntilCarriageReturn(port, 2500, out complete);
+                if (!complete) return response.Length == 0 ? "timeout em " + address + " (zero bytes)." : "resposta incompleta em " + address + ".";
+                string detail;
+                if (!DecodeResponse(command, response, out detail)) return address + ": " + detail;
+                if (!TryParseMcrState(response, out state)) return address + ": estado do bit não reconhecido.";
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+            finally
+            {
+                if (port != null)
+                {
+                    try { if (port.IsOpen) port.Close(); } catch { }
+                    port.Dispose();
+                }
+            }
+        }
+
+        private static bool TryParseMcrState(string response, out bool state)
+        {
+            state = false;
+            string clean = StripPrefixAndTerminator(response);
+            int marker = clean.IndexOf('#');
+            int cmd = marker < 0 ? -1 : clean.IndexOf("MCR", marker, StringComparison.OrdinalIgnoreCase);
+            if (cmd < 0 || cmd + 3 >= clean.Length - 2) return false;
+            char value = clean[cmd + 3];
+            if (value != '0' && value != '1') return false;
+            state = value == '1';
+            return true;
+        }
+
         private bool RequireConfirmedLink()
         {
             if (ProbeBusy()) return false;
@@ -661,6 +931,25 @@ namespace ModernPC12
         }
 
         private bool ExecuteCommand(string command, string payload, out string response)
+        {
+            response = string.Empty;
+            // Comando manual espera o quadro da varredura do diagrama em curso; nunca se sobrepõe a ele.
+            // manualPending pausa a varredura antes do próximo quadro; a UI espera no máximo 300 ms.
+            manualPending = true;
+            try
+            {
+                if (!System.Threading.Monitor.TryEnter(serialGate, 300))
+                {
+                    Log("AVISO", "Varredura do diagrama em andamento: o quadro atual ainda não terminou. Tente novamente em instantes.");
+                    return false;
+                }
+                try { return ExecuteCommandExclusive(command, payload, out response); }
+                finally { System.Threading.Monitor.Exit(serialGate); }
+            }
+            finally { manualPending = false; }
+        }
+
+        private bool ExecuteCommandExclusive(string command, string payload, out string response)
         {
             response = string.Empty;
             if (portCombo.SelectedItem == null) { Warn("Nenhuma porta COM selecionada."); return false; }

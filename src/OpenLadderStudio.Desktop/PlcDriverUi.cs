@@ -31,6 +31,16 @@ namespace ModernPC12
         /// <summary>Abre ou reativa uma aba de documento. A chave identifica a aba e escolhe o icone.</summary>
         void OpenDocument(Form document, string title, string key);
         void SetStatus(string text);
+        /// <summary>
+        /// Destaque por linha no diagrama do editor (true = energizada). Null limpa.
+        /// Serve a qualquer driver que calcule a energizacao a partir de bits lidos.
+        /// </summary>
+        void ShowRungPower(bool[] power);
+        /// <summary>
+        /// Aba de documento fechada pelo usuario. Fechar a aba so oculta o form, entao
+        /// FormClosing nao dispara: o driver usa este aviso para parar varreduras.
+        /// </summary>
+        event Action<Form> DocumentClosed;
     }
 
     /// <summary>Item de "Ferramentas &gt; Recursos do modelo".</summary>
@@ -112,5 +122,22 @@ namespace ModernPC12
         public LadderEditorForm Editor { get { return editor(); } }
         public void OpenDocument(Form document, string title, string key) { openDocument(document, title, key); }
         public void SetStatus(string text) { setStatus(text); }
+
+        /// <summary>Destino do destaque no editor; o shell o liga (PrepareMonitorPowerV88). Sem destino, nada acontece.</summary>
+        public Action<bool[]> RungPowerSink;
+
+        public void ShowRungPower(bool[] power)
+        {
+            Action<bool[]> sink = RungPowerSink;
+            if (sink != null) sink(power);
+        }
+
+        public event Action<Form> DocumentClosed;
+
+        public void RaiseDocumentClosed(Form document)
+        {
+            Action<Form> handler = DocumentClosed;
+            if (handler != null) handler(document);
+        }
     }
 }

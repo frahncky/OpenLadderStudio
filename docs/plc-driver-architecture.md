@@ -119,6 +119,29 @@ em `PlcDriverUiRegistry`:
 Implementações: `Tp02DriverUi.cs` (WEG TP02) e `ModbusDriverUi.cs` (Modbus RTU/TCP). Um driver
 novo cria a sua classe e a registra no construtor estático de `PlcDriverUiRegistry`.
 
+### Diagrama aceso a partir do PLC real
+
+`IStudioHost.ShowRungPower(bool[])` acende as linhas do editor (null limpa). O shell liga esse
+destino ao mesmo repasse da simulação (`PrepareMonitorPowerV88.ps1`, depois do V87). O driver lê
+os bits e calcula a energização com `LadderPlcPowerEvaluator` (`LadderSimulation.cs`), que usa a
+mesma regra da varredura (`LadderPowerRule`) em lógica de três valores: uma linha cujo resultado
+depende de um bit não lido não acende. `ReadableAddresses` lista os contatos X/Y/C/SC antes do
+END (no máximo 64).
+
+No TP02, a opção **Acender diagrama** do monitor vem desligada. Só liga com o enlace confirmado
+por PSR. A varredura roda fora da thread de UI, a cada 500 ms ou mais, e envia apenas MCR. Cada
+quadro disputa `serialGate` com os comandos manuais, então os dois nunca se sobrepõem. A varredura
+para no primeiro erro, quando o enlace cai ou quando a tela fecha, e então limpa o destaque. A tela
+avisa que o destaque pressupõe que o programa do editor é o mesmo gravado no PLC.
+
+Fechar a aba só oculta o form, então `FormClosing` não dispara. Por isso o shell avisa os drivers
+por `IStudioHost.DocumentClosed`, e o monitor do TP02 para a varredura ao receber esse aviso. Um
+comando manual pausa a varredura antes do próximo quadro e espera no máximo 300 ms pela porta.
+
+A simulação tem prioridade sobre o destaque. Enquanto ela publica o resultado do programa do
+editor, o destaque vindo do driver é descartado e a barra de status avisa que o destaque do PLC
+está suspenso. Fechar a aba da simulação devolve o diagrama ao driver.
+
 ## Próximas etapas
 
 1. criar mapeamento de memória configurável por dispositivo;

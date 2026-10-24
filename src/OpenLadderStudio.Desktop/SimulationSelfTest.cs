@@ -29,6 +29,7 @@ namespace ModernPC12
             Console.WriteLine();
 
             TestAddressParsing();
+            TestPlcPowerEvaluator();
             TestCatalog();
             TestConveyor();
             TestSilo();
@@ -161,6 +162,122 @@ namespace ModernPC12
             Check("prefixo desconhecido é recusado", !SimAddress.TryParseBit("Z0001", out reference));
             Check("D2048 é um registrador válido", SimAddress.TryParseWord("D2048", out word) && word == 2048);
             Check("D2049 é recusado", !SimAddress.TryParseWord("D2049", out word));
+        }
+
+        private static UniversalLadderElement Element(UniversalElementKind kind, string address, int column)
+        {
+            UniversalLadderElement e = new UniversalLadderElement();
+            e.Kind = kind;
+            e.Address = address;
+            e.Column = column;
+            return e;
+        }
+
+        /// <summary>
+        /// Destaque do diagrama a partir de bits lidos do PLC real: mesma regra da
+        /// varredura e nenhuma linha energizada por chute quando falta um bit.
+        /// </summary>
+        private static void TestPlcPowerEvaluator()
+        {
+            Section("Destaque a partir de bits lidos do PLC");
+            UniversalLadderProgram program = new UniversalLadderProgram();
+
+            // 0: X0001 NA em série com C0001 NF -> Y0001
+            UniversalLadderRung r0 = new UniversalLadderRung();
+            r0.Series.Add(Element(UniversalElementKind.ContactNO, "X0001", 0));
+            r0.Series.Add(Element(UniversalElementKind.ContactNC, "C0001", 1));
+            r0.Series.Add(Element(UniversalElementKind.Coil, "Y0001", 7));
+            program.Rungs.Add(r0);
+
+            // 1: X0002 OU (paralelo) Y0001 -> C0002 (selo)
+            UniversalLadderRung r1 = new UniversalLadderRung();
+            r1.Series.Add(Element(UniversalElementKind.ContactNO, "X0002", 0));
+            r1.Parallel.Add(Element(UniversalElementKind.ContactNO, "Y0001", 0));
+            r1.Series.Add(Element(UniversalElementKind.Coil, "C0002", 7));
+            program.Rungs.Add(r1);
+
+            // 2: contato de bloco V0001 (não lido pelo monitor) -> Y0002
+            UniversalLadderRung r2 = new UniversalLadderRung();
+            r2.Series.Add(Element(UniversalElementKind.ContactNO, "V0001", 0));
+            r2.Series.Add(Element(UniversalElementKind.Coil, "Y0002", 7));
+            program.Rungs.Add(r2);
+
+            // 3: linha vazia
+            program.Rungs.Add(new UniversalLadderRung());
+
+            // 4: SC001 -> Y0003
+            UniversalLadderRung r4 = new UniversalLadderRung();
+            r4.Series.Add(Element(UniversalElementKind.ContactNO, "SC001", 0));
+            r4.Series.Add(Element(UniversalElementKind.Coil, "Y0003", 7));
+            program.Rungs.Add(r4);
+
+            // 5: END; 6: depois do END
+            UniversalLadderRung r5 = new UniversalLadderRung();
+            r5.Series.Add(Element(UniversalElementKind.End, string.Empty, 7));
+            program.Rungs.Add(r5);
+            UniversalLadderRung r6 = new UniversalLadderRung();
+            r6.Series.Add(Element(UniversalElementKind.ContactNO, "X0009", 0));
+            r6.Series.Add(Element(UniversalElementKind.Coil, "Y0009", 7));
+            program.Rungs.Add(r6);
+
+            List<string> addresses = LadderPlcPowerEvaluator.ReadableAddresses(program);
+            Check("lê só X/Y/C/SC dos contatos antes do END (X0001, C0001, X0002, Y0001, SC001)",
+                addresses.Count == 5 && addresses[0] == "X0001" && addresses[1] == "C0001" && addresses[2] == "X0002" &&
+                addresses[3] == "Y0001" && addresses[4] == "SC001");
+
+            Dictionary<string, bool> bits = new Dictionary<string, bool>();
+            bits["X0001"] = true; bits["C0001"] = false; bits["X0002"] = false; bits["Y0001"] = true; bits["SC001"] = true;
+            bits["X0009"] = true;
+            bool[] p = LadderPlcPowerEvaluator.Evaluate(program, bits);
+            Check("uma posição por linha do programa", p != null && p.Length == 7);
+            Check("série NA + NF conduz com X0001=1 e C0001=0", p[0]);
+            Check("paralelo conduz pelo ramo Y0001", p[1]);
+            Check("contato V não lido não energiza a linha", !p[2]);
+            Check("linha vazia não é destacada", !p[3]);
+            Check("contato especial SC001 lido conduz", p[4]);
+            Check("END e linhas seguintes não são destacadas", !p[5] && !p[6]);
+
+            bits["C0001"] = true;
+            p = LadderPlcPowerEvaluator.Evaluate(program, bits);
+            Check("NF com bit ligado abre a linha", !p[0]);
+
+            Dictionary<string, bool> partial = new Dictionary<string, bool>();
+            partial["X0001"] = true;
+            partial["Y0001"] = true;
+            p = LadderPlcPowerEvaluator.Evaluate(program, partial);
+            Check("bit não lido em série (C0001) não energiza por chute", !p[0]);
+            Check("paralelo decidido pelo ramo lido mesmo com o outro desconhecido", p[1]);
+            partial["X0001"] = false;
+            p = LadderPlcPowerEvaluator.Evaluate(program, partial);
+            Check("série com contato aberto lido fica desligada", !p[0]);
+            Check("sem bits lidos nada é destacado", !AnyTrue(LadderPlcPowerEvaluator.Evaluate(program, new Dictionary<string, bool>())));
+
+            // Mesma regra da varredura: com todos os bits conhecidos, o avaliador
+            // reproduz o resultado do motor para o mesmo estado.
+            LadderScanEngine check = new LadderScanEngine();
+            check.Load(program);
+            SimBitRef x1;
+            SimAddress.TryParseBit("X0001", out x1);
+            check.Field.Set(x1, true);
+            check.Execute(10.0);
+            check.Execute(10.0);
+            Dictionary<string, bool> image = new Dictionary<string, bool>();
+            foreach (string a in addresses)
+            {
+                SimBitRef reference;
+                SimAddress.TryParseBit(a, out reference);
+                image[a] = check.Image.GetBit(reference);
+            }
+            p = LadderPlcPowerEvaluator.Evaluate(program, image);
+            Check("coincide com a varredura do motor (linhas 1, 2 e 5)",
+                p[0] == check.Rungs[0].LastPower && p[0] && p[1] == check.Rungs[1].LastPower && p[1] && p[4] == check.Rungs[4].LastPower);
+        }
+
+        private static bool AnyTrue(bool[] values)
+        {
+            if (values == null) return false;
+            foreach (bool v in values) if (v) return true;
+            return false;
         }
 
         /// <summary>

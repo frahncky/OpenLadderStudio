@@ -14,6 +14,7 @@ namespace ModernPC12
 
         private TP02ProgramReaderForm readerForm;
         private TP02ControlV31Form monitorForm;
+        private bool closeHooked;
         private readonly List<PlcFeatureAction> features = new List<PlcFeatureAction>();
 
         public Tp02DriverUi()
@@ -53,9 +54,35 @@ namespace ModernPC12
             {
                 monitorForm = new TP02ControlV31Form();
                 monitorForm.SetReadOnlyMode(true);
+                // Acender diagrama: o monitor le os bits; a energizacao e calculada aqui,
+                // com a mesma regra da simulacao, sobre o programa atual do editor.
+                monitorForm.DiagramAddressProvider = delegate
+                {
+                    UniversalLadderProgram program = EditorProgram(host);
+                    return program == null ? null : LadderPlcPowerEvaluator.ReadableAddresses(program);
+                };
+                monitorForm.DiagramBitsRead += delegate(IDictionary<string, bool> bits)
+                {
+                    host.ShowRungPower(bits == null ? null : LadderPlcPowerEvaluator.Evaluate(EditorProgram(host), bits));
+                };
+                if (!closeHooked)
+                {
+                    closeHooked = true;
+                    host.DocumentClosed += delegate(Form document)
+                    {
+                        if (document != null && document == monitorForm) monitorForm.StopDiagram();
+                    };
+                }
             }
             host.OpenDocument(monitorForm, "Monitor do PLC (somente leitura)", "MON");
             host.SetStatus("Monitor do PLC em modo somente leitura");
+        }
+
+        private static UniversalLadderProgram EditorProgram(IStudioHost host)
+        {
+            LadderEditorForm editor = host.Editor;
+            if (editor == null || editor.IsDisposed) return null;
+            return UniversalLadderAdapter.FromEditor(editor).Program;
         }
 
         private void OpenReader(IStudioHost host)
