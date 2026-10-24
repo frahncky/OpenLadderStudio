@@ -89,7 +89,7 @@ namespace ModernPC12
             sub.Location = new Point(22, 46);
             header.Controls.Add(sub);
 
-            stateLabel = NewLabel("OFFLINE", 9.0f, FontStyle.Bold, Muted);
+            stateLabel = NewLabel("OFF-LINE", 9.0f, FontStyle.Bold, Muted);
             stateLabel.AutoSize = false;
             stateLabel.TextAlign = ContentAlignment.MiddleRight;
             stateLabel.Dock = DockStyle.Right;
@@ -116,7 +116,7 @@ namespace ModernPC12
             refreshButton.Click += delegate { RefreshPorts(); };
             controls.Controls.Add(refreshButton);
 
-            Label stationLabel = NewLabel("Estacao", 8.0f, FontStyle.Bold, Muted);
+            Label stationLabel = NewLabel("Estação", 8.0f, FontStyle.Bold, Muted);
             stationLabel.Location = new Point(310, 14);
             controls.Controls.Add(stationLabel);
 
@@ -133,7 +133,7 @@ namespace ModernPC12
             projectLabel.MaximumSize = new Size(570, 40);
             controls.Controls.Add(projectLabel);
 
-            testButton = NewButton("TESTAR CONEXAO", 18, 88, 150, false);
+            testButton = NewButton("TESTAR CONEXÃO", 18, 88, 150, false);
             testButton.Click += delegate { TestConnection(); };
             controls.Controls.Add(testButton);
 
@@ -145,7 +145,7 @@ namespace ModernPC12
             writeButton.Click += delegate { WriteCurrentProject(); };
             controls.Controls.Add(writeButton);
 
-            Label safe = NewLabel("A gravacao so e liberada com PSR=STOP. Antes do primeiro WBP, o programa atual do PLC e salvo automaticamente em backup.", 8.4f, FontStyle.Regular, Warning);
+            Label safe = NewLabel("A gravação so e liberada com PSR=STOP. Antes do primeiro WBP, o programa atual do PLC e salvo automaticamente em backup.", 8.4f, FontStyle.Regular, Warning);
             safe.Location = new Point(548, 92);
             safe.MaximumSize = new Size(430, 44);
             controls.Controls.Add(safe);
@@ -162,8 +162,8 @@ namespace ModernPC12
             logView = new ProgramLogPanel(logBox);
 
             AppendLog("TP02 Computer Link pronto.");
-            AppendLog("Leitura usa RBP. Escrita usa WBP com backup e verificacao RBP.");
-            AppendLog("Nao use a porta PG do PC12: esta tela usa a MMI em Computer Link.");
+            AppendLog("Leitura usa RBP. Escrita usa WBP com backup e verificação RBP.");
+            AppendLog("Não use a porta PG do PC12: esta tela usa a MMI em Computer Link.");
 
             // A ancoragem resolve do ultimo filho para o primeiro: o que entra por ultimo
             // fica na borda externa. Ordem visual de cima para baixo: cabecalho, passos,
@@ -249,7 +249,7 @@ namespace ModernPC12
                 Tp02LadderCompilationResult result = Tp02LadderTargetCompiler.Compile(document);
                 projectLabel.Text = result.Success
                     ? "Projeto atual: " + result.Words.Count.ToString(CultureInfo.InvariantCulture) + " passo(s) TP02 compilaveis"
-                    : "Projeto atual: compilacao TP02 bloqueada (" + result.Errors.Count.ToString(CultureInfo.InvariantCulture) + " erro(s))";
+                    : "Projeto atual: compilação TP02 bloqueada (" + result.Errors.Count.ToString(CultureInfo.InvariantCulture) + " erro(s))";
                 projectLabel.ForeColor = result.Success ? Success : Warning;
             }
             catch (Exception ex)
@@ -261,9 +261,9 @@ namespace ModernPC12
 
         private string CaptureProjectText()
         {
-            if (ladderForm == null) throw new InvalidOperationException("Editor Ladder nao esta disponivel.");
+            if (ladderForm == null) throw new InvalidOperationException("Editor Ladder não esta disponível.");
             MethodInfo method = typeof(LadderEditorForm).GetMethod("SerializeProject", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (method == null) throw new MissingMethodException("LadderEditorForm.SerializeProject nao encontrado.");
+            if (method == null) throw new MissingMethodException("LadderEditorForm.SerializeProject não encontrado.");
             object value = method.Invoke(ladderForm, null);
             string text = value as string;
             if (string.IsNullOrEmpty(text)) throw new InvalidDataException("Projeto Ladder atual esta vazio.");
@@ -298,7 +298,7 @@ namespace ModernPC12
                 {
                     Tp02ComputerLinkState state = client.ReadState();
                     SetStateSafe(state);
-                    return "Conexao confirmada. Estado=" + state.ToString().ToUpperInvariant() + ".";
+                    return "Conexão confirmada. Estado=" + state.ToString().ToUpperInvariant() + ".";
                 }
             });
         }
@@ -339,14 +339,14 @@ namespace ModernPC12
                     }
                     catch
                     {
-                        AppendLogSafe("PSR nao confirmou o estado; RBP sera tentado mesmo assim.");
+                        AppendLogSafe("PSR não confirmou o estado; RBP será tentado mesmo assim.");
                     }
 
                     List<Tp02MachineWord> words = client.ReadProgram();
                     TP02ComputerLinkFiles.SaveHex(output, words);
                     string dump = Path.ChangeExtension(output, ".rbpdump");
                     TP02ComputerLinkFiles.SaveDump(dump, words);
-                    return "Leitura concluida: " + words.Count.ToString(CultureInfo.InvariantCulture)
+                    return "Leitura concluída: " + words.Count.ToString(CultureInfo.InvariantCulture)
                         + " passo(s). HEX=" + output + " | dump=" + dump;
                 }
             });
@@ -372,32 +372,32 @@ namespace ModernPC12
                 {
                     AppendLog(report);
                     MessageBox.Show(this,
-                        "O projeto atual possui erros de compilacao TP02. Nenhum byte sera transmitido. Consulte o log da transferencia.",
-                        "Gravacao bloqueada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        "O projeto atual possui erros de compilação TP02. Nenhum byte será transmitido. Consulte o log da transferencia.",
+                        "Gravação bloqueada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 if (result.Words.Count < 1) throw new InvalidDataException("Projeto sem passos TP02.");
                 if (!string.Equals(result.Words[result.Words.Count - 1].ToHex(), "007000", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException("Gravacao bloqueada: o ultimo passo precisa ser F-00 END (007000).");
+                    throw new InvalidDataException("Gravação bloqueada: o último passo precisa ser F-00 END (007000).");
                 words = new List<Tp02MachineWord>(result.Words);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "Gravacao bloqueada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, ex.Message, "Gravação bloqueada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             DialogResult confirm = MessageBox.Show(this,
-                "O projeto atual sera gravado no TP02 pela porta " + port + ".\r\n\r\n"
+                "O projeto atual será gravado no TP02 pela porta " + port + ".\r\n\r\n"
                 + "Passos: " + words.Count.ToString(CultureInfo.InvariantCulture) + "\r\n"
-                + "Estacao: " + station.ToString("00", CultureInfo.InvariantCulture) + "\r\n\r\n"
-                + "A operacao so prossegue se PSR confirmar STOP. O programa existente sera lido e salvo em backup ANTES do primeiro WBP. Depois, cada bloco sera relido e comparado.\r\n\r\n"
-                + "Deseja iniciar a gravacao?",
-                "Confirmar gravacao TP02", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+                + "Estação: " + station.ToString("00", CultureInfo.InvariantCulture) + "\r\n\r\n"
+                + "A operação so prossegue se PSR confirmar STOP. O programa existente será lido e salvo em backup ANTES do primeiro WBP. Depois, cada bloco será relido e comparado.\r\n\r\n"
+                + "Deseja iniciar a gravação?",
+                "Confirmar gravação TP02", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
             if (confirm != DialogResult.Yes) return;
 
             AppendLog(report);
-            RunBusy("GRAVACAO", delegate
+            RunBusy("GRAVAÇÃO", delegate
             {
                 string backupRoot = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
@@ -411,7 +411,7 @@ namespace ModernPC12
                         throw new InvalidOperationException("WBP BLOQUEADO: TP02 esta " + state.ToString().ToUpperInvariant() + ". Coloque o controlador em STOP/PROGRAM.");
 
                     string backup = client.WriteProgramWithBackup(words, backupRoot);
-                    return "GRAVACAO CONFIRMADA. Backup anterior: " + backup;
+                    return "GRAVAÇÃO CONFIRMADA. Backup anterior: " + backup;
                 }
             });
         }
@@ -445,7 +445,7 @@ namespace ModernPC12
                         else if (operation == "TESTE") { flow.Set(0, FlowState.Done); flow.Set(1, FlowState.Done); }
                         else flow.Set(0, FlowState.Done);
                         AppendLog(success);
-                        AppendLog(operation + " concluido.");
+                        AppendLog(operation + " concluído.");
                         MessageBox.Show(this, success, "TP02", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
@@ -550,7 +550,7 @@ namespace ModernPC12
 
         public TP02ComputerLinkClient(string portName, int station, Action<string> log)
         {
-            if (string.IsNullOrEmpty(portName)) throw new ArgumentException("Porta COM nao informada.", "portName");
+            if (string.IsNullOrEmpty(portName)) throw new ArgumentException("Porta COM não informada.", "portName");
             if (station < 1 || station > 99) throw new ArgumentOutOfRangeException("station");
 
             this.station = station;
@@ -576,7 +576,7 @@ namespace ModernPC12
             string response = Exchange(Tp02ComputerLinkProgramCodec.BuildPsr(station, responseCode), "PSR");
             Tp02ComputerLinkState state;
             if (!Tp02ComputerLinkProgramCodec.TryGetPsrState(response, out state))
-                throw new InvalidDataException("Resposta PSR invalida ou com checksum incorreto.");
+                throw new InvalidDataException("Resposta PSR inválida ou com checksum incorreto.");
             WriteLog("Estado PLC: " + state.ToString().ToUpperInvariant());
             return state;
         }
@@ -614,7 +614,7 @@ namespace ModernPC12
             }
 
             if (!endFound)
-                throw new InvalidDataException("F-00 END (007000) nao foi encontrado ate o passo 4000.");
+                throw new InvalidDataException("F-00 END (007000) não foi encontrado até o passo 4000.");
             return result;
         }
 
@@ -655,11 +655,11 @@ namespace ModernPC12
                 string response = Exchange(wbp, "WBP " + block.ToString(CultureInfo.InvariantCulture));
                 string errorCode;
                 if (!Tp02ComputerLinkProgramCodec.IsSuccessfulResponse(response, "WBP", out errorCode))
-                    throw new InvalidDataException("TP02 nao confirmou WBP no bloco " + block.ToString(CultureInfo.InvariantCulture)
+                    throw new InvalidDataException("TP02 não confirmou WBP no bloco " + block.ToString(CultureInfo.InvariantCulture)
                         + (string.IsNullOrEmpty(errorCode) ? "." : "; erro=" + errorCode + "."));
 
                 List<Tp02MachineWord> verify = ReadRange(offset, count, "RBP verify " + block.ToString(CultureInfo.InvariantCulture));
-                EnsureEqual(chunk, verify, offset, "verificacao do bloco");
+                EnsureEqual(chunk, verify, offset, "verificação do bloco");
                 WriteLog("VERIFY OK: bloco=" + block.ToString(CultureInfo.InvariantCulture)
                     + " addr=" + offset.ToString("0000", CultureInfo.InvariantCulture)
                     + " passos=" + count.ToString(CultureInfo.InvariantCulture));
@@ -668,9 +668,9 @@ namespace ModernPC12
                 block++;
             }
 
-            WriteLog("Verificacao final do programa ate END...");
+            WriteLog("Verificação final do programa até END...");
             List<Tp02MachineWord> finalRead = ReadProgram();
-            EnsureEqual(words, finalRead, 0, "verificacao final");
+            EnsureEqual(words, finalRead, 0, "verificação final");
             WriteLog("Programa final relido sem diferencas.");
             return backupHex;
         }
@@ -681,7 +681,7 @@ namespace ModernPC12
             string response = Exchange(frame, label);
             Tp02ComputerLinkResponse parsed = Tp02ComputerLinkProgramCodec.ParseResponse(response, "RBP");
             if (!parsed.ChecksumOk || parsed.IsError || parsed.Command != "RBP")
-                throw new InvalidDataException(label + ": resposta RBP invalida"
+                throw new InvalidDataException(label + ": resposta RBP inválida"
                     + (parsed.IsError && !string.IsNullOrEmpty(parsed.ErrorCode) ? "; erro=" + parsed.ErrorCode : string.Empty) + ".");
 
             string data = NormalizeHex(parsed.Data);

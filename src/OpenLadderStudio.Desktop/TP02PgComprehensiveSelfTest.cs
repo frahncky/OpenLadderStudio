@@ -72,7 +72,7 @@ namespace ModernPC12
             {
                 failures++;
                 checks++;
-                Console.Error.WriteLine("FALHA: " + label + ": excecao inesperada " + ex.GetType().Name);
+                Console.Error.WriteLine("FALHA: " + label + ": exceção inesperada " + ex.GetType().Name);
                 return;
             }
             Check(threw, label + ": deveria lancar ArgumentOutOfRangeException");
@@ -123,7 +123,7 @@ namespace ModernPC12
                     int start = starts[s];
                     Pg33MachineWord[] expected = MakeWords(count, (count * 19) + start);
                     byte[] frame = TP02PgV156Scenario.BuildPg33(start, expected);
-                    Check(Sum8(frame) == 0xFF, "PG33 checksum nao fecha FF count=" + count.ToString() + " start=" + start.ToString());
+                    Check(Sum8(frame) == 0xFF, "PG33 checksum não fecha FF count=" + count.ToString() + " start=" + start.ToString());
 
                     int decodedStart;
                     Pg33MachineWord[] decoded;
@@ -233,11 +233,11 @@ namespace ModernPC12
                 }
                 byte[] r38 = TP02PgReadback.Build38(words, valid, count - 1, null);
                 int expectedOffset = 2 * (Math.Min(count, 80) - 1);
-                Check(r38.Length == 5, "PG38 tamanho invalido count=" + count.ToString());
+                Check(r38.Length == 5, "PG38 tamanho inválido count=" + count.ToString());
                 if (r38.Length == 5)
                 {
-                    Check(r38[3] == (byte)expectedOffset, "PG38 offset invalido count=" + count.ToString());
-                    Check(Sum8(r38) == 0xFF, "PG38 checksum invalido count=" + count.ToString());
+                    Check(r38[3] == (byte)expectedOffset, "PG38 offset inválido count=" + count.ToString());
+                    Check(Sum8(r38) == 0xFF, "PG38 checksum inválido count=" + count.ToString());
                 }
             }
 
@@ -266,17 +266,17 @@ namespace ModernPC12
             bool[] seedValid = new bool[4000];
             int seedHighest = TP02PgV156Scenario.SeedBoundary323(seedWords, seedValid);
             Check(TP02PgReadback.Build38(seedWords, seedValid, seedHighest, null)[3] == 0x9E,
-                "PG38 padrao deve limitar 323 passos a pagina (00 9E)");
+                "PG38 padrão deve limitar 323 passos a pagina (00 9E)");
             TP02PgReadback.Pg38Total16 = true;
             try
             {
                 byte[] total38 = TP02PgReadback.Build38(seedWords, seedValid, seedHighest, null);
                 Check(total38.Length == 5 && total38[2] == 0x02 && total38[3] == 0x84,
                     "PG38 total16 deve informar 02 84 para 323 passos");
-                Check(Sum8(total38) == 0xFF, "PG38 total16 checksum invalido");
+                Check(Sum8(total38) == 0xFF, "PG38 total16 checksum inválido");
                 byte[] small38 = TP02PgReadback.Build38(endWords, endValid, 9, null);
                 Check(small38.Length == 5 && small38[2] == 0x00 && small38[3] == 0x04,
-                    "PG38 total16 deve coincidir com a captura fisica de 3 passos");
+                    "PG38 total16 deve coincidir com a captura física de 3 passos");
             }
             finally
             {
@@ -305,7 +305,7 @@ namespace ModernPC12
             {
                 byte[] r34 = TP02PgReadback.Build34(Build34Request(start), words, valid, 3999, null);
                 Check(r34.Length == 243, "PG34 tamanho deve ser 243 start=" + start.ToString());
-                Check(Sum8(r34) == 0xFF, "PG34 checksum invalido start=" + start.ToString());
+                Check(Sum8(r34) == 0xFF, "PG34 checksum inválido start=" + start.ToString());
                 if (r34.Length != 243) continue;
 
                 for (int local = 0; local < 80; local++)
@@ -335,7 +335,7 @@ namespace ModernPC12
             staleValid[0] = staleValid[1] = true;
             byte[] stale = TP02PgReadback.Build34(Build34Request(0), staleWords, staleValid, 1, null);
             Check(stale[2] == 0x00 && stale[3] == 0x70, "PG34 END bruto ausente");
-            Check(stale[4] == 0xAA && stale[5] == 0x55, "PG34 deve preservar tail bruto apos END");
+            Check(stale[4] == 0xAA && stale[5] == 0x55, "PG34 deve preservar tail bruto após END");
 
             byte[] fallbackPayload = new byte[240];
             fallbackPayload[0] = 0xDE;
@@ -344,13 +344,13 @@ namespace ModernPC12
             byte[] fallback0 = TP02PgReadback.Build34(Build34Request(0), null, null, -1, fallbackPayload);
             Check(fallback0[2] == 0xDE && fallback0[3] == 0xAD, "PG34 fallback pagina 0 divergente");
             Check(fallback0[162] == 0x0B, "PG34 fallback BRAW divergente");
-            Check(Sum8(fallback0) == 0xFF, "PG34 fallback checksum invalido");
+            Check(Sum8(fallback0) == 0xFF, "PG34 fallback checksum inválido");
 
             byte[] fallback80 = TP02PgReadback.Build34(Build34Request(80), null, null, -1, fallbackPayload);
             Check(fallback80[2] == 0x00 && fallback80[3] == 0x00, "PG34 fallback pagina >0 deveria zerar");
 
             byte[] nullRequest = TP02PgReadback.Build34(null, null, null, -1, fallbackPayload);
-            Check(nullRequest[2] == 0xDE && nullRequest[3] == 0xAD, "PG34 request invalido deve cair na pagina 0");
+            Check(nullRequest[2] == 0xDE && nullRequest[3] == 0xAD, "PG34 request inválido deve cair na pagina 0");
         }
 
         private static void TestScenarioControls()
@@ -363,31 +363,31 @@ namespace ModernPC12
             for (int i = 1; i <= 4; i++)
                 Check(!TP02PgV156Scenario.ShouldRespondHello(out detail), "HELLO deveria ficar mudo na tentativa " + i.ToString());
             Check(TP02PgV156Scenario.ShouldRespondHello(out detail), "HELLO deveria responder na 5a tentativa");
-            Check(TP02PgV156Scenario.ShouldRespondHello(out detail), "HELLO deveria continuar respondendo apos a 5a");
+            Check(TP02PgV156Scenario.ShouldRespondHello(out detail), "HELLO deveria continuar respondendo após a 5a");
 
             TP02PgV156Scenario.F0RespondOnAttempt = 4;
             for (int i = 1; i <= 3; i++)
                 Check(!TP02PgV156Scenario.ShouldRespondF0(out detail), "F0 deveria ficar mudo na tentativa " + i.ToString());
             Check(TP02PgV156Scenario.ShouldRespondF0(out detail), "F0 deveria responder na 4a tentativa");
-            Check(TP02PgV156Scenario.ShouldRespondF0(out detail), "F0 deveria continuar respondendo apos a 4a");
+            Check(TP02PgV156Scenario.ShouldRespondF0(out detail), "F0 deveria continuar respondendo após a 4a");
 
             Check(TP02PgV156Scenario.TryApplyArgument("--scenario=v156"), "--scenario=v156 deveria ser reconhecido");
             Check(TP02PgV156Scenario.SeedBoundary323Enabled, "cenario v1.56 deveria habilitar seed");
-            Check(TP02PgV156Scenario.DisableUnknownAck, "cenario v1.56 deveria desabilitar ACK generico");
+            Check(TP02PgV156Scenario.DisableUnknownAck, "cenario v1.56 deveria desabilitar ACK genérico");
             Check(TP02PgV156Scenario.HelloRespondOnAttempt == 5, "cenario v1.56 HELLO deveria ser 5");
             Check(TP02PgV156Scenario.F0RespondOnAttempt == 4, "cenario v1.56 F0 deveria ser 4");
             Check(TP02PgV156Scenario.Describe().IndexOf("boundary323", StringComparison.Ordinal) >= 0, "Describe deveria indicar boundary323");
 
             Check(TP02PgV156Scenario.TryApplyArgument("--hello-on=8"), "--hello-on=8 deveria ser reconhecido");
-            Check(TP02PgV156Scenario.HelloRespondOnAttempt == 8, "hello-on=8 nao aplicado");
+            Check(TP02PgV156Scenario.HelloRespondOnAttempt == 8, "hello-on=8 não aplicado");
             Check(TP02PgV156Scenario.TryApplyArgument("--f0-on=8"), "--f0-on=8 deveria ser reconhecido");
-            Check(TP02PgV156Scenario.F0RespondOnAttempt == 8, "f0-on=8 nao aplicado");
+            Check(TP02PgV156Scenario.F0RespondOnAttempt == 8, "f0-on=8 não aplicado");
             Check(TP02PgV156Scenario.TryApplyArgument("--pg38=total16"), "--pg38=total16 deveria ser reconhecido");
-            Check(TP02PgReadback.Pg38Total16, "pg38=total16 nao aplicado");
+            Check(TP02PgReadback.Pg38Total16, "pg38=total16 não aplicado");
             Check(TP02PgV156Scenario.Describe().IndexOf("total16", StringComparison.Ordinal) >= 0, "Describe deveria indicar pg38 total16");
             Check(TP02PgV156Scenario.TryApplyArgument("--pg38=page"), "--pg38=page deveria ser reconhecido");
-            Check(!TP02PgReadback.Pg38Total16, "pg38=page nao aplicado");
-            Check(!TP02PgV156Scenario.TryApplyArgument("--nao-existe"), "argumento desconhecido nao deveria ser reconhecido");
+            Check(!TP02PgReadback.Pg38Total16, "pg38=page não aplicado");
+            Check(!TP02PgV156Scenario.TryApplyArgument("--não-existe"), "argumento desconhecido não deveria ser reconhecido");
 
             ExpectArgumentOutOfRange(delegate { TP02PgV156Scenario.TryApplyArgument("--hello-on=0"); }, "hello-on=0");
             ExpectArgumentOutOfRange(delegate { TP02PgV156Scenario.TryApplyArgument("--hello-on=9"); }, "hello-on=9");
@@ -409,7 +409,7 @@ namespace ModernPC12
                     Check(words[i].High == 0x40 && words[i].Low == 0x40, "seed OUT C divergente step=" + i.ToString());
             }
             Check(valid[322] && words[322].High == 0x00 && words[322].Low == 0x70, "seed END deveria estar em 0322");
-            Check(!valid[323], "seed nao deveria marcar step 323");
+            Check(!valid[323], "seed não deveria marcar step 323");
         }
 
         private static void TestSeedSemantic323()
@@ -430,7 +430,7 @@ namespace ModernPC12
                     "seed semantic323 OUT C divergente rung=" + rung.ToString());
             }
             Check(valid[322] && words[322].High == 0x00 && words[322].Low == 0x70, "seed semantic323 END deveria estar em 0322");
-            Check(!valid[323], "seed semantic323 nao deveria marcar step 323");
+            Check(!valid[323], "seed semantic323 não deveria marcar step 323");
         }
 
         internal static int RunAll(bool verbose)
@@ -451,7 +451,7 @@ namespace ModernPC12
 
             if (failures != 0)
             {
-                Console.Error.WriteLine("TP02 emulator full matrix: " + failures.ToString() + " falha(s) em " + checks.ToString() + " verificacoes.");
+                Console.Error.WriteLine("TP02 emulator full matrix: " + failures.ToString() + " falha(s) em " + checks.ToString() + " verificações.");
                 return 1;
             }
 
@@ -460,7 +460,7 @@ namespace ModernPC12
                 Console.WriteLine("TP02 emulator full matrix: PASS");
                 Console.WriteLine("checks=" + checks.ToString());
                 Console.WriteLine("coverage=legacy+BRAW65536+PG33_limits+PG33_fuzz500+PG34_50pages+PG38+END+sparse+fallback+v156_gates");
-                Console.WriteLine("hardware=NAO UTILIZADO / COM=NAO ABERTA");
+                Console.WriteLine("hardware=NÃO UTILIZADO / COM=NÃO ABERTA");
             }
             return 0;
         }

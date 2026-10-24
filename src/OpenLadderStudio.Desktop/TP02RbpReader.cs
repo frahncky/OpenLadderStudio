@@ -55,14 +55,14 @@ namespace ModernPC12
                     Console.WriteLine("OpenLadder - TP02 Computer Link RBP Reader");
                     Console.WriteLine(new string('=', 58));
                     Console.WriteLine("COM            : " + Describe(port));
-                    Console.WriteLine("Estacao        : " + options.Station.ToString("00", CultureInfo.InvariantCulture));
+                    Console.WriteLine("Estação        : " + options.Station.ToString("00", CultureInfo.InvariantCulture));
                     Console.WriteLine("Resp. code     : " + options.ResponseCode.ToString("X1", CultureInfo.InvariantCulture));
                     Console.WriteLine("Inicio         : " + options.Start.ToString("0000", CultureInfo.InvariantCulture));
                     Console.WriteLine("Modo           : " + (options.CountSpecified
                         ? "COUNT=" + options.Count.ToString(CultureInfo.InvariantCulture)
-                        : "ATE F-00 END (007000) OU PASSO 4000"));
+                        : "ATÉ F-00 END (007000) OU PASSO 4000"));
                     Console.WriteLine();
-                    Console.WriteLine("ATENCAO: Computer Link pela MMI exige PG/COM em LOW (pino 4 ligado ao pino 5).");
+                    Console.WriteLine("ATENÇÃO: Computer Link pela MMI exige PG/COM em LOW (pino 4 ligado ao pino 5).");
                     Console.WriteLine();
 
                     TryPrintState(port, options);
@@ -75,9 +75,9 @@ namespace ModernPC12
                     SaveWords(outputPath, words);
 
                     Console.WriteLine();
-                    Console.WriteLine("LEITURA CONCLUIDA");
+                    Console.WriteLine("LEITURA CONCLUÍDA");
                     Console.WriteLine("Passos         : " + words.Count.ToString(CultureInfo.InvariantCulture));
-                    Console.WriteLine("Ultimo         : " + words[words.Count - 1].ToHex());
+                    Console.WriteLine("Último         : " + words[words.Count - 1].ToHex());
                     Console.WriteLine("Arquivo        : " + outputPath);
                     return 0;
                 }
@@ -100,11 +100,11 @@ namespace ModernPC12
                 if (Tp02ComputerLinkProgramCodec.TryGetPsrState(response, out state))
                     Console.WriteLine("Estado PLC     : " + state.ToString().ToUpperInvariant());
                 else
-                    Console.WriteLine("Estado PLC     : resposta PSR nao reconhecida; RBP ainda sera tentado.");
+                    Console.WriteLine("Estado PLC     : resposta PSR não reconhecida; RBP ainda será tentado.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Estado PLC     : PSR indisponivel (" + ex.Message + "); RBP ainda sera tentado.");
+                Console.WriteLine("Estado PLC     : PSR indisponivel (" + ex.Message + "); RBP ainda será tentado.");
             }
             Console.WriteLine();
         }
@@ -130,7 +130,7 @@ namespace ModernPC12
 
                 Tp02ComputerLinkResponse parsed = Tp02ComputerLinkProgramCodec.ParseResponse(response, "RBP");
                 if (!parsed.ChecksumOk || parsed.IsError || parsed.Command != "RBP")
-                    throw new InvalidDataException("Resposta RBP invalida no bloco "
+                    throw new InvalidDataException("Resposta RBP inválida no bloco "
                         + blockIndex.ToString(CultureInfo.InvariantCulture)
                         + (parsed.IsError && !string.IsNullOrEmpty(parsed.ErrorCode) ? "; erro=" + parsed.ErrorCode : string.Empty));
 
@@ -167,7 +167,7 @@ namespace ModernPC12
             }
 
             if (!options.CountSpecified && !endFound)
-                Console.WriteLine("AVISO          : F-00 END nao encontrado ate o limite solicitado/4000.");
+                Console.WriteLine("AVISO          : F-00 END não encontrado até o limite solicitado/4000.");
 
             return result;
         }

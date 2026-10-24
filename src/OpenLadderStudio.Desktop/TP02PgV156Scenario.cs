@@ -117,7 +117,7 @@ namespace ModernPC12
             if (words == null) throw new ArgumentNullException("words");
             if (valid == null) throw new ArgumentNullException("valid");
             if (words.Length < 323 || valid.Length < 323)
-                throw new ArgumentException("Banco PG precisa ter pelo menos 323 posicoes.");
+                throw new ArgumentException("Banco PG precisa ter pelo menos 323 posições.");
 
             Array.Clear(valid, 0, valid.Length);
             for (int step = 0; step < 322; step++)
@@ -138,7 +138,7 @@ namespace ModernPC12
             if (words == null) throw new ArgumentNullException("words");
             if (valid == null) throw new ArgumentNullException("valid");
             if (words.Length < 323 || valid.Length < 323)
-                throw new ArgumentException("Banco PG precisa ter pelo menos 323 posicoes.");
+                throw new ArgumentException("Banco PG precisa ter pelo menos 323 posições.");
 
             Array.Clear(valid, 0, valid.Length);
             for (int rung = 0; rung < 161; rung++)
@@ -211,7 +211,7 @@ namespace ModernPC12
                 + " hello_on=" + HelloRespondOnAttempt.ToString(CultureInfo.InvariantCulture)
                 + " f0_on=" + F0RespondOnAttempt.ToString(CultureInfo.InvariantCulture)
                 + " unknown_ack=" + (DisableUnknownAck ? "OFF" : "padrao")
-                + " pg38=" + (TP02PgReadback.Pg38Total16 ? "total16 (HIPOTESE)" : "pagina");
+                + " pg38=" + (TP02PgReadback.Pg38Total16 ? "total16 (HIPÓTESE)" : "pagina");
         }
     }
 }

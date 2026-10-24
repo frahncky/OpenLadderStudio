@@ -83,10 +83,10 @@ namespace ModernPC12
             turnCount++;
 
             string text = ExtractOutputText(responseJson);
-            if (string.IsNullOrWhiteSpace(text)) throw new InvalidDataException("A OpenAI respondeu sem acao estruturada.");
+            if (string.IsNullOrWhiteSpace(text)) throw new InvalidDataException("A OpenAI respondeu sem ação estruturada.");
             Tp02AgentAction action = serializer.Deserialize<Tp02AgentAction>(text.Trim());
             if (action == null || string.IsNullOrWhiteSpace(action.action))
-                throw new InvalidDataException("Resposta da IA nao informou action.");
+                throw new InvalidDataException("Resposta da IA não informou action.");
             return action;
         }
 
@@ -175,14 +175,14 @@ namespace ModernPC12
         private static string BuildInstructions()
         {
             return
-                "Voce conduz uma pesquisa CONTINUA e autorizada do protocolo PG do WEG TP02-60MR. " +
-                "A porta serial deve permanecer aberta sempre que houver enlace util. Escolha UMA proxima acao segura por turno. " +
-                "Nunca solicite bytes arbitrarios, escrita, WBP/download, RUN, STOP, apagamento, firmware ou alteracao de memoria. " +
+                "Você conduz uma pesquisa CONTINUA e autorizada do protocolo PG do WEG TP02-60MR. " +
+                "A porta serial deve permanecer aberta sempre que houver enlace útil. Escolha UMA próxima ação segura por turno. " +
+                "Nunca solicite bytes arbitrarios, escrita, WBP/transferência, RUN, STOP, apagamento, firmware ou alteração de memória. " +
                 "Use somente action=open_profile|set_lines|hello|probe|passive|wait|finish, perfis de allowedProfiles e probes de allowedProbeIds. " +
-                "Seu objetivo nao e encerrar cedo: continue ate fechar de forma reproduzivel handshake, F0/preflight, leitura de programa e leitura de sistema usando apenas probes READ-ONLY. " +
-                "Um HELLO que reaparece durante um probe e evidencia de ressincronizacao; preserve a COM e investigue timing/RTS antes de reabrir. " +
-                "Fatos fisicos: 19200 8O1; HELLO STOP=80 01 09 75; F0 00 0F ja respondeu 00 02 10 22 CB; RTS TX on -> RX off ja provocou novo HELLO STOP. " +
-                "Mude uma variavel por vez, compare repetibilidade, use captura passiva e evite repetir a mesma experiencia sem mudar hipotese. " +
+                "Seu objetivo não e encerrar cedo: continue até fechar de forma reproduzivel handshake, F0/preflight, leitura de programa e leitura de sistema usando apenas probes READ-ONLY. " +
+                "Um HELLO que reaparece durante um probe e evidência de ressincronizacao; preserve a COM e investigue timing/RTS antes de reabrir. " +
+                "Fatos físicos: 19200 8O1; HELLO STOP=80 01 09 75; F0 00 0F ja respondeu 00 02 10 22 CB; RTS TX on -> RX off ja provocou novo HELLO STOP. " +
+                "Mude uma variavel por vez, compare repetibilidade, use captura passiva e evite repetir a mesma experiencia sem mudar hipótese. " +
                 "Somente use finish quando o estado recebido indicar PROTOCOL_CLOSURE_READY=true. Se ainda nao estiver pronto, continue investigando caminhos seguros.";
         }
     }

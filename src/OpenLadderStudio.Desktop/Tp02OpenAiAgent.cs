@@ -70,7 +70,7 @@ namespace ModernPC12
             string requestJson = serializer.Serialize(payload);
             string responseJson = PostJson(ApiUrl, requestJson);
             string text = ExtractOutputText(responseJson);
-            if (string.IsNullOrWhiteSpace(text)) throw new InvalidDataException("A OpenAI respondeu sem texto de acao.");
+            if (string.IsNullOrWhiteSpace(text)) throw new InvalidDataException("A OpenAI respondeu sem texto de ação.");
 
             text = StripCodeFence(text.Trim());
             Tp02AgentAction action;
@@ -80,10 +80,10 @@ namespace ModernPC12
             }
             catch (Exception ex)
             {
-                throw new InvalidDataException("Resposta da IA nao e JSON de acao valido: " + text, ex);
+                throw new InvalidDataException("Resposta da IA não e JSON de ação valido: " + text, ex);
             }
             if (action == null || string.IsNullOrWhiteSpace(action.action))
-                throw new InvalidDataException("Resposta da IA nao informou action.");
+                throw new InvalidDataException("Resposta da IA não informou action.");
             return action;
         }
 
@@ -176,19 +176,19 @@ namespace ModernPC12
         private static string BuildInstructions()
         {
             return
-                "Voce e o agente de engenharia reversa autorizado do WEG TP02-60MR conectado ao OpenLadder Studio. " +
-                "Seu objetivo e escolher UMA proxima acao de diagnostico por vez, usando somente o estado recebido. " +
+                "Você e o agente de engenharia reversa autorizado do WEG TP02-60MR conectado ao OpenLadder Studio. " +
+                "Seu objetivo e escolher UMA próxima ação de diagnóstico por vez, usando somente o estado recebido. " +
                 "Responda EXCLUSIVAMENTE com um objeto JSON, sem markdown, no formato: " +
                 "{\"action\":\"open_profile|set_lines|hello|probe|passive|wait|finish\",\"profile\":\"\",\"probe_id\":\"\",\"dtr\":true,\"rts\":false,\"wait_ms\":500,\"reason\":\"\"}. " +
-                "REGRAS ABSOLUTAS: nunca solicite bytes arbitrarios; nunca solicite escrita, WBP/download, RUN, STOP, apagamento, firmware ou alteracao de memoria. " +
+                "REGRAS ABSOLUTAS: nunca solicite bytes arbitrarios; nunca solicite escrita, WBP/transferência, RUN, STOP, apagamento, firmware ou alteração de memória. " +
                 "Para probe use somente um probe_id presente em allowedProbeIds. Para open_profile use somente um nome presente em allowedProfiles. " +
                 "set_lines apenas altera DTR/RTS e pode pedir uma janela passiva em wait_ms. passive apenas escuta; wait apenas espera/escuta. " +
-                "hello envia somente o CON-ICB protegido. O executor local rejeitara qualquer acao fora dessas regras. " +
+                "hello envia somente o CON-ICB protegido. O executor local rejeitara qualquer ação fora dessas regras. " +
                 "Fatos confirmados: serial 19200 8O1; HELLO STOP conhecido=80 01 09 75; F0 00 0F ja respondeu fisicamente 00 02 10 22 CB em uma sessao; " +
-                "na captura mais recente a transicao RTS TX=on para RX=off fez reaparecer HELLO STOP, sugerindo que RTS participa da direcao/re-sincronizacao. " +
-                "Prefira experimentos discriminatorios: altere uma variavel por vez, use captura passiva para separar efeito de linha de efeito do TX, e aproveite qualquer HELLO espontaneo como evidencia de re-sincronizacao. " +
-                "Se houver link, nao reabra a porta sem motivo. Se uma hipotese falhar, mude timing ou RTS antes de repetir a mesma coisa. " +
-                "Use finish quando a evidencia atual for suficiente ou apos esgotar caminhos seguros.";
+                "na captura mais recente a transição RTS TX=on para RX=off fez reaparecer HELLO STOP, sugerindo que RTS participa da direcao/re-sincronizacao. " +
+                "Prefira experimentos discriminatorios: altere uma variavel por vez, use captura passiva para separar efeito de linha de efeito do TX, e aproveite qualquer HELLO espontaneo como evidência de re-sincronizacao. " +
+                "Se houver link, não reabra a porta sem motivo. Se uma hipótese falhar, mude timing ou RTS antes de repetir a mesma coisa. " +
+                "Use finish quando a evidência atual for suficiente ou após esgotar caminhos seguros.";
         }
 
         public static bool HasStoredKey()

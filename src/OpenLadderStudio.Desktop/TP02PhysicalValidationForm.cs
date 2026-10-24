@@ -65,7 +65,7 @@ namespace ModernPC12
             this.profile = profile;
             this.ladderForm = ladderForm;
 
-            Text = "Validacao fisica final - WEG TP02";
+            Text = "Validação física final - WEG TP02";
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(960, 700);
             Size = new Size(1120, 800);
@@ -101,7 +101,7 @@ namespace ModernPC12
             header.BackColor = Chrome;
             Controls.Add(header);
 
-            Label title = NewLabel("TP02 - VALIDACAO FISICA FINAL", 14.0f, FontStyle.Bold, Fore);
+            Label title = NewLabel("TP02 - VALIDAÇÃO FÍSICA FINAL", 14.0f, FontStyle.Bold, Fore);
             title.Location = new Point(20, 14);
             header.Controls.Add(title);
 
@@ -111,7 +111,7 @@ namespace ModernPC12
             sub.Location = new Point(22, 47);
             header.Controls.Add(sub);
 
-            stateLabel = NewLabel("PLC: NAO TESTADO", 9.0f, FontStyle.Bold, Muted);
+            stateLabel = NewLabel("PLC: NÃO TESTADO", 9.0f, FontStyle.Bold, Muted);
             stateLabel.AutoSize = false;
             stateLabel.TextAlign = ContentAlignment.MiddleRight;
             stateLabel.Dock = DockStyle.Right;
@@ -138,7 +138,7 @@ namespace ModernPC12
             refreshButton.Click += delegate { RefreshPorts(); };
             setup.Controls.Add(refreshButton);
 
-            Label stationLabel = NewLabel("Estacao (Computer Link)", 8.0f, FontStyle.Bold, Muted);
+            Label stationLabel = NewLabel("Estação (Computer Link)", 8.0f, FontStyle.Bold, Muted);
             stationLabel.Location = new Point(302, 12);
             setup.Controls.Add(stationLabel);
 
@@ -178,7 +178,7 @@ namespace ModernPC12
             readLabel.Location = new Point(260, 28);
             stages.Controls.Add(readLabel);
 
-            writeValidationButton = NewButton("2. VALIDAR GRAVACAO", 20, 82, 220, false);
+            writeValidationButton = NewButton("2. VALIDAR GRAVAÇÃO", 20, 82, 220, false);
             writeValidationButton.Enabled = false;
             writeValidationButton.Click += delegate { RunWriteValidation(); };
             stages.Controls.Add(writeValidationButton);
@@ -206,9 +206,9 @@ namespace ModernPC12
             logBox.BorderStyle = BorderStyle.FixedSingle;
             logPanel.Controls.Add(logBox);
 
-            AppendLog("Sessao de validacao criada.");
+            AppendLog("Sessao de validação criada.");
             AppendLog("FASE 1: primeiro tenta o link PG/PC12 usando somente CON-ICB<CR> em 19200 8O1.");
-            AppendLog("Se PG nao responder, tenta Computer Link: PSR + duas leituras RBP completas.");
+            AppendLog("Se PG não responder, tenta Computer Link: PSR + duas leituras RBP completas.");
             AppendLog("FASE 2: WBP somente em Computer Link, depois de leitura aprovada e PLC em STOP.");
         }
 
@@ -285,16 +285,16 @@ namespace ModernPC12
             }
             catch (Exception ex)
             {
-                projectLabel.Text = "Projeto atual: nao pronto para gravacao - " + ex.Message;
+                projectLabel.Text = "Projeto atual: não pronto para gravação - " + ex.Message;
                 projectLabel.ForeColor = Warning;
             }
         }
 
         private string CaptureProjectText()
         {
-            if (ladderForm == null) throw new InvalidOperationException("Editor Ladder nao esta disponivel.");
+            if (ladderForm == null) throw new InvalidOperationException("Editor Ladder não esta disponível.");
             MethodInfo method = typeof(LadderEditorForm).GetMethod("SerializeProject", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (method == null) throw new MissingMethodException("LadderEditorForm.SerializeProject nao encontrado.");
+            if (method == null) throw new MissingMethodException("LadderEditorForm.SerializeProject não encontrado.");
             object value = method.Invoke(ladderForm, null);
             string text = value as string;
             if (string.IsNullOrEmpty(text)) throw new InvalidDataException("Projeto Ladder atual esta vazio.");
@@ -306,10 +306,10 @@ namespace ModernPC12
             LadderProjectDocument document = LadderProjectCodec.Deserialize(CaptureProjectText());
             Tp02LadderCompilationResult result = Tp02LadderTargetCompiler.Compile(document);
             if (!result.Success)
-                throw new InvalidDataException("compilacao TP02 possui " + result.Errors.Count.ToString(CultureInfo.InvariantCulture) + " erro(s)");
+                throw new InvalidDataException("compilação TP02 possui " + result.Errors.Count.ToString(CultureInfo.InvariantCulture) + " erro(s)");
             if (result.Words.Count < 1) throw new InvalidDataException("projeto sem passos TP02");
             if (!string.Equals(result.Words[result.Words.Count - 1].ToHex(), "007000", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("ultimo passo nao e F-00 END (007000)");
+                throw new InvalidDataException("último passo não e F-00 END (007000)");
             return new List<Tp02MachineWord>(result.Words);
         }
 
@@ -361,18 +361,18 @@ namespace ModernPC12
                         SetPgStateSafe();
                         AppendLogSafe("PASS LINK PG/PC12: HELLO " + hello + " confirmado com checksum FF.");
                         AppendLogSafe("Perfil confirmado: " + profileName + ".");
-                        AppendLogSafe("SEGURANCA: nenhum comando PG posterior ao CON-ICB foi transmitido.");
-                        AppendLogSafe("GRAVACAO: bloqueada em PG. WBP pertence ao Computer Link; escrita PG proprietaria ainda nao habilitada.");
+                        AppendLogSafe("SEGURANÇA: nenhum comando PG posterior ao CON-ICB foi transmitido.");
+                        AppendLogSafe("GRAVAÇÃO: bloqueada em PG. WBP pertence ao Computer Link; escrita PG proprietaria ainda não habilitada.");
                     }
                     else
                     {
-                        AppendLogSafe("PG/PC12 nao confirmou HELLO. Tentando Computer Link 19200 7N1...");
+                        AppendLogSafe("PG/PC12 não confirmou HELLO. Tentando Computer Link 19200 7N1...");
                         using (TP02ComputerLinkClient client = new TP02ComputerLinkClient(port, station, AppendLogSafe))
                         {
                             lastState = client.ReadState();
                             SetStateSafe(lastState);
 
-                            AppendLogSafe("RBP #1: leitura completa ate F-00 END...");
+                            AppendLogSafe("RBP #1: leitura completa até F-00 END...");
                             List<Tp02MachineWord> first = client.ReadProgram();
                             TP02ComputerLinkFiles.SaveHex(Path.Combine(sessionDirectory, "read-1.tp02.hex"), first);
                             TP02ComputerLinkFiles.SaveDump(Path.Combine(sessionDirectory, "read-1.rbpdump"), first);
@@ -400,7 +400,7 @@ namespace ModernPC12
                     }
                     else if (pgLinkDetected)
                     {
-                        AppendLog("FASE 1 APROVADA: link PG/PC12 confirmado de forma nao destrutiva.");
+                        AppendLog("FASE 1 APROVADA: link PG/PC12 confirmado de forma não destrutiva.");
                     }
                     else
                     {
@@ -422,15 +422,15 @@ namespace ModernPC12
                             + "HELLO: " + pgHelloVariant + "\r\n"
                             + "Perfil: " + pgProfile + "\r\n\r\n"
                             + "O OpenLadderStudio confirmou o cabo, a COM e o link com o TP02. Nenhum comando destrutivo foi enviado.\r\n\r\n"
-                            + "A gravacao permanece bloqueada neste modo porque a escrita PG proprietaria ainda nao esta habilitada.",
+                            + "A gravação permanece bloqueada neste modo porque a escrita PG proprietaria ainda não esta habilitada.",
                             "TP02 - LINK PG APROVADO", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
                         MessageBox.Show(this,
                             lastState == Tp02ComputerLinkState.Stop
-                                ? "Computer Link e leitura fisica aprovados. O PLC esta em STOP; a validacao de gravacao foi liberada."
-                                : "Computer Link e leitura fisica aprovados. Coloque o PLC em STOP e execute novamente a fase 1 para liberar a gravacao.",
+                                ? "Computer Link e leitura física aprovados. O PLC esta em STOP; a validação de gravação foi liberada."
+                                : "Computer Link e leitura física aprovados. Coloque o PLC em STOP e execute novamente a fase 1 para liberar a gravação.",
                             "TP02 - Fase 1", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }));
@@ -496,7 +496,7 @@ namespace ModernPC12
                 }
                 catch (Exception ex)
                 {
-                    AppendLogSafe("PG PERFIL sem confirmacao: " + names[p] + " - " + ex.Message);
+                    AppendLogSafe("PG PERFIL sem confirmação: " + names[p] + " - " + ex.Message);
                 }
                 finally
                 {
@@ -596,17 +596,17 @@ namespace ModernPC12
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "Gravacao bloqueada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(this, ex.Message, "Gravação bloqueada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             DialogResult confirm = MessageBox.Show(this,
-                "TESTE FISICO DE GRAVACAO REAL - COMPUTER LINK\r\n\r\n"
+                "TESTE FÍSICO DE GRAVAÇÃO REAL - COMPUTER LINK\r\n\r\n"
                 + "Porta: " + port + "\r\n"
-                + "Estacao: " + station.ToString("00", CultureInfo.InvariantCulture) + "\r\n"
+                + "Estação: " + station.ToString("00", CultureInfo.InvariantCulture) + "\r\n"
                 + "Passos do projeto atual: " + words.Count.ToString(CultureInfo.InvariantCulture) + "\r\n\r\n"
-                + "O programa existente sera salvo em backup ANTES da escrita. O WBP so sera enviado se PSR confirmar STOP. Cada bloco e o programa final serao relidos por RBP e comparados.\r\n\r\n"
-                + "Continuar com a gravacao real?",
+                + "O programa existente será salvo em backup ANTES da escrita. O WBP so será enviado se PSR confirmar STOP. Cada bloco e o programa final serão relidos por RBP e comparados.\r\n\r\n"
+                + "Continuar com a gravação real?",
                 "Confirmar teste final TP02", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
             if (confirm != DialogResult.Yes) return;
 
@@ -614,7 +614,7 @@ namespace ModernPC12
             writePassed = false;
             UpdateStageLabels();
             AppendLog(new string('-', 78));
-            AppendLog("FASE 2 iniciada: gravacao e verificacao real via Computer Link.");
+            AppendLog("FASE 2 iniciada: gravação e verificação real via Computer Link.");
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -629,10 +629,10 @@ namespace ModernPC12
                         lastState = state;
                         SetStateSafe(state);
                         if (state != Tp02ComputerLinkState.Stop)
-                            throw new InvalidOperationException("PLC deixou STOP; nenhum WBP sera enviado.");
+                            throw new InvalidOperationException("PLC deixou STOP; nenhum WBP será enviado.");
 
                         backup = client.WriteProgramWithBackup(words, backupRoot);
-                        AppendLogSafe("Releitura independente apos WriteProgramWithBackup...");
+                        AppendLogSafe("Releitura independente após WriteProgramWithBackup...");
                         List<Tp02MachineWord> finalRead = client.ReadProgram();
                         EnsureEqual(words, finalRead, "projeto compilado x releitura final independente");
                         TP02ComputerLinkFiles.SaveHex(Path.Combine(sessionDirectory, "after-write.tp02.hex"), finalRead);
@@ -658,7 +658,7 @@ namespace ModernPC12
                     UpdateStageLabels();
                     WriteReport();
                     if (failure == null)
-                        MessageBox.Show(this, "Leitura e gravacao fisicas aprovadas via Computer Link.", "TP02 - VALIDACAO APROVADA", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(this, "Leitura e gravação físicas aprovadas via Computer Link.", "TP02 - VALIDAÇÃO APROVADA", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     else
                         MessageBox.Show(this, failure.Message, "TP02 - Fase 2 falhou", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }));
@@ -697,7 +697,7 @@ namespace ModernPC12
             {
                 readLabel.Text = "PASS - link PG/PC12 confirmado por HELLO seguro (TP-232PG)";
                 readLabel.ForeColor = Success;
-                writeLabel.Text = "BLOQUEADA EM PG - escrita proprietaria PG ainda nao habilitada";
+                writeLabel.Text = "BLOQUEADA EM PG - escrita proprietaria PG ainda não habilitada";
                 writeLabel.ForeColor = Warning;
                 writeValidationButton.Enabled = false;
                 return;
@@ -721,12 +721,12 @@ namespace ModernPC12
             }
             else if (readPassed && lastState == Tp02ComputerLinkState.Stop)
             {
-                writeLabel.Text = "LIBERADA - Computer Link + PLC em STOP; exige confirmacao";
+                writeLabel.Text = "LIBERADA - Computer Link + PLC em STOP; exige confirmação";
                 writeLabel.ForeColor = Warning;
             }
             else if (readPassed)
             {
-                writeLabel.Text = "AGUARDANDO STOP - nenhuma escrita sera enviada em RUN";
+                writeLabel.Text = "AGUARDANDO STOP - nenhuma escrita será enviada em RUN";
                 writeLabel.ForeColor = Warning;
             }
             else
@@ -777,8 +777,8 @@ namespace ModernPC12
             try
             {
                 StringBuilder report = new StringBuilder();
-                string mode = pgLinkDetected ? "PG/PC12" : (readPassed ? "COMPUTER LINK" : "NAO CONFIRMADO");
-                report.AppendLine("OpenLadder Studio - Validacao fisica WEG TP02");
+                string mode = pgLinkDetected ? "PG/PC12" : (readPassed ? "COMPUTER LINK" : "NÃO CONFIRMADO");
+                report.AppendLine("OpenLadder Studio - Validação física WEG TP02");
                 report.AppendLine("Data: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
                 report.AppendLine("Sessao: " + sessionDirectory);
                 report.AppendLine("Porta: " + (portCombo != null && portCombo.SelectedItem != null ? portCombo.SelectedItem.ToString() : "-"));
@@ -788,15 +788,15 @@ namespace ModernPC12
                     report.AppendLine("HELLO PG: " + pgHelloVariant);
                     report.AppendLine("Perfil PG: " + pgProfile);
                 }
-                report.AppendLine("Estacao Computer Link: " + (stationBox == null ? "-" : ((int)stationBox.Value).ToString("00", CultureInfo.InvariantCulture)));
+                report.AppendLine("Estação Computer Link: " + (stationBox == null ? "-" : ((int)stationBox.Value).ToString("00", CultureInfo.InvariantCulture)));
                 report.AppendLine("Estado via Computer Link: " + lastState.ToString().ToUpperInvariant());
                 report.AppendLine("FASE 1: " + (pgLinkDetected
-                    ? "PASS LINK PG/PC12 (HELLO seguro; programa ainda nao lido pelo caminho PG)"
+                    ? "PASS LINK PG/PC12 (HELLO seguro; programa ainda não lido pelo caminho PG)"
                     : (readPassed ? "PASS COMPUTER LINK + RBP" : "PENDENTE/FAIL")));
-                report.AppendLine("FASE 2 - gravacao: " + (writePassed ? "PASS" : (pgLinkDetected ? "BLOQUEADA EM PG" : "PENDENTE/FAIL")));
+                report.AppendLine("FASE 2 - gravação: " + (writePassed ? "PASS" : (pgLinkDetected ? "BLOQUEADA EM PG" : "PENDENTE/FAIL")));
                 report.AppendLine("Resultado: " + (pgLinkDetected
-                    ? "LINK PG/PC12 APROVADO; ESCRITA PG PROPRIETARIA AINDA NAO HABILITADA"
-                    : (readPassed && writePassed ? "RBP/WBP APROVADO EM HARDWARE REAL" : "AINDA NAO FECHADO")));
+                    ? "LINK PG/PC12 APROVADO; ESCRITA PG PROPRIETARIA AINDA NÃO HABILITADA"
+                    : (readPassed && writePassed ? "RBP/WBP APROVADO EM HARDWARE REAL" : "AINDA NÃO FECHADO")));
                 File.WriteAllText(Path.Combine(sessionDirectory, "validation-report.txt"), report.ToString(), Encoding.UTF8);
             }
             catch { }
