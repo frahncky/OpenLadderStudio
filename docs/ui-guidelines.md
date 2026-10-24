@@ -156,6 +156,27 @@ transformação, inclusive com rolagem. Os fundos de destaque são desenhados an
 dos fios para preservar as conexões dos elementos. O grid usa linhas contínuas,
 com L1, L2… na lateral e C1, C2… no topo para identificar as posições.
 
+
+### Símbolos Ladder
+
+O desenho dos elementos fica em `LadderSymbols.cs` e segue a IEC 61131-3: contato NA `--| |--`,
+NF `--|/|--` (barra inclinada dentro das barras), bordas `|P|` e `|N|`, bobinas `( )`, `(S)` e
+`(R)`, e blocos (temporizador, contador, função, END) com cabeçalho, pinos de entrada e saída
+(`IN`/`Q`, `CU`/`Q`, `EN`/`ENO`) e operandos na base. O endereço do operando fica acima do contato
+ou da bobina (abaixo, no ramo paralelo) e encolhe se não couber na célula.
+
+Geometria em unidades lógicas do canvas; **texto em pixels** (`GraphicsUnit.Pixel`), nunca em
+pontos, para o rótulo crescer com o desenho em qualquer zoom e escala de DPI.
+
+Energização: durante a simulação, o shell repassa o resultado de cada varredura ao canvas
+(`SetRungPower`). Linha energizada recebe fio mais grosso e símbolos em `Ok`, com preenchimento
+translúcido (`OpenLadderPalette.Tint`), de modo que o estado não dependa só da cor. Como o motor
+informa o resultado por linha, e não por elemento, colunas com ramo paralelo ficam neutras em vez
+de afirmar uma condução que não se conhece. Só vale quando o simulador roda o projeto do editor,
+não o programa de exemplo.
+
+O cabeçalho de colunas usa **C1 a C8**, como a calha usa **L1, L2…**.
+
 ## Erros visíveis ao usuário
 
 Falha inesperada não pode encerrar o aplicativo em silêncio. `StudioDiagnostics` captura
