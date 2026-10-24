@@ -171,7 +171,7 @@ $shell = $shell.Replace('            menu.Items.Add(exibir);', '            menu
 # Put line editing where it is immediately visible above the instruction
 # library. These controls used to be at the very bottom of a long scroll list.
 $shell = [regex]::Replace($shell,
-    '(?m)^\s*(?:V73AddInstruction\(list, "Selecionar"[^\r\n]*|V73AddAction\(list, "(?:Apagar selecionado|Adicionar linha|Remover linha)"[^\r\n]*)\r?\n', '')
+    '(?m)^\s*(?:V73AddSection\(list, "EDIÇÃO"\)|V73AddInstruction\(list, "Selecionar"[^\r\n]*|V73AddAction\(list, "(?:Apagar selecionado|Adicionar linha|Remover linha)"[^\r\n]*)\r?\n', '')
 $editActions = @'
             V73AddSection(list, "EDIÇÃO");
             V73AddInstruction(list, "Selecionar / mover", StudioIcon.Select, LadderTool.Select);
