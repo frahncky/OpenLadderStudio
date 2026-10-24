@@ -127,7 +127,7 @@ namespace ModernPC12
 
         public LadderEditorForm()
         {
-            Text = "PC12 Ladder Studio";
+            Text = "OpenLadder Studio — Editor Ladder";
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(1040, 690);
             Size = new Size(1260, 800);
@@ -150,7 +150,7 @@ namespace ModernPC12
             header.BackColor = SurfaceColor;
 
             Label brand = new Label();
-            brand.Text = "PC12 LADDER STUDIO";
+            brand.Text = "OPENLADDER STUDIO";
             brand.AutoSize = true;
             brand.Font = new Font("Segoe UI Semibold", 13.0f, FontStyle.Bold);
             brand.ForeColor = TextPrimary;
@@ -158,7 +158,7 @@ namespace ModernPC12
             header.Controls.Add(brand);
 
             Label sub = new Label();
-            sub.Text = "Editor Ladder moderno • WEG TP02";
+            sub.Text = "Editor visual de lógica Ladder";
             sub.AutoSize = true;
             sub.ForeColor = TextSecondary;
             sub.Location = new Point(24, 39);
@@ -230,7 +230,7 @@ namespace ModernPC12
             toolbox.AutoScroll = true;
 
             Label toolsTitle = new Label();
-            toolsTitle.Text = "ELEMENTOS TP02";
+            toolsTitle.Text = "ELEMENTOS LADDER";
             toolsTitle.AutoSize = true;
             toolsTitle.Font = new Font("Segoe UI Semibold", 9.0f, FontStyle.Bold);
             toolsTitle.ForeColor = TextSecondary;
@@ -255,7 +255,7 @@ namespace ModernPC12
             AddToolButton(toolbox, "×  Apagar", t, LadderTool.Erase); t += 48;
 
             Label help = new Label();
-            help.Text = "TP02: X/Y/C/SC para lógica\r\nTMR/CNT: V0001 a V0256\r\nDuplo clique: editar parâmetro\r\nCtrl+Z: desfazer • Del: apagar";
+            help.Text = "Selecione um elemento e clique na grade.\r\nDuplo clique: editar parâmetros\r\nCtrl+Z: desfazer • Del: apagar";
             help.AutoSize = true;
             help.Font = new Font("Segoe UI", 8.2f);
             help.ForeColor = TextSecondary;

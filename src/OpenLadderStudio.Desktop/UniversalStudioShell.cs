@@ -82,6 +82,7 @@ namespace ModernPC12
         private StudioConsole console;
         private StudioPanel consolePanel;
         private bool inspectorAllowed = true;
+        private readonly ToolTip toolbarToolTip = new ToolTip();
         private ToolStripMenuItem miNav;
         private ToolStripMenuItem miProps;
         private ToolStripMenuItem miConsole;
@@ -256,13 +257,20 @@ namespace ModernPC12
 
         private void AddToolButton(Control bar, string text, StudioIcon icon, bool emphasis, EventHandler action)
         {
+            AddToolButton(bar, text, icon, emphasis, false, action);
+        }
+
+        private void AddToolButton(Control bar, string text, StudioIcon icon, bool emphasis, bool destructive, EventHandler action)
+        {
             IconToolButton b = new IconToolButton();
             b.Text = text;
             b.Icon = icon;
             b.Emphasis = emphasis;
+            b.Destructive = destructive;
             b.Height = 54;
             b.Width = b.MeasureWidth();
             b.Location = new Point(toolCursor, 3);
+            toolbarToolTip.SetToolTip(b, text);
             if (action != null) b.Click += action;
             bar.Controls.Add(b);
             toolCursor += b.Width;
@@ -301,15 +309,14 @@ namespace ModernPC12
             AddToolButton(bar, "Salvar", StudioIcon.Save, false, delegate { InvokeLadder("SaveProject", new object[] { false }); });
             AddToolSeparator(bar);
             AddToolButton(bar, "Desfazer", StudioIcon.Undo, false, delegate { InvokeLadder("Undo", null); });
-            AddToolButton(bar, "Linha", StudioIcon.Plus, false, delegate { InvokeLadder("AddRung", null); });
+            AddToolButton(bar, "Adicionar linha", StudioIcon.Plus, true, delegate { InvokeLadder("AddRung", null); });
+            AddToolButton(bar, "Excluir linha", StudioIcon.Minus, false, true, delegate { InvokeLadder("DeleteSelectedRung", null); });
+            AddToolButton(bar, "Apagar elemento", StudioIcon.Close, false, true, delegate { InvokeLadder("DeleteSelectedElement", null); });
             AddToolButton(bar, "Validar", StudioIcon.Check, false, delegate { InvokeLadder("ValidateProject", new object[] { true }); });
             AddToolSeparator(bar);
             AddToolButton(bar, "Controlador", StudioIcon.Chip, true, delegate { ShowDeviceManager(); });
             AddToolButton(bar, "Comunicação", StudioIcon.Plug, false, delegate { ShowCommunication(); });
             AddToolButton(bar, "Monitor", StudioIcon.Monitor, false, delegate { ShowMonitor(); });
-            AddToolButton(bar, "Portabilidade", StudioIcon.Folder, false, delegate { CheckPortability(); });
-            AddToolSeparator(bar);
-            AddToolButton(bar, "Atualizar", StudioIcon.Refresh, false, delegate { ShowUpdater(); });
             return bar;
         }
 

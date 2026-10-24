@@ -42,7 +42,7 @@ $text = Replace-Required $text @'
             {
                 for (int c = 0; c < LadderRung.ColumnCount; c++)
                 {
-                    string label = "C" + (c + 1).ToString();
+                    string label = (c + 1).ToString("00");
                     SizeF ls = g.MeasureString(label, outputFont);
                     g.DrawString(label, outputFont, outputText,
                         LeftRail + c * cellWidth + (cellWidth - ls.Width) / 2f, TopMargin - 27);

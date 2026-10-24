@@ -335,6 +335,7 @@ namespace ModernPC12
         private bool pressed;
         public StudioIcon Icon = StudioIcon.None;
         public bool Emphasis;
+        public bool Destructive;
 
         public IconToolButton()
         {
@@ -360,10 +361,10 @@ namespace ModernPC12
             Color back = pressed ? StudioTheme.Shell : hover ? StudioTheme.ChromeLight : StudioTheme.Chrome;
             using (SolidBrush b = new SolidBrush(back)) g.FillRectangle(b, ClientRectangle);
 
-            Color fore = Emphasis ? StudioTheme.Accent : StudioTheme.Fore;
+            Color fore = Destructive ? OpenLadderPalette.Danger : Emphasis ? StudioTheme.Accent : StudioTheme.Fore;
             StudioGlyph.Draw(g, Icon, new Rectangle((Width - 20) / 2, 8, 20, 20), fore);
             TextRenderer.DrawText(g, Text, StudioTheme.Small, new Rectangle(0, 32, Width, 16),
-                Emphasis ? StudioTheme.Accent : StudioTheme.Muted,
+                Destructive ? OpenLadderPalette.Danger : Emphasis ? StudioTheme.Accent : StudioTheme.Muted,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.EndEllipsis);
         }
     }
