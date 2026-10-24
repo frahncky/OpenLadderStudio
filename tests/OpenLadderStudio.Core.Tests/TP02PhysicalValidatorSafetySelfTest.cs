@@ -101,6 +101,31 @@ internal static class TP02PhysicalValidatorSafetySelfTest
         Check(!TP02PhysicalValidationSafety.IsAllowed(write09), "PG09 deve ser bloqueado");
         Check(!TP02PhysicalValidationSafety.IsAllowed(Tp02PgMemoryProtocol.BuildSetReset(Tp02PgMemoryProtocol.Area.Y, 1, true)), "PG35 deve ser bloqueado");
 
+        // Classificação do HELLO (ValidateHello depende só desta função para decidir STOP/RUN).
+        TP02PhysicalValidationSafety.HelloState None = TP02PhysicalValidationSafety.HelloState.None;
+        TP02PhysicalValidationSafety.HelloState Stop = TP02PhysicalValidationSafety.HelloState.Stop;
+        TP02PhysicalValidationSafety.HelloState Run = TP02PhysicalValidationSafety.HelloState.Run;
+        TP02PhysicalValidationSafety.HelloState Amb = TP02PhysicalValidationSafety.HelloState.Ambiguous;
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0x80, 0x01, 0x09, 0x75 }) == Stop, "HELLO STOP exato");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0xC0, 0x01, 0x09, 0x35 }) == Run, "HELLO RUN exato");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0x80, 0x01, 0x09, 0x75, 0xC0, 0x01, 0x09, 0x35 }) == Amb, "STOP depois RUN deve ser ambiguo");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0xC0, 0x01, 0x09, 0x35, 0x80, 0x01, 0x09, 0x75 }) == Amb, "RUN antes de STOP deve ser ambiguo");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0x55, 0xC0, 0x01, 0x09, 0x35, 0xAA, 0x80, 0x01, 0x09, 0x75, 0x00 }) == Amb, "RUN e STOP com ruido devem ser ambiguos");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0x00, 0xFF, 0xC0, 0x01, 0x09, 0x35, 0x13 }) == Run, "RUN com ruido");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0x00, 0x80, 0x01, 0x09, 0x75, 0xFF }) == Stop, "STOP com ruido");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0x80, 0x01, 0x09 }) == None, "STOP parcial nao classifica");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0xC0, 0x01 }) == None, "RUN parcial nao classifica");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0x80, 0x01, 0x09, 0x35 }) == None, "cabeca STOP com cauda RUN nao classifica");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0xC0, 0x01, 0x09, 0x75 }) == None, "cabeca RUN com cauda STOP nao classifica");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[0]) == None, "HELLO vazio");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(null) == None, "HELLO nulo");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC }) == None, "HELLO ruido");
+        Check(TP02PhysicalValidationSafety.ClassifyHello(TP02PhysicalValidationSafety.Hello) == None, "eco do HELLO nao classifica");
+        byte[] ecoRun = new byte[TP02PhysicalValidationSafety.Hello.Length + 4];
+        Array.Copy(TP02PhysicalValidationSafety.Hello, ecoRun, TP02PhysicalValidationSafety.Hello.Length);
+        Array.Copy(TP02PhysicalValidationSafety.HelloRun, 0, ecoRun, TP02PhysicalValidationSafety.Hello.Length, 4);
+        Check(TP02PhysicalValidationSafety.ClassifyHello(ecoRun) == Run, "eco do HELLO seguido de RUN deve ser RUN");
+
         if (failures != 0)
         {
             Console.Error.WriteLine("TP02PhysicalValidatorSafetySelfTest: " + failures + " falha(s).");

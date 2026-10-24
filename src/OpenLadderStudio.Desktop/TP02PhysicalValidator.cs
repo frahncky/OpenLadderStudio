@@ -91,6 +91,36 @@ namespace ModernPC12
             return false;
         }
 
+        internal enum HelloState { None, Stop, Run, Ambiguous }
+
+        internal static readonly byte[] HelloStop = new byte[] { 0x80, 0x01, 0x09, 0x75 };
+        internal static readonly byte[] HelloRun = new byte[] { 0xC0, 0x01, 0x09, 0x35 };
+
+        /// <summary>
+        /// Classifica a resposta bruta do HELLO. STOP e RUN no mesmo buffer é ambíguo e aborta a campanha.
+        /// </summary>
+        internal static HelloState ClassifyHello(byte[] raw)
+        {
+            bool stop = ContainsSequence(raw, HelloStop);
+            bool run = ContainsSequence(raw, HelloRun);
+            if (stop && run) return HelloState.Ambiguous;
+            if (run) return HelloState.Run;
+            if (stop) return HelloState.Stop;
+            return HelloState.None;
+        }
+
+        internal static bool ContainsSequence(byte[] raw, byte[] sequence)
+        {
+            if (raw == null || sequence == null || sequence.Length == 0 || raw.Length < sequence.Length) return false;
+            for (int i = 0; i <= raw.Length - sequence.Length; i++)
+            {
+                bool ok = true;
+                for (int j = 0; j < sequence.Length; j++) if (raw[i + j] != sequence[j]) { ok = false; break; }
+                if (ok) return true;
+            }
+            return false;
+        }
+
         internal static bool Same(byte[] a, byte[] b)
         {
             if (a == null || b == null || a.Length != b.Length) return false;
@@ -115,7 +145,8 @@ namespace ModernPC12
         private readonly TextBox log = new TextBox();
         private readonly Label status = new Label();
         private readonly CheckBox exhaustive = new CheckBox();
-        private volatile bool plcInRun;
+        // Acessado só pela thread da campanha; zerado no início de cada RunCampaign.
+        private bool plcInRun;
         private string sessionDir = string.Empty;
         private string sessionLog = string.Empty;
         private bool busy;
@@ -357,9 +388,6 @@ namespace ModernPC12
 
         private string ValidateHello(ref SerialPort port, string portName)
         {
-            byte[] stop = new byte[] { 0x80, 0x01, 0x09, 0x75 };
-            byte[] runState = new byte[] { 0xC0, 0x01, 0x09, 0x35 };
-
             for (int cycle = 1; cycle <= 2; cycle++)
             {
                 if (cycle == 2)
@@ -380,16 +408,17 @@ namespace ModernPC12
                         + "-" + attempt.ToString(CultureInfo.InvariantCulture);
                     byte[] raw = ExchangeRaw(port, TP02PhysicalValidationSafety.Hello,
                         attempt == 1 ? 2600 : 3000, 240, label);
-                    if (Contains(raw, stop) && Contains(raw, runState))
+                    TP02PhysicalValidationSafety.HelloState state = TP02PhysicalValidationSafety.ClassifyHello(raw);
+                    if (state == TP02PhysicalValidationSafety.HelloState.Ambiguous)
                         throw new InvalidOperationException("HELLO ambíguo: STOP e RUN na mesma resposta. Campanha abortada.");
-                    if (Contains(raw, stop))
+                    if (state == TP02PhysicalValidationSafety.HelloState.Stop)
                     {
                         AppendSafe("HELLO ESTÁVEL: STOP confirmado no ciclo " + cycle.ToString(CultureInfo.InvariantCulture)
                             + ", tentativa " + attempt.ToString(CultureInfo.InvariantCulture) + ".");
                         return "80 01 09 75 (STOP); ciclo=" + cycle.ToString(CultureInfo.InvariantCulture)
                             + "; tentativa=" + attempt.ToString(CultureInfo.InvariantCulture);
                     }
-                    if (Contains(raw, runState))
+                    if (state == TP02PhysicalValidationSafety.HelloState.Run)
                     {
                         plcInRun = true;
                         AppendSafe("HELLO ESTÁVEL: RUN confirmado no ciclo " + cycle.ToString(CultureInfo.InvariantCulture)
