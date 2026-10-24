@@ -1,5 +1,28 @@
 # Laboratorio TP02 offline
 
+## Entrega de engenharia reversa (23/10/2026)
+
+O comportamento de leitura de programa do PC12 2.1 foi reconstruído no
+OpenLadder Studio para uso em laboratório, sem PLC físico:
+
+- perfil serial estático observado: `19200 8O1`;
+- moldura de transporte com checksum de soma módulo 256;
+- solicitação inicial `PG38`, metadados de comprimento e leitura paginada
+  `PG34` em blocos de `0x50` words;
+- armazenamento `PG33`, reconstrução de `PG38/PG34`, fim `END` e cenários
+  de programa curto, esparso e de fronteira;
+- emulador VSPD para o par fechado `COM3 <-> COM4`, sem aceitar uma porta
+  serial arbitrária;
+- matriz offline aprovada em 23/10/2026: **144.946 verificações**, incluindo
+  BRAW, limites e fuzz de PG33, 50 páginas PG34, PG38, END e gates v1.56.
+
+O adaptador do PC12 legado também está automatizado em
+`src/OpenLadderStudio.Desktop/RunPc12VirtualRead.ps1`. Ele recompila um
+emulador isolado, mantém log e recusa executar fora do par VSerial previsto.
+O fluxo de interface do PC12 permanece uma conveniência de laboratório; a
+implementação moderna deve consumir os componentes TP02 diretamente, sem
+depender do executável legado.
+
 O objetivo deste roteiro e desenvolver e verificar o suporte TP02 sem PLC e
 sem abrir uma porta COM fisica. Ele nao substitui a validacao final em
 equipamento, mas permite repetir a maior parte do trabalho de protocolo com
