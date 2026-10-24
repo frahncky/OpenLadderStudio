@@ -13,6 +13,12 @@ Há agentes com o conhecimento detalhado de cada área em `.claude/agents/`. Del
 | `portugues` | acentuação, encoding, texto de interface |
 | `ladder-plc` | varredura, endereçamento, plantas simuladas |
 | `release` | versão, notas, CI, instalador, atualizador |
+| `driver-plc` | `IPlcDriver`, `IPlcDriverUi`, modelo de PLC novo |
+| `re-estatico` | engenharia reversa estática (REA/Ghidra) do software do fabricante |
+| `re-emulacao` | emulador, golden vectors, matriz offline |
+| `re-bancada` | roteiro e análise de testes no PLC físico (nunca transmite) |
+
+Para conduzir a engenharia reversa de ponta a ponta, use a skill `engenharia-reversa`. Ela orquestra os quatro últimos agentes, e a bancada física sempre volta para o humano.
 
 ## Quatro coisas que quebram o build ou o produto
 
