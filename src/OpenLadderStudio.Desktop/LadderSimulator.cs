@@ -380,6 +380,7 @@ namespace ModernPC12
             rungStrip.Bind(engine);
             ResetRun();
             programBox.Text = engine.DescribeProgram() + "\r\n\r\n" + DescribePlant();
+            PublishPower();
         }
 
         /// <summary>
@@ -935,6 +936,7 @@ namespace ModernPC12
 
             synoptic.Invalidate();
             rungStrip.Invalidate();
+            PublishPower();
 
             refreshCounter++;
             if (refreshCounter >= 3)
@@ -951,6 +953,40 @@ namespace ModernPC12
             RefreshMetrics();
             synoptic.Invalidate();
             rungStrip.Invalidate();
+            PublishPower();
+        }
+
+        /// <summary>
+        /// Resultado da ultima varredura por linha (true = energizada), na ordem das linhas do
+        /// editor. Vem nulo quando a simulacao usa o programa de exemplo ou ainda nao varreu.
+        /// </summary>
+        public event Action<bool[]> PowerChanged;
+
+        private bool[] lastPublishedPower;
+
+        private void PublishPower()
+        {
+            if (PowerChanged == null) return;
+
+            bool[] power = null;
+            if (!usingSample && engine.ScanCount > 0)
+            {
+                IList<CompiledRung> rungs = engine.Rungs;
+                power = new bool[rungs.Count];
+                for (int i = 0; i < rungs.Count; i++) power[i] = rungs[i].Reached && rungs[i].LastPower;
+            }
+
+            if (SamePower(power, lastPublishedPower)) return;
+            lastPublishedPower = power;
+            PowerChanged(power);
+        }
+
+        private static bool SamePower(bool[] a, bool[] b)
+        {
+            if (a == null || b == null) return a == b;
+            if (a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
+            return true;
         }
 
         private void RefreshIoList()

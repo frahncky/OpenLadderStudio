@@ -200,6 +200,12 @@ namespace ModernPC12
             return Pick(dr, dg, db, lr, lg, lb);
         }
 
+        /// <summary>Cor da paleta com transparencia, para destaques sobre o fundo (nao cria cor nova).</summary>
+        public static Color Tint(Color baseColor, int alpha)
+        {
+            return Color.FromArgb(alpha, baseColor);
+        }
+
         private static Color Pick(int dr, int dg, int db, int lr, int lg, int lb)
         {
             return IsDark ? Color.FromArgb(dr, dg, db) : Color.FromArgb(lr, lg, lb);

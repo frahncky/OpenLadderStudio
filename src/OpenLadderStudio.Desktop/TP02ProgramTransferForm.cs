@@ -34,22 +34,30 @@ namespace ModernPC12
         private Label projectLabel;
         private bool busy;
 
-        private readonly Color Shell = Color.FromArgb(18, 24, 31);
-        private readonly Color Chrome = Color.FromArgb(27, 36, 46);
-        private readonly Color Border = Color.FromArgb(55, 68, 82);
-        private readonly Color Accent = Color.FromArgb(38, 166, 154);
-        private readonly Color Fore = Color.FromArgb(226, 230, 234);
-        private readonly Color Muted = Color.FromArgb(158, 169, 180);
-        private readonly Color Warning = Color.FromArgb(224, 170, 64);
-        private readonly Color Danger = Color.FromArgb(214, 87, 87);
-        private readonly Color Success = Color.FromArgb(74, 190, 119);
+        private Color Shell { get { return OpenLadderPalette.Shell; } }
+        private Color Chrome { get { return OpenLadderPalette.Chrome; } }
+        private Color Border { get { return OpenLadderPalette.Border; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Fore { get { return OpenLadderPalette.Fore; } }
+        private Color Muted { get { return OpenLadderPalette.Muted; } }
+        private Color Warning { get { return OpenLadderPalette.Warning; } }
+        private Color Danger { get { return OpenLadderPalette.Danger; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
+
+        private ProgramFlowSteps flow;
+        private ProgramLogPanel logView;
+
+        private string ProfileName()
+        {
+            return profile == null ? "PLC" : (profile.Manufacturer + " " + profile.Model).Trim();
+        }
 
         public TP02ProgramTransferForm(PlcDeviceProfile profile, LadderEditorForm ladderForm)
         {
             this.profile = profile;
             this.ladderForm = ladderForm;
 
-            Text = "Transferencia de programa - WEG TP02";
+            Text = "Transferência de programa - " + ProfileName();
             StartPosition = FormStartPosition.CenterParent;
             MinimumSize = new Size(900, 650);
             Size = new Size(1040, 760);
@@ -72,13 +80,12 @@ namespace ModernPC12
             header.Height = 82;
             header.BackColor = Chrome;
             header.Padding = new Padding(20, 12, 20, 10);
-            Controls.Add(header);
 
-            Label title = NewLabel("WEG TP02 - TRANSFERENCIA DE PROGRAMA", 14.0f, FontStyle.Bold, Fore);
+            Label title = NewLabel("TRANSFERÊNCIA DE PROGRAMA", 14.0f, FontStyle.Bold, Fore);
             title.Location = new Point(20, 14);
             header.Controls.Add(title);
 
-            Label sub = NewLabel("Computer Link pela porta MMI | 19200 bps, 7N1 | PG/COM em LOW: pino 4 ligado ao pino 5", 8.8f, FontStyle.Regular, Muted);
+            Label sub = NewLabel(ProfileName() + "  |  Computer Link pela porta MMI | 19200 bps, 7N1 | PG/COM em LOW: pino 4 ligado ao pino 5", 8.8f, FontStyle.Regular, Muted);
             sub.Location = new Point(22, 46);
             header.Controls.Add(sub);
 
@@ -94,7 +101,6 @@ namespace ModernPC12
             controls.Height = 148;
             controls.BackColor = Shell;
             controls.Padding = new Padding(18, 12, 18, 10);
-            Controls.Add(controls);
 
             Label portLabel = NewLabel("Porta COM", 8.0f, FontStyle.Bold, Muted);
             portLabel.Location = new Point(18, 14);
@@ -144,28 +150,29 @@ namespace ModernPC12
             safe.MaximumSize = new Size(430, 44);
             controls.Controls.Add(safe);
 
-            Panel logPanel = new Panel();
-            logPanel.Dock = DockStyle.Fill;
-            logPanel.BackColor = Chrome;
-            logPanel.Padding = new Padding(12);
-            Controls.Add(logPanel);
-            logPanel.BringToFront();
-
             logBox = new TextBox();
-            logBox.Dock = DockStyle.Fill;
             logBox.Multiline = true;
             logBox.ReadOnly = true;
             logBox.WordWrap = false;
             logBox.ScrollBars = ScrollBars.Both;
             logBox.Font = new Font("Consolas", 9.0f);
-            logBox.BackColor = Color.FromArgb(16, 22, 29);
+            logBox.BackColor = OpenLadderPalette.Canvas;
             logBox.ForeColor = Fore;
             logBox.BorderStyle = BorderStyle.FixedSingle;
-            logPanel.Controls.Add(logBox);
+            logView = new ProgramLogPanel(logBox);
 
             AppendLog("TP02 Computer Link pronto.");
             AppendLog("Leitura usa RBP. Escrita usa WBP com backup e verificacao RBP.");
             AppendLog("Nao use a porta PG do PC12: esta tela usa a MMI em Computer Link.");
+
+            // A ancoragem resolve do ultimo filho para o primeiro: o que entra por ultimo
+            // fica na borda externa. Ordem visual de cima para baixo: cabecalho, passos,
+            // comandos e registro.
+            flow = new ProgramFlowSteps("Conectar", "Verificar", "Transferir", "Confirmar");
+            Controls.Add(logView);
+            Controls.Add(controls);
+            Controls.Add(flow);
+            Controls.Add(header);
         }
 
         private Label NewLabel(string text, float size, FontStyle style, Color color)
@@ -190,7 +197,7 @@ namespace ModernPC12
             if (primary)
             {
                 button.BackColor = Accent;
-                button.ForeColor = Color.White;
+                button.ForeColor = OpenLadderPalette.OnAccent;
                 button.FlatAppearance.BorderSize = 0;
             }
             else
@@ -416,6 +423,9 @@ namespace ModernPC12
             SetButtonsEnabled(false);
             AppendLog(new string('-', 72));
             AppendLog(operation + " iniciado.");
+            flow.Reset();
+            flow.Advance(0);
+            logView.SetBusy(operation, true);
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -428,14 +438,19 @@ namespace ModernPC12
                 {
                     busy = false;
                     SetButtonsEnabled(true);
+                    logView.SetBusy(operation, false);
                     if (failure == null)
                     {
+                        if (operation.StartsWith("GRAVA", StringComparison.Ordinal)) flow.CompleteAll();
+                        else if (operation == "TESTE") { flow.Set(0, FlowState.Done); flow.Set(1, FlowState.Done); }
+                        else flow.Set(0, FlowState.Done);
                         AppendLog(success);
                         AppendLog(operation + " concluido.");
                         MessageBox.Show(this, success, "TP02", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
+                        flow.FailActive();
                         AppendLog("ERRO: " + failure.Message);
                         stateLabel.Text = "FALHA";
                         stateLabel.ForeColor = Danger;
@@ -473,9 +488,20 @@ namespace ModernPC12
         private void AppendLog(string text)
         {
             if (logBox == null) return;
+            ObserveFlow(text);
             logBox.AppendText("[" + DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture) + "] " + text + Environment.NewLine);
             logBox.SelectionStart = logBox.TextLength;
             logBox.ScrollToCaret();
+        }
+
+        /// <summary>So apresentacao: os marcos do registro movem a faixa de passos; nada e transmitido por aqui.</summary>
+        private void ObserveFlow(string text)
+        {
+            if (flow == null || !busy || string.IsNullOrEmpty(text)) return;
+            if (text.StartsWith("COM aberta", StringComparison.Ordinal)) flow.Advance(0);
+            else if (text.StartsWith("Estado PLC", StringComparison.Ordinal)) flow.Advance(1);
+            else if (text.StartsWith("Lendo programa atual para backup", StringComparison.Ordinal)) flow.Advance(2);
+            else if (text.IndexOf("final do programa", StringComparison.OrdinalIgnoreCase) >= 0) flow.Advance(3);
         }
 
         private void AppendLogSafe(string text)
