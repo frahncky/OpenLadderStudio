@@ -1,0 +1,142 @@
+name: Validate TP02 PG emulator
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/OpenLadderStudio.Desktop/TP02PgEmulator.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgReadback.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgReadbackSelfTest.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgComprehensiveSelfTest.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgV156Scenario.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
+      - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
+      - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
+      - 'src/OpenLadderStudio.Desktop/RunTp02OfflineLab.bat'
+      - 'src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat'
+      - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat'
+      - 'docs/TP02-PG-EMULATOR.md'
+      - 'docs/TP02-OFFLINE-LAB.md'
+      - 'docs/TP02-PG-OPCODE-MAP.md'
+      - '.github/workflows/validate-tp02-emulator.yml'
+  pull_request:
+    paths:
+      - 'src/OpenLadderStudio.Desktop/TP02PgEmulator.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgReadback.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgReadbackSelfTest.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgComprehensiveSelfTest.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgV156Scenario.cs'
+      - 'src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt'
+      - 'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1'
+      - 'src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat'
+      - 'src/OpenLadderStudio.Desktop/RunTp02OfflineLab.bat'
+      - 'src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat'
+      - 'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1'
+      - 'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat'
+      - 'docs/TP02-PG-EMULATOR.md'
+      - 'docs/TP02-OFFLINE-LAB.md'
+      - 'docs/TP02-PG-OPCODE-MAP.md'
+      - '.github/workflows/validate-tp02-emulator.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse PowerShell tools
+        shell: powershell
+        run: |
+          $files = @(
+            'src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1',
+            'src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1',
+            'src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1',
+            'src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1'
+          )
+          foreach ($file in $files) {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file),
+              [ref]$null,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors -and $errors.Count -gt 0) {
+              $errors | Format-List | Out-String | Write-Error
+              exit 1
+            }
+          }
+
+      - name: Run capture analyzer offline self-test
+        shell: powershell
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          .\AnalyzeTp02Capture.ps1 -SelfTest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run command discovery offline self-test
+        shell: powershell
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          .\DiscoverTp02PgCommands.ps1 -SelfTest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build TP02 emulator
+        shell: cmd
+        working-directory: src/OpenLadderStudio.Desktop
+        run: BuildTp02Emulator.bat
+
+      - name: Run full emulator test matrix
+        shell: cmd
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          RunTp02OfflineLab.bat
+          if errorlevel 1 exit /b 1
+
+      - name: Run explicit v1.56 323-to-3 roundtrip
+        shell: cmd
+        working-directory: src/OpenLadderStudio.Desktop
+        run: |
+          OpenLadderTP02Emulator.exe --self-test-v156
+          if errorlevel 1 exit /b 1
+
+      - name: Confirm executable
+        shell: powershell
+        run: |
+          $exe = 'src/OpenLadderStudio.Desktop/OpenLadderTP02Emulator.exe'
+          if (-not (Test-Path $exe)) { throw "Executavel nao foi gerado: $exe" }
+          Write-Host "OK: $exe"
+
+      - name: Package TP02 virtual bench
+        uses: actions/upload-artifact@v4
+        with:
+          name: tp02-pg-emulator-v156-bench
+          path: |
+            src/OpenLadderStudio.Desktop/OpenLadderTP02Emulator.exe
+            src/OpenLadderStudio.Desktop/RunTp02EmulatorV156.bat
+            src/OpenLadderStudio.Desktop/AnalyzeTp02Capture.ps1
+            src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.ps1
+            src/OpenLadderStudio.Desktop/DiscoverTp02PgRunStop.bat
+            src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.ps1
+            src/OpenLadderStudio.Desktop/DiscoverTp02PgCommands.bat
+            src/OpenLadderStudio.Desktop/BuildTp02Emulator.bat
+            src/OpenLadderStudio.Desktop/RunTp02OfflineLab.bat
+            src/OpenLadderStudio.Desktop/TP02PgEmulator.cs
+            src/OpenLadderStudio.Desktop/TP02PgReadback.cs
+            src/OpenLadderStudio.Desktop/TP02PgReadbackSelfTest.cs
+            src/OpenLadderStudio.Desktop/TP02PgComprehensiveSelfTest.cs
+            src/OpenLadderStudio.Desktop/TP02PgV156Scenario.cs
+            src/OpenLadderStudio.Desktop/TP02PgEmulatorRules.txt
+            src/OpenLadderStudio.Desktop/PrepareTp02EmulatorRules.ps1
+            docs/TP02-PG-EMULATOR.md
+            docs/TP02-OFFLINE-LAB.md
+            docs/TP02-PG-OPCODE-MAP.md
+          if-no-files-found: error
