@@ -372,6 +372,33 @@ $shell = Remove-Field $shell 'private Label toolValue;' 'toolValue'
 $shell = Remove-Field $shell 'private TextBox elementSearch;' 'elementSearch'
 foreach ($dead in @('BuildTp02HomeBarV126', 'NewTp02HomeButtonV126', 'ShowTp02DryRun', 'tp02ControlForm', 'toolValue', 'elementSearch')) { Assert-NoRefs $shell $dead }
 
+# Fluxo "home" do TP02 (V126/V128): a barra que o acionava foi removida acima, entao
+# conectar, executar comando e atualizar botoes ficaram sem chamador. Reset era
+# chamado so por ShowDeviceManager; vira a atualizacao direta do status.
+$resetCall = @'
+            ResetTp02HomeConnectionV128(currentProfile == null
+                ? "Nenhum controlador selecionado"
+                : "Controlador ativo: " + currentProfile.Manufacturer + " " + currentProfile.Model + " / desconectado");
+'@
+$resetNew = @'
+            if (connectionValue != null) connectionValue.Text = "Desconectado";
+            statusText.Text = currentProfile == null
+                ? "Nenhum controlador selecionado"
+                : "Controlador ativo: " + currentProfile.Manufacturer + " " + currentProfile.Model + " / desconectado";
+'@
+$shell = Rep $shell $resetCall $resetNew 'chamada de ResetTp02HomeConnectionV128'
+$shell = Remove-Method $shell 'private void ToggleTp02HomeConnectionV128()' 'ToggleTp02HomeConnectionV128'
+$shell = Remove-Method $shell 'private void ResetTp02HomeConnectionV128(string reason)' 'ResetTp02HomeConnectionV128'
+$shell = Remove-Method $shell 'private void UpdateTp02HomeButtonsV128()' 'UpdateTp02HomeButtonsV128'
+$shell = Remove-Method $shell 'private void ExecuteTp02HomeCommandV126(string command)' 'ExecuteTp02HomeCommandV126'
+$shell = Remove-Method $shell 'internal bool TryHomeConnectV128(' 'TryHomeConnectV128'
+$shell = Remove-Method $shell 'internal void UseHomePortV128(' 'UseHomePortV128'
+$shell = Remove-Method $shell 'internal void QueueHomeCommandV126(' 'QueueHomeCommandV126'
+foreach ($f in @('private bool tp02HomeConnectedV128;', 'private string tp02HomePortV128 = string.Empty;', 'private string tp02HomeStateV128 = string.Empty;', 'private string tp02HomeModelV128 = string.Empty;', 'private Button tp02ConnectButtonV128;', 'private Button tp02ReadButtonV128;', 'private Button tp02WriteButtonV128;', 'private Button tp02VerifyButtonV128;', 'private Button tp02StopButtonV128;', 'private Button tp02RunButtonV128;', 'private Label tp02ConnectionLabelV128;')) {
+    $shell = Remove-Field $shell ([regex]::Escape($f)) $f
+}
+foreach ($dead in @('ToggleTp02HomeConnectionV128', 'ResetTp02HomeConnectionV128', 'UpdateTp02HomeButtonsV128', 'ExecuteTp02HomeCommandV126', 'TryHomeConnectV128', 'UseHomePortV128', 'QueueHomeCommandV126', 'tp02HomeConnectedV128', 'tp02HomePortV128', 'tp02HomeStateV128', 'tp02HomeModelV128', 'tp02ConnectButtonV128', 'tp02ReadButtonV128', 'tp02WriteButtonV128', 'tp02VerifyButtonV128', 'tp02StopButtonV128', 'tp02RunButtonV128', 'tp02ConnectionLabelV128')) { Assert-NoRefs $shell $dead }
+
 $enc = New-Object System.Text.UTF8Encoding($true)
 [IO.File]::WriteAllText($shellPath, $shell, $enc)
 [IO.File]::WriteAllText($uiPath, $ui, $enc)
