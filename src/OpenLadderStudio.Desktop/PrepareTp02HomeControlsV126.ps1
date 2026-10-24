@@ -35,7 +35,14 @@ $uiReplacement = @'
             Control toolbar = BuildToolbar();
             Controls.Add(toolbar);
 '@
-$shell = Replace-Required $shell $uiNeedle $uiReplacement 'barra TP02 na tela principal'
+if ($shell.Contains('private SplitContainer navSplit;')) {
+    # O workspace atual e multi-PLC; comandos especificos do TP02 ficam no
+    # contexto do driver e nao devem ser fixados na barra global.
+    Write-Host 'V126: barra TP02 global omitida no workspace multi-PLC.'
+}
+else {
+    $shell = Replace-Required $shell $uiNeedle $uiReplacement 'barra TP02 na tela principal'
+}
 
 $menuAnchor = '        private MenuStrip BuildMenu()'
 $menuIndex = $shell.IndexOf($menuAnchor, [System.StringComparison]::Ordinal)

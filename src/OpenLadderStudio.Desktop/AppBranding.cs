@@ -103,7 +103,7 @@ namespace ModernPC12
     /// </summary>
     internal static class OpenLadderPalette
     {
-        private static OpenLadderThemeMode mode = OpenLadderThemeMode.Dark;
+        private static OpenLadderThemeMode mode = OpenLadderThemeMode.Light;
         private static bool loaded;
         private static PropertyInfo[] tokenProperties;
 
@@ -149,10 +149,10 @@ namespace ModernPC12
         // Superficies, do fundo da janela para a superficie mais elevada.
         // O tema escuro evita preto puro e o tema claro evita branco puro: as duas
         // extremidades sao o que mais cansa a vista em jornada longa.
-        public static Color Shell { get { return Pick(24, 30, 40, 233, 239, 246); } }
-        public static Color Chrome { get { return Pick(32, 40, 52, 244, 247, 251); } }
-        public static Color ChromeLight { get { return Pick(40, 50, 65, 250, 252, 255); } }
-        public static Color Border { get { return Pick(63, 78, 98, 194, 207, 223); } }
+        public static Color Shell { get { return Pick(14, 21, 32, 245, 247, 251); } }
+        public static Color Chrome { get { return Pick(22, 32, 47, 255, 255, 255); } }
+        public static Color ChromeLight { get { return Pick(31, 45, 64, 249, 251, 254); } }
+        public static Color Border { get { return Pick(51, 69, 92, 214, 223, 235); } }
 
         /// <summary>
         /// Aresta inferior da barra superior. A borda comum e uma linha de divisao
@@ -160,11 +160,11 @@ namespace ModernPC12
         /// aresta da moldura, nao como mais um traco igual aos outros.
         /// </summary>
         public static Color HeaderLine { get { return Pick(88, 112, 142, 166, 185, 210); } }
-        public static Color Workspace { get { return Pick(18, 24, 33, 220, 229, 240); } }
+        public static Color Workspace { get { return Pick(18, 28, 42, 239, 243, 249); } }
 
-        public static Color NavBg { get { return Pick(20, 27, 38, 226, 234, 244); } }
-        public static Color NavHover { get { return Pick(34, 47, 65, 216, 229, 247); } }
-        public static Color NavActive { get { return Pick(38, 65, 101, 204, 224, 250); } }
+        public static Color NavBg { get { return Pick(18, 28, 42, 245, 248, 252); } }
+        public static Color NavHover { get { return Pick(31, 47, 67, 232, 239, 249); } }
+        public static Color NavActive { get { return Pick(34, 69, 112, 220, 234, 255); } }
 
         // Texto, do mais forte ao mais discreto.
         public static Color Fore { get { return Pick(233, 239, 247, 30, 44, 62); } }
@@ -174,8 +174,8 @@ namespace ModernPC12
 
         // Marca e estados legiveis sobre Chrome e ChromeLight. O azul luminoso
         // do tema escuro pede texto escuro nos botoes preenchidos.
-        public static Color Accent { get { return Pick(110, 174, 255, 28, 105, 210); } }
-        public static Color AccentDark { get { return Pick(86, 153, 239, 18, 78, 160); } }
+        public static Color Accent { get { return Pick(99, 177, 255, 37, 99, 235); } }
+        public static Color AccentDark { get { return Pick(61, 139, 230, 29, 78, 190); } }
         public static Color OnAccent { get { return Pick(16, 30, 48, 255, 255, 255); } }
         public static Color Ok { get { return Pick(96, 205, 153, 32, 113, 75); } }
         public static Color Warning { get { return Pick(242, 193, 94, 137, 91, 12); } }
@@ -183,11 +183,11 @@ namespace ModernPC12
         public static Color Info { get { return Pick(116, 188, 246, 29, 103, 170); } }
 
         // Area de desenho do Ladder e do sinoptico.
-        public static Color Canvas { get { return Pick(27, 34, 45, 246, 248, 252); } }
-        public static Color Rail { get { return Pick(163, 181, 204, 74, 90, 107); } }
-        public static Color Wire { get { return Pick(141, 162, 188, 95, 110, 128); } }
-        public static Color GridLine { get { return Pick(55, 69, 88, 206, 216, 229); } }
-        public static Color SelectionFill { get { return Pick(32, 60, 96, 220, 234, 251); } }
+        public static Color Canvas { get { return Pick(23, 35, 52, 248, 250, 253); } }
+        public static Color Rail { get { return Pick(156, 181, 214, 74, 90, 107); } }
+        public static Color Wire { get { return Pick(144, 169, 202, 95, 110, 128); } }
+        public static Color GridLine { get { return Pick(49, 67, 90, 215, 223, 234); } }
+        public static Color SelectionFill { get { return Pick(35, 69, 111, 220, 234, 251); } }
         public static Color SelectionEdge { get { return Accent; } }
 
         /// <summary>

@@ -224,10 +224,10 @@ namespace ModernPC12
             ferramentas.DropDownItems.Add(DropItem("Verificar portabilidade do Ladder", delegate { CheckPortability(); }));
             ferramentas.DropDownItems.Add(DropItem("Simulação de processo", delegate { ShowSimulator(); }));
             ferramentas.DropDownItems.Add(new ToolStripSeparator());
-            ferramentas.DropDownItems.Add(DropItem("Decodificador TP02", delegate { ShowDecoder(); }));
-            ferramentas.DropDownItems.Add(DropItem("Calibração TP02", delegate { ShowCalibration(); }));
+            ferramentas.DropDownItems.Add(DropItem("Decodificador do controlador", delegate { ShowDecoder(); }));
+            ferramentas.DropDownItems.Add(DropItem("Calibração de instruções", delegate { ShowCalibration(); }));
             ferramentas.DropDownItems.Add(DropItem("IL para Ladder", delegate { ShowIl(); }));
-            ferramentas.DropDownItems.Add(DropItem("Comandos PG do PC12", delegate
+            ferramentas.DropDownItems.Add(DropItem("Catálogo de comandos do driver", delegate
             {
                 using (TP02PgCommandCatalogForm catalog = new TP02PgCommandCatalogForm())
                     catalog.ShowDialog(this);
@@ -239,7 +239,7 @@ namespace ModernPC12
             ajuda.DropDownItems.Add(DropItem("Sobre o OpenLadder Studio", delegate
             {
                 MessageBox.Show(this,
-                    "OpenLadder Studio v0.12\r\n\r\nAmbiente Ladder com arquitetura multi-fabricante.\r\nWEG TP02: driver nativo em evolução.\r\nModbus RTU/TCP: monitoramento genérico em leitura.",
+                    "OpenLadder Studio v0.12\r\n\r\nAmbiente de programação Ladder e pesquisa de protocolos para diferentes fabricantes.\r\nSelecione um controlador para consultar os recursos disponíveis no respectivo driver.",
                     "OpenLadder Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }));
 
@@ -339,9 +339,7 @@ namespace ModernPC12
                 StudioGlyph.Draw(g, StudioIcon.Ladder, new Rectangle(22, 22, 20, 20), Color.White);
                 TextRenderer.DrawText(g, "OpenLadder", new Font("Segoe UI Semibold", 11.0f, FontStyle.Bold),
                     new Point(56, 16), Fore);
-                string sub = currentProfile == null
-                    ? "Studio"
-                    : "Studio  •  " + currentProfile.Model;
+                string sub = "Plataforma multi-PLC";
                 TextRenderer.DrawText(g, sub, StudioTheme.Small, new Point(58, 37), Muted);
             };
             return brand;
@@ -365,8 +363,8 @@ namespace ModernPC12
             items.Add(new NavSection("Comunicação"));
             items.Add(NavItem("Comunicação", StudioIcon.Plug, "PLC", delegate { ShowCommunication(); }));
             items.Add(NavItem("Monitor on-line", StudioIcon.Monitor, "MON", delegate { ShowMonitor(); }));
-            items.Add(NavItem("Ler programa (RBP)", StudioIcon.Download, "RBP", delegate { ShowReader(); }));
-            items.Add(new NavSection("Análise TP02"));
+            items.Add(NavItem("Ler programa", StudioIcon.Download, "READ", delegate { ShowReader(); }));
+            items.Add(new NavSection("Engenharia reversa"));
             items.Add(NavItem("Decodificador", StudioIcon.Bolt, "DEC", delegate { ShowDecoder(); }));
             items.Add(NavItem("Calibração", StudioIcon.Gear, "CAL", delegate { ShowCalibration(); }));
             items.Add(NavItem("IL para Ladder", StudioIcon.Convert, "IL", delegate { ShowIl(); }));
