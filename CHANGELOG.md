@@ -2,6 +2,26 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [1.70] - 2026-10-24
+
+### Interface
+- menus reorganizados (7 menus, com atalhos e dicas) e barra de ferramentas agrupada por tarefa; novo ícone para Transferir;
+- paleta de instruções com busca que cabe no painel e seções vazias ocultas ao filtrar;
+- layout com proporções, cartão de Propriedades e barra de status por modo; largura mínima de 1280 pixels;
+- telas de transferência e leitura com passos e registro, usando a paleta do produto.
+
+### Editor
+- símbolos Ladder no padrão IEC 61131-3, energização visível na simulação e colunas C1 a C8.
+
+### Vários modelos de PLC
+- interface genérica com despacho por driver (`IPlcDriverUi`) e "Recursos do modelo".
+
+### Instalador
+- ferramentas de pesquisa removidas do menu e do instalador, que remove os executáveis antigos.
+
+### Limitações conhecidas
+- nada foi testado em hardware; o monitor de PLC real ainda não acende o diagrama; o status de conexão mostra OFF-LINE fixo.
+
 ## [0.99] - 2026-09-09
 
 ### Protocolo TP02 PG
