@@ -200,7 +200,11 @@ function Normalize-Literal([string]$literal) {
 
 $changedFiles = 0
 $changedStrings = 0
-$files = Get-ChildItem -Path $root -Filter '*.cs' -File | Sort-Object Name
+# Fontes lidos como ancora literal pelos scripts dos labs TP02 (PrepareTp02*.ps1,
+# PrepareTp02FullCapture*.ps1). Reescreve-los no fonte quebra BuildTp02*.bat e
+# RunTp02OfflineLab.bat quando rodados depois do Build.bat.
+$anchorSources = @('TP02PgEmulator.cs', 'TP02FullProtocolCapture.cs', 'TP02ControlV31.cs', 'TP02PhysicalValidationForm.cs')
+$files = Get-ChildItem -Path $root -Filter '*.cs' -File | Where-Object { $anchorSources -notcontains $_.Name } | Sort-Object Name
 foreach ($file in $files) {
     $text = [System.IO.File]::ReadAllText($file.FullName)
     $script:localCount = 0

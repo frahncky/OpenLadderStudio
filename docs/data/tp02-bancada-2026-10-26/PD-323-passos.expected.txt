@@ -1,0 +1,30 @@
+TP02 PG34 BOUNDARY TEST â€” EXPECTED
+===================================
+Projeto: 161 rungs STR X0001 -> OUT C0001 + F-00 END
+Saidas fisicas Y: nenhuma
+Machine words esperadas: 323
+END global: 322 decimal = 0x0142
+
+Padrao de words:
+- passos pares 0..320 : 00 10 / BRAW 01 => 001001  (STR X0001)
+- passos impares 1..321: 40 40 / BRAW 08 => 404008  (OUT C0001)
+- passo 322           : 00 70 / BRAW 07 => 007007  (F-00 END)
+
+Paginas PG34 esperadas:
+start 0   / 0x0000 -> 34 03 00 00 A0 28
+start 80  / 0x0050 -> 34 03 00 50 A0 D8
+start 160 / 0x00A0 -> 34 03 00 A0 A0 88
+start 240 / 0x00F0 -> 34 03 00 F0 A0 38
+start 320 / 0x0140 -> 34 03 01 40 A0 E7
+
+Criterios principais:
+1. page-0000.hex ... page-0320.hex validos, LEN=F0 e checksum FF.
+2. A transicao start 0x0000 -> 0x0050 prova a segunda pagina.
+3. A transicao start 0x00F0 -> 0x0140 prova a troca do byte alto START_H.
+4. read-summary.txt deve indicar 5 paginas, 323 passos, END 0322, BRAW 0 e UNKNOWN 0.
+
+SEGURANCA
+O gerador e offline e nao transmite nada. Gravar este projeto no PLC substitui temporariamente
+o programa existente; faca backup antes, mantenha o equipamento em condicao segura/STOP e restaure
+o programa original ao final. O projeto nao referencia saidas Y, mas nao deve ser colocado em RUN
+em uma maquina/processo real sem isolamento adequado.

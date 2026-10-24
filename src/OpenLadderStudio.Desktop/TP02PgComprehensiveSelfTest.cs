@@ -433,6 +433,173 @@ namespace ModernPC12
             Check(!valid[323], "seed semantic323 não deveria marcar step 323");
         }
 
+        // ------------------------------------------------------------------
+        // Roteiro de bancada 2026-10-24 (docs/tp02-bancada-firmware-2026-10-24.md).
+        // Cenários SINTÉTICOS / HIPÓTESE: fixam o comportamento do emulador para
+        // ensaiar o validador e o analisador; não são fatos de firmware.
+        // ------------------------------------------------------------------
+
+        private static bool SameBytes(byte[] a, byte[] b)
+        {
+            if (a == null || b == null || a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
+            return true;
+        }
+
+        // PE: 39 x (STR X0001 / OUT C0001..C0039), STR X0001, F-23 SET C0040 (slots 79/80), END.
+        private static int SeedPe(Pg33MachineWord[] words, bool[] valid)
+        {
+            Array.Clear(valid, 0, valid.Length);
+            int p = 0;
+            for (int rung = 0; rung < 39; rung++)
+            {
+                words[p] = new Pg33MachineWord(0x00, 0x10, 0x00); valid[p++] = true;
+                words[p] = new Pg33MachineWord((byte)(0x40 | (rung >> 3)), (byte)(0x40 | (rung & 7)), 0x00); valid[p++] = true;
+            }
+            words[p] = new Pg33MachineWord(0x00, 0x10, 0x00); valid[p++] = true;
+            words[p] = new Pg33MachineWord(0x17, 0x71, 0x00); valid[p++] = true;
+            words[p] = new Pg33MachineWord(0xD7, 0x84, 0x00); valid[p++] = true;
+            words[p] = new Pg33MachineWord(0x00, 0x70, 0x00); valid[p] = true;
+            return p;
+        }
+
+        // PC: 18 x (STR Xn / F-13w ADD D0002,D0001,10) + END = 91 palavras.
+        private static int SeedPc(Pg33MachineWord[] words, bool[] valid)
+        {
+            Array.Clear(valid, 0, valid.Length);
+            int p = 0;
+            for (int rung = 0; rung < 18; rung++)
+            {
+                words[p] = new Pg33MachineWord((byte)(rung >> 3), (byte)(0x10 | (rung & 7)), 0x00); valid[p++] = true;
+                words[p] = new Pg33MachineWord(0x0D, 0x77, 0x00); valid[p++] = true;
+                words[p] = new Pg33MachineWord(0xF0, 0x01, 0x00); valid[p++] = true;
+                words[p] = new Pg33MachineWord(0xF0, 0x00, 0x00); valid[p++] = true;
+                words[p] = new Pg33MachineWord(0x80, 0x0A, 0x00); valid[p++] = true;
+            }
+            words[p] = new Pg33MachineWord(0x00, 0x70, 0x00); valid[p] = true;
+            return p;
+        }
+
+        private static int SeedPb(Pg33MachineWord[] words, bool[] valid)
+        {
+            Array.Clear(valid, 0, valid.Length);
+            words[0] = new Pg33MachineWord(0x00, 0x10, 0x00); valid[0] = true;
+            words[1] = new Pg33MachineWord(0x00, 0x70, 0x00); valid[1] = true;
+            return 1;
+        }
+
+        private static void Check38(Pg33MachineWord[] words, bool[] valid, int highest, byte[] expected, string label)
+        {
+            byte[] r38 = TP02PgReadback.Build38(words, valid, highest, null);
+            Check(SameBytes(r38, expected), label + ": 38 divergente");
+        }
+
+        private static void TestBancadaFirmwareHypotheses()
+        {
+            byte[] stopF0 = new byte[] { 0x00, 0x02, 0x10, 0x22, 0xCB };
+            string savedF0 = TP02PgV156Scenario.F0RunMode;
+            string saved34 = TP02PgV156Scenario.Pg34UnalignedMode;
+            try
+            {
+                // A3: F0 com HELLO RUN.
+                TP02PgV156Scenario.F0RunMode = "stop";
+                Check(SameBytes(TP02PgV156Scenario.SelectF0Response(true, stopF0), stopF0), "A3 padrão deve manter F0 histórico em RUN");
+                Check(TP02PgV156Scenario.TryApplyArgument("--f0-run=bit6"), "--f0-run=bit6 deveria ser reconhecido");
+                byte[] bit6 = TP02PgV156Scenario.SelectF0Response(true, stopF0);
+                Check(SameBytes(bit6, new byte[] { 0x40, 0x02, 0x10, 0x22, 0x8B }), "A3 bit6 deve devolver 40 02 10 22 8B");
+                Check(Sum8(bit6) == 0xFF, "A3 bit6 checksum");
+                Check(SameBytes(TP02PgV156Scenario.SelectF0Response(false, stopF0), stopF0), "A3 bit6 não altera F0 em STOP");
+                Check(TP02PgV156Scenario.TryApplyArgument("--f0-run=silent"), "--f0-run=silent deveria ser reconhecido");
+                Check(TP02PgV156Scenario.SelectF0Response(true, stopF0) == null, "A3 silent deve ficar mudo");
+                Check(TP02PgV156Scenario.TryApplyArgument("--f0-run=nak"), "--f0-run=nak deveria ser reconhecido");
+                byte[] nak = TP02PgV156Scenario.SelectF0Response(true, stopF0);
+                Check(nak != null && nak.Length == 4 && (nak[0] & 0x80) != 0 && Sum8(nak) == 0xFF, "A3 nak deve ter S bit7 e soma FF");
+                ExpectArgumentOutOfRange(delegate { TP02PgV156Scenario.TryApplyArgument("--f0-run=x"); }, "f0-run=x");
+
+                // A2: 38 para PB/PC/PD/PE (página e total16).
+                Pg33MachineWord[] w = new Pg33MachineWord[4000];
+                bool[] v = new bool[4000];
+                int hb = SeedPb(w, v);
+                Check(hb == 1, "PB deve ter END em 0001");
+                Check38(w, v, hb, new byte[] { 0x00, 0x02, 0x00, 0x02, 0xFB }, "PB página");
+                int hc = SeedPc(w, v);
+                Check(hc == 90, "PC deve ter END em 005A");
+                Check38(w, v, hc, new byte[] { 0x00, 0x02, 0x00, 0x9E, 0x5F }, "PC página");
+                Pg33MachineWord[] pd = new Pg33MachineWord[4000];
+                bool[] pdValid = new bool[4000];
+                int hd = TP02PgV156Scenario.SeedBoundary323(pd, pdValid);
+                Pg33MachineWord[] pe = new Pg33MachineWord[4000];
+                bool[] peValid = new bool[4000];
+                int he = SeedPe(pe, peValid);
+                Check(he == 81, "PE deve ter END em 0051");
+                Check38(pe, peValid, he, new byte[] { 0x00, 0x02, 0x00, 0x9E, 0x5F }, "PE página");
+                TP02PgReadback.Pg38Total16 = true;
+                try
+                {
+                    Check38(w, v, hc, new byte[] { 0x00, 0x02, 0x00, 0xB4, 0x49 }, "PC total16");
+                    Check38(pd, pdValid, hd, new byte[] { 0x00, 0x02, 0x02, 0x84, 0x77 }, "PD total16");
+                    Check38(pe, peValid, he, new byte[] { 0x00, 0x02, 0x00, 0xA2, 0x5B }, "PE total16");
+                }
+                finally { TP02PgReadback.Pg38Total16 = false; }
+
+                // B1: páginas 00A0/00F0/0140 do PD (END local 2 em 0140).
+                byte[] p140 = TP02PgV156Scenario.Build34(new byte[] { 0x34, 0x03, 0x01, 0x40, 0xA0, 0xE7 }, pd, pdValid, hd, null);
+                Check(p140.Length == 243 && Sum8(p140) == 0xFF, "B1 0140 deve ter LEN F0 e soma FF");
+                Check(p140[2 + 4] == 0x00 && p140[2 + 5] == 0x70 && p140[2 + 6] == 0x00 && p140[2 + 7] == 0x00, "B1 0140 END no par local 2");
+                Check(p140[2 + 0xA0 + 2] == 0x07, "B1 0140 BRAW do END = 07");
+
+                // B2: 34 @004F no PE.
+                byte[] r4f = new byte[] { 0x34, 0x03, 0x00, 0x4F, 0xA0, 0xD9 };
+                byte[] r50 = new byte[] { 0x34, 0x03, 0x00, 0x50, 0xA0, 0xD8 };
+                byte[] r00 = new byte[] { 0x34, 0x03, 0x00, 0x00, 0xA0, 0x28 };
+                byte[] page50 = TP02PgReadback.Build34(r50, pe, peValid, he, null);
+                byte[] page00 = TP02PgReadback.Build34(r00, pe, peValid, he, null);
+
+                TP02PgV156Scenario.Pg34UnalignedMode = "word";
+                byte[] word4f = TP02PgV156Scenario.Build34(r4f, pe, peValid, he, null);
+                Check(word4f[2] == 0x17 && word4f[3] == 0x71 && word4f[4] == 0xD7 && word4f[5] == 0x84 && word4f[6] == 0x00 && word4f[7] == 0x70,
+                    "B2 word: par 0 = SET (slot 79), par 1 = operando, par 2 = END");
+                Check(Sum8(word4f) == 0xFF, "B2 word checksum");
+
+                Check(TP02PgV156Scenario.TryApplyArgument("--pg34-unaligned=align50"), "--pg34-unaligned=align50 deveria ser reconhecido");
+                Check(SameBytes(TP02PgV156Scenario.Build34(r4f, pe, peValid, he, null), page50), "B2 align50 deve devolver a página 0050");
+                Check(SameBytes(TP02PgV156Scenario.Build34(r50, pe, peValid, he, null), page50), "B2 align50 não altera START alinhado");
+                Check(TP02PgV156Scenario.TryApplyArgument("--pg34-unaligned=align00"), "--pg34-unaligned=align00 deveria ser reconhecido");
+                Check(SameBytes(TP02PgV156Scenario.Build34(r4f, pe, peValid, he, null), page00), "B2 align00 deve devolver a página 0000");
+                Check(TP02PgV156Scenario.TryApplyArgument("--pg34-unaligned=nak"), "--pg34-unaligned=nak deveria ser reconhecido");
+                Check(SameBytes(TP02PgV156Scenario.Build34(r4f, pe, peValid, he, null), TP02PgV156Scenario.SyntheticNak), "B2 nak deve devolver NAK sintético");
+                Check(SameBytes(TP02PgV156Scenario.Build34(r00, pe, peValid, he, null), page00), "B2 nak não altera START 0000");
+                Check(TP02PgV156Scenario.TryApplyArgument("--pg34-unaligned=silent"), "--pg34-unaligned=silent deveria ser reconhecido");
+                Check(TP02PgV156Scenario.Build34(r4f, pe, peValid, he, null) == null, "B2 silent deve ficar mudo");
+                ExpectArgumentOutOfRange(delegate { TP02PgV156Scenario.TryApplyArgument("--pg34-unaligned=x"); }, "pg34-unaligned=x");
+
+                // Seed por arquivo HHLLEE (formato do OpenLadderTP02ProjectExport).
+                string temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "tp02-seed-selftest-" + Guid.NewGuid().ToString("N") + ".hex");
+                try
+                {
+                    System.IO.File.WriteAllText(temp, "001000\r\n177100\r\nD78400\r\n\r\n007000\r\n");
+                    Pg33MachineWord[] fw = new Pg33MachineWord[4000];
+                    bool[] fv = new bool[4000];
+                    int hf = TP02PgV156Scenario.LoadSeedFile(temp, fw, fv);
+                    Check(hf == 3, "seed-file deve ter END em 0003");
+                    Check(fv[3] && fw[3].High == 0x00 && fw[3].Low == 0x70, "seed-file END");
+                    Check(fv[1] && fw[1].High == 0x17 && fw[1].Low == 0x71 && fw[1].External == 0x00, "seed-file palavra 1");
+                    Check(!fv[4], "seed-file não deve marcar além do arquivo");
+                    System.IO.File.WriteAllText(temp, "0010\r\n");
+                    bool threw = false;
+                    try { TP02PgV156Scenario.LoadSeedFile(temp, fw, fv); }
+                    catch (System.IO.InvalidDataException) { threw = true; }
+                    Check(threw, "seed-file com linha inválida deve ser recusado");
+                }
+                finally { try { System.IO.File.Delete(temp); } catch { } }
+            }
+            finally
+            {
+                TP02PgV156Scenario.F0RunMode = savedF0;
+                TP02PgV156Scenario.Pg34UnalignedMode = saved34;
+            }
+        }
+
         internal static int RunAll(bool verbose)
         {
             checks = 0;
@@ -447,6 +614,7 @@ namespace ModernPC12
             TestReadback34AllPages();
             TestSeedBoundary323();
             TestSeedSemantic323();
+            TestBancadaFirmwareHypotheses();
             TestScenarioControls();
 
             if (failures != 0)

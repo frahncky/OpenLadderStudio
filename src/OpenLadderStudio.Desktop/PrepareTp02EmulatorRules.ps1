@@ -87,7 +87,8 @@ if (-not $out.Contains($old38)) { throw 'Ponto de integracao do comando 38 nao e
 $out = $out.Replace($old38, $new38)
 
 $old34 = 'Send("EMU -> PC12 34", BuildProgramReadResponse(frame));'
-$new34 = 'Send("EMU -> PC12 34", TP02PgReadback.Build34(frame, ProgramWords, ProgramWordValid, HighestProgramStep, ProgramPage0000));'
+# START fora de multiplo de 0x50 pode ser desviado por --pg34-unaligned (SINTETICO/HIPOTESE).
+$new34 = '{ byte[] r34Bancada = TP02PgV156Scenario.Build34(frame, ProgramWords, ProgramWordValid, HighestProgramStep, ProgramPage0000); if (r34Bancada == null) Log("BANCADA 34 SILENCIOSO", "START fora de multiplo de 0x50 descartado (SINTETICO/HIPOTESE)."); else Send("EMU -> PC12 34", r34Bancada); }'
 if (-not $out.Contains($old34)) { throw 'Ponto de integracao do comando 34 nao encontrado.' }
 $out = $out.Replace($old34, $new34)
 
@@ -152,7 +153,7 @@ $seedReplacement = @'
             if (seededHighestV156 >= 0)
             {
                 HighestProgramStep = seededHighestV156;
-                Log("V156 SEED", "boundary323 carregado: 323 words; END=0322.");
+                Log("V156 SEED", "programa carregado: " + (seededHighestV156 + 1).ToString(CultureInfo.InvariantCulture) + " words; END=" + seededHighestV156.ToString("X4", CultureInfo.InvariantCulture) + "; " + TP02PgV156Scenario.Describe());
                 SaveProgramDump();
             }
 '@
@@ -203,7 +204,14 @@ $f0Replacement = @'
                     }
                     Log("V156 F0 GATE", f0GateV156);
                     SleepFor(220);
-                    Send("EMU -> PC12 F0", F0Response);
+                    // --f0-run (SINTETICO/HIPOTESE) so altera a resposta com HELLO RUN.
+                    byte[] f0Bancada = TP02PgV156Scenario.SelectF0Response(HelloC0, F0Response);
+                    if (f0Bancada == null)
+                    {
+                        Log("BANCADA F0 SILENCIOSO", "F0 em RUN sem resposta (SINTETICO/HIPOTESE).");
+                        break;
+                    }
+                    Send(HelloC0 ? "EMU -> PC12 F0 RUN (" + TP02PgV156Scenario.F0RunMode + ")" : "EMU -> PC12 F0", f0Bancada);
                     break;
                 }
 '@
