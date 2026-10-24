@@ -103,6 +103,22 @@ O perfil `openladder.simulator.plc` usa o driver `openladder.simulator`, que exe
 
 O catálogo não deve confundir perfil cadastrado com suporte efetivo. Perfis marcados como **Planejado** aparecem na arquitetura, mas não podem ser selecionados como driver operacional. Recursos de escrita e transferência de programa só devem ser habilitados depois de implementação e validação real no hardware.
 
+## Telas por driver (`IPlcDriverUi`)
+
+O shell não conhece fabricante nem modelo. Conectar, Ler do PLC, Transferir para o PLC e
+Monitorar passam por `IPlcDriverUi` (`PlcDriverUi.cs`), escolhida pelo `DriverId` do perfil ativo
+em `PlcDriverUiRegistry`:
+
+- `Supports(PlcDriverFeature)` diz se o driver tem a tela (`Connect`, `ReadProgram`,
+  `TransferProgram`, `Monitor`); o shell ainda confere `PlcDriverCapabilities` antes de abrir;
+- `Open(feature, IStudioHost)` abre a tela do driver. `IStudioHost` expõe a janela, o perfil, o
+  editor Ladder, `OpenDocument` (abas) e `SetStatus`;
+- `ModelFeatures` alimenta **Ferramentas > Recursos do modelo**, que some quando a lista é vazia;
+- recurso indisponível mostra uma mensagem neutra, sem citar modelo.
+
+Implementações: `Tp02DriverUi.cs` (WEG TP02) e `ModbusDriverUi.cs` (Modbus RTU/TCP). Um driver
+novo cria a sua classe e a registra no construtor estático de `PlcDriverUiRegistry`.
+
 ## Próximas etapas
 
 1. criar mapeamento de memória configurável por dispositivo;

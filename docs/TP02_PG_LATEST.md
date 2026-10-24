@@ -485,7 +485,7 @@ docs/data/pc12-pg33-retry-gate-emulation.txt
 
 ```text
 HELLO STOP/RUN
-F0 conhecido, sem semântica final
+F0 conhecido (semântica resolvida estaticamente em 24/10: identificação de modelo/firmware/modo)
 38 nos casos ensaiados
 34 página 0
 booleanos X/Y/C
@@ -519,9 +519,40 @@ gate de sucesso/retry: máximo 3 tentativas
 parser RX genérico
 ```
 
+### Resolvido por análise estática do PC12 (24/10/2026)
+
+Detalhes, endereços e IDs REA estão em `docs/pc12-v2.1-static-inventory.md`,
+seção "Fechamento estático de pendências". Descrevem o lado PC12, não o
+firmware.
+
+```text
+F0 = identificação: resp S 02 M V; M=10/11 TP02-40/60MR(T) 4K, 12/13 TP02-20/28MR(T) 1.5K;
+     V = firmware %02X ("22" -> V2.2); S bit7 erro, bit6 RUN, bit5 senha  [lado PC12 RESOLVIDO;
+     00 02 10 22 = TP02-40/60MR(T) V2.2 4K em STOP: EVIDÊNCIA FORTE]
+38 = só limite do laço de leitura: L=HI<<8|LO comparado direto com o cursor em palavras;
+     não usado na escrita  [uso RESOLVIDO; regra 2*(N-1) do firmware: HIPÓTESE]
+Write PLC Program = [estado em cache != RUN/Monitor] -> F0 -> (senha? 0A 6026/6027, 14 00 EB)
+     -> 03 00 FC (Clear Program) -> blocos 33 -> (System/V/D/WC/FL opcionais) -> fim;
+     sem STOP, sem RUN, sem quadro final  [RESOLVIDO]
+ACK 33 aceito pelo PC12 = >=3 bytes, soma FF, bit7=0; 3 tentativas (15 em modem)  [RESOLVIDO]
+NAK = S bit7 + código em rx[2]; tabela de 43 entradas em 0x4bd1f6 (ex.: 12 "Can not program
+     while PLC is running", 1A "Password incorrect")  [RESOLVIDO]
+34 >80: START seguinte = palavras inteiras consumidas; uma instrução que cruza o slot 79/80
+     vai para a página seguinte (ex.: 34 03 00 4F A0 D9); sem parada no END  [RESOLVIDO]
+flags 0x46f5e6: 4fa8be = senha presente; 5301ae = enlace por modem; 5707cd = TX sem espera (37)
+```
+
+Divergência relatada, sem alteração de código: o PC12 envia `03 00 FC` antes
+do primeiro `33`, e o fluxo PG33 do OpenLadder não envia.
+
 ### Ainda pendente fisicamente
 
 ```text
+se o firmware exige 03 00 FC antes do 33 (ou se palavras antigas sobram após o novo END)
+códigos NAK que o TP02 realmente devolve ao 33 (12/0D/10/11/19/1A são só candidatos)
+generalidade de 38 = 2*(N-1) em outros programas
+resposta do PLC a 34 com START fora de múltiplo de 0x50 (ex.: 004F)
+F0 com bit6 (RUN) e bit5 (senha) em 1
 paginação 34 >80 passos
 execução documentada do ciclo v1.20 completo
 captura contínua da sequência completa de sessão/handshake no fio
@@ -643,7 +674,7 @@ OFFLINE:
 
 ```text
 1. [FEITO em 2026-09-12] coletor completo de F-24 RST;
-2. mapear o preâmbulo e a finalização da sessão Write PLC Program sem executar I/O;
+2. [FEITO em 2026-10-24] mapear o preâmbulo e a finalização da sessão Write PLC Program sem executar I/O;
 3. manter o ACK físico como pendente até existir captura real arquivada;
 4. se útil, repetir o coletor completo para TMR/CNT.
 ```
