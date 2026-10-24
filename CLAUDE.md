@@ -13,6 +13,17 @@ Há agentes com o conhecimento detalhado de cada área em `.claude/agents/`. Del
 | `portugues` | acentuação, encoding, texto de interface |
 | `ladder-plc` | varredura, endereçamento, plantas simuladas |
 | `release` | versão, notas, CI, instalador, atualizador |
+| `driver-plc` | `IPlcDriver`, `IPlcDriverUi`, modelo de PLC novo |
+| `re-estatico` | engenharia reversa estática (REA/Ghidra) do software do fabricante |
+| `re-emulacao` | emulador, golden vectors, matriz offline |
+| `re-bancada` | roteiro e análise de testes no PLC físico (nunca transmite) |
+| `revisor` | verificação independente antes do PR (não corrige) |
+
+Há duas skills para conduzir o trabalho de ponta a ponta:
+- `desenvolver` orquestra uma melhoria do produto: especialista, depois `revisor`, depois PR e CI.
+- `engenharia-reversa` orquestra os agentes `re-*` e `driver-plc`. A bancada física sempre volta para o humano.
+
+A tela pode ser conferida sem abrir o app com `scripts/RenderUi.ps1 -Theme dark|light -Out <arquivo.png>`.
 
 ## Quatro coisas que quebram o build ou o produto
 
