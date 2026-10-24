@@ -171,7 +171,7 @@ $shell = $shell.Replace('            menu.Items.Add(exibir);', '            menu
 # Put line editing where it is immediately visible above the instruction
 # library. These controls used to be at the very bottom of a long scroll list.
 $shell = [regex]::Replace($shell,
-    '(?m)^\s*(?:V73AddSection\(list, "EDIÇÃO"\)|V73AddInstruction\(list, "Selecionar"[^\r\n]*|V73AddAction\(list, "(?:Apagar selecionado|Adicionar linha|Remover linha)"[^\r\n]*)\r?\n', '')
+    '(?m)^[ \t]*(?:V73AddSection\(list, "EDIÇÃO"\);[ \t]*|V73AddInstruction\(list, "Selecionar"[^\r\n]*|V73AddAction\(list, "(?:Apagar selecionado|Adicionar linha|Remover linha)"[^\r\n]*)\r?\n', '')
 $editActions = @'
             V73AddSection(list, "EDIÇÃO");
             V73AddInstruction(list, "Selecionar / mover", StudioIcon.Select, LadderTool.Select);
@@ -181,6 +181,12 @@ $editActions = @'
 
 '@
 $shell = $shell.Replace('            V73AddSection(list, "CONTATOS");', $editActions + '            V73AddSection(list, "CONTATOS");')
+if ([regex]::Matches($shell, 'V73AddSection\(list, "EDIÇÃO"\);').Count -ne 1) {
+    throw 'A paleta deve conter uma unica secao EDICAO.'
+}
+if ($shell.IndexOf('V73AddInstruction(list, "Selecionar / mover"') -gt $shell.IndexOf('V73AddSection(list, "CONTATOS")')) {
+    throw 'A ferramenta de selecao deve aparecer antes da biblioteca de contatos.'
+}
 $shell = $shell.Replace('v73ProjectTree.Font = new Font("Segoe UI", 8.8f);', 'v73ProjectTree.Font = new Font("Segoe UI", 9.25f);')
 $shell = $shell.Replace('v73ProjectTree.ItemHeight = 25;', 'v73ProjectTree.ItemHeight = 28;')
 $actionMethod = [regex]::Match($shell, '(?s)private void V73AddAction\(FlowLayoutPanel list, string text, StudioIcon icon, EventHandler action\)\s*\{.*?\n        \}')
