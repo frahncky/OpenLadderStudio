@@ -21,6 +21,62 @@ internal static class TP02PhysicalValidatorSafetySelfTest
         return frame;
     }
 
+    // Página 34 sintética: 80 pares HIGH/LOW; END (00 70) no par endAt, ou nenhum se endAt < 0.
+    private static byte[] Page(int endAt)
+    {
+        byte[] f = new byte[Tp02Pg34Pager.PayloadLength + 3];
+        f[0] = 0x00; f[1] = (byte)Tp02Pg34Pager.PayloadLength;
+        for (int i = 0; i < 80; i++) { f[2 + 2 * i] = 0x00; f[3 + 2 * i] = 0x10; }
+        if (endAt >= 0) { f[2 + 2 * endAt] = 0x00; f[3 + 2 * endAt] = 0x70; }
+        f[f.Length - 1] = Tp02PgProtocol.Checksum(f, f.Length - 1);
+        return f;
+    }
+
+    private static List<string> RunCampaign(byte[] page0, byte[] page50, bool b1, bool b2, Dictionary<int, byte[]> replies)
+    {
+        List<string> sent = new List<string>();
+        TP02BancadaPg34Campaign.Run(page0, page50, b1, b2,
+            delegate(byte[] request, string label)
+            {
+                Check(TP02PhysicalValidationSafety.IsAllowed(request), "campanha B1/B2 gerou quadro fora da allowlist: " + label);
+                Check(!sent.Contains(label), "campanha B1/B2 repetiu " + label);
+                sent.Add(label);
+                int start = Tp02Pg34Pager.DecodeStartStep(request);
+                byte[] r;
+                return replies.TryGetValue(start, out r) ? r : new byte[0];
+            },
+            delegate(string name, string status, string detail) { });
+        return sent;
+    }
+
+    private static void CampaignB1B2()
+    {
+        Dictionary<int, byte[]> full = new Dictionary<int, byte[]>();
+        full[0xA0] = Page(-1); full[0xF0] = Page(-1); full[0x140] = Page(2); full[0x4F] = Page(-1);
+        string all = string.Join(",", RunCampaign(Page(-1), Page(-1), true, true, full).ToArray());
+        Check(all == "PG34-00A0,PG34-00F0,PG34-0140,PG34-004F", "B1+B2 completas: " + all);
+
+        Check(RunCampaign(Page(-1), Page(-1), false, false, full).Count == 0, "B1/B2 desmarcadas não transmitem nada");
+        string endP50 = string.Join(",", RunCampaign(Page(-1), Page(10), true, false, full).ToArray());
+        Check(endP50 == string.Empty, "END em @0050 não envia @00A0: " + endP50);
+        string inv = string.Join(",", RunCampaign(Page(-1), null, true, true, full).ToArray());
+        Check(inv == string.Empty, "@0050 inválida bloqueia B1 e B2: " + inv);
+
+        Dictionary<int, byte[]> silent = new Dictionary<int, byte[]>();
+        silent[0xF0] = Page(-1);
+        string stop = string.Join(",", RunCampaign(Page(-1), Page(-1), true, false, silent).ToArray());
+        Check(stop == "PG34-00A0", "silêncio em @00A0 encerra B1 sem retry: " + stop);
+
+        Dictionary<int, byte[]> bad = new Dictionary<int, byte[]>();
+        byte[] corrupt = Page(-1); corrupt[10] ^= 0x01;
+        bad[0xA0] = corrupt; bad[0xF0] = Page(-1);
+        string badRun = string.Join(",", RunCampaign(Page(-1), Page(-1), true, false, bad).ToArray());
+        Check(badRun == "PG34-00A0", "soma inválida em @00A0 encerra B1: " + badRun);
+
+        string b2only = string.Join(",", RunCampaign(Page(-1), Page(5), false, true, full).ToArray());
+        Check(b2only == "PG34-004F", "B2 sozinha envia só @004F uma vez: " + b2only);
+    }
+
     public static int Main()
     {
         Check(TP02PhysicalValidationSafety.IsAllowed(TP02PhysicalValidationSafety.Hello), "HELLO deve ser permitido");
@@ -125,6 +181,8 @@ internal static class TP02PhysicalValidatorSafetySelfTest
         Array.Copy(TP02PhysicalValidationSafety.Hello, ecoRun, TP02PhysicalValidationSafety.Hello.Length);
         Array.Copy(TP02PhysicalValidationSafety.HelloRun, 0, ecoRun, TP02PhysicalValidationSafety.Hello.Length, 4);
         Check(TP02PhysicalValidationSafety.ClassifyHello(ecoRun) == Run, "eco do HELLO seguido de RUN deve ser RUN");
+
+        CampaignB1B2();
 
         if (failures != 0)
         {

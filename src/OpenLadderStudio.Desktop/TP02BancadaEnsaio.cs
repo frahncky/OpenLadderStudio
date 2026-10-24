@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using OpenLadderStudio.Core;
 
 namespace ModernPC12
 {
@@ -108,41 +109,34 @@ namespace ModernPC12
                 });
             }
 
-            // B1: paginação >80 (PC: 0000/0050; PD: 0000..0140).
+            // B1: paginação >80 pela rotina real do validador (TP02BancadaPg34Campaign).
+            // PC: END na página @0050, então @00A0 não sai. PD: as cinco páginas saem.
             Scenario("B1-paginacao-PC", pc, false, "stop", "word", false, delegate(VirtualPlc plc, List<string> tx)
             {
-                Hello(plc, tx, "HELLO");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.F0, "F0");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Frame38, "38");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[0], "PG34-0000");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[1], "PG34-0050");
+                RealCampaign(plc, tx, true, false);
+                Expect(tx, "B1-PC", "HELLO", "F0", "38", "PG34-P0", "PG34-P80");
             });
             Scenario("B1-paginacao-PD", pd, false, "stop", "word", false, delegate(VirtualPlc plc, List<string> tx)
             {
-                Hello(plc, tx, "HELLO");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.F0, "F0");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Frame38, "38");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[0], "PG34-0000");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[1], "PG34-0050");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[3], "PG34-00A0");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[4], "PG34-00F0");
-                Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[5], "PG34-0140");
-                if (tx.Count != 8) Fail("B1-PD: 8 quadros deveriam sair; saíram " + tx.Count.ToString(CultureInfo.InvariantCulture));
+                RealCampaign(plc, tx, true, false);
+                Expect(tx, "B1-PD", "HELLO", "F0", "38", "PG34-P0", "PG34-P80", "PG34-00A0", "PG34-00F0", "PG34-0140");
+            });
+            // Fases não marcadas na tela: com PD, só @0000/@0050 saem.
+            Scenario("B1-B2-desmarcadas-PD", pd, false, "stop", "word", false, delegate(VirtualPlc plc, List<string> tx)
+            {
+                RealCampaign(plc, tx, false, false);
+                Expect(tx, "B1/B2 desmarcadas", "HELLO", "F0", "38", "PG34-P0", "PG34-P80");
             });
 
-            // B2: 34 @004F com o PE, nos cinco modelos de firmware. 004E deve ser barrado.
+            // B2: 34 @004F com o PE, nos cinco modelos de firmware, pela rotina real. 004E deve ser barrado.
             string[] b2Modes = new string[] { "word", "align50", "align00", "nak", "silent" };
             for (int i = 0; i < b2Modes.Length; i++)
             {
                 Scenario("B2-START-004F-" + b2Modes[i], pe, false, "stop", b2Modes[i], false, delegate(VirtualPlc plc, List<string> tx)
                 {
-                    Hello(plc, tx, "HELLO");
-                    Exchange(plc, tx, TP02PhysicalValidationSafety.F0, "F0");
-                    Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[0], "PG34-0000");
-                    Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[1], "PG34-0050");
-                    Exchange(plc, tx, TP02PhysicalValidationSafety.Pg34Pages[2], "PG34-004F");
+                    RealCampaign(plc, tx, true, true);
                     Exchange(plc, tx, Hex("34 03 00 4E A0 DA"), "PG34-004E-FORA-DA-LISTA");
-                    if (tx.Count != 5) Fail("B2: 5 quadros deveriam sair (004E barrado); saíram " + tx.Count.ToString(CultureInfo.InvariantCulture));
+                    Expect(tx, "B2", "HELLO", "F0", "38", "PG34-P0", "PG34-P80", "PG34-004F");
                 });
             }
 
@@ -214,6 +208,28 @@ namespace ModernPC12
             if (request.Length == 6 && request[0] == 0x34)
                 return TP02PgV156Scenario.Build34(request, plc.Words, plc.Valid, plc.Highest, null);
             return null;
+        }
+
+        /// <summary>
+        /// Sequência da campanha em STOP do validador (HELLO, F0, 38, @0000, @0050) seguida da
+        /// mesma rotina B1/B2 que o validador chama (TP02BancadaPg34Campaign.Run).
+        /// </summary>
+        private static void RealCampaign(VirtualPlc plc, List<string> tx, bool b1, bool b2)
+        {
+            Hello(plc, tx, "HELLO");
+            Exchange(plc, tx, TP02PhysicalValidationSafety.F0, "F0");
+            Exchange(plc, tx, TP02PhysicalValidationSafety.Frame38, "38");
+            byte[] page0 = TP02BancadaPg34Campaign.FindPage(Exchange(plc, tx, Tp02Pg34Pager.BuildReadRequest(0), "PG34-P0"));
+            byte[] page50 = TP02BancadaPg34Campaign.FindPage(Exchange(plc, tx, Tp02Pg34Pager.BuildReadRequest(80), "PG34-P80"));
+            TP02BancadaPg34Campaign.Run(page0, page50, b1, b2,
+                delegate(byte[] request, string label) { return Exchange(plc, tx, request, label); },
+                delegate(string name, string status, string detail) { Line(status + " " + name + " | " + detail); });
+        }
+
+        private static void Expect(List<string> tx, string phase, params string[] labels)
+        {
+            if (string.Join(",", tx.ToArray()) != string.Join(",", labels))
+                Fail(phase + ": esperado " + string.Join(", ", labels) + "; saíram " + string.Join(", ", tx.ToArray()));
         }
 
         private static void Fail(string message)

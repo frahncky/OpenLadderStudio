@@ -129,6 +129,145 @@ namespace ModernPC12
         }
     }
 
+    internal delegate byte[] TP02Pg34Exchange(byte[] request, string label);
+    internal delegate void TP02Pg34Report(string name, string status, string detail);
+
+    /// <summary>
+    /// Fases B1 e B2 do roteiro docs/tp02-bancada-firmware-2026-10-24.md, sem porta serial:
+    /// o validador físico e o ensaio offline chamam esta mesma rotina com transportes diferentes.
+    /// B1 (34 @00A0, @00F0, @0140) e B2 (34 @004F) só rodam quando o operador marca a fase na tela.
+    /// Cada quadro é enviado no máximo uma vez, sem retry. B1 só avança se a página anterior veio
+    /// válida (LEN=F0, soma FF) e sem END; página inválida ou silêncio encerra a fase.
+    /// O 38 não é usado como gatilho: a pendência 3 está aberta e o modelo "limitado à página"
+    /// satura em 00 9E, o que esconderia programas maiores que 80 passos.
+    /// </summary>
+    internal static class TP02BancadaPg34Campaign
+    {
+        internal static readonly int[] B1Starts = new int[] { 0x00A0, 0x00F0, 0x0140 };
+        internal const int B2Start = 0x004F;
+
+        internal static string Label(int start)
+        {
+            return "PG34-" + start.ToString("X4", CultureInfo.InvariantCulture);
+        }
+
+        internal static byte[] FindPage(byte[] raw)
+        {
+            if (raw == null) return null;
+            int total = Tp02Pg34Pager.PayloadLength + 3;
+            for (int i = 0; i + total <= raw.Length; i++)
+            {
+                if (raw[i + 1] != Tp02Pg34Pager.PayloadLength) continue;
+                byte[] frame = new byte[total];
+                Buffer.BlockCopy(raw, i, frame, 0, total);
+                if (Tp02Pg34Pager.IsValidPageFrame(frame)) return frame;
+            }
+            return null;
+        }
+
+        private static byte[] FindNak(byte[] raw)
+        {
+            if (raw == null) return null;
+            for (int i = 0; i + 3 <= raw.Length; i++)
+            {
+                if ((raw[i] & 0x80) == 0) continue;
+                int total = raw[i + 1] + 3;
+                if (i + total > raw.Length) continue;
+                int sum = 0;
+                for (int j = 0; j < total; j++) sum = (sum + raw[i + j]) & 0xFF;
+                if (sum != 0xFF) continue;
+                byte[] frame = new byte[total];
+                Buffer.BlockCopy(raw, i, frame, 0, total);
+                return frame;
+            }
+            return null;
+        }
+
+        /// <summary>page0/page50: quadros válidos das leituras @0000/@0050 já feitas (ou null).</summary>
+        internal static void Run(byte[] page0, byte[] page50, bool b1, bool b2, TP02Pg34Exchange exchange, TP02Pg34Report report)
+        {
+            RunB1(page50, b1, exchange, report);
+            RunB2(page0, page50, b2, exchange, report);
+        }
+
+        private static void RunB1(byte[] page50, bool enabled, TP02Pg34Exchange exchange, TP02Pg34Report report)
+        {
+            if (!enabled) { report("B1", "INFO", "fase B1 não selecionada; @00A0/@00F0/@0140 não enviados"); return; }
+            byte[] previous = page50;
+            int previousStart = 0x0050;
+            for (int i = 0; i < B1Starts.Length; i++)
+            {
+                int start = B1Starts[i];
+                string label = Label(start);
+                int localEnd;
+                if (previous == null)
+                {
+                    report("B1", "INFO", "parada: página @" + previousStart.ToString("X4", CultureInfo.InvariantCulture)
+                        + " inválida ou ausente; " + label + " e seguintes não enviados");
+                    return;
+                }
+                if (Tp02Pg34Pager.TryFindEnd(previous, out localEnd))
+                {
+                    report("B1", "INFO", "END na página @" + previousStart.ToString("X4", CultureInfo.InvariantCulture)
+                        + " (global=" + (previousStart + localEnd).ToString("X4", CultureInfo.InvariantCulture) + "); "
+                        + label + " e seguintes não necessários");
+                    return;
+                }
+                byte[] raw = exchange(Tp02Pg34Pager.BuildReadRequest(start), label);
+                byte[] frame = FindPage(raw);
+                if (frame == null)
+                {
+                    report(label, "FAIL", (raw == null || raw.Length == 0 ? "silêncio" : "resposta sem LEN=F0/soma FF")
+                        + "; B1 parada sem retry");
+                    return;
+                }
+                bool hasEnd = Tp02Pg34Pager.TryFindEnd(frame, out localEnd);
+                report(label, "PASS", "frame válido; START=" + start.ToString("X4", CultureInfo.InvariantCulture)
+                    + (hasEnd ? "; END global=" + (start + localEnd).ToString("X4", CultureInfo.InvariantCulture) : "; END ausente"));
+                previous = frame;
+                previousStart = start;
+            }
+        }
+
+        private static void RunB2(byte[] page0, byte[] page50, bool enabled, TP02Pg34Exchange exchange, TP02Pg34Report report)
+        {
+            string label = Label(B2Start);
+            if (!enabled) { report("B2", "INFO", "fase B2 não selecionada; " + label + " não enviado"); return; }
+            if (page0 == null || page50 == null)
+            {
+                report("B2", "INFO", "pré-condição ausente: @0000 e @0050 válidos; " + label + " não enviado");
+                return;
+            }
+            byte[] raw = exchange(Tp02Pg34Pager.BuildReadRequest(B2Start), label);
+            if (raw == null || raw.Length == 0) { report(label, "INFO", "silêncio (START inválido descartado?); sem retry"); return; }
+            byte[] frame = FindPage(raw);
+            if (frame != null) { report(label, "INFO", "página LEN=F0; " + Classify(frame, page0, page50) + "; sem retry"); return; }
+            byte[] nak = FindNak(raw);
+            if (nak != null)
+            {
+                report(label, "INFO", "NAK " + BitConverter.ToString(nak).Replace('-', ' ')
+                    + (nak.Length > 3 ? "; código=" + nak[2].ToString("X2", CultureInfo.InvariantCulture) : string.Empty) + "; sem retry");
+                return;
+            }
+            report(label, "INFO", "RX não classificado; ver RX bruto no log; sem retry");
+        }
+
+        private static bool SamePair(byte[] a, int ia, byte[] b, int ib)
+        {
+            return a[2 + 2 * ia] == b[2 + 2 * ib] && a[3 + 2 * ia] == b[3 + 2 * ib];
+        }
+
+        private static string Classify(byte[] frame, byte[] page0, byte[] page50)
+        {
+            bool word = SamePair(frame, 0, page0, 79);
+            for (int i = 1; i < 80 && word; i++) word = SamePair(frame, i, page50, i - 1);
+            if (word) return "modelo por palavra (par0=@0000 par79, pares 1..79=@0050 0..78)";
+            if (TP02PhysicalValidationSafety.Same(frame, page50)) return "igual a @0050 (firmware arredonda para 0x50)";
+            if (TP02PhysicalValidationSafety.Same(frame, page0)) return "igual a @0000 (firmware arredonda para 0x00)";
+            return "conteúdo fora dos modelos previstos";
+        }
+    }
+
     internal sealed class TP02PhysicalValidatorForm : Form
     {
         private sealed class CheckResult
@@ -145,6 +284,8 @@ namespace ModernPC12
         private readonly TextBox log = new TextBox();
         private readonly Label status = new Label();
         private readonly CheckBox exhaustive = new CheckBox();
+        private readonly CheckBox phaseB1 = new CheckBox();
+        private readonly CheckBox phaseB2 = new CheckBox();
         // Acessado só pela thread da campanha; zerado no início de cada RunCampaign.
         private bool plcInRun;
         private string sessionDir = string.Empty;
@@ -231,6 +372,20 @@ namespace ModernPC12
             exhaustive.ForeColor = Color.FromArgb(226, 230, 234);
             top.Controls.Add(exhaustive);
 
+            // Fases B1/B2 do roteiro: desmarcadas por padrão; cada quadro sai uma vez, sem retry.
+            // Sem ForeColor próprio: herda a cor do formulário.
+            phaseB1.Text = "B1: 34 @00A0/@00F0/@0140 (só sem END na página anterior)";
+            phaseB1.Checked = false;
+            phaseB1.AutoSize = true;
+            phaseB1.Location = new Point(380, 139);
+            top.Controls.Add(phaseB1);
+
+            phaseB2.Text = "B2: 34 @004F uma vez";
+            phaseB2.Checked = false;
+            phaseB2.AutoSize = true;
+            phaseB2.Location = new Point(760, 139);
+            top.Controls.Add(phaseB2);
+
             log.Multiline = true;
             log.ReadOnly = true;
             log.WordWrap = false;
@@ -265,11 +420,15 @@ namespace ModernPC12
 
             string portName = ports.SelectedItem.ToString();
             bool full = exhaustive.Checked;
+            bool b1 = phaseB1.Checked;
+            bool b2 = phaseB2.Checked;
             CreateSession();
             log.Clear();
             Append("Campanha física READ-ONLY v1.50.");
             Append("Porta: " + portName + " | 19200 8O1 | DTR=OFF | RTS=OFF.");
             Append("Varredura PG0A: " + (full ? "COMPLETA" : "RÁPIDA") + ".");
+            Append("Fase B1 (34 @00A0/@00F0/@0140): " + (b1 ? "SELECIONADA" : "não selecionada")
+                + " | Fase B2 (34 @004F): " + (b2 ? "SELECIONADA" : "não selecionada") + ".");
             Append("HELLO: até 2 ciclos; entre eles a COM é fechada/reaberta e estabilizada.");
             Append("Bloqueados por código: 09, 33, 35, Clear, RUN, STOP, 12/13 EEPROM e demais opcodes.");
             SetBusy(true);
@@ -279,7 +438,7 @@ namespace ModernPC12
             {
                 Exception failure = null;
                 List<CheckResult> results = null;
-                try { results = RunCampaign(portName, full); }
+                try { results = RunCampaign(portName, full, b1, b2); }
                 catch (Exception ex) { failure = ex; }
                 if (IsDisposed) return;
                 BeginInvoke(new MethodInvoker(delegate
@@ -332,9 +491,10 @@ namespace ModernPC12
             try { port.Dispose(); } catch { }
         }
 
-        private List<CheckResult> RunCampaign(string portName, bool full)
+        private List<CheckResult> RunCampaign(string portName, bool full, bool b1, bool b2)
         {
             List<CheckResult> results = new List<CheckResult>();
+            SerialPort campaignPort = null;
             SerialPort port = null;
             plcInRun = false;
             try
@@ -370,7 +530,17 @@ namespace ModernPC12
                 Add(results, "38", r38 != null ? "PASS" : "FAIL", r38 == null ? "Quadro LEN=02 não localizado" : ToHex(r38));
 
                 byte[] page0 = ReadPg34(port, results, 0, "PG34-P0", null);
-                ReadPg34(port, results, 80, "PG34-P80", page0);
+                byte[] page50 = ReadPg34(port, results, 80, "PG34-P80", page0);
+                campaignPort = port;
+                TP02BancadaPg34Campaign.Run(page0, page50, b1, b2,
+                    delegate(byte[] request, string label)
+                    {
+                        byte[] raw = ExchangeRaw(campaignPort, request, 5500, 300, label);
+                        byte[] frame = TP02BancadaPg34Campaign.FindPage(raw);
+                        if (frame != null) SaveHex(label + "-frame.hex", frame);
+                        return raw;
+                    },
+                    delegate(string name, string resultStatus, string detail) { Add(results, name, resultStatus, detail); });
 
                 if (full) ValidateAllAreas(port, results);
                 else ValidateQuickReads(port, results);
@@ -742,6 +912,8 @@ namespace ModernPC12
             run.Enabled = !value;
             refresh.Enabled = !value;
             exhaustive.Enabled = !value;
+            phaseB1.Enabled = !value;
+            phaseB2.Enabled = !value;
             folder.Enabled = !value && !string.IsNullOrEmpty(sessionDir);
         }
 

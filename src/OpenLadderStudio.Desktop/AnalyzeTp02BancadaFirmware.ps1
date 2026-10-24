@@ -561,7 +561,7 @@ function Invoke-SelfTest {
                 @('A3-F0-RUN-stop', 'F0-RUN', 'ALTERNATIVA PREVISTA', '*NÃO reflete*'),
                 @('A3-F0-RUN-silent', 'F0-RUN', 'ALTERNATIVA PREVISTA', 'silêncio*'),
                 @('A3-F0-RUN-nak', 'F0-RUN', 'ALTERNATIVA PREVISTA', 'NAK*10'),
-                @('B1-paginacao-PC', 'PG34-0050', 'ESPERADA', '*modelo*'),
+                @('B1-paginacao-PC', 'PG34-P80', 'ESPERADA', '*modelo*'),
                 @('B1-paginacao-PD', 'PG34-00A0', 'ESPERADA', '*modelo*'),
                 @('B1-paginacao-PD', 'PG34-00F0', 'ESPERADA', '*modelo*'),
                 @('B1-paginacao-PD', 'PG34-0140', 'ESPERADA', '*modelo*'),

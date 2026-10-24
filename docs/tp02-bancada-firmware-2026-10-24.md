@@ -314,3 +314,12 @@ analisador tenta o nome do arquivo. Sem programa, o B2 usa as páginas `@0000`
 e `@0050` do mesmo log como referência. Um TX sem linha de RX no log aparece
 como "RX bruto ausente", que é diferente de silêncio. A saída é 3 quando há
 alguma `INESPERADA`.
+
+## Atualização: campanha B1/B2 no validador (2026-10-24)
+
+O validador físico ganhou duas caixas na tela, desmarcadas por padrão. Sem marcá-las, a campanha é a mesma de antes.
+
+- **B1:** `34 @00A0`, `@00F0` e `@0140`. Cada página só é pedida se a anterior (a partir de `@0050`) veio válida e sem END. Silêncio ou página inválida encerra a fase. O gatilho não usa o `38`, porque a regra `2*(N-1)` ainda está em aberto.
+- **B2:** `34 @004F` uma vez, só se `@0000` e `@0050` vieram válidas.
+
+Rótulos no `session.log`: `PG34-00A0`, `PG34-00F0`, `PG34-0140` e `PG34-004F`. As leituras alinhadas aparecem como `PG34-P0` e `PG34-P80`. Todos estão no formato que o `AnalyzeTp02BancadaFirmware.ps1` lê. Em RUN continua saindo só o `F0`.
