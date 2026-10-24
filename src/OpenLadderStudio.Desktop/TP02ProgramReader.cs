@@ -70,19 +70,29 @@ namespace ModernPC12
         private string sessionDirectory = string.Empty;
         private string sessionLogPath = string.Empty;
 
-        private readonly Color Shell = Color.FromArgb(18, 24, 31);
-        private readonly Color Chrome = Color.FromArgb(27, 36, 46);
-        private readonly Color Border = Color.FromArgb(55, 68, 82);
-        private readonly Color Accent = Color.FromArgb(38, 166, 154);
-        private readonly Color Fore = Color.FromArgb(226, 230, 234);
-        private readonly Color Muted = Color.FromArgb(158, 169, 180);
-        private readonly Color Warning = Color.FromArgb(224, 170, 64);
-        private readonly Color Danger = Color.FromArgb(214, 87, 87);
-        private readonly Color Success = Color.FromArgb(74, 190, 119);
+        private Color Shell { get { return OpenLadderPalette.Shell; } }
+        private Color Chrome { get { return OpenLadderPalette.Chrome; } }
+        private Color Border { get { return OpenLadderPalette.Border; } }
+        private Color Accent { get { return OpenLadderPalette.Accent; } }
+        private Color Fore { get { return OpenLadderPalette.Fore; } }
+        private Color Muted { get { return OpenLadderPalette.Muted; } }
+        private Color Warning { get { return OpenLadderPalette.Warning; } }
+        private Color Danger { get { return OpenLadderPalette.Danger; } }
+        private Color Success { get { return OpenLadderPalette.Ok; } }
+
+        private ProgramFlowSteps flow;
+        private ProgramLogPanel logView;
+        private string profileName = "PLC";
 
         public TP02ProgramReaderForm()
         {
-            Text = "TP02 - Leitura de programa PG/PC12";
+            try
+            {
+                PlcDeviceProfile active = PlcProfileStore.Load();
+                if (active != null) profileName = (active.Manufacturer + " " + active.Model).Trim();
+            }
+            catch { }
+            Text = "Leitura de programa - " + profileName;
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(980, 650);
             Size = new Size(1160, 780);
@@ -102,11 +112,10 @@ namespace ModernPC12
             header.Dock = DockStyle.Top;
             header.Height = 86;
             header.BackColor = Chrome;
-            Controls.Add(header);
 
-            Label title = LabelAt("TP02 - LEITURA DE PROGRAMA PG/PC12", 14.0f, FontStyle.Bold, Fore, 20, 13);
+            Label title = LabelAt("LEITURA DE PROGRAMA", 14.0f, FontStyle.Bold, Fore, 20, 13);
             header.Controls.Add(title);
-            Label sub = LabelAt("SOMENTE LEITURA | TP-232PG | 19200 8O1 | DTR=OFF | RTS=OFF | HELLO -> F0 -> 38 -> 34",
+            Label sub = LabelAt(profileName + "  |  SOMENTE LEITURA | TP-232PG | 19200 8O1 | DTR=OFF | RTS=OFF | HELLO -> F0 -> 38 -> 34",
                 8.8f, FontStyle.Regular, Muted, 22, 47);
             header.Controls.Add(sub);
 
@@ -121,7 +130,6 @@ namespace ModernPC12
             command.Dock = DockStyle.Top;
             command.Height = 116;
             command.BackColor = Shell;
-            Controls.Add(command);
 
             command.Controls.Add(LabelAt("Porta COM", 8.0f, FontStyle.Bold, Muted, 18, 13));
             portCombo = new ComboBox();
@@ -154,8 +162,6 @@ namespace ModernPC12
 
             TabControl tabs = new TabControl();
             tabs.Dock = DockStyle.Fill;
-            Controls.Add(tabs);
-            tabs.BringToFront();
 
             TabPage programTab = new TabPage("Programa lido");
             programTab.BackColor = Shell;
@@ -164,12 +170,21 @@ namespace ModernPC12
             programBox.Dock = DockStyle.Fill;
             programTab.Controls.Add(programBox);
 
-            TabPage logTab = new TabPage("Log bruto");
-            logTab.BackColor = Shell;
-            tabs.TabPages.Add(logTab);
+            // O registro fica sempre visivel sob a leitura, com a barra de progresso.
             logBox = NewTextBox();
-            logBox.Dock = DockStyle.Fill;
-            logTab.Controls.Add(logBox);
+            logView = new ProgramLogPanel(logBox);
+            logView.Dock = DockStyle.Bottom;
+            logView.Height = 230;
+
+            // A ancoragem resolve do ultimo filho para o primeiro: o que entra por ultimo
+            // fica na borda externa. De cima para baixo: cabecalho, passos, comandos,
+            // programa lido e registro.
+            flow = new ProgramFlowSteps("Conectar", "Verificar", "Ler programa", "Confirmar");
+            Controls.Add(tabs);
+            Controls.Add(logView);
+            Controls.Add(command);
+            Controls.Add(flow);
+            Controls.Add(header);
         }
 
         private Label LabelAt(string text, float size, FontStyle style, Color color, int left, int top)
@@ -193,7 +208,7 @@ namespace ModernPC12
             b.Cursor = Cursors.Hand;
             b.Font = new Font("Segoe UI Semibold", 8.5f, FontStyle.Bold);
             b.BackColor = primary ? Accent : Chrome;
-            b.ForeColor = primary ? Color.White : Fore;
+            b.ForeColor = primary ? OpenLadderPalette.OnAccent : Fore;
             b.FlatAppearance.BorderColor = Border;
             if (primary) b.FlatAppearance.BorderSize = 0;
             return b;
@@ -207,7 +222,7 @@ namespace ModernPC12
             box.WordWrap = false;
             box.ScrollBars = ScrollBars.Both;
             box.Font = new Font("Consolas", 9.0f);
-            box.BackColor = Color.FromArgb(16, 22, 29);
+            box.BackColor = OpenLadderPalette.Canvas;
             box.ForeColor = Fore;
             box.BorderStyle = BorderStyle.FixedSingle;
             return box;
@@ -256,6 +271,8 @@ namespace ModernPC12
             AppendLog("Porta: " + portName + " | 19200 8O1 | DTR=off | RTS=off.");
             AppendLog("Seguranca: somente HELLO, F0, 38 e 34 podem ser transmitidos.");
             SetBusy(true);
+            flow.Reset();
+            flow.Advance(0);
             SetStatus("LENDO...", Warning);
 
             ThreadPool.QueueUserWorkItem(delegate
@@ -270,6 +287,7 @@ namespace ModernPC12
                 {
                     if (failure != null)
                     {
+                        flow.FailActive();
                         AppendLog("FALHA FINAL: " + failure.Message);
                         SetStatus("FALHA", Danger);
                         MessageBox.Show(this, failure.Message, "TP02 - leitura PG falhou",
@@ -278,6 +296,8 @@ namespace ModernPC12
                     else
                     {
                         ShowProgram(result);
+                        if (result.BrawMismatches == 0) flow.CompleteAll();
+                        else flow.Set(3, FlowState.Failed);
                         SetStatus("LEITURA PG APROVADA", Success);
                         string pageNotice = result.CrossedPageBoundary
                             ? "\r\nA leitura cruzou 80 passos usando a paginação HIGH,LOW reconstruída do PC12; a confirmação final em TP02 físico continua registrada no log."
@@ -838,6 +858,7 @@ namespace ModernPC12
         private void SetBusy(bool value)
         {
             busy = value;
+            if (logView != null) logView.SetBusy("leitura", value);
             portCombo.Enabled = !value;
             readButton.Enabled = !value;
             refreshButton.Enabled = !value;
@@ -852,6 +873,7 @@ namespace ModernPC12
 
         private void AppendLog(string text)
         {
+            ObserveFlow(text);
             string line = "[" + DateTime.Now.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture) + "] " + text;
             if (logBox != null)
             {
@@ -863,6 +885,16 @@ namespace ModernPC12
             {
                 try { File.AppendAllText(sessionLogPath, line + Environment.NewLine, Encoding.UTF8); } catch { }
             }
+        }
+
+        /// <summary>So apresentacao: os marcos do registro movem a faixa de passos; nada e transmitido por aqui.</summary>
+        private void ObserveFlow(string text)
+        {
+            if (flow == null || !busy || string.IsNullOrEmpty(text)) return;
+            if (text.StartsWith("COM aberta", StringComparison.Ordinal)) flow.Advance(0);
+            else if (text.StartsWith("HELLO confirmado", StringComparison.Ordinal)) flow.Advance(1);
+            else if (text.StartsWith("38 valido", StringComparison.Ordinal)) flow.Advance(2);
+            else if (text.StartsWith("LEITURA CONCLU", StringComparison.Ordinal)) flow.Advance(3);
         }
 
         private void AppendLogSafe(string text)
