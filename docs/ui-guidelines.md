@@ -105,7 +105,7 @@ neutros: *Conectar*, *Ler do PLC*, *Transferir para o PLC*, *Monitorar*. Nome de
 Tudo que pertence a um modelo fica em **Ferramentas > Recursos do modelo (modelo ativo)**, que
 só aparece quando o driver do controlador ativo o oferece. As telas de um fabricante são a
 implementação de um driver: entram no fluxo genérico por um ponto único
-(`ShowProgramTransfer`, `ShowCommunication`, `ShowMonitor`, `ShowReader`), que despacha pelo
+(`ShowProgramTransfer`, `ShowCommunication`, `ShowMonitor`, `ShowReader`), que despacha por `IPlcDriverUi` pelo
 driver do perfil. Um novo driver acrescenta uma tela e um ramo nesse despacho, sem criar item
 de menu próprio.
 

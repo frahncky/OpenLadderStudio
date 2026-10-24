@@ -61,18 +61,6 @@ $menu = @'
             return m;
         }
 
-        /// <summary>
-        /// Ponto unico de entrada para enviar o programa ao PLC. Cada driver com
-        /// tela propria de transferencia entra aqui; os demais caem na central
-        /// generica, que explica o que o driver declara suportar.
-        /// </summary>
-        private void ShowProgramTransfer()
-        {
-            RefreshProfileUi();
-            if (IsTp02()) { ShowTp02ProgramTransfer(); return; }
-            V73ShowTransferCenter();
-        }
-
         private void ShowKeyboardShortcuts()
         {
             MessageBox.Show(this,
@@ -169,10 +157,8 @@ $menu = @'
 
             // Tudo que pertence a um modelo fica aqui. O item inteiro some
             // quando o driver ativo nao o oferece (RefreshToolsForProfile).
-            tp02Tools = MenuItem("Recursos do modelo");
-            ToolStripMenuItem recursos = tp02Tools;
-            recursos.DropDownItems.Add(DropItem("Monitor MMI (somente leitura)", delegate { ShowTp02ReadOnlyMonitor(); }));
-            ferramentas.DropDownItems.Add(recursos);
+            modelTools = MenuItem("Recursos do modelo");
+            ferramentas.DropDownItems.Add(modelTools);
 
             ToolStripMenuItem ajuda = MenuItem("Ajuda");
             ajuda.DropDownItems.Add(DropItem("Atalhos de teclado", delegate { ShowKeyboardShortcuts(); }));
@@ -302,14 +288,6 @@ $fitPalette = @'
 $shell = Rep $shell "            host.Controls.Add(list);`n            host.Controls.Add(searchHost);" $fitPalette.TrimEnd() 'ajuste de largura da paleta'
 
 # ---------------------------------------------------------------- texto neutro
-$toolsRefresh = @'
-if (tp02Tools != null)
-            {
-                tp02Tools.Visible = IsTp02();
-                tp02Tools.Text = currentProfile == null ? "Recursos do modelo" : "Recursos do modelo (" + currentProfile.Model + ")";
-            }
-'@
-$shell = Rep $shell 'if (tp02Tools != null) tp02Tools.Visible = IsTp02();' $toolsRefresh.TrimEnd() 'visibilidade dos recursos do modelo'
 $shell = Rep $shell '"TP02 ativo: os recursos avançados permanecem separados no menu Ferramentas e o monitor comum opera em leitura."' '"Os recursos específicos do modelo ativo ficam em Ferramentas > Recursos do modelo; o monitor comum opera em leitura."' 'texto do diagnostico (ativo)'
 $shell = Rep $shell '"Os recursos avançados do TP02 só são usados quando um perfil TP02 está ativo."' '"Recursos específicos de um modelo só aparecem quando o controlador correspondente está selecionado."' 'texto do diagnostico (inativo)'
 $shell = Rep $shell '"Leitura do programa - WEG TP02"' '"Leitura do programa do PLC"' 'titulo da aba de leitura'
@@ -459,6 +437,157 @@ foreach ($f in @('private TP02BridgeForm bridgeForm;', 'private TP02AutoDecoderF
     $shell = Remove-Field $shell ([regex]::Escape($f)) $f
 }
 foreach ($dead in @('ShowTp02ConnectionCenter', 'LaunchTp02Tool', 'LaunchInstalledTool', 'ShowTp02BridgeLab', 'ShowTp02PhysicalValidation', 'ShowTp02Pg33NoOpProbe', 'ShowDecoder', 'ShowCalibration', 'ShowIl', 'TP02PhysicalValidationForm', 'TP02Pg33NoOpProbeForm', 'TP02BridgeForm', 'TP02AutoDecoderForm', 'TP02CalibrationCampaignForm', 'TP02IlToLadderForm', 'bridgeForm', 'decoderForm', 'calibrationForm', 'ilForm')) { Assert-NoRefs $shell $dead }
+
+# ---------------------------------------------------------------- despacho por driver
+# O shell deixa de conhecer modelo e transporte: conectar, ler, transferir e
+# monitorar passam por IPlcDriverUi (PlcDriverUi.cs), implementada por
+# Tp02DriverUi.cs e ModbusDriverUi.cs. "Recursos do modelo" e montado a partir
+# de IPlcDriverUi.ModelFeatures.
+$shell = Rep $shell 'case "RBP": return StudioIcon.Download;' 'case "READ": return StudioIcon.Download;' 'icone da aba de leitura'
+$shell = Rep $shell 'if (k == "RBP") { ShowReader(); return; }' 'if (k == "READ") { ShowReader(); return; }' 'restauracao da aba de leitura'
+$shell = Rep $shell 'SetRailEnabled("RBP", readProgram);' 'SetRailEnabled("READ", readProgram);' 'trilho de leitura'
+$shell = Rep $shell 'Form[] forms = new Form[] { ladderForm, readerForm, updaterForm, modbusForm };' 'Form[] forms = new Form[] { ladderForm, updaterForm };' 'lista de formularios a descartar (driver)'
+$shell = Rep $shell 'InspectorLabel(IsTp02()' 'InspectorLabel(HasModelFeatures()' 'diagnostico sem teste de modelo'
+foreach ($m in @(
+    @('private void ShowCommunication()', 'ShowCommunication'),
+    @('private void ShowMonitor()', 'ShowMonitor'),
+    @('private void ShowModbus(', 'ShowModbus'),
+    @('private void PrepareModbusForProfile(', 'PrepareModbusForProfile'),
+    @('private void ShowReader()', 'ShowReader'),
+    @('private void ShowTp02ReadOnlyMonitor()', 'ShowTp02ReadOnlyMonitor'),
+    @('private void ShowTp02ProgramTransfer()', 'ShowTp02ProgramTransfer'),
+    @('private void RefreshToolsForProfile()', 'RefreshToolsForProfile'),
+    @('private bool RequireTp02(', 'RequireTp02'),
+    @('private bool IsTp02()', 'IsTp02'),
+    @('private bool IsGenericModbus()', 'IsGenericModbus'))) {
+    $shell = Remove-Method $shell $m[0] $m[1]
+}
+foreach ($f in @('private TP02ProgramReaderForm readerForm;', 'private TP02ControlV31Form tp02MonitorForm;', 'private ModbusMonitorForm modbusForm;', 'private ToolStripMenuItem tp02Tools;')) {
+    $shell = Remove-Field $shell ([regex]::Escape($f)) $f
+}
+$driverBlock = @'
+        // Despacho por driver. O shell nao conhece fabricante nem modelo: pergunta
+        // ao IPlcDriverUi do perfil ativo e mostra mensagem neutra quando o
+        // recurso nao existe.
+        private IStudioHost studioHost;
+        private ToolStripMenuItem modelTools;
+
+        private IStudioHost Host()
+        {
+            if (studioHost == null)
+                studioHost = new StudioHostAdapter(this,
+                    delegate { return currentProfile; },
+                    delegate { if (ladderForm == null || ladderForm.IsDisposed) ShowLadder(); return ladderForm; },
+                    delegate(Form document, string title, string key) { ShowDocument(document, title, key); },
+                    delegate(string text) { if (statusText != null) statusText.Text = text; });
+            return studioHost;
+        }
+
+        private IPlcDriverUi DriverUi()
+        {
+            return currentProfile == null ? null : PlcDriverUiRegistry.Find(currentProfile);
+        }
+
+        private bool HasModelFeatures()
+        {
+            IPlcDriverUi ui = DriverUi();
+            return ui != null && ui.ModelFeatures.Count > 0;
+        }
+
+        private bool DriverDeclares(PlcDriverFeature feature)
+        {
+            if (currentDriver == null || currentDriver.Capabilities == null) return false;
+            PlcDriverCapabilities c = currentDriver.Capabilities;
+            switch (feature)
+            {
+                case PlcDriverFeature.Connect: return c.Connect;
+                case PlcDriverFeature.Monitor: return c.MonitorBits || c.ReadRegisters;
+                case PlcDriverFeature.ReadProgram: return c.ReadProgram;
+            }
+            return true;
+        }
+
+        private bool OpenDriverFeature(PlcDriverFeature feature)
+        {
+            RefreshProfileUi();
+            IPlcDriverUi ui = DriverUi();
+            if (ui == null || !DriverDeclares(feature) || !ui.Supports(feature)) return false;
+            ui.Open(feature, Host());
+            return true;
+        }
+
+        private void ShowUnavailable(string what)
+        {
+            MessageBox.Show(this,
+                what + " não está disponível para o controlador selecionado.\r\n\r\nControlador ativo: "
+                + (currentProfile == null ? "nenhum" : currentProfile.Manufacturer + " " + currentProfile.Model) + ".",
+                "OpenLadder Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void ShowCommunication()
+        {
+            RefreshProfileUi();
+            if (currentDriver != null && DriverDeclares(PlcDriverFeature.Connect))
+            {
+                if (!OpenDriverFeature(PlcDriverFeature.Connect))
+                    MessageBox.Show(this, "A comunicação deste controlador ainda não possui uma tela operacional integrada.",
+                        "OpenLadder Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            MessageBox.Show(this, "Selecione um controlador com comunicação disponível antes de conectar.",
+                "OpenLadder Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ShowDeviceManager();
+        }
+
+        private void ShowMonitor()
+        {
+            if (!OpenDriverFeature(PlcDriverFeature.Monitor)) ShowUnavailable("O monitoramento");
+        }
+
+        private void ShowReader()
+        {
+            if (!OpenDriverFeature(PlcDriverFeature.ReadProgram)) ShowUnavailable("A leitura do programa");
+        }
+
+        /// <summary>
+        /// Enviar o programa ao PLC. Drivers com tela propria de transferencia a
+        /// oferecem por IPlcDriverUi; os demais caem na central generica, que explica
+        /// o que o driver declara suportar.
+        /// </summary>
+        private void ShowProgramTransfer()
+        {
+            RefreshProfileUi();
+            IPlcDriverUi ui = DriverUi();
+            if (ui != null && ui.Supports(PlcDriverFeature.TransferProgram))
+            {
+                ui.Open(PlcDriverFeature.TransferProgram, Host());
+                return;
+            }
+            V73ShowTransferCenter();
+        }
+
+        /// <summary>"Recursos do modelo" lista o que o driver ativo oferece e some se nao oferecer nada.</summary>
+        private void RefreshToolsForProfile()
+        {
+            if (modelTools == null) return;
+            IPlcDriverUi ui = DriverUi();
+            modelTools.DropDownItems.Clear();
+            if (ui != null)
+            {
+                foreach (PlcFeatureAction action in ui.ModelFeatures)
+                {
+                    PlcFeatureAction chosen = action;
+                    modelTools.DropDownItems.Add(DropItem(chosen.Text, delegate { chosen.Run(Host()); }));
+                }
+            }
+            modelTools.Visible = modelTools.DropDownItems.Count > 0;
+            modelTools.Text = currentProfile == null ? "Recursos do modelo" : "Recursos do modelo (" + currentProfile.Model + ")";
+        }
+
+        private ToolStripMenuItem DropItemKeys(
+'@
+$shell = Rep $shell '        private ToolStripMenuItem DropItemKeys(' $driverBlock.TrimEnd() 'ponto de insercao do despacho por driver'
+foreach ($dead in @('IsTp02', 'RequireTp02', 'IsGenericModbus', 'tp02Tools', 'tp02MonitorForm', 'readerForm', 'modbusForm', 'ShowTp02ReadOnlyMonitor', 'ShowTp02ProgramTransfer', 'ShowModbus', 'PrepareModbusForProfile', 'weg\.tp02\.serial', 'generic\.modbus')) { Assert-NoRefs $shell $dead }
 
 $enc = New-Object System.Text.UTF8Encoding($true)
 [IO.File]::WriteAllText($shellPath, $shell, $enc)
