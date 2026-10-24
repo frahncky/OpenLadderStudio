@@ -18,7 +18,7 @@ namespace ModernPC12
             {
                 if (args.Length < 1 || string.IsNullOrWhiteSpace(args[0]))
                 {
-                    Console.WriteLine("Uso: OpenLadderTP02ProjectExport.exe projeto.pladder [saida.hex]");
+                    Console.WriteLine("Uso: OpenLadderTP02ProjectExport.exe projeto.pladder [saída.hex]");
                     return 2;
                 }
 
@@ -36,7 +36,7 @@ namespace ModernPC12
                 Console.WriteLine(result.BuildReport());
                 if (!result.Success)
                 {
-                    Console.Error.WriteLine("Compilacao TP02 recusada: corrija os erros antes de gerar WBP.");
+                    Console.Error.WriteLine("Compilação TP02 recusada: corrija os erros antes de gerar WBP.");
                     return 1;
                 }
                 if (result.Words.Count < 1)

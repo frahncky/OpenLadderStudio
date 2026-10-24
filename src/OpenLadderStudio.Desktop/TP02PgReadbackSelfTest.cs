@@ -60,11 +60,11 @@ namespace ModernPC12
                 0x0B,0x00,0x0F,0x02,0x07,0x07,0x07
             };
 
-            Check(highLow.Length == expected.Length * 2, "fixture fisico inconsistente");
+            Check(highLow.Length == expected.Length * 2, "fixture físico inconsistente");
             for (int i = 0; i < expected.Length; i++)
             {
                 byte actual = TP02PgReadback.CalculateBraw(highLow[2 * i], highLow[(2 * i) + 1]);
-                Check(actual == expected[i], "BRAW fisico divergiu no passo " + i.ToString());
+                Check(actual == expected[i], "BRAW físico divergiu no passo " + i.ToString());
             }
         }
 
@@ -85,13 +85,13 @@ namespace ModernPC12
             Check(r38.Length == expected38.Length, "38 com tamanho inesperado");
             for (int i = 0; i < Math.Min(r38.Length, expected38.Length); i++)
                 Check(r38[i] == expected38[i], "38 divergiu no byte " + i.ToString());
-            Check(Sum8(r38) == 0xFF, "checksum do 38 nao fecha FF");
+            Check(Sum8(r38) == 0xFF, "checksum do 38 não fecha FF");
 
             byte[] request34 = Build34Request(0);
             byte[] r34 = TP02PgReadback.Build34(request34, words, valid, 2, null);
             Check(r34.Length == 243, "34 deve ter 243 bytes totais");
-            Check(r34[0] == 0x00 && r34[1] == 0xF0, "cabecalho 34 invalido");
-            Check(Sum8(r34) == 0xFF, "checksum do 34 nao fecha FF");
+            Check(r34[0] == 0x00 && r34[1] == 0xF0, "cabecalho 34 inválido");
+            Check(Sum8(r34) == 0xFF, "checksum do 34 não fecha FF");
 
             Check(r34[2] == 0x00 && r34[3] == 0x10, "word 0 HL incorreto");
             Check(r34[4] == 0x20 && r34[5] == 0x40, "word 1 HL incorreto");
@@ -113,9 +113,9 @@ namespace ModernPC12
 
             byte[] request34 = Build34Request(80);
             byte[] r34 = TP02PgReadback.Build34(request34, words, valid, 81, null);
-            Check(r34[2] == 0x00 && r34[3] == 0x10, "pagina 2 nao iniciou no step 80");
-            Check(r34[4] == 0x00 && r34[5] == 0x70, "pagina 2 nao trouxe END no step 81");
-            Check(Sum8(r34) == 0xFF, "checksum pagina 2 nao fecha FF");
+            Check(r34[2] == 0x00 && r34[3] == 0x10, "pagina 2 não iniciou no step 80");
+            Check(r34[4] == 0x00 && r34[5] == 0x70, "pagina 2 não trouxe END no step 81");
+            Check(Sum8(r34) == 0xFF, "checksum pagina 2 não fecha FF");
         }
 
         private static List<Pg33MachineWord> ReadCanonicalLikeV153(
@@ -133,7 +133,7 @@ namespace ModernPC12
             {
                 byte[] response = TP02PgReadback.Build34(Build34Request(start), words, valid, highest, null);
                 Check(response.Length == 243, "V156: resposta PG34 deve ter 243 bytes");
-                Check(Sum8(response) == 0xFF, "V156: checksum PG34 nao fecha FF em start=" + start.ToString());
+                Check(Sum8(response) == 0xFF, "V156: checksum PG34 não fecha FF em start=" + start.ToString());
                 if (response.Length < 243) return result;
 
                 pages++;
@@ -192,18 +192,18 @@ namespace ModernPC12
             bool[] backupValid = CloneValid(valid);
 
             byte[] pg33 = TP02PgV156Scenario.BuildMinimalC0001Pg33();
-            Check(Sum8(pg33) == 0xFF, "V156 PG33 minimo deve fechar checksum FF");
+            Check(Sum8(pg33) == 0xFF, "V156 PG33 mínimo deve fechar checksum FF");
 
             int startStep;
             Pg33MachineWord[] decoded;
             string reason;
             bool decodedOk = TP02PgEmulatorProgram.TryDecodePg33(
                 pg33, out startStep, out decoded, out reason);
-            Check(decodedOk, "V156 decoder PG33 recusou quadro minimo: " + reason);
+            Check(decodedOk, "V156 decoder PG33 recusou quadro mínimo: " + reason);
             if (!decodedOk) return;
 
-            Check(startStep == 0, "V156 PG33 minimo deve iniciar em 0000");
-            Check(decoded.Length == 3, "V156 PG33 minimo deve possuir 3 words");
+            Check(startStep == 0, "V156 PG33 mínimo deve iniciar em 0000");
+            Check(decoded.Length == 3, "V156 PG33 mínimo deve possuir 3 words");
             for (int i = 0; i < decoded.Length; i++)
             {
                 words[startStep + i] = decoded[i];

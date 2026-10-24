@@ -298,11 +298,11 @@ namespace ModernPC12
             Console.WriteLine(" Porta       : " + portName);
             Console.WriteLine(" Serial      : 19200 8O1 / DTR on / RTS off");
             Console.WriteLine(" HELLO RX    : " + (HelloC0 ? "C0 01 09 35" : "80 01 09 75"));
-            Console.WriteLine(" PG33        : Write Program CONFIRMADO offline");
+            Console.WriteLine(" PG33        : Write Program CONFIRMADO off-line");
             Console.WriteLine(" PG33 ACK    : " + (Pg33SyntheticAck ? "00 00 FF SINTETICO" : "SEM RESPOSTA"));
             Console.WriteLine(" Unknown ACK : " + (AutoAckUnknown ? "ON" : "OFF"));
             Console.WriteLine(" Timing      : " + (FastMode ? "FAST" : "TP02 aproximado"));
-            Console.WriteLine(" ATENCAO     : use COM virtual; nao use a COM fisica do PLC.");
+            Console.WriteLine(" ATENÇÃO     : use COM virtual; não use a COM física do PLC.");
             Console.WriteLine("============================================================");
             Console.WriteLine();
         }
@@ -441,7 +441,7 @@ namespace ModernPC12
 
             if (!checksumOk)
             {
-                Log("BLOQUEIO", "Frame ignorado porque a soma modulo 256 nao fecha em FF.");
+                Log("BLOQUEIO", "Frame ignorado porque a soma módulo 256 não fecha em FF.");
                 return;
             }
 
@@ -482,7 +482,7 @@ namespace ModernPC12
                     {
                         SleepFor(150);
                         Send(
-                            "EMU -> PC12 ACK GENERICO para CMD=0x"
+                            "EMU -> PC12 ACK GENÉRICO para CMD=0x"
                             + command.ToString("X2", CultureInfo.InvariantCulture),
                             EmptySuccessResponse);
                     }
@@ -506,7 +506,7 @@ namespace ModernPC12
 
             if (!TryDecodePg33(frame, out startStep, out words, out reason))
             {
-                Log("PG33 INVALIDO", reason);
+                Log("PG33 INVÁLIDO", reason);
                 SaveNamedFrame(frame, "pg33-invalid");
                 return;
             }
@@ -533,12 +533,12 @@ namespace ModernPC12
                 + " | " + preview);
 
             if (LooksLikeW1A(words))
-                Log("PG33 W1A", "Assinatura STR X001 / OUT Y001 / END reconhecida apos reconstruir os planos HL+EX.");
+                Log("PG33 W1A", "Assinatura STR X001 / OUT Y001 / END reconhecida após reconstruir os planos HL+EX.");
 
             if (Pg33SyntheticAck)
             {
                 SleepFor(150);
-                Send("EMU -> PC12 ACK SINTETICO PG33 (nao confirmado no PLC fisico)", EmptySuccessResponse);
+                Send("EMU -> PC12 ACK SINTETICO PG33 (não confirmado no PLC físico)", EmptySuccessResponse);
             }
             else
             {
@@ -612,7 +612,7 @@ namespace ModernPC12
             int checksumIndex = frame.Length - 1;
             if (externalStart + wordCount != checksumIndex)
             {
-                reason = "planos HIGH/LOW e EXTERNAL nao fecham na posicao do checksum";
+                reason = "planos HIGH/LOW e EXTERNAL não fecham na posição do checksum";
                 return false;
             }
 
@@ -707,7 +707,7 @@ namespace ModernPC12
                 "addr=0x" + requestedAddress.ToString("X4", CultureInfo.InvariantCulture)
                 + " hint=0x" + requestedHint.ToString("X2", CultureInfo.InvariantCulture)
                 + " -> fixture de 240 bytes."
-                + (Pg33FrameCounter > 0 ? " ATENCAO: readback 34 ainda nao deriva do banco PG33 escrito." : string.Empty));
+                + (Pg33FrameCounter > 0 ? " ATENÇÃO: readback 34 ainda não deriva do banco PG33 escrito." : string.Empty));
 
             return BuildResponse(payload);
         }
@@ -739,7 +739,7 @@ namespace ModernPC12
         {
             if (payload == null) payload = new byte[0];
             if (payload.Length > 255)
-                throw new ArgumentOutOfRangeException("payload", "Payload maximo de 255 bytes.");
+                throw new ArgumentOutOfRangeException("payload", "Payload máximo de 255 bytes.");
 
             byte[] frame = new byte[payload.Length + 3];
             frame[0] = 0x00;
@@ -803,7 +803,7 @@ namespace ModernPC12
             Log(
                 "DESCONHECIDO",
                 "CMD=0x" + frame[0].ToString("X2", CultureInfo.InvariantCulture)
-                + " capturado. Candidato a comando ainda nao classificado.");
+                + " capturado. Candidato a comando ainda não classificado.");
         }
 
         private static void SaveNamedFrame(byte[] frame, string suffix)

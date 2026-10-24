@@ -69,7 +69,7 @@ namespace ModernPC12
                 CreateSession();
                 Log("TP02 FULL PROTOCOL CAPTURE iniciado.");
                 Log("Porta=" + PortName + " | modo=" + Mode.ToString().ToUpperInvariant());
-                Log("BIOS 37=PERMANENTEMENTE BLOQUEADO; PG33=NAO RETRANSMITIDO por esta campanha.");
+                Log("BIOS 37=PERMANENTEMENTE BLOQUEADO; PG33=NÃO RETRANSMITIDO por esta campanha.");
 
                 SerialPort port = null;
                 try
@@ -87,9 +87,9 @@ namespace ModernPC12
                     }
                     if (Mode == CampaignMode.DestructiveLab) RunDestructiveLab(port);
                     WriteReport("COMPLETED", string.Empty);
-                    Log("Campanha concluida. Pasta: " + SessionDir);
+                    Log("Campanha concluída. Pasta: " + SessionDir);
                     Console.WriteLine();
-                    Console.WriteLine("RESULTADO: CAMPANHA CONCLUIDA");
+                    Console.WriteLine("RESULTADO: CAMPANHA CONCLUÍDA");
                     Console.WriteLine("Pasta: " + SessionDir);
                     return 0;
                 }
@@ -99,7 +99,7 @@ namespace ModernPC12
             {
                 try { WriteReport("FAILED", ex.ToString()); } catch { }
                 Console.Error.WriteLine("FALHA: " + ex.Message);
-                if (!string.IsNullOrEmpty(SessionDir)) Console.Error.WriteLine("Evidencias: " + SessionDir);
+                if (!string.IsNullOrEmpty(SessionDir)) Console.Error.WriteLine("Evidências: " + SessionDir);
                 return 1;
             }
         }
@@ -120,25 +120,25 @@ namespace ModernPC12
             if (text == "1" || text == "SAFE") return CampaignMode.Safe;
             if (text == "2" || text == "LAB") return CampaignMode.Lab;
             if (text == "3" || text == "DESTRUCTIVE" || text == "DESTRUCTIVE_LAB") return CampaignMode.DestructiveLab;
-            throw new ArgumentException("Modo invalido. Use SAFE, LAB ou DESTRUCTIVE.");
+            throw new ArgumentException("Modo inválido. Use SAFE, LAB ou DESTRUCTIVE.");
         }
 
         private static void ConfirmMode(CampaignMode mode)
         {
             if (mode == CampaignMode.Safe) return;
             Console.WriteLine();
-            Console.WriteLine("ATENCAO: este modo transmite comandos que alteram o TP02.");
+            Console.WriteLine("ATENÇÃO: este modo transmite comandos que alteram o TP02.");
             Console.WriteLine("Use somente em bancada isolada, sem processo/carga conectados e com PLC em STOP.");
             Console.WriteLine("O teste LAB pode colocar o PLC brevemente em RUN para capturar 02/01.");
             if (mode == CampaignMode.DestructiveLab)
             {
-                Console.WriteLine("DESTRUCTIVE executa Clear Data/System/Program/All e NAO faz restore automatico.");
+                Console.WriteLine("DESTRUCTIVE executa Clear Data/System/Program/All e NÃO faz restore automático.");
                 Console.WriteLine("O backup completo e salvo ANTES, mas a restauracao fica para procedimento posterior controlado.");
             }
             string token = mode == CampaignMode.Lab ? "LAB-ISOLADO" : "APAGAR-TP02";
             Console.Write("Digite " + token + " para continuar: ");
             string answer = (Console.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
-            if (answer != token) throw new InvalidOperationException("Confirmacao de bancada nao recebida.");
+            if (answer != token) throw new InvalidOperationException("Confirmação de bancada não recebida.");
         }
 
         private static string ChoosePort()
@@ -151,7 +151,7 @@ namespace ModernPC12
             Console.Write("Escolha [1]: ");
             string text = Console.ReadLine();
             int index = 1;
-            if (!string.IsNullOrEmpty(text) && !int.TryParse(text.Trim(), out index)) throw new ArgumentException("Selecao de COM invalida.");
+            if (!string.IsNullOrEmpty(text) && !int.TryParse(text.Trim(), out index)) throw new ArgumentException("Seleção de COM inválida.");
             if (index < 1 || index > ports.Length) throw new ArgumentOutOfRangeException("index");
             return ports[index - 1];
         }
@@ -251,9 +251,9 @@ namespace ModernPC12
 
         private static void SnapshotBaseline(SerialPort port, string state)
         {
-            Log("BASELINE: programa + memoria completa + RTC + scan time.");
+            Log("BASELINE: programa + memória completa + RTC + scan time.");
             if (string.Equals(state, "STOP", StringComparison.Ordinal)) BackupProgram(port, "00-baseline-program");
-            else Log("BASELINE PROGRAM: pulado porque PLC esta RUN; SAFE nao altera estado.");
+            else Log("BASELINE PROGRAM: pulado porque PLC esta RUN; SAFE não altera estado.");
             SnapshotAreas(port, "00-baseline-memory", AllAreas());
             CaptureClock(port, "00-baseline-rtc");
             CaptureScan(port, "00-baseline-scan");
@@ -303,7 +303,7 @@ namespace ModernPC12
                     string label = prefix + "-0A-" + area.ToString() + "-" + (i + 1).ToString("00", CultureInfo.InvariantCulture);
                     byte[] raw = ExchangeRaw(port, request, 4200, 140, label, "memory-read");
                     byte[] frame = FindFrame(raw, request[4]);
-                    if (frame == null) throw new InvalidDataException(label + ": resposta PG0A valida nao localizada.");
+                    if (frame == null) throw new InvalidDataException(label + ": resposta PG0A valida não localizada.");
                     File.WriteAllBytes(Path.Combine(SessionDir, SafeName(label + "-frame.bin")), frame);
                     Thread.Sleep(35);
                 }
@@ -314,7 +314,7 @@ namespace ModernPC12
         {
             byte[] raw = ExchangeRaw(port, request, 3200, 120, label, "memory-read");
             byte[] frame = FindFrame(raw, request[4]);
-            if (frame == null) throw new InvalidDataException(label + ": frame de leitura nao localizado.");
+            if (frame == null) throw new InvalidDataException(label + ": frame de leitura não localizado.");
             return frame;
         }
 
@@ -363,12 +363,12 @@ namespace ModernPC12
                 new List<int>(new int[] { 1024 }), new List<ushort>(new ushort[] { test }));
             ExchangeRaw(port, writes[0], 2200, 140, "12-v1024-write-test", "scratch-v1024");
             ushort after = ReadWord(port, Tp02PgMemoryProtocol.Area.V, 1024, "12-v1024-readback-test");
-            if (after != test) throw new InvalidDataException("V1024 nao refletiu escrita 09 de teste.");
+            if (after != test) throw new InvalidDataException("V1024 não refletiu escrita 09 de teste.");
             IList<byte[]> restore = Tp02PgMemoryProtocol.BuildRegisterWrites(Tp02PgMemoryProtocol.Area.V,
                 new List<int>(new int[] { 1024 }), new List<ushort>(new ushort[] { original }));
             ExchangeRaw(port, restore[0], 2200, 140, "12-v1024-restore", "scratch-v1024");
             ushort restored = ReadWord(port, Tp02PgMemoryProtocol.Area.V, 1024, "12-v1024-readback-restore");
-            if (restored != original) throw new InvalidDataException("V1024 nao foi restaurado ao valor original.");
+            if (restored != original) throw new InvalidDataException("V1024 não foi restaurado ao valor original.");
             Log("V1024 reversivel: original=" + original.ToString("X4", CultureInfo.InvariantCulture) + " test=" + test.ToString("X4", CultureInfo.InvariantCulture) + " restore=OK.");
         }
 
@@ -387,22 +387,22 @@ namespace ModernPC12
             bool original = (originalByte & 0x80) != 0;
             ExchangeRaw(port, Tp02PgMemoryProtocol.BuildSetReset(Tp02PgMemoryProtocol.Area.C, 2048, true), 2200, 140, "14-c2048-set", "scratch-c2048");
             byte setByte = ReadByte(port, Tp02PgMemoryProtocol.Area.C, 2048, "14-c2048-read-set");
-            if ((setByte & 0x80) == 0) throw new InvalidDataException("C2048 nao ficou ON apos PG35 SET.");
+            if ((setByte & 0x80) == 0) throw new InvalidDataException("C2048 não ficou ON após PG35 SET.");
             ExchangeRaw(port, Tp02PgMemoryProtocol.BuildSetReset(Tp02PgMemoryProtocol.Area.C, 2048, false), 2200, 140, "14-c2048-reset", "scratch-c2048");
             byte resetByte = ReadByte(port, Tp02PgMemoryProtocol.Area.C, 2048, "14-c2048-read-reset");
-            if ((resetByte & 0x80) != 0) throw new InvalidDataException("C2048 nao ficou OFF apos PG35 RESET.");
+            if ((resetByte & 0x80) != 0) throw new InvalidDataException("C2048 não ficou OFF após PG35 RESET.");
             ExchangeRaw(port, Tp02PgMemoryProtocol.BuildSetReset(Tp02PgMemoryProtocol.Area.C, 2048, original), 2200, 140, "14-c2048-restore", "scratch-c2048");
             byte restoredByte = ReadByte(port, Tp02PgMemoryProtocol.Area.C, 2048, "14-c2048-read-restore");
-            if (((restoredByte & 0x80) != 0) != original) throw new InvalidDataException("C2048 nao foi restaurado.");
+            if (((restoredByte & 0x80) != 0) != original) throw new InvalidDataException("C2048 não foi restaurado.");
             Log("C2048 reversivel: original=" + (original ? "ON" : "OFF") + " restore=OK.");
         }
 
         private static void TestRunStop(SerialPort port)
         {
-            Log("RUN/STOP: saidas devem estar fisicamente desconectadas da carga.");
+            Log("RUN/STOP: saídas devem estar fisicamente desconectadas da carga.");
             ExchangeRaw(port, Run, 2200, 140, "15-run", "control"); Thread.Sleep(180);
             string state = HelloState(port, "15-run-verify");
-            if (state != "RUN") Log("AVISO: RUN nao confirmado por HELLO; tentando STOP de seguranca.");
+            if (state != "RUN") Log("AVISO: RUN não confirmado por HELLO; tentando STOP de segurança.");
             ExchangeRaw(port, Stop, 2200, 140, "16-stop", "control"); Thread.Sleep(180);
             state = HelloState(port, "16-stop-verify");
             if (state != "STOP")
@@ -410,7 +410,7 @@ namespace ModernPC12
                 ExchangeRaw(port, Stop, 2200, 140, "16-stop-safety-retry", "control"); Thread.Sleep(200);
                 state = HelloState(port, "16-stop-safety-verify2");
             }
-            if (state != "STOP") throw new InvalidOperationException("CRITICO: STOP nao confirmado apos teste RUN. Coloque a chave fisica em STOP.");
+            if (state != "STOP") throw new InvalidOperationException("CRITICO: STOP não confirmado após teste RUN. Coloque a chave física em STOP.");
             Log("RUN/STOP: retorno final STOP confirmado.");
         }
 
@@ -428,7 +428,7 @@ namespace ModernPC12
 
         private static void RunDestructiveLab(SerialPort port)
         {
-            Log("DESTRUCTIVE: backup baseline ja salvo. Restauracao automatica NAO sera executada.");
+            Log("DESTRUCTIVE: backup baseline ja salvo. Restauracao automática NÃO será executada.");
             if (EepromEnabled)
             {
                 ExchangeRaw(port, PlcToEeprom, 5000, 250, "20-plc-to-eeprom", "eeprom");
@@ -448,7 +448,7 @@ namespace ModernPC12
             SnapshotAreas(port, "33-after-clear-all-memory", AllAreas());
             CaptureClock(port, "33-after-clear-all-rtc"); CaptureScan(port, "33-after-clear-all-scan");
             File.WriteAllText(Path.Combine(SessionDir, "RESTORE_REQUIRED.txt"),
-                "A campanha DESTRUCTIVE concluiu comandos de limpeza. O TP02 foi alterado.\r\nO backup anterior esta nesta pasta, mas esta ferramenta NAO executa restore automatico.\r\nUse o fluxo de gravacao/restore controlado do OpenLadder/PC12 apos revisar as evidencias.\r\n", Encoding.UTF8);
+                "A campanha DESTRUCTIVE concluiu comandos de limpeza. O TP02 foi alterado.\r\nO backup anterior esta nesta pasta, mas esta ferramenta NÃO executa restore automático.\r\nUse o fluxo de gravação/restore controlado do OpenLadder/PC12 após revisar as evidências.\r\n", Encoding.UTF8);
         }
 
         private static byte[] ExchangeRaw(SerialPort port, byte[] request, int timeoutMs, int quietMs, string label, string context)
@@ -475,7 +475,7 @@ namespace ModernPC12
             if (Same(frame, Hello)) return;
             byte cmd = frame[0];
             if (cmd == 0x37) throw new InvalidOperationException("BIOS 37 e permanentemente bloqueado nesta campanha.");
-            if (cmd == 0x33) throw new InvalidOperationException("PG33 nao e retransmitido pela campanha completa; ja possui evidencia fisica separada.");
+            if (cmd == 0x33) throw new InvalidOperationException("PG33 não e retransmitido pela campanha completa; ja possui evidência física separada.");
             bool safe = Same(frame, F0) || Same(frame, Frame38) || IsValidPg34Request(frame) || IsKnownRead(frame);
             if (safe) return;
             if (Mode == CampaignMode.Safe) throw new InvalidOperationException("SAFE bloqueou opcode 0x" + cmd.ToString("X2"));
@@ -608,11 +608,11 @@ namespace ModernPC12
             }
             File.WriteAllText(Path.Combine(SessionDir, "responses.csv"), csv.ToString(), Encoding.UTF8);
             StringBuilder readme = new StringBuilder();
-            readme.AppendLine("Esta pasta contem TX/RX bruto byte a byte da campanha TP02.");
+            readme.AppendLine("Esta pasta contém TX/RX bruto byte a byte da campanha TP02.");
             readme.AppendLine("SAFE: somente CON-ICB/F0/38/34/0A.");
             readme.AppendLine("LAB: adiciona 01/02/09/14/35 com testes reversiveis em V1024/C2048/RTC.");
-            readme.AppendLine("DESTRUCTIVE: adiciona 03/04/0F/11 e, com --eeprom, 12/13. Nao restaura automaticamente.");
-            readme.AppendLine("37 BIOS nunca e transmitido. 33 PG33 nao e repetido nesta ferramenta.");
+            readme.AppendLine("DESTRUCTIVE: adiciona 03/04/0F/11 e, com --eeprom, 12/13. Não restaura automaticamente.");
+            readme.AppendLine("37 BIOS nunca é transmitido. 33 PG33 não e repetido nesta ferramenta.");
             File.WriteAllText(Path.Combine(SessionDir, "README.txt"), readme.ToString(), Encoding.UTF8);
         }
 
@@ -646,7 +646,7 @@ namespace ModernPC12
             Mode = CampaignMode.Safe;
             EnsureAllowed(Hello, "session"); EnsureAllowed(F0, "status"); EnsureAllowed(Frame38, "program-read"); EnsureAllowed(Tp02Pg34Pager.BuildReadRequest(0), "program-read"); EnsureAllowed(Tp02PgMemoryProtocol.ReadClock(), "memory-read");
             bool blocked37 = false; try { EnsureAllowed(new byte[] { 0x37, 0x02, 0xFF, 0xFF, 0xC8 }, "bios"); } catch { blocked37 = true; }
-            if (!blocked37) throw new Exception("Self-test: BIOS 37 nao foi bloqueado.");
+            if (!blocked37) throw new Exception("Self-test: BIOS 37 não foi bloqueado.");
             bool blockedRun = false; try { EnsureAllowed(Run, "control"); } catch { blockedRun = true; }
             if (!blockedRun) throw new Exception("Self-test: SAFE permitiu RUN.");
             Mode = CampaignMode.Lab; EnsureAllowed(Run, "control"); EnsureAllowed(Stop, "control"); EnsureAllowed(Auth, "auth");
@@ -656,7 +656,7 @@ namespace ModernPC12
             if (!blockedClear) throw new Exception("Self-test: LAB permitiu Clear All.");
             Mode = CampaignMode.DestructiveLab; EnsureAllowed(ClearProgram, "destructive"); EnsureAllowed(ClearSystem, "destructive"); EnsureAllowed(ClearData, "destructive"); EnsureAllowed(ClearAll, "destructive");
             EepromEnabled = false; bool blockedEeprom = false; try { EnsureAllowed(PlcToEeprom, "eeprom"); } catch { blockedEeprom = true; }
-            if (!blockedEeprom) throw new Exception("Self-test: EEPROM sem flag nao foi bloqueado.");
+            if (!blockedEeprom) throw new Exception("Self-test: EEPROM sem flag não foi bloqueado.");
             EepromEnabled = true; EnsureAllowed(PlcToEeprom, "eeprom"); EnsureAllowed(EepromToPlc, "eeprom");
             Console.WriteLine("TP02 Full Protocol Capture self-test: PASS");
             Console.WriteLine("modes=SAFE+LAB+DESTRUCTIVE; bios37=BLOCKED; pg33=BLOCKED; hardware=NOT USED");

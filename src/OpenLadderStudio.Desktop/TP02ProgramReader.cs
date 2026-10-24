@@ -151,7 +151,7 @@ namespace ModernPC12
             folderButton.Click += delegate { OpenSessionFolder(); };
             command.Controls.Add(folderButton);
 
-            Label safe = LabelAt("Nao envia RUN, STOP, limpeza ou escrita. A v1.47 usa o START PG34 em ordem HIGH,LOW do PC12.",
+            Label safe = LabelAt("Não envia RUN, STOP, limpeza ou escrita. A v1.47 usa o START PG34 em ordem HIGH,LOW do PC12.",
                 8.3f, FontStyle.Regular, Warning, 680, 35);
             safe.MaximumSize = new Size(430, 42);
             command.Controls.Add(safe);
@@ -269,7 +269,7 @@ namespace ModernPC12
             logBox.Clear();
             AppendLog("Sessao READ-ONLY v1.47 iniciada.");
             AppendLog("Porta: " + portName + " | 19200 8O1 | DTR=off | RTS=off.");
-            AppendLog("Seguranca: somente HELLO, F0, 38 e 34 podem ser transmitidos.");
+            AppendLog("Segurança: somente HELLO, F0, 38 e 34 podem ser transmitidos.");
             SetBusy(true);
             flow.Reset();
             flow.Advance(0);
@@ -305,7 +305,7 @@ namespace ModernPC12
                         MessageBox.Show(this,
                             "Programa lido pelo PG/PC12.\r\n\r\n"
                             + "PLC no HELLO: " + result.PlcState + "\r\n"
-                            + "Passos ate F-00 END: " + result.Steps.ToString(CultureInfo.InvariantCulture) + "\r\n"
+                            + "Passos até F-00 END: " + result.Steps.ToString(CultureInfo.InvariantCulture) + "\r\n"
                             + "END global: " + result.EndStep.ToString("0000", CultureInfo.InvariantCulture) + "\r\n"
                             + "Paginas 34: " + result.Pages.ToString(CultureInfo.InvariantCulture) + "\r\n"
                             + "BRAW: " + result.BrawChecked.ToString(CultureInfo.InvariantCulture) + " verificado(s), "
@@ -337,7 +337,7 @@ namespace ModernPC12
                     AppendLogSafe("Sessao " + session.ToString(CultureInfo.InvariantCulture) + " falhou: " + ex.Message);
                 }
             }
-            throw new IOException("Tres sessoes PG falharam. Ultimo erro: "
+            throw new IOException("Tres sessoes PG falharam. Último erro: "
                 + (last == null ? "desconhecido" : last.Message));
         }
 
@@ -366,7 +366,7 @@ namespace ModernPC12
             }
             catch (Exception ex)
             {
-                AppendLogSafe("PG WARM-UP nao confirmou link: " + ex.Message + ". O retry completo continuara.");
+                AppendLogSafe("PG WARM-UP não confirmou link: " + ex.Message + ". O retry completo continuara.");
             }
             finally
             {
@@ -460,9 +460,9 @@ namespace ModernPC12
                     Thread.Sleep(450);
                 }
 
-                if (!foundEnd) throw new InvalidDataException("F-00 END nao encontrado antes do limite de 4000 passos.");
+                if (!foundEnd) throw new InvalidDataException("F-00 END não encontrado antes do limite de 4000 passos.");
                 SaveProgramFiles(result);
-                AppendLogSafe("LEITURA CONCLUIDA: passos=" + result.Steps.ToString(CultureInfo.InvariantCulture)
+                AppendLogSafe("LEITURA CONCLUÍDA: passos=" + result.Steps.ToString(CultureInfo.InvariantCulture)
                     + ", END=" + result.EndStep.ToString("0000", CultureInfo.InvariantCulture)
                     + ", UNKNOWN=" + result.UnknownSteps.ToString(CultureInfo.InvariantCulture) + ".");
                 return result;
@@ -504,7 +504,7 @@ namespace ModernPC12
                 if (Contains(raw, HelloRun)) return ToHex(HelloRun);
                 Thread.Sleep(350);
             }
-            throw new TimeoutException("HELLO PG nao confirmado em 6 tentativas.");
+            throw new TimeoutException("HELLO PG não confirmado em 6 tentativas.");
         }
 
         private byte[] PerformF0(SerialPort port)
@@ -516,7 +516,7 @@ namespace ModernPC12
                 if (Contains(raw, F0Response)) return F0Response;
                 Thread.Sleep(350);
             }
-            throw new InvalidDataException("F0 nao retornou 00 02 10 22 CB.");
+            throw new InvalidDataException("F0 não retornou 00 02 10 22 CB.");
         }
 
         private byte[] SendAndReadFrame(SerialPort port, byte[] request, int expectedLen,
@@ -534,7 +534,7 @@ namespace ModernPC12
                 }
                 Thread.Sleep(380);
             }
-            throw new InvalidDataException(label + " nao retornou quadro valido LEN="
+            throw new InvalidDataException(label + " não retornou quadro valido LEN="
                 + expectedLen.ToString("X2", CultureInfo.InvariantCulture) + " / checksum FF.");
         }
 
@@ -608,7 +608,7 @@ namespace ModernPC12
         private static void Validate34Frame(byte[] frame)
         {
             if (frame == null || frame.Length != PageFrameLength || frame[1] != PagePayloadLength)
-                throw new InvalidDataException("Quadro 34 invalido.");
+                throw new InvalidDataException("Quadro 34 inválido.");
             int sum = 0;
             for (int i = 0; i < frame.Length; i++) sum = (sum + frame[i]) & 0xFF;
             if (sum != 0xFF) throw new InvalidDataException("Checksum do quadro 34 diferente de FF.");
@@ -832,7 +832,7 @@ namespace ModernPC12
             summary.AppendLine("BRAW divergentes: " + result.BrawMismatches.ToString(CultureInfo.InvariantCulture));
             summary.AppendLine("UNKNOWN: " + result.UnknownSteps.ToString(CultureInfo.InvariantCulture));
             summary.AppendLine("PG34 START: ordem HIGH,LOW reproduzida do PC12 original.");
-            summary.AppendLine("Seguranca: nenhum comando de escrita/RUN/STOP/limpeza foi enviado.");
+            summary.AppendLine("Segurança: nenhum comando de escrita/RUN/STOP/limpeza foi enviado.");
             File.WriteAllText(Path.Combine(sessionDirectory, "read-summary.txt"), summary.ToString(), Encoding.UTF8);
         }
 
@@ -848,7 +848,7 @@ namespace ModernPC12
                 + " verificados / " + result.BrawMismatches.ToString(CultureInfo.InvariantCulture)
                 + " divergencias   UNKNOWN: " + result.UnknownSteps.ToString(CultureInfo.InvariantCulture));
             text.AppendLine(new string('-', 92));
-            text.AppendLine("PASSO  WORD    IL / DECODIFICACAO");
+            text.AppendLine("PASSO  WORD    IL / DECODIFICAÇÃO");
             text.AppendLine("-----  ------  ---------------------------------------------------------------");
             for (int i = 0; i < result.Il.Count; i++) text.AppendLine(result.Il[i]);
             programBox.Text = text.ToString();
