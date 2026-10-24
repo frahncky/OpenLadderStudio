@@ -29,7 +29,44 @@ internal static class TP02PhysicalValidatorSafetySelfTest
 
         Check(TP02PhysicalValidationSafety.IsAllowed(Tp02Pg34Pager.BuildReadRequest(0)), "PG34 pagina zero deve ser permitida");
         Check(TP02PhysicalValidationSafety.IsAllowed(Tp02Pg34Pager.BuildReadRequest(80)), "PG34 pagina 80 deve ser permitida");
-        Check(!TP02PhysicalValidationSafety.IsAllowed(Tp02Pg34Pager.BuildReadRequest(160)), "PG34 fora da campanha P0/P80 deve ser bloqueado");
+        // P0.2 do roteiro de bancada: quadros exatos das fases B2/B3.
+        byte[][] novos = new byte[][]
+        {
+            new byte[] { 0x34, 0x03, 0x00, 0x4F, 0xA0, 0xD9 },
+            new byte[] { 0x34, 0x03, 0x00, 0xA0, 0xA0, 0x88 },
+            new byte[] { 0x34, 0x03, 0x00, 0xF0, 0xA0, 0x38 },
+            new byte[] { 0x34, 0x03, 0x01, 0x40, 0xA0, 0xE7 },
+        };
+        int[] novosStart = new int[] { 0x4F, 0xA0, 0xF0, 0x140 };
+        for (int i = 0; i < novos.Length; i++)
+        {
+            string s = novosStart[i].ToString("X4");
+            Check(TP02PhysicalValidationSafety.IsAllowed(novos[i]), "PG34 START " + s + " deve ser permitido");
+            Check(TP02PhysicalValidationSafety.Same(novos[i], Tp02Pg34Pager.BuildReadRequest(novosStart[i])), "quadro PG34 START " + s + " deve coincidir com o pager");
+            Check(!TP02PhysicalValidationSafety.IsAllowed(novos[i], true), "PG34 START " + s + " deve ser bloqueado em RUN");
+        }
+        Check(!TP02PhysicalValidationSafety.IsAllowed(Tp02Pg34Pager.BuildReadRequest(0x51)), "PG34 START 0051 deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(Tp02Pg34Pager.BuildReadRequest(0x4E)), "PG34 START 004E deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(Tp02Pg34Pager.BuildReadRequest(0x123)), "PG34 START arbitrario deve ser bloqueado");
+        int aceitos = 0;
+        for (int start = 0; start < Tp02Pg34Pager.MaxProgramSteps; start++)
+            if (TP02PhysicalValidationSafety.IsAllowed(Tp02Pg34Pager.BuildReadRequest(start))) aceitos++;
+        Check(aceitos == 6, "exatamente 6 START de PG34 devem ser aceitos; aceitos=" + aceitos);
+        byte[] pg34Len = new byte[] { 0x34, 0x03, 0x00, 0x4F, 0x50, 0x00 };
+        pg34Len[5] = Tp02PgProtocol.Checksum(pg34Len, 5);
+        Check(!TP02PhysicalValidationSafety.IsAllowed(pg34Len), "PG34 START 004F com LEN diferente de A0 deve ser bloqueado");
+
+        // Após HELLO RUN: somente F0.
+        Check(TP02PhysicalValidationSafety.IsAllowed(TP02PhysicalValidationSafety.F0, true), "F0 apos HELLO RUN deve ser permitido");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(TP02PhysicalValidationSafety.Hello, true), "HELLO apos RUN deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(TP02PhysicalValidationSafety.Frame38, true), "38 apos RUN deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(Tp02Pg34Pager.BuildReadRequest(0), true), "34 apos RUN deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(Tp02PgMemoryProtocol.ReadClock(), true), "0A apos RUN deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(new byte[] { 0x03, 0x00, 0xFC }, true), "03 apos RUN deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(new byte[] { 0x33, 0x00, 0xCC }, true), "33 apos RUN deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(new byte[] { 0x14, 0x00, 0xEB }, true), "14 apos RUN deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(new byte[] { 0x0F, 0x00, 0xF0 }, true), "0F 00 F0 apos RUN deve ser bloqueado");
+        Check(!TP02PhysicalValidationSafety.IsAllowed(new byte[] { 0x33, 0x00, 0xCC }), "33 deve ser bloqueado");
 
         Check(TP02PhysicalValidationSafety.IsAllowed(Tp02PgMemoryProtocol.ReadClock()), "PG0A RTC deve ser permitido");
         Check(TP02PhysicalValidationSafety.IsAllowed(Tp02PgMemoryProtocol.ReadScanTimes()), "PG0A scan deve ser permitido");

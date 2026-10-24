@@ -33,16 +33,39 @@ namespace ModernPC12
         internal static readonly byte[] F0 = new byte[] { 0xF0, 0x00, 0x0F };
         internal static readonly byte[] Frame38 = new byte[] { 0x38, 0x00, 0xC7 };
 
+        // Lista fechada de quadros 34 do roteiro docs/tp02-bancada-firmware-2026-10-24.md (P0.2):
+        // START 0000 e 0050 (campanha original) e 004F, 00A0, 00F0 e 0140 (fases B2/B3).
+        // Comparação byte a byte; nenhum START fora desta lista é aceito.
+        internal static readonly byte[][] Pg34Pages = new byte[][]
+        {
+            new byte[] { 0x34, 0x03, 0x00, 0x00, 0xA0, 0x28 },
+            new byte[] { 0x34, 0x03, 0x00, 0x50, 0xA0, 0xD8 },
+            new byte[] { 0x34, 0x03, 0x00, 0x4F, 0xA0, 0xD9 },
+            new byte[] { 0x34, 0x03, 0x00, 0xA0, 0xA0, 0x88 },
+            new byte[] { 0x34, 0x03, 0x00, 0xF0, 0xA0, 0x38 },
+            new byte[] { 0x34, 0x03, 0x01, 0x40, 0xA0, 0xE7 },
+        };
+
         internal static bool IsAllowed(byte[] frame)
         {
+            return IsAllowed(frame, false);
+        }
+
+        /// <summary>
+        /// Com o PLC em RUN (HELLO C0 01 09 35), somente F0 00 0F sai pela serial (leitura do bit6).
+        /// Todo o resto, inclusive 33, 03, 14, 34, 0A, 38 e 0F 00 F0, fica bloqueado.
+        /// </summary>
+        internal static bool IsAllowed(byte[] frame, bool plcInRun)
+        {
+            if (plcInRun) return Same(frame, F0);
             if (Same(frame, Hello) || Same(frame, F0) || Same(frame, Frame38)) return true;
             if (frame == null || frame.Length < 3 || !Tp02PgProtocol.HasValidChecksum(frame)) return false;
 
             if (frame[0] == 0x34)
             {
-                if (frame.Length != 6 || frame[1] != 0x03 || frame[4] != 0xA0) return false;
-                int start = (frame[2] << 8) | frame[3];
-                return start == 0 || start == 80;
+                for (int i = 0; i < Pg34Pages.Length; i++)
+                    if (Same(frame, Pg34Pages[i])) return true;
+                return false;
             }
 
             if (frame[0] == 0x0A) return IsKnownRead(frame);
@@ -92,6 +115,7 @@ namespace ModernPC12
         private readonly TextBox log = new TextBox();
         private readonly Label status = new Label();
         private readonly CheckBox exhaustive = new CheckBox();
+        private volatile bool plcInRun;
         private string sessionDir = string.Empty;
         private string sessionLog = string.Empty;
         private bool busy;
@@ -127,7 +151,7 @@ namespace ModernPC12
             top.Controls.Add(title);
 
             Label info = new Label();
-            info.Text = "Allowlist exata: CON-ICB, F0, 38, PG34 P0/P80 e PG0A conhecido. Recuperação automática da COM antes de abortar HELLO.";
+            info.Text = "Allowlist exata: CON-ICB, F0, 38, PG34 (START 0000/004F/0050/00A0/00F0/0140) e PG0A conhecido; em RUN só F0. Recuperação automática da COM antes de abortar HELLO.";
             info.AutoSize = true;
             info.MaximumSize = new Size(1050, 0);
             info.ForeColor = Color.FromArgb(224, 170, 64);
@@ -281,6 +305,7 @@ namespace ModernPC12
         {
             List<CheckResult> results = new List<CheckResult>();
             SerialPort port = null;
+            plcInRun = false;
             try
             {
                 port = OpenPort(portName);
@@ -289,6 +314,20 @@ namespace ModernPC12
 
                 string hello = ValidateHello(ref port, portName);
                 Add(results, "HELLO", "PASS", hello);
+
+                if (plcInRun)
+                {
+                    // Fase A3: em RUN só F0 00 0F é transmitido; a campanha termina aqui.
+                    byte[] f0run = ExchangeRaw(port, TP02PhysicalValidationSafety.F0, 3600, 260, "F0-RUN");
+                    byte[] f0bit6 = new byte[] { 0x40, 0x02, 0x10, 0x22, 0x8B };
+                    byte[] f0nobit6 = new byte[] { 0x00, 0x02, 0x10, 0x22, 0xCB };
+                    string runDetail = Contains(f0run, f0bit6) ? "40 02 10 22 8B (bit6=1 em RUN)"
+                        : Contains(f0run, f0nobit6) ? "00 02 10 22 CB (bit6 não reflete RUN)"
+                        : "RX=" + (f0run.Length == 0 ? "[]" : ToHex(f0run));
+                    Add(results, "F0-RUN", "INFO", runDetail + "; demais quadros bloqueados em RUN");
+                    WriteSummary(results, hello, portName, full);
+                    return results;
+                }
 
                 byte[] f0raw = ExchangeRaw(port, TP02PhysicalValidationSafety.F0, 3600, 260, "F0");
                 byte[] f0expected = new byte[] { 0x00, 0x02, 0x10, 0x22, 0xCB };
@@ -341,6 +380,8 @@ namespace ModernPC12
                         + "-" + attempt.ToString(CultureInfo.InvariantCulture);
                     byte[] raw = ExchangeRaw(port, TP02PhysicalValidationSafety.Hello,
                         attempt == 1 ? 2600 : 3000, 240, label);
+                    if (Contains(raw, stop) && Contains(raw, runState))
+                        throw new InvalidOperationException("HELLO ambíguo: STOP e RUN na mesma resposta. Campanha abortada.");
                     if (Contains(raw, stop))
                     {
                         AppendSafe("HELLO ESTÁVEL: STOP confirmado no ciclo " + cycle.ToString(CultureInfo.InvariantCulture)
@@ -350,6 +391,7 @@ namespace ModernPC12
                     }
                     if (Contains(raw, runState))
                     {
+                        plcInRun = true;
                         AppendSafe("HELLO ESTÁVEL: RUN confirmado no ciclo " + cycle.ToString(CultureInfo.InvariantCulture)
                             + ", tentativa " + attempt.ToString(CultureInfo.InvariantCulture) + ".");
                         return "C0 01 09 35 (RUN); ciclo=" + cycle.ToString(CultureInfo.InvariantCulture)
@@ -505,7 +547,7 @@ namespace ModernPC12
 
         private byte[] ExchangeRaw(SerialPort port, byte[] request, int timeoutMs, int quietMs, string label)
         {
-            if (!TP02PhysicalValidationSafety.IsAllowed(request))
+            if (!TP02PhysicalValidationSafety.IsAllowed(request, plcInRun))
                 throw new InvalidOperationException("BLOQUEIO DE SEGURANÇA: quadro fora da allowlist READ-ONLY: " + ToHex(request));
             if (port == null || !port.IsOpen) throw new InvalidOperationException("Porta serial não está aberta.");
             port.DiscardInBuffer();
@@ -579,7 +621,7 @@ namespace ModernPC12
             text.AppendLine("HELLO: " + hello);
             text.AppendLine("Recuperação HELLO: até 2 ciclos com fechamento/reabertura automática da COM.");
             text.AppendLine("PG0A: " + (full ? "varredura completa X/Y/C/SC/V/D/WC/FL/WS" : "amostras rápidas"));
-            text.AppendLine("Allowlist: CON-ICB, F0, 38, PG34 P0/P80 e PG0A conhecido somente.");
+            text.AppendLine("Allowlist: CON-ICB, F0, 38, PG34 (START 0000/004F/0050/00A0/00F0/0140) e PG0A conhecido; em RUN só F0.");
             text.AppendLine("Não enviados: 09, 33, 35, Clear, RUN, STOP, 12/13 EEPROM, 14 e demais opcodes.");
             text.AppendLine();
             foreach (CheckResult r in results) text.AppendLine(r.Status + " | " + r.Name + " | " + r.Detail);
