@@ -227,13 +227,36 @@ Consequências para quem escreve interface:
 - a declaração é de DPI do sistema, não per-monitor: mover a janela entre telas de escalas
   diferentes não redimensiona os controles até reabrir o aplicativo.
 
-No editor Ladder, 100% ajusta o diagrama à largura disponível. Redimensionar a
-janela ou os painéis recalcula esse ajuste; o zoom de 50% a 200% amplia ou reduz
-o desenho a partir dessa base. Desenho, seleção e hover compartilham a mesma
-transformação, inclusive com rolagem. Os fundos de destaque são desenhados antes
-dos fios para preservar as conexões dos elementos. O grid usa linhas contínuas,
-com L1, L2… na lateral e C1, C2… no topo para identificar as posições.
+### Editor Ladder (canvas)
 
+A geometria vive em `LadderCanvasLayout.cs` (sem controle, testável sem janela) e o desenho e o
+ponteiro em `LadderCanvasView.cs`. Cada linha é um **bloco**: a faixa de comentário em cima, o
+diagrama embaixo (mais alto só quando há ramo paralelo). Depois da última linha vem a linha-fantasma
+**"+ Nova linha"**. Desenho, seleção, hover e edição usam os mesmos números do layout.
+
+- **Escala.** Tudo é medido em unidades lógicas; DPI do monitor, zoom do usuário e ajuste à
+  largura entram numa matriz só. Por isso o texto cresce com o Windows a 125%/150% (antes o
+  canvas ignorava o DPI). 100% ajusta o diagrama à largura disponível a partir de 720 unidades,
+  e até 80% dessa escala; abaixo disso o canvas rola na horizontal em vez de encolher o texto.
+  O zoom de 50% a 200% parte dessa base. Os símbolos são desenhados 1,3x maiores que o projeto
+  original de `LadderSymbols.cs` (`SymbolScale`).
+- **Calha e cabeçalho congelados**, cada um no seu eixo: números `L1, L2…` em emblemas de 15 px
+  alinhados ao fio da linha; `C1 … C8` no topo, com "saída" ao lado de C8. A calha acaba junto
+  com o conteúdo (não passa da linha-fantasma). Faixa e divisória são retângulos alinhados ao
+  eixo: desenham-se com `SmoothingMode.None`.
+- **Grade discreta.** Não há mais linhas dentro das células. Guias tracejadas de coluna aparecem só
+  na linha selecionada; o hover e a seleção desenham a caixa arredondada da célula.
+- **Comentário da linha.** A faixa fica sempre visível, alinhada à área do diagrama. Vazia mostra
+  "Clique duas vezes para comentar" em `Faint` (itálico; `Muted` quando a linha está selecionada ou sob o ponteiro); preenchida mostra o texto em `Muted`, com
+  barra à esquerda, e a altura acompanha o texto até 5 linhas (depois, reticências). Editar: clique
+  duplo na faixa, Enter ou F2 com a linha selecionada, **Editar › Comentar linha** ou o menu de contexto;
+  também pelo campo "Comentário da linha" do painel PROPRIEDADES. A edição é um TextBox na paleta
+  no próprio lugar: Enter quebra a linha, **Ctrl+Enter** ou perder o foco confirma, **Esc** cancela. Confirmar
+  chama `SetRungComment` (desfazer e arquivo ficam por conta do editor); o comentário pendente também
+  é confirmado antes de salvar, criar e abrir projeto (inclusive o do painel PROPRIEDADES, para que o texto
+  entre no documento em que foi escrito). Enquanto se digita, Delete, Ctrl+Z e afins pertencem ao campo.
+- **Energização.** A linha energizada tem fio verde de 3,4 px com halo, símbolos em `Energized` e o
+  emblema da calha em `EnergizedBg` com o rótulo "ATIVA": o estado não depende só da cor.
 
 ### Símbolos Ladder
 
@@ -247,13 +270,12 @@ Geometria em unidades lógicas do canvas; **texto em pixels** (`GraphicsUnit.Pix
 pontos, para o rótulo crescer com o desenho em qualquer zoom e escala de DPI.
 
 Energização: durante a simulação, o shell repassa o resultado de cada varredura ao canvas
-(`SetRungPower`). Linha energizada recebe fio mais grosso e símbolos em `Energized`, com preenchimento
+(`SetRungPower`, V86/V88). Linha energizada recebe fio mais grosso e símbolos em `Energized`, com preenchimento
 translúcido (`OpenLadderPalette.Tint`), de modo que o estado não dependa só da cor. Como o motor
 informa o resultado por linha, e não por elemento, colunas com ramo paralelo ficam neutras em vez
 de afirmar uma condução que não se conhece. Só vale quando o simulador roda o projeto do editor,
 não o programa de exemplo.
 
-O cabeçalho de colunas usa **C1 a C8**, como a calha usa **L1, L2…**.
 
 ## Erros visíveis ao usuário
 

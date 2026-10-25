@@ -7,6 +7,7 @@ src/OpenLadderStudio.Desktop/OpenLadderMemoryMap.exe
 src/OpenLadderStudio.Desktop/OpenLadderSimulator.exe
 src/OpenLadderStudio.Desktop/OpenLadderSimTest.exe
 src/OpenLadderStudio.Desktop/OpenLadderCoreTest.exe
+src/OpenLadderStudio.Desktop/OpenLadderCanvasTest.exe
 src/OpenLadderStudio.Desktop/OpenLadderTP02PgLink.exe
 src/OpenLadderStudio.Desktop/OpenLadderTP02Capture.exe
 src/OpenLadderStudio.Desktop/OpenLadderTP02PgLab.exe
