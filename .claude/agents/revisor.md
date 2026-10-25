@@ -42,6 +42,14 @@ powershell -ExecutionPolicy Bypass -File scripts/RenderUi.ps1 -Width 1280 -Heigh
 
 Abra as imagens e procure: texto cortado, controle que nasceu branco no tema escuro, contraste fraco, elemento fora do lugar e ícone inconsistente. As barras de rolagem brancas e o aviso de nova versão são artefatos do `DrawToBitmap` e da checagem de rede.
 
+## Conferência no app rodando (quando a mudança toca salvar, abrir, foco ou o comentário de linha)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/CheckPendingComment.ps1   # "Todas as verificacoes passaram"
+```
+
+Aciona menu Arquivo e barra de ferramentas com um comentário ainda pendente no painel PROPRIEDADES e confere arquivo gravado, pergunta de alterações não salvas e documento preservado. É determinístico. Não tente provar atalhos de teclado por injeção (`keybd_event`/`SendKeys`): sem usuário na sessão o Windows recusa a troca de primeiro plano e a tecla se perde em silêncio, o que parece defeito do produto e não é.
+
 ## Relatório
 
 Um veredito, **APROVADO** ou **BLOQUEADO**, seguido de:
