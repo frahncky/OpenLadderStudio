@@ -86,6 +86,15 @@ namespace ModernPC12
         public const int ColumnCount = 8;
         public LadderElement[] Elements;
         public LadderElement[] Parallel;
+        private string comment = string.Empty;
+
+        // Comentário da linha: documentação do projeto, nunca lógica. Viaja com o rung
+        // no arquivo e no desfazer/refazer, mas nenhum caminho até o PLC o lê.
+        public string Comment
+        {
+            get { return comment; }
+            set { comment = value ?? string.Empty; }
+        }
 
         public LadderRung()
         {
@@ -776,6 +785,30 @@ namespace ModernPC12
             MarkChanged("Elemento removido.");
         }
 
+        // API do comentário de linha para a interface. O índice é 0-based, o mesmo de
+        // canvas.SelectedRung. O texto passa por LadderProjectCodec.NormalizeComment
+        // (só espaços vira vazio, limite de MaxCommentLength). Devolve false quando o
+        // índice não existe ou o texto não muda; nesse caso nada entra no desfazer e o
+        // projeto não fica marcado como alterado.
+        internal string GetRungComment(int rung)
+        {
+            if (rung < 0 || rung >= rungs.Count) return string.Empty;
+            return rungs[rung].Comment;
+        }
+
+        internal bool SetRungComment(int rung, string text)
+        {
+            if (rung < 0 || rung >= rungs.Count) return false;
+            string normalized = LadderProjectCodec.NormalizeComment(text);
+            if (string.Equals(rungs[rung].Comment, normalized, StringComparison.Ordinal)) return false;
+            SaveUndoState();
+            rungs[rung].Comment = normalized;
+            MarkChanged(normalized.Length == 0
+                ? "Comentário da linha " + (rung + 1).ToString() + " removido."
+                : "Comentário da linha " + (rung + 1).ToString() + " atualizado.");
+            return true;
+        }
+
         private void NewProject(bool askSave)
         {
             if (askSave && !ConfirmDiscard()) return;
@@ -869,6 +902,7 @@ namespace ModernPC12
                     target.Series[column] = ToProjectElement(rungs[rungIndex].Elements[column]);
                     target.Parallel[column] = ToProjectElement(rungs[rungIndex].Parallel[column]);
                 }
+                target.Comment = rungs[rungIndex].Comment;
                 document.Rungs.Add(target);
             }
 
@@ -911,6 +945,7 @@ namespace ModernPC12
                     ApplyProjectElement(source.Series[column], rung.Elements[column]);
                     ApplyProjectElement(source.Parallel[column], rung.Parallel[column]);
                 }
+                rung.Comment = source.Comment;
                 loaded.Add(rung);
             }
 

@@ -21,30 +21,108 @@ O produto tem dois temas, escolhidos em **Exibir → Tema**. A preferência fica
 abertura — muita tela fixa a cor no construtor, então repintar a quente deixaria
 a janela pela metade. O aplicativo oferece reiniciar na hora.
 
-| Papel | Escuro (padrão) | Claro |
-|---|---|---|
-| fundo da janela | `#181E28` | `#E9EFF6` |
-| painel/chrome | `#202834` | `#F4F7FB` |
-| superfície elevada | `#283241` | `#FAFCFF` |
-| borda | `#3F4E62` | `#C2CFDF` |
-| texto principal | `#E9EFF7` | `#1E2C3E` |
-| texto secundário | `#B1BED0` | `#4D6077` |
-| destaque | `#6EAEFF` | `#1C69D2` |
+| Papel | Token | Escuro (padrão) | Claro |
+|---|---|---|---|
+| fundo da janela | `Shell` | `#0F141D` | `#E8EDF4` |
+| área de trabalho / navegação | `Workspace`, `NavBg` | `#131924` / `#111721` | `#EEF2F9` / `#F0F4F9` |
+| painel | `Chrome` | `#19202D` | `#F6F8FC` |
+| campo de entrada | `ChromeLight` | `#212A3A` | `#FCFDFF` |
+| elevado (menu, dica, popup) | `Raised` | `#293448` | `#FEFEFF` |
+| canvas Ladder | `Canvas` | `#141B27` | `#FAFBFE` |
+| linha selecionada / hover no canvas | `CanvasRow` / `CanvasHover` | `#1A2434` / `#1F2A3D` | `#EEF3FB` / `#E7EEF9` |
+| borda de região / de controle | `Border` / `BorderStrong` | `#303D52` / `#4C5E78` | `#D0D9E5` / `#A3B2C7` |
+| texto principal / secundário / discreto | `Fore` / `Muted` / `Faint` | `#E9EFF7` / `#B1BED0` / `#9DADC1` | `#1E2C3E` / `#4D6077` / `#52647A` |
+| texto desabilitado | `Disabled` | `#708196` | `#8B99AB` |
+| destaque / sobre o destaque | `Accent` / `OnAccent` | `#63B1FF` / `#101E30` | `#1D54C8` / `#FFFFFF` |
+| anel de foco | `Focus` | `#93CDFF` | `#0F46BE` |
+| estados | `Ok`, `Warning`, `Danger`, `Info` | tons claros | tons fechados |
+| fundo tingido de estado | `OkBg`, `WarningBg`, `DangerBg`, `InfoBg` | escuros | claros |
+| condutor energizado | `Energized` / `EnergizedBg` | `#39E080` / `#16422E` | `#00642D` / `#DCF3E5` |
+
+A hierarquia de superfícies, do fundo para a frente, é
+`Shell < Workspace/NavBg < Chrome < ChromeLight < Raised`. O `Canvas` do editor é uma
+superfície só: nada de células que alternam um branco com outro. A linha selecionada é
+distinguida por `CanvasRow`, um degrau sutil, e o cursor por `CanvasHover`. O símbolo apaga o
+fio por trás dele com a cor exata do fundo (`ElementBackground`), então qualquer mudança de
+fundo no desenho precisa mudar nos dois lugares.
 
 Nenhum dos dois usa preto puro ou branco puro em superfície grande: são as duas
 extremidades que mais cansam a vista em jornada longa.
 
+**Contraste (WCAG AA).** `Fore`, `Muted` e `Faint` passam de 4,5:1 sobre `Shell`, `Chrome`,
+`ChromeLight`, `Canvas`, `CanvasRow` e `Raised` nos dois temas, e também sobre `SelectionFill`,
+`NavActive` e `NavHover` (a faixa de seleção e o item ativo). `Accent`, `Ok`, `Warning`, `Danger`,
+`Info` e `Energized` passam de 4,5:1 como texto sobre as superfícies de painel e de canvas do
+próprio tema e sobre o seu `…Bg`. Sobre a seleção, o que se garante é `Fore`, `Muted`, `Faint` e
+`Accent`; estado colorido sobre seleção fica entre 4,1 e 4,6 e só vale como realce, nunca como o
+único portador da informação. `Disabled` é propositalmente mais fraco.
+`Energized` é verde saturado e `Wire` é cinza-azulado. No claro `Energized` é bem mais escuro que
+`Wire` (razão de luminosidade em torno de 1,4:1, como no escuro), então a diferença não depende
+só de matiz — o que importa para quem não distingue verde de cinza. Mesmo assim o fio energizado
+também fica mais grosso e o bloco ganha preenchimento translúcido. Ao acrescentar token, defina os
+dois valores e mantenha a regra de que dois tokens com a mesma cor num tema têm a mesma cor no
+outro: a troca de tema a quente (`Restyle`) mapeia por ARGB.
+
 A navegação usa uma base mais profunda, os painéis ficam no nível intermediário
 e os campos de entrada usam a superfície elevada. Seleção e item ativo recebem
 um preenchimento azul discreto; bordas separam as regiões sem competir com o Ladder.
-Texto secundário e rótulos discretos mantêm contraste de pelo menos 4,5:1 sobre
-os painéis e superfícies elevadas dos dois temas.
 
 Botões preenchidos com `Accent` ou `AccentDark` devem usar `OnAccent`: texto
 azul profundo no tema escuro e branco no tema claro. Não fixar branco sobre o
 azul luminoso do tema escuro. Grades sem estilo próprio recebem linhas alternadas,
 separadores horizontais e cabeçalhos na mesma paleta.
 
+### Medidas
+
+`OpenLadderMetrics` (em `AppBranding.cs`) fixa a escala, em pixels a 96 dpi: espaçamento
+`Space1…Space8` (4, 8, 12, 16, 24, 32), raio `RadiusSmall/Medium/Large` (4, 8, 12), `Hairline`
+(1) e `FocusWidth` (2). Quem desenha à mão converte com `OpenLadderMetrics.Px(controle, valor)` e
+arredonda cantos com `RoundedRect`. Controle posicionado pelo layout já é escalado por `AutoScaleMode`.
+
+### Barra de título e controles de sistema
+
+`WindowChrome` (em `AppBranding.cs`) liga o modo escuro da barra de título nativa
+(`DWMWA_USE_IMMERSIVE_DARK_MODE`, atributo 20 com recuo para o 19) e, no Windows 11, a cor da
+barra, do texto e da borda a partir da paleta. Vale para toda janela aberta, é reaplicado quando
+a alça é recriada e acompanha **Exibir → Tema**. Há um instante entre a janela aparecer e o
+primeiro `Idle` em que a barra pode surgir clara.
+
+`AppBranding.Install()` também define `ToolStripManager.Renderer` (menus suspensos e de contexto
+na paleta, sobre `Raised`) e o `Skin` converte o que nasce de cor de sistema: janela, botão
+padrão (vira plano), aba (cabeçalho desenhado pela paleta) e lista suspensa fixa (texto e lista
+desenhados pela paleta).
+
+A moldura do corpo da aba, a faixa ao lado das abas, o filete à esquerda da aba selecionada e as
+setas do NumericUpDown (em `Faint` quando desabilitado) são repintados por cima do sistema
+(`PostPaintHook`), nos dois temas. A seta e a borda da lista suspensa e as barras de rolagem usam o
+tema escuro de sistema (`ControlTheme`, Windows 10 1809 ou mais novo); onde ele não existe, a lista
+suspensa cai para o estilo plano enquanto o tema for escuro. A troca de tema reaplica tudo,
+inclusive a área não-cliente (`RedrawWindow`). Fica do sistema a borda de TextBox de linha única no
+escuro e o foco de aba.
+## Janela principal
+
+Composição, da esquerda para a direita e de cima para baixo (peças em `StudioShellParts.cs`,
+montadas por `PrepareShellRedesignV94.ps1`):
+
+- **Barra de título e menu formam uma faixa só** (`Shell`): a marca "OpenLadder Studio" aparece
+  uma vez, na barra de título; o painel lateral não repete.
+- **Barra de ferramentas** (`Chrome`): botões com ícone e rótulo, cantos suaves, hover com
+  contorno, foco com o anel `Focus`. O zoom é um único controle segmentado (− 100% +): o
+  percentual volta a 100%, as setas do teclado e Enter/Espaço operam os segmentos.
+- **Painéis como cartões**: `PROJETO` (árvore sem linhas pontilhadas, seta própria, ícone por
+  tipo, faixa de seleção com barra `Accent`; o nó do controlador mostra só "fabricante modelo" e leva
+  família e protocolo na dica), editor no centro e `INSTRUÇÕES` + `PROPRIEDADES` à
+  direita, separados por frestas de 4 px na cor `Shell`. Todo painel abre com o mesmo cabeçalho
+  (`PanelHeader`: ícone, título em caixa alta, filete `Border`).
+- **Instruções**: busca com lupa, texto de orientação, botão de limpar e Esc; grupos recolhíveis
+  (setinha e Enter/Espaço); itens de 30 px. Buscar ignora o recolhimento.
+- **Mensagens**: cabeçalho de 30 px com o botão "Limpar" alinhado à direita (`GhostButton`).
+- **Barra de status**: texto à esquerda; à direita PLC, conexão, modo e zoom separados por
+  filetes de 1 px (`StatusSegments`). O resumo do controlador não é mais repetido em outro lugar.
+
+Peças que desenham a própria cor leem `OpenLadderPalette` **na hora de pintar**; o que ainda
+guarda cor em campo (`StudioPanel.Fill/BottomLine`) implementa `IPaletteRestylable` para a troca
+de tema a quente alcançá-lo. Medidas vêm de `OpenLadderMetrics`, escaladas por `Graphics.DpiX`.
 ## Cor semântica
 
 - azul: arquivos, controlador e informação;
@@ -149,13 +227,36 @@ Consequências para quem escreve interface:
 - a declaração é de DPI do sistema, não per-monitor: mover a janela entre telas de escalas
   diferentes não redimensiona os controles até reabrir o aplicativo.
 
-No editor Ladder, 100% ajusta o diagrama à largura disponível. Redimensionar a
-janela ou os painéis recalcula esse ajuste; o zoom de 50% a 200% amplia ou reduz
-o desenho a partir dessa base. Desenho, seleção e hover compartilham a mesma
-transformação, inclusive com rolagem. Os fundos de destaque são desenhados antes
-dos fios para preservar as conexões dos elementos. O grid usa linhas contínuas,
-com L1, L2… na lateral e C1, C2… no topo para identificar as posições.
+### Editor Ladder (canvas)
 
+A geometria vive em `LadderCanvasLayout.cs` (sem controle, testável sem janela) e o desenho e o
+ponteiro em `LadderCanvasView.cs`. Cada linha é um **bloco**: a faixa de comentário em cima, o
+diagrama embaixo (mais alto só quando há ramo paralelo). Depois da última linha vem a linha-fantasma
+**"+ Nova linha"**. Desenho, seleção, hover e edição usam os mesmos números do layout.
+
+- **Escala.** Tudo é medido em unidades lógicas; DPI do monitor, zoom do usuário e ajuste à
+  largura entram numa matriz só. Por isso o texto cresce com o Windows a 125%/150% (antes o
+  canvas ignorava o DPI). 100% ajusta o diagrama à largura disponível a partir de 720 unidades,
+  e até 80% dessa escala; abaixo disso o canvas rola na horizontal em vez de encolher o texto.
+  O zoom de 50% a 200% parte dessa base. Os símbolos são desenhados 1,3x maiores que o projeto
+  original de `LadderSymbols.cs` (`SymbolScale`).
+- **Calha e cabeçalho congelados**, cada um no seu eixo: números `L1, L2…` em emblemas de 15 px
+  alinhados ao fio da linha; `C1 … C8` no topo, com "saída" ao lado de C8. A calha acaba junto
+  com o conteúdo (não passa da linha-fantasma). Faixa e divisória são retângulos alinhados ao
+  eixo: desenham-se com `SmoothingMode.None`.
+- **Grade discreta.** Não há mais linhas dentro das células. Guias tracejadas de coluna aparecem só
+  na linha selecionada; o hover e a seleção desenham a caixa arredondada da célula.
+- **Comentário da linha.** A faixa fica sempre visível, alinhada à área do diagrama. Vazia mostra
+  "Clique duas vezes para comentar" em `Faint` (itálico; `Muted` quando a linha está selecionada ou sob o ponteiro); preenchida mostra o texto em `Muted`, com
+  barra à esquerda, e a altura acompanha o texto até 5 linhas (depois, reticências). Editar: clique
+  duplo na faixa, Enter ou F2 com a linha selecionada, **Editar › Comentar linha** ou o menu de contexto;
+  também pelo campo "Comentário da linha" do painel PROPRIEDADES. A edição é um TextBox na paleta
+  no próprio lugar: Enter quebra a linha, **Ctrl+Enter** ou perder o foco confirma, **Esc** cancela. Confirmar
+  chama `SetRungComment` (desfazer e arquivo ficam por conta do editor); o comentário pendente também
+  é confirmado antes de salvar, criar e abrir projeto (inclusive o do painel PROPRIEDADES, para que o texto
+  entre no documento em que foi escrito). Enquanto se digita, Delete, Ctrl+Z e afins pertencem ao campo.
+- **Energização.** A linha energizada tem fio verde de 3,4 px com halo, símbolos em `Energized` e o
+  emblema da calha em `EnergizedBg` com o rótulo "ATIVA": o estado não depende só da cor.
 
 ### Símbolos Ladder
 
@@ -169,13 +270,12 @@ Geometria em unidades lógicas do canvas; **texto em pixels** (`GraphicsUnit.Pix
 pontos, para o rótulo crescer com o desenho em qualquer zoom e escala de DPI.
 
 Energização: durante a simulação, o shell repassa o resultado de cada varredura ao canvas
-(`SetRungPower`). Linha energizada recebe fio mais grosso e símbolos em `Ok`, com preenchimento
+(`SetRungPower`, V86/V88). Linha energizada recebe fio mais grosso e símbolos em `Energized`, com preenchimento
 translúcido (`OpenLadderPalette.Tint`), de modo que o estado não dependa só da cor. Como o motor
 informa o resultado por linha, e não por elemento, colunas com ramo paralelo ficam neutras em vez
 de afirmar uma condução que não se conhece. Só vale quando o simulador roda o projeto do editor,
 não o programa de exemplo.
 
-O cabeçalho de colunas usa **C1 a C8**, como a calha usa **L1, L2…**.
 
 ## Erros visíveis ao usuário
 

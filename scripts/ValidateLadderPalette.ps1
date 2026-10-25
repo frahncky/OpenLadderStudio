@@ -21,7 +21,7 @@ try {
     $palette = $selector[0].Parent
     $editTitle = 'EDI' + [char]0x00C7 + [char]0x00C3 + 'O'
     $sections = @($palette.Controls | Where-Object {
-        $_ -is [System.Windows.Forms.Label] -and $_.Text -eq $editTitle
+        ($_ -is [System.Windows.Forms.Label] -or $_.GetType().Name -eq 'PaletteSection') -and $_.Text -eq $editTitle
     })
     if ($sections.Count -ne 1) { throw "Expected one edit section in the runtime palette; found $($sections.Count)." }
     if ($palette.Controls.IndexOf($sections[0]) -ne 0 -or $palette.Controls.IndexOf($selector[0]) -ne 1) {

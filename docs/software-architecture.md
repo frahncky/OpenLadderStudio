@@ -15,6 +15,8 @@ Arquivos atuais mais próximos desta camada:
 - `UniversalStudioShell.cs`;
 - `StudioUi.cs`;
 - `LadderEditor.cs`;
+- `LadderCanvasView.cs` e `LadderCanvasLayout.cs` (canvas do diagrama e sua geometria);
+- `StudioShellParts.cs` (peças visuais do shell);
 - `PLCDeviceManagerV16.cs`;
 - `PLCMemoryMapManager.cs`;
 - `ModbusMonitorV14.cs` e etapas de preparação associadas;
@@ -66,9 +68,13 @@ Drivers devem implementar contratos definidos pelo núcleo.
 
 ### 5. Verificação
 
-`tests/OpenLadderStudio.Core.Tests/LadderProjectCodecSelfTest.cs` gera `OpenLadderCoreTest.exe` e verifica o formato `.pladder`, inclusive compatibilidade com a versão 1, ramificações e arquivos inválidos.
+`tests/OpenLadderStudio.Core.Tests/LadderProjectCodecSelfTest.cs` gera `OpenLadderCoreTest.exe` e verifica o formato `.pladder`, inclusive compatibilidade com a versão 1, ramificações, comentários por linha e arquivos inválidos. Também compila o mesmo programa com e sem comentários pelo `Tp02LadderTargetCompiler` e confere que palavras de máquina e quadros WBP saem idênticos.
 
-`SimulationSelfTest.cs` gera `OpenLadderSimTest.exe` e executa o motor de varredura contra a planta simulada. Os dois autotestes são rodados pelo build local e pelo GitHub Actions.
+O comentário de linha (`LadderProjectRung.Comment`) é documentação, não lógica. Ele é gravado como uma linha `COMMENT|<texto escapado>` antes do `RUNG` correspondente, com o mesmo escape das células, e o arquivo passa a usar o cabeçalho `PC12-LADDER|3`. Projeto sem nenhum comentário continua saindo em `PC12-LADDER|2`, idêntico ao que as versões anteriores gravavam. As versões anteriores do app recusam um arquivo `PC12-LADDER|3` com "Formato de projeto não reconhecido": o leitor delas não ignora linha desconhecida, então não há como fazê-las abrir o arquivo descartando só o comentário.
+
+`LadderCanvasLayoutSelfTest.cs` gera `OpenLadderCanvasTest.exe` e confere, sem abrir janela, a geometria do canvas: altura das faixas de comentário, empilhamento dos blocos de linha, linha-fantasma e a localização do ponteiro.
+
+`SimulationSelfTest.cs` gera `OpenLadderSimTest.exe` e executa o motor de varredura contra a planta simulada. Os autotestes são rodados pelo build local e pelo GitHub Actions.
 
 Novos testes de domínio devem seguir o mesmo padrão: console, sem dependência de WinForms no código sob teste e com código de saída diferente de zero em caso de falha.
 

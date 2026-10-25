@@ -39,7 +39,7 @@ namespace ModernPC12
 
             int cx = cell.Left + cell.Width / 2;
             bool on = power == LadderPower.On;
-            Color ink = on ? OpenLadderPalette.Ok : OpenLadderPalette.Fore;
+            Color ink = on ? OpenLadderPalette.Energized : OpenLadderPalette.Fore;
 
             switch (element.Type)
             {
@@ -189,8 +189,8 @@ namespace ModernPC12
             Rectangle cell, int cx, int y, bool branch, LadderPower power)
         {
             bool on = power == LadderPower.On;
-            Color frame = on ? OpenLadderPalette.Ok : OpenLadderPalette.Rail;
-            Color ink = on ? OpenLadderPalette.Ok : OpenLadderPalette.Fore;
+            Color frame = on ? OpenLadderPalette.Energized : OpenLadderPalette.Rail;
+            Color ink = on ? OpenLadderPalette.Energized : OpenLadderPalette.Fore;
 
             int width = Math.Max(64, Math.Min(cell.Width - 8, 92));
             int height = branch ? 40 : 50;
@@ -198,7 +198,7 @@ namespace ModernPC12
             int header = branch ? 13 : 15;
 
             using (Brush fill = new SolidBrush(OpenLadderPalette.ChromeLight)) g.FillRectangle(fill, box);
-            using (Brush band = new SolidBrush(on ? OpenLadderPalette.Tint(OpenLadderPalette.Ok, 70) : OpenLadderPalette.Border))
+            using (Brush band = new SolidBrush(on ? OpenLadderPalette.Tint(OpenLadderPalette.Energized, 70) : OpenLadderPalette.Border))
                 g.FillRectangle(band, box.Left + 1, box.Top + 1, box.Width - 1, header);
             using (Pen border = new Pen(frame, on ? 2.2f : 1.6f)) g.DrawRectangle(border, box);
 
@@ -209,7 +209,7 @@ namespace ModernPC12
 
             using (Font small = PixelFont("Segoe UI", 9.5f, FontStyle.Regular))
             using (Brush pinBrush = new SolidBrush(OpenLadderPalette.Muted))
-            using (Brush outBrush = new SolidBrush(on ? OpenLadderPalette.Ok : OpenLadderPalette.Muted))
+            using (Brush outBrush = new SolidBrush(on ? OpenLadderPalette.Energized : OpenLadderPalette.Muted))
             {
                 if (!branch)
                 {
@@ -230,7 +230,7 @@ namespace ModernPC12
             if (body.Length > 0)
             {
                 using (Font f = PixelFont("Consolas", branch ? 9.5f : 10.0f, FontStyle.Bold))
-                using (Brush b = new SolidBrush(on ? OpenLadderPalette.Ok : OpenLadderPalette.Info))
+                using (Brush b = new SolidBrush(on ? OpenLadderPalette.Energized : OpenLadderPalette.Info))
                 using (StringFormat centered = Centered())
                 {
                     string text = body.Length > 12 ? body.Substring(0, 12) : body;

@@ -79,6 +79,15 @@ if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareMonitorPowerV88.ps1"
 if errorlevel 1 goto :erro
 
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareThemeFoundationV89.ps1"
+if errorlevel 1 goto :erro
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareShellRedesignV94.ps1"
+if errorlevel 1 goto :erro
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareLadderCommentsV95.ps1"
+if errorlevel 1 goto :erro
+
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /out:"OpenLadderUpdater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "PC12Updater.build.cs"
 if errorlevel 1 goto :erro
 
@@ -97,10 +106,16 @@ if errorlevel 1 goto :erro
 ".\OpenLadderSimTest.exe"
 if errorlevel 1 goto :erro
 
-"%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:OpenLadderStudio.Core.Tests.LadderProjectCodecSelfTest /out:"OpenLadderCoreTest.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "..\..\tests\OpenLadderStudio.Core.Tests\LadderProjectCodecSelfTest.cs"
+"%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:OpenLadderStudio.Core.Tests.LadderProjectCodecSelfTest /out:"OpenLadderCoreTest.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "..\..\src\OpenLadderStudio.Core\Tp02TargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02LadderTargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02ComputerLinkProgramCodec.cs" "..\..\tests\OpenLadderStudio.Core.Tests\LadderProjectCodecSelfTest.cs"
 if errorlevel 1 goto :erro
 
 ".\OpenLadderCoreTest.exe"
+if errorlevel 1 goto :erro
+
+"%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:OpenLadderStudio.Core.Tests.LadderCanvasLayoutSelfTest /out:"OpenLadderCanvasTest.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "LadderCanvasLayout.cs" "..\..\tests\OpenLadderStudio.Core.Tests\LadderCanvasLayoutSelfTest.cs"
+if errorlevel 1 goto :erro
+
+".\OpenLadderCanvasTest.exe"
 if errorlevel 1 goto :erro
 
 "%CSC%" /nologo /target:exe /optimize+ /win32manifest:"OpenLadderStudio.manifest" /main:OpenLadderStudio.Core.Tests.Tp02Pc12StaticReadFramesSelfTest /out:"OpenLadderPc12StaticFrameTest.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\Tp02Pc12StaticReadFrames.cs" "..\..\tests\OpenLadderStudio.Core.Tests\Tp02Pc12StaticReadFramesSelfTest.cs"
@@ -139,7 +154,7 @@ if errorlevel 1 goto :erro
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.SimulatorProgram /out:"OpenLadderSimulator.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "LadderSimulation.cs" "ProcessSimulation.cs" "SimulatedPlants.cs" "LadderSimulator.cs"
 if errorlevel 1 goto :erro
 
-"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.LadderProgram /out:"OpenLadderEditor.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "LadderEditor.build.cs" "LadderSymbols.cs"
+"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.LadderProgram /out:"OpenLadderEditor.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "LadderEditor.build.cs" "LadderSymbols.cs" "LadderCanvasLayout.cs" "LadderCanvasView.cs"
 if errorlevel 1 goto :erro
 
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02PgLinkV39Program /out:"OpenLadderTP02PgLink.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "DockOrder.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "PLCConnectionSettings.cs" "TP02PgFrameParserV33.cs" "TP02PgLinkV39.build.cs"
@@ -148,7 +163,7 @@ if errorlevel 1 goto :erro
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.TP02SerialCaptureProgram /out:"OpenLadderTP02Capture.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "DockOrder.cs" "TP02SerialCapture.cs"
 if errorlevel 1 goto :erro
 
-"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.UniversalStudioProgram /out:"OpenLadderStudio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "..\..\src\OpenLadderStudio.Core\Tp02TargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02LadderTargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02Pc12StaticReadFrames.cs" "..\..\src\OpenLadderStudio.Core\Tp02ComputerLinkProgramCodec.cs" "..\..\src\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "TP02PgMemoryForm.cs" "UniversalStudioShell.build.cs" "DockOrder.cs" "StudioUi.build.cs" "UniversalLadderAdapter.cs" "StudioProperties.cs" "ProgramFlowUi.cs" "PlcDriverUi.cs" "Tp02DriverUi.cs" "ModbusDriverUi.cs" "TP02BridgeLab.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "LadderSymbols.cs" "Tp02DryRunPreview.cs" "TP02ProgramTransferForm.cs" "TP02Control.cs" "TP02ControlV31.build.cs" "TP02PgCommandCatalog.cs" "TP02PgFrameParserV33.cs" "TP02PgLinkV34.cs" "TP02PgLinkV35.cs" "TP02PgLinkV37.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "PC12Updater.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "PLCDeviceManagerV16.cs" "PLCConnectionSettings.cs" "PLCMemoryMapV15.cs" "PLCMemoryMapManagerV15.build.cs" "ModbusCore.cs" "ModbusBulkReader.cs" "ModbusTrendHistory.cs" "ModbusMonitorV18.build.cs" "LadderSimulation.cs" "ProcessSimulation.cs" "SimulatedPlants.cs" "LadderSimulator.cs"
+"%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /main:ModernPC12.UniversalStudioProgram /out:"OpenLadderStudio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\..\src\OpenLadderStudio.Core\LadderProject.cs" "..\..\src\OpenLadderStudio.Core\Tp02TargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02LadderTargetCompiler.cs" "..\..\src\OpenLadderStudio.Core\Tp02Pc12StaticReadFrames.cs" "..\..\src\OpenLadderStudio.Core\Tp02ComputerLinkProgramCodec.cs" "..\..\src\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "TP02PgMemoryForm.cs" "UniversalStudioShell.build.cs" "DockOrder.cs" "StudioUi.build.cs" "StudioShellParts.cs" "UniversalLadderAdapter.cs" "StudioProperties.cs" "ProgramFlowUi.cs" "PlcDriverUi.cs" "Tp02DriverUi.cs" "ModbusDriverUi.cs" "TP02BridgeLab.cs" "PC12Studio.cs" "ModernPC12.cs" "LadderEditor.build.cs" "LadderSymbols.cs" "LadderCanvasLayout.cs" "LadderCanvasView.cs" "Tp02DryRunPreview.cs" "TP02ProgramTransferForm.cs" "TP02Control.cs" "TP02ControlV31.build.cs" "TP02PgCommandCatalog.cs" "TP02PgFrameParserV33.cs" "TP02PgLinkV34.cs" "TP02PgLinkV35.cs" "TP02PgLinkV37.cs" "TP02ProgramReader.cs" "TP02MachineDecoder.cs" "TP02OpcodeCalibration.cs" "PC12Updater.cs" "PLCPlatform.build.cs" "PLCCustomProfiles.cs" "PLCDeviceManagerV16.cs" "PLCConnectionSettings.cs" "PLCMemoryMapV15.cs" "PLCMemoryMapManagerV15.build.cs" "ModbusCore.cs" "ModbusBulkReader.cs" "ModbusTrendHistory.cs" "ModbusMonitorV18.build.cs" "LadderSimulation.cs" "ProcessSimulation.cs" "SimulatedPlants.cs" "LadderSimulator.cs"
 if errorlevel 1 goto :erro
 
 del /q "LadderEditor.build.cs" >nul 2>&1
