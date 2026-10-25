@@ -858,6 +858,8 @@ namespace ModernPC12
         private void Start()
         {
             if (ticker.Enabled) return;
+            // Republica na primeira varredura: ao voltar a rodar, a simulação retoma o diagrama mesmo sem mudança.
+            lastPublishedPower = null;
             accumulator = 0.0;
             clock.Reset();
             clock.Start();
@@ -865,6 +867,7 @@ namespace ModernPC12
             runButton.Enabled = false;
             stopButton.Enabled = true;
             statusLabel.Text = "Simulação em execução.";
+            if (RunningChanged != null) RunningChanged(true);
         }
 
         private void Stop()
@@ -874,6 +877,7 @@ namespace ModernPC12
             runButton.Enabled = true;
             stopButton.Enabled = false;
             statusLabel.Text = "Simulação parada. Use Passo para avançar uma varredura por vez.";
+            if (RunningChanged != null) RunningChanged(false);
         }
 
         private void SingleStep()
@@ -961,6 +965,11 @@ namespace ModernPC12
         /// editor. Vem nulo quando a simulacao usa o programa de exemplo ou ainda nao varreu.
         /// </summary>
         public event Action<bool[]> PowerChanged;
+
+        /// <summary>Simulação iniciada (true) ou parada (false). Enquanto roda, ela tem prioridade sobre o destaque vindo do PLC.</summary>
+        public event Action<bool> RunningChanged;
+
+        public bool IsRunning { get { return ticker.Enabled; } }
 
         private bool[] lastPublishedPower;
 

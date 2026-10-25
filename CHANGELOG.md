@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [1.72] - 2026-10-24
+
+### Monitor
+- a simulação só tem prioridade sobre o destaque do PLC real enquanto está rodando; ao parar, o destaque do PLC volta sem precisar fechar a aba da simulação (remove a limitação conhecida da v1.71);
+- ao rodar de novo, a simulação retoma o diagrama; fechar a aba dela apaga o destaque que ela deixou.
+
+### Limitações conhecidas
+- a leitura do PLC real continua sem validação no equipamento físico.
+
 ## [1.71] - 2026-10-24
 
 ### Monitor
