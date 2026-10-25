@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [1.71] - 2026-10-24
+
+### Monitor
+- nova opção "Acender diagrama" no monitor do TP02: lê, só com MCR, os bits X/Y/C/SC do PLC real e acende as linhas do diagrama do editor;
+- a simulação tem prioridade sobre a leitura do PLC real; a leitura para ao fechar a aba ou em caso de erro.
+
+### Limitações conhecidas
+- a leitura do PLC real ainda não foi validada no equipamento físico.
+
 ## [1.70] - 2026-10-24
 
 ### Interface

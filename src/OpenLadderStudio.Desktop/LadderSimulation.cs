@@ -657,32 +657,15 @@ namespace ModernPC12
 
         private bool SolvePower(CompiledRung rung)
         {
-            bool power = true;
-            for (int c = 0; c < ConditionColumns; c++)
-            {
-                CompiledCondition series = rung.Series[c];
-                CompiledCondition parallel = rung.Parallel[c];
-
-                if (series == null && parallel == null) continue;
-
-                bool value;
-                if (parallel == null) value = Evaluate(series);
-                else if (series == null) value = Evaluate(parallel);
-                else value = Evaluate(series) | Evaluate(parallel);
-
-                if (!value) power = false;
-            }
-            return power;
+            // Na imagem do PLC virtual todo bit tem valor: o resultado nunca é indeterminado.
+            return LadderPowerRule.Solve(rung, ReadImage) == true;
         }
 
-        private bool Evaluate(CompiledCondition condition)
+        private bool? ReadImage(CompiledCondition condition)
         {
-            if (condition == null) return true;
-
             bool state = condition.Resolved && image.GetBit(condition.Bit);
-            bool value = condition.Kind == UniversalElementKind.ContactNC ? !state : state;
-            condition.LastValue = value;
-            return value;
+            condition.LastValue = condition.Kind == UniversalElementKind.ContactNC ? !state : state;
+            return state;
         }
 
         private void ApplyOutput(CompiledRung rung, bool power, double elapsedMs)
@@ -796,6 +779,155 @@ namespace ModernPC12
                 for (int i = 0; i < diagnostics.Count; i++) text.Append("  - ").Append(diagnostics[i]).Append("\r\n");
             }
             return text.ToString();
+        }
+    }
+
+    /// <summary>Estado do bit de um contato; null quando o bit não é conhecido.</summary>
+    internal delegate bool? LadderConditionReader(CompiledCondition condition);
+
+    /// <summary>
+    /// Regra única de energização do rung, usada pelo PLC virtual e pelo destaque
+    /// calculado a partir de bits lidos de um PLC real. Por coluna: série OU paralelo;
+    /// o rung conduz se todas as colunas conduzem; NF inverte o bit. Lógica de três
+    /// valores: um bit desconhecido só decide o resultado quando o resto não basta.
+    /// </summary>
+    internal static class LadderPowerRule
+    {
+        public static bool? Solve(CompiledRung rung, LadderConditionReader read)
+        {
+            bool? power = true;
+            for (int c = 0; c < LadderScanEngine.ConditionColumns; c++)
+            {
+                CompiledCondition series = rung.Series[c];
+                CompiledCondition parallel = rung.Parallel[c];
+                if (series == null && parallel == null) continue;
+
+                bool? value;
+                if (parallel == null) value = Contact(series, read);
+                else if (series == null) value = Contact(parallel, read);
+                else
+                {
+                    // Os dois lados são lidos sempre, como na varredura original.
+                    bool? a = Contact(series, read);
+                    bool? b = Contact(parallel, read);
+                    value = Or(a, b);
+                }
+
+                power = And(power, value);
+            }
+            return power;
+        }
+
+        public static bool? Contact(CompiledCondition condition, LadderConditionReader read)
+        {
+            if (condition == null) return true;
+            bool? state = read(condition);
+            if (!state.HasValue) return null;
+            return condition.Kind == UniversalElementKind.ContactNC ? !state.Value : state.Value;
+        }
+
+        public static bool? Or(bool? a, bool? b)
+        {
+            if (a == true || b == true) return true;
+            if (a == false && b == false) return false;
+            return null;
+        }
+
+        public static bool? And(bool? a, bool? b)
+        {
+            if (a == false || b == false) return false;
+            if (a == true && b == true) return true;
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Destaque do diagrama a partir de bits lidos de um PLC real. Não conhece driver
+    /// nem protocolo: recebe o programa do editor e os bits lidos (chave no formato de
+    /// SimAddress.Format, ex.: X0001, SC004) e devolve, por linha, true só quando a
+    /// energização fica determinada pelos bits lidos. Linha cujo resultado depende de
+    /// bit não lido, linha vazia e linhas a partir do END ficam false.
+    /// Pressupõe que o programa do editor é o mesmo gravado no PLC.
+    /// </summary>
+    internal static class LadderPlcPowerEvaluator
+    {
+        /// <summary>Limite de bits por varredura, para manter o ciclo curto.</summary>
+        public const int MaxAddresses = 64;
+
+        /// <summary>Áreas que o monitor lê: X, Y, C e SC. V (TMR/CNT) fica de fora.</summary>
+        public static bool IsReadable(SimBitRef bit)
+        {
+            return bit.Valid && (bit.Area == SimBitArea.Input || bit.Area == SimBitArea.Output ||
+                                 bit.Area == SimBitArea.Auxiliary || bit.Area == SimBitArea.Special);
+        }
+
+        /// <summary>Endereços de contato usados antes do END, sem repetição, na ordem do programa.</summary>
+        public static List<string> ReadableAddresses(UniversalLadderProgram program)
+        {
+            List<string> result = new List<string>();
+            LadderScanEngine engine = Compile(program);
+            if (engine == null) return result;
+            Dictionary<string, bool> seen = new Dictionary<string, bool>();
+            foreach (CompiledRung rung in engine.Rungs)
+            {
+                if (rung.Output != null && rung.Output.Kind == UniversalElementKind.End) break;
+                for (int c = 0; c < LadderScanEngine.ConditionColumns; c++)
+                {
+                    Add(rung.Series[c], seen, result);
+                    Add(rung.Parallel[c], seen, result);
+                }
+            }
+            return result;
+        }
+
+        public static bool[] Evaluate(UniversalLadderProgram program, IDictionary<string, bool> bits)
+        {
+            if (program == null) return null;
+            bool[] power = new bool[program.Rungs.Count];
+            if (bits == null) return power;
+            LadderScanEngine engine = Compile(program);
+            if (engine == null) return power;
+
+            LadderConditionReader read = delegate(CompiledCondition condition)
+            {
+                if (!condition.Resolved || !IsReadable(condition.Bit)) return null;
+                bool value;
+                if (bits.TryGetValue(SimAddress.Format(condition.Bit), out value)) return value;
+                return null;
+            };
+
+            for (int i = 0; i < engine.Rungs.Count && i < power.Length; i++)
+            {
+                CompiledRung rung = engine.Rungs[i];
+                if (rung.Output != null && rung.Output.Kind == UniversalElementKind.End) break;
+                if (rung.Output == null && !HasCondition(rung)) continue;
+                power[i] = LadderPowerRule.Solve(rung, read) == true;
+            }
+            return power;
+        }
+
+        private static LadderScanEngine Compile(UniversalLadderProgram program)
+        {
+            if (program == null) return null;
+            LadderScanEngine engine = new LadderScanEngine();
+            engine.Load(program);
+            return engine;
+        }
+
+        private static bool HasCondition(CompiledRung rung)
+        {
+            for (int c = 0; c < LadderScanEngine.ConditionColumns; c++)
+                if (rung.Series[c] != null || rung.Parallel[c] != null) return true;
+            return false;
+        }
+
+        private static void Add(CompiledCondition condition, Dictionary<string, bool> seen, List<string> result)
+        {
+            if (condition == null || !condition.Resolved || !IsReadable(condition.Bit)) return;
+            string key = SimAddress.Format(condition.Bit);
+            if (seen.ContainsKey(key) || result.Count >= MaxAddresses) return;
+            seen[key] = true;
+            result.Add(key);
         }
     }
 }
