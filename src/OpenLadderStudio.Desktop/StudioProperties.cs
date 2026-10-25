@@ -20,20 +20,17 @@ namespace ModernPC12
         public SelectionPropertiesCard()
         {
             Dock = DockStyle.Bottom;
-            Height = 136;
+            Height = 156;
             BackColor = OpenLadderPalette.NavBg;
 
-            AddRow("Elemento", kind, 32);
-            AddRow("Operando", operand, 56);
-            AddRow("Parâmetro", parameter, 80);
-            AddRow("Posição", position, 104);
+            // Mesma faixa de titulo dos outros paineis; as linhas ganham folga para respirar.
+            AddRow("Elemento", kind, 42);
+            AddRow("Operando", operand, 68);
+            AddRow("Parâmetro", parameter, 94);
+            AddRow("Posição", position, 120);
 
-            Label title = new Label();
-            title.Text = "PROPRIEDADES";
-            title.AutoSize = true;
-            title.Font = new Font("Segoe UI Semibold", 7.8f, FontStyle.Bold);
-            title.ForeColor = OpenLadderPalette.Faint;
-            title.Location = new Point(14, 10);
+            PanelHeader title = new PanelHeader("PROPRIEDADES");
+            title.Icon = StudioIcon.Gear;
             Controls.Add(title);
 
             ShowSelection(-1, -1, 0, null, string.Empty, string.Empty);
@@ -44,20 +41,20 @@ namespace ModernPC12
             Label key = new Label();
             key.Text = caption;
             key.AutoSize = false;
-            key.Size = new Size(76, 20);
+            key.Size = new Size(80, 24);
             key.Location = new Point(14, top);
             key.TextAlign = ContentAlignment.MiddleLeft;
-            key.Font = new Font("Segoe UI", 8.5f);
+            key.Font = new Font("Segoe UI", 9.0f);
             key.ForeColor = OpenLadderPalette.Muted;
             Controls.Add(key);
 
             value.AutoSize = false;
-            value.Location = new Point(92, top);
-            value.Size = new Size(Math.Max(60, Width - 104), 20);
+            value.Location = new Point(98, top);
+            value.Size = new Size(Math.Max(60, Width - 112), 24);
             value.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             value.TextAlign = ContentAlignment.MiddleLeft;
             value.AutoEllipsis = true;
-            value.Font = new Font("Segoe UI Semibold", 8.5f, FontStyle.Bold);
+            value.Font = new Font("Segoe UI Semibold", 9.0f, FontStyle.Bold);
             value.ForeColor = OpenLadderPalette.Fore;
             Controls.Add(value);
         }

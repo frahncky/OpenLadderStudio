@@ -145,6 +145,7 @@ namespace ModernPC12
             Save();
 
             WindowChrome.RefreshAll();
+            ControlTheme.RefreshAll();
             RestyleOpenForms(BuildRemap(saindo, entrando));
 
             EventHandler handler = Changed;
@@ -191,7 +192,7 @@ namespace ModernPC12
         // mente mais fraco (controle indisponivel esta isento do criterio).
         public static Color Fore { get { return Pick(233, 239, 247, 30, 44, 62); } }
         public static Color Muted { get { return Pick(177, 190, 208, 77, 96, 119); } }
-        public static Color Faint { get { return Pick(157, 173, 193, 89, 107, 129); } }
+        public static Color Faint { get { return Pick(157, 173, 193, 82, 100, 122); } }
         public static Color Disabled { get { return Pick(112, 129, 150, 139, 153, 171); } }
 
         // Marca e estados legiveis sobre Chrome e ChromeLight. O azul luminoso
@@ -230,7 +231,7 @@ namespace ModernPC12
         /// Condutor energizado no diagrama. Verde saturado, mais vivo que Ok (que e
         /// estado de interface): precisa saltar sobre Wire e Rail, que sao cinza-azulados.
         /// </summary>
-        public static Color Energized { get { return Pick(57, 224, 128, 0, 124, 56); } }
+        public static Color Energized { get { return Pick(57, 224, 128, 0, 100, 45); } }
         public static Color EnergizedBg { get { return Pick(22, 66, 46, 220, 243, 229); } }
 
         /// <summary>
@@ -295,6 +296,11 @@ namespace ModernPC12
                 SkinTabPage(c as TabPage);
                 SkinComboBox(c as ComboBox);
                 SkinTabControl(c as TabControl);
+                SkinNumeric(c as NumericUpDown);
+                TextBox box = c as TextBox;
+                if (box != null && box.BorderStyle == BorderStyle.FixedSingle) ControlTheme.Track(box, "DarkMode_CFD", null);
+                if (c is TreeView || c is ListView || c is ListBox || c is FlowLayoutPanel || (c is ScrollableControl && ((ScrollableControl)c).AutoScroll))
+                    ControlTheme.TrackScroll(c);
 
                 Skin(c);
             }
@@ -322,18 +328,22 @@ namespace ModernPC12
 
         /// <summary>
         /// Lista suspensa fixa (DropDownList) ignora BackColor no desenho de sistema e
-        /// fica branca dentro da janela escura, tanto fechada quanto aberta. No tema
-        /// escuro o texto e a lista passam a ser desenhados pela paleta; a seta continua
-        /// sendo do sistema. No tema claro o desenho de sistema ja combina.
+        /// fica branca dentro da janela escura, tanto fechada quanto aberta. O texto e a
+        /// lista sao desenhados pela paleta nos dois temas, e a seta/borda ganham o
+        /// visual escuro do sistema (uxtheme) enquanto o tema for escuro. Como a decisao
+        /// e tomada a cada pintura e a cada troca de tema, vale tambem para a troca a quente.
         /// </summary>
         private static void SkinComboBox(ComboBox combo)
         {
-            if (combo == null || !IsDark) return;
+            if (combo == null) return;
             if (combo.DropDownStyle != ComboBoxStyle.DropDownList || combo.DrawMode != DrawMode.Normal) return;
 
-            combo.FlatStyle = FlatStyle.Flat;
             combo.DrawMode = DrawMode.OwnerDrawFixed;
             combo.DrawItem += DrawComboItem;
+            ControlTheme.Track(combo, "DarkMode_CFD", "Combobox");
+            // Sem o tema escuro de sistema (anterior ao Windows 10 1809) o botao do combo fica
+            // branco; o estilo plano obedece a cor, entao vale enquanto o tema for escuro.
+            ControlTheme.TrackFlatFallback(combo);
         }
 
         private static void DrawComboItem(object sender, DrawItemEventArgs e)
@@ -346,22 +356,30 @@ namespace ModernPC12
             Color back = combo.BackColor == SystemColors.Window ? ChromeLight : combo.BackColor;
 
             using (Brush fill = new SolidBrush(selected ? SelectionFill : back)) e.Graphics.FillRectangle(fill, e.Bounds);
-            if (e.Index < 0 || e.Index >= combo.Items.Count) return;
+            if (e.Index >= 0 && e.Index < combo.Items.Count)
+            {
+                string text = combo.GetItemText(combo.Items[e.Index]);
+                Rectangle area = new Rectangle(e.Bounds.Left + 2, e.Bounds.Top, e.Bounds.Width - 2, e.Bounds.Height);
+                TextRenderer.DrawText(e.Graphics, text, combo.Font, area, combo.Enabled ? Fore : Disabled,
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            }
 
-            string text = combo.GetItemText(combo.Items[e.Index]);
-            Rectangle area = new Rectangle(e.Bounds.Left + 2, e.Bounds.Top, e.Bounds.Width - 2, e.Bounds.Height);
-            TextRenderer.DrawText(e.Graphics, text, combo.Font, area, combo.Enabled ? Fore : Disabled,
-                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            // Foco de teclado visivel: o retangulo padrao usa as cores de sistema e some no escuro.
+            if ((e.State & DrawItemState.Focus) != 0)
+                ControlPaint.DrawFocusRectangle(e.Graphics, Rectangle.Inflate(e.Bounds, -1, -1), Focus, selected ? SelectionFill : back);
         }
+
         /// <summary>
-        /// Cabecalho de aba desenhado pela paleta no tema escuro (o do sistema e
-        /// branco). A moldura do corpo da aba continua sendo do sistema.
+        /// Cabecalho de aba desenhado pela paleta (o do sistema e branco) e, nos dois
+        /// temas, a moldura do corpo, a faixa ao lado das abas e o filete a esquerda da
+        /// aba selecionada repintados depois do desenho do sistema, na paleta vigente.
         /// </summary>
         private static void SkinTabControl(TabControl tabs)
         {
-            if (tabs == null || !IsDark || tabs.DrawMode != TabDrawMode.Normal) return;
+            if (tabs == null || tabs.DrawMode != TabDrawMode.Normal) return;
             tabs.DrawMode = TabDrawMode.OwnerDrawFixed;
             tabs.DrawItem += DrawTabHeader;
+            PostPaintHook.Attach(tabs, DrawTabFrame);
         }
 
         private static void DrawTabHeader(object sender, DrawItemEventArgs e)
@@ -377,13 +395,95 @@ namespace ModernPC12
                 using (Brush bar = new SolidBrush(Accent)) e.Graphics.FillRectangle(bar, bounds.Left, bounds.Top, bounds.Width, 2);
             }
 
-            using (StringFormat format = new StringFormat())
-            using (Brush ink = new SolidBrush(selected ? Fore : Muted))
+            TextRenderer.DrawText(e.Graphics, tabs.TabPages[e.Index].Text, tabs.Font, bounds, selected ? Fore : Muted,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+        }
+
+        private static void DrawTabFrame(Graphics g, Control control)
+        {
+            TabControl tabs = control as TabControl;
+            if (tabs == null || tabs.Alignment != TabAlignment.Top || tabs.TabPages.Count == 0) return;
+
+            Rectangle client = tabs.ClientRectangle;
+            Rectangle first = tabs.GetTabRect(0);
+            Rectangle last = tabs.GetTabRect(tabs.TabPages.Count - 1);
+            Rectangle page = tabs.DisplayRectangle;
+            int rowBottom = Math.Max(first.Bottom, last.Bottom);
+
+            using (Brush bg = new SolidBrush(Shell))
             {
-                format.Alignment = StringAlignment.Center;
-                format.LineAlignment = StringAlignment.Center;
-                e.Graphics.DrawString(tabs.TabPages[e.Index].Text, tabs.Font, ink, bounds, format);
+                // Faixa ao lado das abas e acima da primeira linha.
+                g.FillRectangle(bg, last.Right, 0, Math.Max(0, client.Width - last.Right), rowBottom);
+                g.FillRectangle(bg, 0, 0, client.Width, Math.Max(0, first.Top));
+
+                // Moldura do corpo: o anel entre a area util e a borda do controle.
+                Rectangle outer = Rectangle.Inflate(page, 4, 4);
+                g.FillRectangle(bg, outer.Left, rowBottom, outer.Width, Math.Max(0, page.Top - rowBottom));
+                g.FillRectangle(bg, outer.Left, page.Top, page.Left - outer.Left, page.Height);
+                g.FillRectangle(bg, page.Right, page.Top, outer.Right - page.Right, page.Height);
+                g.FillRectangle(bg, outer.Left, page.Bottom, outer.Width, outer.Bottom - page.Bottom);
             }
+
+            // O sistema estende a aba selecionada 2 px para a esquerda com um filete claro.
+            if (tabs.SelectedIndex >= 0 && tabs.SelectedIndex < tabs.TabPages.Count)
+            {
+                Rectangle sel = tabs.GetTabRect(tabs.SelectedIndex);
+                if (sel.Left >= 2)
+                    using (Brush seam = new SolidBrush(Shell)) g.FillRectangle(seam, sel.Left - 2, sel.Top, 2, sel.Height);
+            }
+
+            using (Pen line = new Pen(Border))
+            {
+                Rectangle frame = Rectangle.Inflate(page, 1, 1);
+                g.DrawRectangle(line, frame.Left, Math.Max(rowBottom - 1, frame.Top - 1), frame.Width, frame.Bottom - Math.Max(rowBottom - 1, frame.Top - 1));
+            }
+        }
+
+        /// <summary>
+        /// Setas de cima e de baixo do NumericUpDown: sao desenhadas pelo componente com
+        /// o visual de sistema (claro). No tema escuro sao repintadas por cima.
+        /// </summary>
+        private static void SkinNumeric(NumericUpDown number)
+        {
+            if (number == null || number.Controls.Count == 0) return;
+            PostPaintHook.Attach(number.Controls[0], DrawUpDownButtons);
+        }
+
+        private static void DrawUpDownButtons(Graphics g, Control control)
+        {
+            if (!IsDark) return;
+
+            Rectangle r = control.ClientRectangle;
+            int half = r.Height / 2;
+            Rectangle top = new Rectangle(r.Left, r.Top, r.Width, half);
+            Rectangle bottom = new Rectangle(r.Left, r.Top + half, r.Width, r.Height - half);
+
+            using (Brush fill = new SolidBrush(Chrome)) g.FillRectangle(fill, r);
+            using (Pen line = new Pen(Border))
+            {
+                g.DrawRectangle(line, r.Left, r.Top, r.Width - 1, r.Height - 1);
+                g.DrawLine(line, r.Left, r.Top + half, r.Right - 1, r.Top + half);
+            }
+
+            bool enabled = control.Enabled && (control.Parent == null || control.Parent.Enabled);
+            DrawUpDownArrow(g, top, true, enabled ? Muted : Faint);
+            DrawUpDownArrow(g, bottom, false, enabled ? Muted : Faint);
+        }
+
+        private static void DrawUpDownArrow(Graphics g, Rectangle r, bool up, Color color)
+        {
+            float cx = r.Left + r.Width / 2f;
+            float cy = r.Top + r.Height / 2f;
+            float w = Math.Max(3f, r.Width / 5f);
+            float h = w * 0.55f;
+            PointF[] tri = up
+                ? new PointF[] { new PointF(cx - w, cy + h), new PointF(cx + w, cy + h), new PointF(cx, cy - h) }
+                : new PointF[] { new PointF(cx - w, cy - h), new PointF(cx + w, cy - h), new PointF(cx, cy + h) };
+
+            SmoothingMode previous = g.SmoothingMode;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (Brush ink = new SolidBrush(color)) g.FillPolygon(ink, tri);
+            g.SmoothingMode = previous;
         }
 
         private static void SkinTabPage(TabPage page)
@@ -546,6 +646,9 @@ namespace ModernPC12
             DataGridView grid = c as DataGridView;
             if (grid != null) RestyleGrid(grid, map);
 
+            IPaletteRestylable custom = c as IPaletteRestylable;
+            if (custom != null) custom.RestylePalette(map);
+
             ToolStrip strip = c as ToolStrip;
             if (strip != null)
             {
@@ -553,6 +656,13 @@ namespace ModernPC12
             }
 
             for (int i = 0; i < c.Controls.Count; i++) Restyle(c.Controls[i], map);
+        }
+
+        /// <summary>Cor equivalente no tema que entra, ou a propria cor se nao for da paleta.</summary>
+        public static Color Swap(IDictionary<int, Color> map, Color c)
+        {
+            Color swapped;
+            return map != null && map.TryGetValue(c.ToArgb(), out swapped) ? swapped : c;
         }
 
         private static void RestyleItem(ToolStripItem item, Dictionary<int, Color> map)
@@ -860,5 +970,191 @@ namespace ModernPC12
         public override Color OverflowButtonGradientBegin { get { return OpenLadderPalette.Chrome; } }
         public override Color OverflowButtonGradientMiddle { get { return OpenLadderPalette.Chrome; } }
         public override Color OverflowButtonGradientEnd { get { return OpenLadderPalette.Chrome; } }
+    }
+
+    /// <summary>
+    /// Controle que guarda cor fora de BackColor/ForeColor (campo proprio, usado so
+    /// na pintura) e, por isso, nao e alcancado pela troca de tema a quente. Recebe o
+    /// mapa de cores do tema que sai para o que entra e troca as suas.
+    /// </summary>
+    internal interface IPaletteRestylable
+    {
+        void RestylePalette(IDictionary<int, Color> map);
+    }
+
+    /// <summary>
+    /// Pinta por cima de um controle nativo logo depois do WM_PAINT dele. Serve para o
+    /// que o sistema desenha em claro e nao aceita cor (moldura de aba, setas do
+    /// NumericUpDown). A decisao de desenhar fica com o delegado, que consulta o tema vigente.
+    /// </summary>
+    internal sealed class PostPaintHook : NativeWindow
+    {
+        private const int WmPaint = 0x000F;
+        private readonly Control control;
+        private readonly Action<Graphics, Control> draw;
+
+        private PostPaintHook(Control control, Action<Graphics, Control> draw)
+        {
+            this.control = control;
+            this.draw = draw;
+            control.HandleCreated += delegate { Hook(); };
+            control.HandleDestroyed += delegate { ReleaseHandle(); };
+            if (control.IsHandleCreated) Hook();
+        }
+
+        public static void Attach(Control control, Action<Graphics, Control> draw)
+        {
+            if (control == null || draw == null) return;
+            new PostPaintHook(control, draw);
+        }
+
+        private void Hook()
+        {
+            if (!control.IsHandleCreated || Handle == control.Handle) return;
+            ReleaseHandle();
+            AssignHandle(control.Handle);
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+            if (m.Msg != WmPaint || control.IsDisposed) return;
+            try
+            {
+                using (Graphics g = Graphics.FromHwnd(Handle)) draw(g, control);
+            }
+            catch
+            {
+                // Repintura estetica nunca pode derrubar o controle.
+            }
+        }
+    }
+
+    /// <summary>
+    /// Visual escuro de sistema (uxtheme) para barras de rolagem, seta de lista suspensa
+    /// e afins. Exige Windows 10 1809 ou mais novo; antes disso a classe nao existe e
+    /// aplicar o nome deixaria o controle sem estilo, entao nao se aplica nada.
+    /// </summary>
+    internal static class ControlTheme
+    {
+        private sealed class Entry
+        {
+            public Control Control;
+            public string App;
+            public string Ids;
+        }
+
+        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+        private static extern int SetWindowTheme(IntPtr hwnd, string app, string ids);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct OsVersionInfo
+        {
+            public int Size;
+            public int Major;
+            public int Minor;
+            public int Build;
+            public int Platform;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            public string Service;
+        }
+
+        [DllImport("ntdll.dll")]
+        private static extern int RtlGetVersion(ref OsVersionInfo info);
+
+        [DllImport("user32.dll")]
+        private static extern bool RedrawWindow(IntPtr hwnd, IntPtr clip, IntPtr region, uint flags);
+
+        private const uint RdwInvalidate = 0x0001;
+        private const uint RdwFrame = 0x0400;
+        private const uint RdwAllChildren = 0x0080;
+
+        private static readonly List<ComboBox> flatFallback = new List<ComboBox>();
+
+        /// <summary>
+        /// Onde o tema escuro de sistema nao existe, a lista suspensa usa o estilo plano
+        /// no tema escuro e volta ao padrao no claro (acompanha a troca a quente).
+        /// </summary>
+        public static void TrackFlatFallback(ComboBox combo)
+        {
+            if (combo == null || Supported) return;
+            flatFallback.Add(combo);
+            combo.Disposed += delegate { flatFallback.Remove(combo); };
+            ApplyFlat(combo);
+        }
+
+        private static void ApplyFlat(ComboBox combo)
+        {
+            if (combo == null || combo.IsDisposed) return;
+            combo.FlatStyle = OpenLadderPalette.IsDark ? FlatStyle.Flat : FlatStyle.Standard;
+        }
+
+        private static readonly List<Entry> tracked = new List<Entry>();
+        private static int supported = -1;
+
+        private static bool Supported
+        {
+            get
+            {
+                if (supported >= 0) return supported == 1;
+                supported = 0;
+                try
+                {
+                    OsVersionInfo info = new OsVersionInfo();
+                    info.Size = Marshal.SizeOf(typeof(OsVersionInfo));
+                    if (RtlGetVersion(ref info) == 0 && (info.Major > 10 || (info.Major == 10 && info.Build >= 17763))) supported = 1;
+                }
+                catch
+                {
+                }
+                return supported == 1;
+            }
+        }
+
+        /// <summary>Barra de rolagem escura para listas, arvores e paineis com rolagem.</summary>
+        public static void TrackScroll(Control control)
+        {
+            Track(control, "DarkMode_Explorer", null);
+        }
+
+        public static void Track(Control control, string darkApp, string darkIds)
+        {
+            if (control == null || !Supported) return;
+            Entry entry = new Entry();
+            entry.Control = control;
+            entry.App = darkApp;
+            entry.Ids = darkIds;
+            tracked.Add(entry);
+            control.HandleCreated += delegate { Apply(entry); };
+            control.Disposed += delegate { tracked.Remove(entry); };
+            Apply(entry);
+        }
+
+        /// <summary>Reaplica depois de uma troca de tema.</summary>
+        public static void RefreshAll()
+        {
+            Entry[] snapshot = tracked.ToArray();
+            for (int i = 0; i < snapshot.Length; i++) Apply(snapshot[i]);
+            ComboBox[] combos = flatFallback.ToArray();
+            for (int i = 0; i < combos.Length; i++) ApplyFlat(combos[i]);
+        }
+
+        private static void Apply(Entry entry)
+        {
+            try
+            {
+                Control c = entry.Control;
+                if (c == null || c.IsDisposed || !c.IsHandleCreated) return;
+                if (OpenLadderPalette.IsDark) SetWindowTheme(c.Handle, entry.App, entry.Ids);
+                else SetWindowTheme(c.Handle, null, null);
+                c.Invalidate(true);
+
+                // Invalidate nao alcanca a area nao-cliente (barras de rolagem, bordas).
+                RedrawWindow(c.Handle, IntPtr.Zero, IntPtr.Zero, RdwInvalidate | RdwFrame | RdwAllChildren);
+            }
+            catch
+            {
+            }
+        }
     }
 }

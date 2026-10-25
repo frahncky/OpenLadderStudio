@@ -31,13 +31,13 @@ a janela pela metade. O aplicativo oferece reiniciar na hora.
 | canvas Ladder | `Canvas` | `#141B27` | `#FAFBFE` |
 | linha selecionada / hover no canvas | `CanvasRow` / `CanvasHover` | `#1A2434` / `#1F2A3D` | `#EEF3FB` / `#E7EEF9` |
 | borda de região / de controle | `Border` / `BorderStrong` | `#303D52` / `#4C5E78` | `#D0D9E5` / `#A3B2C7` |
-| texto principal / secundário / discreto | `Fore` / `Muted` / `Faint` | `#E9EFF7` / `#B1BED0` / `#9DADC1` | `#1E2C3E` / `#4D6077` / `#596B81` |
+| texto principal / secundário / discreto | `Fore` / `Muted` / `Faint` | `#E9EFF7` / `#B1BED0` / `#9DADC1` | `#1E2C3E` / `#4D6077` / `#52647A` |
 | texto desabilitado | `Disabled` | `#708196` | `#8B99AB` |
 | destaque / sobre o destaque | `Accent` / `OnAccent` | `#63B1FF` / `#101E30` | `#1D54C8` / `#FFFFFF` |
 | anel de foco | `Focus` | `#93CDFF` | `#0F46BE` |
 | estados | `Ok`, `Warning`, `Danger`, `Info` | tons claros | tons fechados |
 | fundo tingido de estado | `OkBg`, `WarningBg`, `DangerBg`, `InfoBg` | escuros | claros |
-| condutor energizado | `Energized` / `EnergizedBg` | `#39E080` / `#16422E` | `#007C38` / `#DCF3E5` |
+| condutor energizado | `Energized` / `EnergizedBg` | `#39E080` / `#16422E` | `#00642D` / `#DCF3E5` |
 
 A hierarquia de superfícies, do fundo para a frente, é
 `Shell < Workspace/NavBg < Chrome < ChromeLight < Raised`. O `Canvas` do editor é uma
@@ -50,14 +50,18 @@ Nenhum dos dois usa preto puro ou branco puro em superfície grande: são as dua
 extremidades que mais cansam a vista em jornada longa.
 
 **Contraste (WCAG AA).** `Fore`, `Muted` e `Faint` passam de 4,5:1 sobre `Shell`, `Chrome`,
-`ChromeLight`, `Canvas`, `CanvasRow` e `Raised` nos dois temas; `Accent`, `Ok`, `Warning`,
-`Danger`, `Info` e `Energized` também, como texto, sobre as superfícies do próprio tema, e cada
-cor de estado passa de 4,5:1 sobre o seu `…Bg`. `Disabled` é propositalmente mais fraco.
-`Energized` é verde saturado e `Wire` é cinza-azulado: a diferença é de matiz, não de
-luminosidade, por isso o fio energizado também fica mais grosso e o bloco ganha preenchimento
-translúcido (o estado não depende só da cor). Ao acrescentar token, defina os dois valores e
-mantenha a regra de que dois tokens com a mesma cor num tema têm a mesma cor no outro: a troca
-de tema a quente (`Restyle`) mapeia por ARGB.
+`ChromeLight`, `Canvas`, `CanvasRow` e `Raised` nos dois temas, e também sobre `SelectionFill`,
+`NavActive` e `NavHover` (a faixa de seleção e o item ativo). `Accent`, `Ok`, `Warning`, `Danger`,
+`Info` e `Energized` passam de 4,5:1 como texto sobre as superfícies de painel e de canvas do
+próprio tema e sobre o seu `…Bg`. Sobre a seleção, o que se garante é `Fore`, `Muted`, `Faint` e
+`Accent`; estado colorido sobre seleção fica entre 4,1 e 4,6 e só vale como realce, nunca como o
+único portador da informação. `Disabled` é propositalmente mais fraco.
+`Energized` é verde saturado e `Wire` é cinza-azulado. No claro `Energized` é bem mais escuro que
+`Wire` (razão de luminosidade em torno de 1,4:1, como no escuro), então a diferença não depende
+só de matiz — o que importa para quem não distingue verde de cinza. Mesmo assim o fio energizado
+também fica mais grosso e o bloco ganha preenchimento translúcido. Ao acrescentar token, defina os
+dois valores e mantenha a regra de que dois tokens com a mesma cor num tema têm a mesma cor no
+outro: a troca de tema a quente (`Restyle`) mapeia por ARGB.
 
 A navegação usa uma base mais profunda, os painéis ficam no nível intermediário
 e os campos de entrada usam a superfície elevada. Seleção e item ativo recebem
@@ -85,8 +89,40 @@ primeiro `Idle` em que a barra pode surgir clara.
 
 `AppBranding.Install()` também define `ToolStripManager.Renderer` (menus suspensos e de contexto
 na paleta, sobre `Raised`) e o `Skin` converte o que nasce de cor de sistema: janela, botão
-padrão (vira plano), aba (cabeçalho desenhado no tema escuro) e lista suspensa fixa (desenhada
-no tema escuro). A moldura do corpo da aba e a seta da lista continuam sendo do sistema.
+padrão (vira plano), aba (cabeçalho desenhado pela paleta) e lista suspensa fixa (texto e lista
+desenhados pela paleta).
+
+A moldura do corpo da aba, a faixa ao lado das abas, o filete à esquerda da aba selecionada e as
+setas do NumericUpDown (em `Faint` quando desabilitado) são repintados por cima do sistema
+(`PostPaintHook`), nos dois temas. A seta e a borda da lista suspensa e as barras de rolagem usam o
+tema escuro de sistema (`ControlTheme`, Windows 10 1809 ou mais novo); onde ele não existe, a lista
+suspensa cai para o estilo plano enquanto o tema for escuro. A troca de tema reaplica tudo,
+inclusive a área não-cliente (`RedrawWindow`). Fica do sistema a borda de TextBox de linha única no
+escuro e o foco de aba.
+## Janela principal
+
+Composição, da esquerda para a direita e de cima para baixo (peças em `StudioShellParts.cs`,
+montadas por `PrepareShellRedesignV94.ps1`):
+
+- **Barra de título e menu formam uma faixa só** (`Shell`): a marca "OpenLadder Studio" aparece
+  uma vez, na barra de título; o painel lateral não repete.
+- **Barra de ferramentas** (`Chrome`): botões com ícone e rótulo, cantos suaves, hover com
+  contorno, foco com o anel `Focus`. O zoom é um único controle segmentado (− 100% +): o
+  percentual volta a 100%, as setas do teclado e Enter/Espaço operam os segmentos.
+- **Painéis como cartões**: `PROJETO` (árvore sem linhas pontilhadas, seta própria, ícone por
+  tipo, faixa de seleção com barra `Accent`; o nó do controlador mostra só "fabricante modelo" e leva
+  família e protocolo na dica), editor no centro e `INSTRUÇÕES` + `PROPRIEDADES` à
+  direita, separados por frestas de 4 px na cor `Shell`. Todo painel abre com o mesmo cabeçalho
+  (`PanelHeader`: ícone, título em caixa alta, filete `Border`).
+- **Instruções**: busca com lupa, texto de orientação, botão de limpar e Esc; grupos recolhíveis
+  (setinha e Enter/Espaço); itens de 30 px. Buscar ignora o recolhimento.
+- **Mensagens**: cabeçalho de 30 px com o botão "Limpar" alinhado à direita (`GhostButton`).
+- **Barra de status**: texto à esquerda; à direita PLC, conexão, modo e zoom separados por
+  filetes de 1 px (`StatusSegments`). O resumo do controlador não é mais repetido em outro lugar.
+
+Peças que desenham a própria cor leem `OpenLadderPalette` **na hora de pintar**; o que ainda
+guarda cor em campo (`StudioPanel.Fill/BottomLine`) implementa `IPaletteRestylable` para a troca
+de tema a quente alcançá-lo. Medidas vêm de `OpenLadderMetrics`, escaladas por `Graphics.DpiX`.
 ## Cor semântica
 
 - azul: arquivos, controlador e informação;
