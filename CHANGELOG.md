@@ -2,6 +2,26 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [1.73] - 2026-10-25
+
+### Compatibilidade de arquivo
+- projeto com qualquer comentário de linha é gravado como `PC12-LADDER|3`; versões anteriores recusam o arquivo inteiro ("Formato de projeto não reconhecido"). Compatibilidade de mão única: atualize todas as instalações antes de comentar;
+- projeto sem comentário continua em `PC12-LADDER|2`, idêntico ao anterior.
+
+### Editor
+- canvas redesenhado (bloco por linha, calha e cabeçalho congelados, grade discreta, linha-fantasma "+ Nova linha");
+- o texto do diagrama passa a crescer com o DPI do Windows (antes ignorava 125% e 150%);
+- comentário livre por linha (clique duplo na faixa, F2/Enter, Editar > Comentar linha ou painel PROPRIEDADES); é só documentação e não altera o programa enviado ao PLC;
+- Novo, Abrir e fechar perguntam se quer salvar quando a única alteração é um comentário.
+
+### Interface
+- paleta redesenhada, barra de título escura, canvas uniforme e janela principal reorganizada.
+
+### Limitações conhecidas
+- barra de rolagem horizontal na largura mínima (1280x800) mesmo quando o diagrama caberia;
+- o painel PROPRIEDADES encurta a lista INSTRUÇÕES; na janela mínima, Bobina/SET/RESET exigem rolagem;
+- a leitura do PLC real continua sem validação no equipamento físico.
+
 ## [1.72] - 2026-10-24
 
 ### Monitor
