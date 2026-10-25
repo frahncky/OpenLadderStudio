@@ -416,6 +416,11 @@ namespace ModernPC12
 
         // Indent e ItemHeight sao em pixels e o AutoScale do formulario nao os alcanca:
         // escala-se uma vez, na criacao da alca, pelo DPI real do controle.
+        // ItemHeight tem de sair PAR: com valor impar o TreeView chama RecreateHandle
+        // (precisa do estilo TVS_NONEVENHEIGHT), e recriar a alca aqui dentro deixa a
+        // cadeia de criacao com o handle antigo -- o controle seguinte falha com
+        // "Erro ao criar identificador de janela" (ERROR_INVALID_WINDOW_HANDLE). Foi o
+        // que a v1.73 fez ao abrir a 125% (28 vira 35) e a 175% (28 vira 49).
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
@@ -424,7 +429,8 @@ namespace ModernPC12
             using (Graphics g = CreateGraphics())
             {
                 Indent = StudioShape.Scale(g, 16);
-                ItemHeight = StudioShape.Scale(g, 28);
+                int height = StudioShape.Scale(g, 28);
+                ItemHeight = height + (height & 1);
             }
         }
 

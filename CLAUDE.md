@@ -23,7 +23,7 @@ Há duas skills para conduzir o trabalho de ponta a ponta:
 - `desenvolver` orquestra uma melhoria do produto: especialista, depois `revisor`, depois PR e CI.
 - `engenharia-reversa` orquestra os agentes `re-*` e `driver-plc`. A bancada física sempre volta para o humano.
 
-A tela pode ser conferida sem abrir o app com `scripts/RenderUi.ps1 -Theme dark|light -Out <arquivo.png>`.
+A tela pode ser conferida sem abrir o app com `scripts/RenderUi.ps1 -Theme dark|light -Out <arquivo.png>`. Para comportamento, `scripts/CheckPendingComment.ps1` roda o app numa janela de verdade e confere que salvar, novo e abrir pelo menu e pela barra não perdem um comentário de linha pendente (precisa de sessão de desktop; não roda no CI).
 
 ## Quatro coisas que quebram o build ou o produto
 
