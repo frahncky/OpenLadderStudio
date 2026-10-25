@@ -26,13 +26,15 @@ $shell = Rep $shell '                    delegate(string text) { if (statusText 
             if (adapter != null && adapter.RungPowerSink == null) adapter.RungPowerSink = OnDriverPower;
             return studioHost;' 'destino do destaque no Host()'
 
-# Arbitragem: a simulacao tem prioridade. Enquanto ela publica um resultado do
+# Arbitragem: a simulacao tem prioridade. Enquanto ela roda e publica um resultado do
 # programa do editor, o destaque vindo do driver e descartado.
 $shell = Rep $shell '                simulatorForm.PowerChanged += OnSimulatorPower;' '                simulatorForm.PowerChanged += OnSimulatorPower;
-                simulatorForm.PowerChanged += delegate(bool[] p) { simulatorOwnsPower = p != null; };' 'arbitragem do simulador'
+                simulatorForm.PowerChanged += delegate(bool[] p) { simulatorOwnsPower = p != null && simulatorForm.IsRunning; simulatorPainted = p != null; };
+                simulatorForm.RunningChanged += delegate(bool running) { if (!running) simulatorOwnsPower = false; };' 'arbitragem do simulador'
 
 $methods = @'
         private bool simulatorOwnsPower;
+        private bool simulatorPainted;
         private bool driverPowerSuspendedNotice;
 
         private void OnDriverPower(bool[] power)
@@ -45,6 +47,7 @@ $methods = @'
                 return;
             }
             driverPowerSuspendedNotice = false;
+            simulatorPainted = false;
             OnSimulatorPower(power);
         }
 
@@ -52,9 +55,10 @@ $methods = @'
         private void NotifyDocumentClosed(Form document)
         {
             if (document == null) return;
-            if (document == simulatorForm && simulatorOwnsPower)
+            if (document == simulatorForm && simulatorPainted)
             {
                 simulatorOwnsPower = false;
+                simulatorPainted = false;
                 OnSimulatorPower(null);
             }
             StudioHostAdapter adapter = studioHost as StudioHostAdapter;

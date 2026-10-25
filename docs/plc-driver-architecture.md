@@ -138,9 +138,10 @@ Fechar a aba só oculta o form, então `FormClosing` não dispara. Por isso o sh
 por `IStudioHost.DocumentClosed`, e o monitor do TP02 para a varredura ao receber esse aviso. Um
 comando manual pausa a varredura antes do próximo quadro e espera no máximo 300 ms pela porta.
 
-A simulação tem prioridade sobre o destaque. Enquanto ela publica o resultado do programa do
-editor, o destaque vindo do driver é descartado e a barra de status avisa que o destaque do PLC
-está suspenso. Fechar a aba da simulação devolve o diagrama ao driver.
+A simulação tem prioridade sobre o destaque. Enquanto ela está em execução e publica o
+resultado do programa do editor, o destaque vindo do driver é descartado e a barra de status
+avisa que o destaque do PLC está suspenso. Parar a simulação ou fechar a aba dela devolve o
+diagrama ao driver; fechar a aba também apaga o destaque que a simulação deixou.
 
 ## Próximas etapas
 
