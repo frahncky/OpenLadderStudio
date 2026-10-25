@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [1.74] - 2026-10-25
+
+### Correção
+- com a escala de tela do Windows em 125% ou 175%, a v1.73 mostrava "Erro ao criar identificador de janela" ao abrir: a árvore do painel PROJETO escalava a altura das linhas para um valor ímpar e recriava a própria janela no meio da abertura. A altura agora sai sempre par;
+- 100% e 150% não eram afetados.
+
+### Desenvolvimento
+- `scripts/CheckPendingComment.ps1`: confere no app rodando que salvar, novo e abrir pelo menu e pela barra não perdem um comentário de linha pendente (precisa de sessão de desktop; não roda no CI).
+
+### Limitações conhecidas
+- barra de rolagem horizontal na largura mínima (1280x800) mesmo quando o diagrama caberia;
+- o painel PROPRIEDADES encurta a lista INSTRUÇÕES; na janela mínima, Bobina/SET/RESET exigem rolagem;
+- a leitura do PLC real continua sem validação no equipamento físico.
+
 ## [1.73] - 2026-10-25
 
 ### Compatibilidade de arquivo
