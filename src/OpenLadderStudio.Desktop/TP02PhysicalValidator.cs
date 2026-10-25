@@ -301,8 +301,8 @@ namespace ModernPC12
             MinimumSize = new Size(940, 650);
             Size = new Size(1120, 760);
             Font = new Font("Segoe UI", 9.0f);
-            BackColor = Color.FromArgb(18, 24, 31);
-            ForeColor = Color.FromArgb(226, 230, 234);
+            BackColor = OpenLadderPalette.Shell;
+            ForeColor = OpenLadderPalette.Fore;
             BuildUi();
             RefreshPorts();
         }
@@ -312,7 +312,7 @@ namespace ModernPC12
             Panel top = new Panel();
             top.Dock = DockStyle.Top;
             top.Height = 178;
-            top.BackColor = Color.FromArgb(27, 36, 46);
+            top.BackColor = OpenLadderPalette.Chrome;
             Controls.Add(top);
 
             Label title = new Label();
@@ -326,7 +326,7 @@ namespace ModernPC12
             info.Text = "Allowlist exata: CON-ICB, F0, 38, PG34 (START 0000/004F/0050/00A0/00F0/0140) e PG0A conhecido; em RUN só F0. Recuperação automática da COM antes de abortar HELLO.";
             info.AutoSize = true;
             info.MaximumSize = new Size(1050, 0);
-            info.ForeColor = Color.FromArgb(224, 170, 64);
+            info.ForeColor = OpenLadderPalette.Warning;
             info.Location = new Point(20, 45);
             top.Controls.Add(info);
 
@@ -344,8 +344,8 @@ namespace ModernPC12
             run.Text = "Executar campanha READ-ONLY";
             run.Location = new Point(300, 82);
             run.Size = new Size(230, 38);
-            run.BackColor = Color.FromArgb(38, 166, 154);
-            run.ForeColor = Color.White;
+            run.BackColor = OpenLadderPalette.Accent;
+            run.ForeColor = OpenLadderPalette.OnAccent;
             run.FlatStyle = FlatStyle.Flat;
             run.FlatAppearance.BorderSize = 0;
             run.Click += delegate { StartCampaign(); };
@@ -362,14 +362,14 @@ namespace ModernPC12
             status.Font = new Font("Segoe UI", 9.0f, FontStyle.Bold);
             status.AutoSize = true;
             status.Location = new Point(680, 93);
-            status.ForeColor = Color.FromArgb(158, 169, 180);
+            status.ForeColor = OpenLadderPalette.Muted;
             top.Controls.Add(status);
 
             exhaustive.Text = "Varredura completa PG0A: X/Y/C/SC/V/D/WC/FL/WS";
             exhaustive.Checked = true;
             exhaustive.AutoSize = true;
             exhaustive.Location = new Point(20, 139);
-            exhaustive.ForeColor = Color.FromArgb(226, 230, 234);
+            exhaustive.ForeColor = OpenLadderPalette.Fore;
             top.Controls.Add(exhaustive);
 
             // Fases B1/B2 do roteiro: desmarcadas por padrão; cada quadro sai uma vez, sem retry.
@@ -392,8 +392,8 @@ namespace ModernPC12
             log.ScrollBars = ScrollBars.Both;
             log.Dock = DockStyle.Fill;
             log.Font = new Font("Consolas", 9.0f);
-            log.BackColor = Color.FromArgb(16, 22, 29);
-            log.ForeColor = Color.FromArgb(226, 230, 234);
+            log.BackColor = OpenLadderPalette.Canvas;
+            log.ForeColor = OpenLadderPalette.Fore;
             Controls.Add(log);
             log.BringToFront();
         }
@@ -432,7 +432,7 @@ namespace ModernPC12
             Append("HELLO: até 2 ciclos; entre eles a COM é fechada/reaberta e estabilizada.");
             Append("Bloqueados por código: 09, 33, 35, Clear, RUN, STOP, 12/13 EEPROM e demais opcodes.");
             SetBusy(true);
-            SetStatus("EXECUTANDO", Color.FromArgb(224, 170, 64));
+            SetStatus("EXECUTANDO", OpenLadderPalette.Warning);
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -446,7 +446,7 @@ namespace ModernPC12
                     if (failure != null)
                     {
                         Append("FALHA FINAL: " + failure.Message);
-                        SetStatus("FALHA", Color.FromArgb(214, 87, 87));
+                        SetStatus("FALHA", OpenLadderPalette.Danger);
                     }
                     else
                     {
@@ -458,7 +458,7 @@ namespace ModernPC12
                             else if (r.Status == "PARTIAL") hasPartial = true;
                         }
                         string finalStatus = hasFail ? "CAMPANHA COM FALHAS" : (hasPartial ? "CAMPANHA PARCIAL" : "CAMPANHA APROVADA");
-                        Color finalColor = hasFail ? Color.FromArgb(214, 87, 87) : (hasPartial ? Color.FromArgb(224, 170, 64) : Color.FromArgb(74, 190, 119));
+                        Color finalColor = hasFail ? OpenLadderPalette.Danger : (hasPartial ? OpenLadderPalette.Warning : OpenLadderPalette.Ok);
                         SetStatus(finalStatus, finalColor);
                         MessageBox.Show(this,
                             "Campanha concluída.\r\n\r\nOs arquivos foram salvos em:\r\n" + sessionDir

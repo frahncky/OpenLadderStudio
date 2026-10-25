@@ -50,15 +50,15 @@ namespace ModernPC12
         private string sessionDirectory;
         private string sessionLogPath;
 
-        private readonly Color Shell = Color.FromArgb(18, 24, 31);
-        private readonly Color Chrome = Color.FromArgb(27, 36, 46);
-        private readonly Color Border = Color.FromArgb(55, 68, 82);
-        private readonly Color Accent = Color.FromArgb(38, 166, 154);
-        private readonly Color Fore = Color.FromArgb(226, 230, 234);
-        private readonly Color Muted = Color.FromArgb(158, 169, 180);
-        private readonly Color Warning = Color.FromArgb(224, 170, 64);
-        private readonly Color Danger = Color.FromArgb(214, 87, 87);
-        private readonly Color Success = Color.FromArgb(74, 190, 119);
+        private readonly Color Shell = OpenLadderPalette.Shell;
+        private readonly Color Chrome = OpenLadderPalette.Chrome;
+        private readonly Color Border = OpenLadderPalette.Border;
+        private readonly Color Accent = OpenLadderPalette.Accent;
+        private readonly Color Fore = OpenLadderPalette.Fore;
+        private readonly Color Muted = OpenLadderPalette.Muted;
+        private readonly Color Warning = OpenLadderPalette.Warning;
+        private readonly Color Danger = OpenLadderPalette.Danger;
+        private readonly Color Success = OpenLadderPalette.Ok;
 
         public TP02PhysicalValidationForm(PlcDeviceProfile profile, LadderEditorForm ladderForm)
         {
@@ -201,7 +201,7 @@ namespace ModernPC12
             logBox.WordWrap = false;
             logBox.ScrollBars = ScrollBars.Both;
             logBox.Font = new Font("Consolas", 9.0f);
-            logBox.BackColor = Color.FromArgb(16, 22, 29);
+            logBox.BackColor = OpenLadderPalette.Canvas;
             logBox.ForeColor = Fore;
             logBox.BorderStyle = BorderStyle.FixedSingle;
             logPanel.Controls.Add(logBox);
@@ -234,7 +234,7 @@ namespace ModernPC12
             if (primary)
             {
                 button.BackColor = Accent;
-                button.ForeColor = Color.White;
+                button.ForeColor = OpenLadderPalette.OnAccent;
                 button.FlatAppearance.BorderSize = 0;
             }
             else

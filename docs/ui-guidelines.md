@@ -21,30 +21,72 @@ O produto tem dois temas, escolhidos em **Exibir → Tema**. A preferência fica
 abertura — muita tela fixa a cor no construtor, então repintar a quente deixaria
 a janela pela metade. O aplicativo oferece reiniciar na hora.
 
-| Papel | Escuro (padrão) | Claro |
-|---|---|---|
-| fundo da janela | `#181E28` | `#E9EFF6` |
-| painel/chrome | `#202834` | `#F4F7FB` |
-| superfície elevada | `#283241` | `#FAFCFF` |
-| borda | `#3F4E62` | `#C2CFDF` |
-| texto principal | `#E9EFF7` | `#1E2C3E` |
-| texto secundário | `#B1BED0` | `#4D6077` |
-| destaque | `#6EAEFF` | `#1C69D2` |
+| Papel | Token | Escuro (padrão) | Claro |
+|---|---|---|---|
+| fundo da janela | `Shell` | `#0F141D` | `#E8EDF4` |
+| área de trabalho / navegação | `Workspace`, `NavBg` | `#131924` / `#111721` | `#EEF2F9` / `#F0F4F9` |
+| painel | `Chrome` | `#19202D` | `#F6F8FC` |
+| campo de entrada | `ChromeLight` | `#212A3A` | `#FCFDFF` |
+| elevado (menu, dica, popup) | `Raised` | `#293448` | `#FEFEFF` |
+| canvas Ladder | `Canvas` | `#141B27` | `#FAFBFE` |
+| linha selecionada / hover no canvas | `CanvasRow` / `CanvasHover` | `#1A2434` / `#1F2A3D` | `#EEF3FB` / `#E7EEF9` |
+| borda de região / de controle | `Border` / `BorderStrong` | `#303D52` / `#4C5E78` | `#D0D9E5` / `#A3B2C7` |
+| texto principal / secundário / discreto | `Fore` / `Muted` / `Faint` | `#E9EFF7` / `#B1BED0` / `#9DADC1` | `#1E2C3E` / `#4D6077` / `#596B81` |
+| texto desabilitado | `Disabled` | `#708196` | `#8B99AB` |
+| destaque / sobre o destaque | `Accent` / `OnAccent` | `#63B1FF` / `#101E30` | `#1D54C8` / `#FFFFFF` |
+| anel de foco | `Focus` | `#93CDFF` | `#0F46BE` |
+| estados | `Ok`, `Warning`, `Danger`, `Info` | tons claros | tons fechados |
+| fundo tingido de estado | `OkBg`, `WarningBg`, `DangerBg`, `InfoBg` | escuros | claros |
+| condutor energizado | `Energized` / `EnergizedBg` | `#39E080` / `#16422E` | `#007C38` / `#DCF3E5` |
+
+A hierarquia de superfícies, do fundo para a frente, é
+`Shell < Workspace/NavBg < Chrome < ChromeLight < Raised`. O `Canvas` do editor é uma
+superfície só: nada de células que alternam um branco com outro. A linha selecionada é
+distinguida por `CanvasRow`, um degrau sutil, e o cursor por `CanvasHover`. O símbolo apaga o
+fio por trás dele com a cor exata do fundo (`ElementBackground`), então qualquer mudança de
+fundo no desenho precisa mudar nos dois lugares.
 
 Nenhum dos dois usa preto puro ou branco puro em superfície grande: são as duas
 extremidades que mais cansam a vista em jornada longa.
 
+**Contraste (WCAG AA).** `Fore`, `Muted` e `Faint` passam de 4,5:1 sobre `Shell`, `Chrome`,
+`ChromeLight`, `Canvas`, `CanvasRow` e `Raised` nos dois temas; `Accent`, `Ok`, `Warning`,
+`Danger`, `Info` e `Energized` também, como texto, sobre as superfícies do próprio tema, e cada
+cor de estado passa de 4,5:1 sobre o seu `…Bg`. `Disabled` é propositalmente mais fraco.
+`Energized` é verde saturado e `Wire` é cinza-azulado: a diferença é de matiz, não de
+luminosidade, por isso o fio energizado também fica mais grosso e o bloco ganha preenchimento
+translúcido (o estado não depende só da cor). Ao acrescentar token, defina os dois valores e
+mantenha a regra de que dois tokens com a mesma cor num tema têm a mesma cor no outro: a troca
+de tema a quente (`Restyle`) mapeia por ARGB.
+
 A navegação usa uma base mais profunda, os painéis ficam no nível intermediário
 e os campos de entrada usam a superfície elevada. Seleção e item ativo recebem
 um preenchimento azul discreto; bordas separam as regiões sem competir com o Ladder.
-Texto secundário e rótulos discretos mantêm contraste de pelo menos 4,5:1 sobre
-os painéis e superfícies elevadas dos dois temas.
 
 Botões preenchidos com `Accent` ou `AccentDark` devem usar `OnAccent`: texto
 azul profundo no tema escuro e branco no tema claro. Não fixar branco sobre o
 azul luminoso do tema escuro. Grades sem estilo próprio recebem linhas alternadas,
 separadores horizontais e cabeçalhos na mesma paleta.
 
+### Medidas
+
+`OpenLadderMetrics` (em `AppBranding.cs`) fixa a escala, em pixels a 96 dpi: espaçamento
+`Space1…Space8` (4, 8, 12, 16, 24, 32), raio `RadiusSmall/Medium/Large` (4, 8, 12), `Hairline`
+(1) e `FocusWidth` (2). Quem desenha à mão converte com `OpenLadderMetrics.Px(controle, valor)` e
+arredonda cantos com `RoundedRect`. Controle posicionado pelo layout já é escalado por `AutoScaleMode`.
+
+### Barra de título e controles de sistema
+
+`WindowChrome` (em `AppBranding.cs`) liga o modo escuro da barra de título nativa
+(`DWMWA_USE_IMMERSIVE_DARK_MODE`, atributo 20 com recuo para o 19) e, no Windows 11, a cor da
+barra, do texto e da borda a partir da paleta. Vale para toda janela aberta, é reaplicado quando
+a alça é recriada e acompanha **Exibir → Tema**. Há um instante entre a janela aparecer e o
+primeiro `Idle` em que a barra pode surgir clara.
+
+`AppBranding.Install()` também define `ToolStripManager.Renderer` (menus suspensos e de contexto
+na paleta, sobre `Raised`) e o `Skin` converte o que nasce de cor de sistema: janela, botão
+padrão (vira plano), aba (cabeçalho desenhado no tema escuro) e lista suspensa fixa (desenhada
+no tema escuro). A moldura do corpo da aba e a seta da lista continuam sendo do sistema.
 ## Cor semântica
 
 - azul: arquivos, controlador e informação;
@@ -169,7 +211,7 @@ Geometria em unidades lógicas do canvas; **texto em pixels** (`GraphicsUnit.Pix
 pontos, para o rótulo crescer com o desenho em qualquer zoom e escala de DPI.
 
 Energização: durante a simulação, o shell repassa o resultado de cada varredura ao canvas
-(`SetRungPower`). Linha energizada recebe fio mais grosso e símbolos em `Ok`, com preenchimento
+(`SetRungPower`). Linha energizada recebe fio mais grosso e símbolos em `Energized`, com preenchimento
 translúcido (`OpenLadderPalette.Tint`), de modo que o estado não dependa só da cor. Como o motor
 informa o resultado por linha, e não por elemento, colunas com ramo paralelo ficam neutras em vez
 de afirmar uma condução que não se conhece. Só vale quando o simulador roda o projeto do editor,
