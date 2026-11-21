@@ -22,7 +22,7 @@ foreach ($name in @('Shell','Chrome','ChromeLight','Border','Accent','AccentDark
         'public static readonly Color ' + $name + ' = OpenLadderPalette.' + $name + ';')
 }
 # Make the primary edit action unmistakable and keep destructive actions in red.
-$ui = $ui.Replace('        public bool Active;', '        public bool Active;' + [Environment]::NewLine + '        public bool Primary;')
+$ui = $ui.Replace('        public bool Active;', '        public bool Active;' + [Environment]::NewLine + '        public bool Primary = false;')
 $ui = $ui.Replace('Active ? StudioTheme.NavActive : hover ? StudioTheme.NavHover : StudioTheme.NavBg;', 'Primary ? OpenLadderPalette.Accent : Active ? StudioTheme.NavActive : hover ? StudioTheme.NavHover : StudioTheme.NavBg;')
 $ui = $ui.Replace('if (Active && on)', 'if ((Active || Primary) && on)')
 $ui = $ui.Replace('Active || hover ? StudioTheme.Fore : StudioTheme.Muted;', 'Active || hover || Primary ? StudioTheme.Fore : StudioTheme.Muted;')

@@ -335,7 +335,7 @@ $fieldOld = '        private readonly Dictionary<string, NavButton> navButtons =
 $fieldNew = @'
         private readonly Dictionary<string, NavButton> navButtons = new Dictionary<string, NavButton>();
         private readonly Dictionary<string, NavButton> ladderToolButtons = new Dictionary<string, NavButton>();
-        private Label selectionValue;
+        private Label selectionValue = null;
         private Label toolValue;
 '@
 $shell = Replace-Required $shell $fieldOld $fieldNew.TrimEnd() 'campos sidebar'

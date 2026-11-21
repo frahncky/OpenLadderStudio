@@ -29,7 +29,7 @@ namespace ModernPC12
         public bool ReadProgram;
         public bool UploadProgram;
         public bool DownloadProgram;
-        public bool OnlineEdit;
+        public bool OnlineEdit = false;
 
         public string Summary()
         {
@@ -113,13 +113,13 @@ namespace ModernPC12
 
     internal sealed class UniversalLadderElement
     {
-        public UniversalElementKind Kind;
+        public UniversalElementKind Kind = UniversalElementKind.ContactNO;
         public string Address;
         public string Parameter;
         public string FunctionCode;
 
         /// <summary>Coluna de origem no rung. Preserva a posição das condições e dos ramos paralelos.</summary>
-        public int Column;
+        public int Column = 0;
 
         public UniversalLadderElement()
         {

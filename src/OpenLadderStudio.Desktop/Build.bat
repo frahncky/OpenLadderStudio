@@ -88,6 +88,11 @@ if errorlevel 1 goto :erro
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareLadderCommentsV95.ps1"
 if errorlevel 1 goto :erro
 
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\..\scripts\NormalizeCSharpUsings.ps1" -Path "UniversalStudioShell.build.cs"
+if errorlevel 1 goto :erro
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\..\scripts\NormalizeCSharpUsings.ps1" -Path "StudioUi.build.cs"
+if errorlevel 1 goto :erro
+
 "%CSC%" /nologo /target:winexe /optimize+ /win32icon:"OpenLadderStudio.ico" /win32manifest:"OpenLadderStudio.manifest" /out:"OpenLadderUpdater.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "PC12Updater.build.cs"
 if errorlevel 1 goto :erro
 

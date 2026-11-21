@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OpenLadderStudio.Modernization.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OpenLadderStudio.Application\OpenLadderStudio.Application.csproj" />
+    <ProjectReference Include="..\..\src\OpenLadderStudio.Drivers.Modbus\OpenLadderStudio.Drivers.Modbus.csproj" />
+    <ProjectReference Include="..\..\src\OpenLadderStudio.Drivers.TP02\OpenLadderStudio.Drivers.TP02.csproj" />
+  </ItemGroup>
+</Project>
