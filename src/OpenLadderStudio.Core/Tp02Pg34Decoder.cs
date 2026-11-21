@@ -151,7 +151,7 @@ namespace OpenLadderStudio.Core
             return CalculateBraw(high, low);
         }
 
-        private static Tp02Pg34Step DecodeStep(int index, byte high, byte low, byte braw)
+        internal static Tp02Pg34Step DecodeStep(int index, byte high, byte low, byte braw)
         {
             Tp02Pg34Step step = new Tp02Pg34Step();
             step.Index = index;

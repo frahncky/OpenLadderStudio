@@ -140,7 +140,7 @@ public sealed partial class MainForm : Form
         help.DropDownItems.Add(new ToolStripMenuItem("&Elementos...", null, (_, _) => ShowElementHelp()));
         help.DropDownItems.Add(new ToolStripMenuItem("&Drivers disponíveis...", null, (_, _) => ShowDrivers()));
 
-        menu.Items.AddRange(new ToolStripItem[] { file, edit, view, program, help });
+        menu.Items.AddRange(new ToolStripItem[] { file, edit, view, program, BuildPlcMenu(), help });
         return menu;
     }
 

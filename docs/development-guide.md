@@ -32,6 +32,15 @@ nulabilidade habilitada.
 O `Build.bat` legado continua sendo o build oficial do produto distribuído até
 que editor, simulador, drivers e instalador tenham sido migrados e validados.
 
+O PLC físico entra na trilha moderna em etapas. A primeira é só leitura: o menu
+PLC lê o programa do TP02 com `Tp02PgProgramReader` (Core), na mesma sequência
+e nos mesmos tempos do leitor legado validado em bancada, pelo enlace
+`Tp02SerialLink` do driver. Um filtro recusa, antes da transmissão, qualquer
+quadro que não seja HELLO, F0, 38 ou página 34. O programa lido vira IL e passa
+pela mesma importação de IL verificada do menu Arquivo. O autoteste moderno
+confere a leitura contra um TP02 falso. Transferir e RUN só entram depois de
+validados no PLC real.
+
 ## Limites atuais
 
 O produto ainda é compilado diretamente pelo `csc.exe` do .NET Framework a partir de `src/OpenLadderStudio.Desktop/Build.bat`. Esse script lista cada arquivo de fonte de forma explícita e produz vários executáveis Windows Forms.
