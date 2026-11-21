@@ -7,7 +7,7 @@ namespace OpenLadderStudio.UI;
 /// Primeiro fluxo funcional da trilha moderna: criar, abrir e salvar .pladder pela camada
 /// Application e editar as oito colunas de cada linha (via série e via paralela).
 /// </summary>
-public sealed class MainForm : Form
+public sealed partial class MainForm : Form
 {
     private const int CommentColumn = LadderRungModel.ColumnCount + 1;
 
@@ -47,12 +47,15 @@ public sealed class MainForm : Form
 
         BuildGrid();
         BuildReport();
+        BuildSimulationPanel();
         var menu = BuildMenu();
         var statusStrip = new StatusStrip();
         statusStrip.Items.Add(status);
 
         // Ordem de encaixe: barra de status, menu, relatório e divisor embaixo; a grade ocupa o resto.
         Controls.Add(grid);
+        Controls.Add(simulationSplitter);
+        Controls.Add(simulationList);
         Controls.Add(reportSplitter);
         Controls.Add(report);
         Controls.Add(menu);
@@ -60,7 +63,7 @@ public sealed class MainForm : Form
         MainMenuStrip = menu;
 
         LoadIntoGrid();
-        FormClosing += (_, e) => { if (!ConfirmDiscard()) e.Cancel = true; };
+        FormClosing += (_, e) => { if (!ConfirmDiscard()) e.Cancel = true; else StopSimulation(); };
         Load += (_, _) => FitToWorkingArea();
         DpiChanged += (_, _) => BeginInvoke(FitToWorkingArea);
         ResumeLayout(false);
@@ -97,8 +100,8 @@ public sealed class MainForm : Form
         edit.DropDownItems.Add(new ToolStripSeparator());
         edit.DropDownOpening += (_, _) =>
         {
-            undoItem.Enabled = history.CanUndo || grid.IsCurrentCellInEditMode;
-            redoItem.Enabled = history.CanRedo;
+            undoItem.Enabled = !simulating && (history.CanUndo || grid.IsCurrentCellInEditMode);
+            redoItem.Enabled = !simulating && history.CanRedo;
         };
         edit.DropDownItems.Add(new ToolStripMenuItem("&Inserir linha abaixo", null, (_, _) => InsertRung(), Keys.Control | Keys.Enter));
         edit.DropDownItems.Add(new ToolStripMenuItem("&Excluir linha", null, (_, _) => DeleteRung(), Keys.Control | Keys.Delete));
@@ -106,6 +109,9 @@ public sealed class MainForm : Form
         var program = new ToolStripMenuItem("&Programa");
         program.DropDownItems.Add(new ToolStripMenuItem("&Verificar para TP02", null, (_, _) => VerifyProgram(), Keys.F7));
         program.DropDownItems.Add(new ToolStripMenuItem("&Ocultar resultado", null, (_, _) => ShowReport(false), Keys.Shift | Keys.F7));
+        program.DropDownItems.Add(new ToolStripSeparator());
+        program.DropDownItems.Add(simulateItem);
+        program.DropDownItems.Add(new ToolStripMenuItem("&Reiniciar simulação", null, (_, _) => ResetSimulation(), Keys.Control | Keys.F5));
 
         var help = new ToolStripMenuItem("A&juda");
         help.DropDownItems.Add(new ToolStripMenuItem("&Elementos...", null, (_, _) => ShowElementHelp()));
@@ -125,6 +131,14 @@ public sealed class MainForm : Form
         report.ScrollBars = ScrollBars.Both;
         report.Font = new Font(FontFamily.GenericMonospace, 9F);
         report.Visible = false;
+    }
+
+    // O relatório é de outro projeto depois de Novo ou Abrir: não pode continuar na tela.
+    private void ClearVerification()
+    {
+        report.Clear();
+        ShowReport(false);
+        verificationStale = false;
     }
 
     private void ShowReport(bool visible)
@@ -186,7 +200,7 @@ public sealed class MainForm : Form
         grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         grid.EditMode = DataGridViewEditMode.EditOnKeystrokeOrF2;
 
-        grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Linha", ReadOnly = true, FillWeight = 60, SortMode = DataGridViewColumnSortMode.NotSortable });
+        grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Linha", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells, SortMode = DataGridViewColumnSortMode.NotSortable });
         for (int column = 1; column <= LadderRungModel.ColumnCount; column++)
             grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "C" + column, FillWeight = 80, SortMode = DataGridViewColumnSortMode.NotSortable });
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Comentário", FillWeight = 160, SortMode = DataGridViewColumnSortMode.NotSortable });
@@ -292,7 +306,7 @@ public sealed class MainForm : Form
 
     private void OnGridKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode != Keys.Delete || e.Modifiers != Keys.None || grid.CurrentCell is null || grid.IsCurrentCellInEditMode) return;
+        if (e.KeyCode != Keys.Delete || e.Modifiers != Keys.None || grid.CurrentCell is null || grid.IsCurrentCellInEditMode || simulating) return;
         DataGridViewCell cell = grid.CurrentCell;
         if (cell.ReadOnly || cell.ColumnIndex == 0) return;
         cell.Value = string.Empty;
@@ -301,6 +315,7 @@ public sealed class MainForm : Form
 
     private void InsertRung()
     {
+        if (EditingBlocked()) return;
         int rung = grid.CurrentCell is null ? project.Rungs.Count - 1 : RungOf(grid.CurrentCell.RowIndex);
         history.Record(project);
         project.Rungs.Insert(rung + 1, new LadderRungModel());
@@ -311,6 +326,7 @@ public sealed class MainForm : Form
 
     private void DeleteRung()
     {
+        if (EditingBlocked()) return;
         if (grid.CurrentCell is null) return;
         int rung = RungOf(grid.CurrentCell.RowIndex);
         history.Record(project);
@@ -323,6 +339,7 @@ public sealed class MainForm : Form
 
     private void UndoEdit()
     {
+        if (EditingBlocked()) return;
         // Com a célula em edição, Ctrl+Z descarta o que foi digitado nela, como numa caixa de texto.
         if (grid.IsCurrentCellInEditMode)
         {
@@ -337,6 +354,7 @@ public sealed class MainForm : Form
 
     private void RedoEdit()
     {
+        if (EditingBlocked()) return;
         if (grid.IsCurrentCellInEditMode && !grid.EndEdit()) return;
         if (!history.CanRedo) { status.Text = "Nada para refazer."; return; }
         RestoreFromHistory(history.Redo(project), "Alteração refeita.");
@@ -363,18 +381,21 @@ public sealed class MainForm : Form
     private void NewProject()
     {
         if (!ConfirmDiscard()) return;
+        StopSimulation();
         project = projects.CreateNew();
         currentPath = null;
         dirty = false;
         history.Clear();
         savedState = projects.Serialize(project);
         LoadIntoGrid();
+        ClearVerification();
         status.Text = "Projeto novo.";
     }
 
     private void OpenProject()
     {
         if (!ConfirmDiscard()) return;
+        StopSimulation();
         using var dialog = new OpenFileDialog
         {
             Filter = "Projeto Ladder moderno (*.pladder)|*.pladder|Todos os arquivos (*.*)|*.*"
@@ -395,6 +416,7 @@ public sealed class MainForm : Form
         history.Clear();
         savedState = projects.Serialize(project);
         LoadIntoGrid();
+        ClearVerification();
         status.Text = "Aberto: " + currentPath;
     }
 
@@ -470,7 +492,8 @@ public sealed class MainForm : Form
             "TMR V0001 1000 [modo]  temporizador\nCNT V0001 10  contador\nSET Y0001 / RST C0001\n" +
             "EUP / EDN  bordas\nFUN F-13w D0001,10,D0002  função\nEND  fim do programa\n\n" +
             "Endereços no formato do TP02, com quatro dígitos (X0001, não X0).\n" +
-            "Célula vazia ou Delete apaga o elemento. F7 verifica o programa para o TP02.",
+            "Célula vazia ou Delete apaga o elemento. F7 verifica o programa para o TP02.\n" +
+            "F5 simula no PLC virtual: duplo clique numa entrada X a aciona.",
             "Elementos Ladder", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 

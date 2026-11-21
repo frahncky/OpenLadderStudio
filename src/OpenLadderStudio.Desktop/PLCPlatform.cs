@@ -96,56 +96,6 @@ namespace ModernPC12
         }
     }
 
-    internal enum UniversalElementKind
-    {
-        ContactNO,
-        ContactNC,
-        Coil,
-        Set,
-        Reset,
-        Timer,
-        Counter,
-        RisingEdge,
-        FallingEdge,
-        Function,
-        End
-    }
-
-    internal sealed class UniversalLadderElement
-    {
-        public UniversalElementKind Kind = UniversalElementKind.ContactNO;
-        public string Address;
-        public string Parameter;
-        public string FunctionCode;
-
-        /// <summary>Coluna de origem no rung. Preserva a posição das condições e dos ramos paralelos.</summary>
-        public int Column = 0;
-
-        public UniversalLadderElement()
-        {
-            Address = string.Empty;
-            Parameter = string.Empty;
-            FunctionCode = string.Empty;
-        }
-    }
-
-    internal sealed class UniversalLadderRung
-    {
-        public readonly List<UniversalLadderElement> Series = new List<UniversalLadderElement>();
-        public readonly List<UniversalLadderElement> Parallel = new List<UniversalLadderElement>();
-    }
-
-    internal sealed class UniversalLadderProgram
-    {
-        public string Name;
-        public readonly List<UniversalLadderRung> Rungs = new List<UniversalLadderRung>();
-
-        public UniversalLadderProgram()
-        {
-            Name = "Sem nome";
-        }
-    }
-
     internal abstract class PlcDriverBase : IPlcDriver
     {
         private readonly string id;
