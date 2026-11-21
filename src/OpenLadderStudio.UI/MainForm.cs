@@ -14,6 +14,7 @@ public sealed class MainForm : Form
     private readonly PlcDriverCatalog catalog;
     private readonly LadderProjectService projects = new();
     private readonly Tp02ProgramVerifier verifier = new();
+    private readonly LadderEditHistory history;
     private readonly DataGridView grid = new();
     private readonly TextBox report = new();
     private readonly Splitter reportSplitter = new() { Dock = DockStyle.Bottom, Visible = false };
@@ -22,6 +23,8 @@ public sealed class MainForm : Form
     private LadderProjectModel project;
     private string? currentPath;
     private bool dirty;
+    // Texto .pladder do último estado salvo ou aberto: desfazer até ele limpa o "*" do título.
+    private string savedState;
     private bool loading;
     private bool verificationStale;
 
@@ -29,6 +32,8 @@ public sealed class MainForm : Form
     {
         this.catalog = catalog;
         project = projects.CreateNew();
+        history = new LadderEditHistory(projects);
+        savedState = projects.Serialize(project);
 
         // Medidas abaixo estão em pixels a 96 DPI; AutoScaleDimensions faz o WinForms
         // escalá-las para o DPI real (125%, 175%...) quando o layout é retomado.
@@ -85,6 +90,16 @@ public sealed class MainForm : Form
         file.DropDownItems.Add(new ToolStripMenuItem("Sai&r", null, (_, _) => Close()));
 
         var edit = new ToolStripMenuItem("&Editar");
+        var undoItem = new ToolStripMenuItem("&Desfazer", null, (_, _) => UndoEdit(), Keys.Control | Keys.Z);
+        var redoItem = new ToolStripMenuItem("&Refazer", null, (_, _) => RedoEdit(), Keys.Control | Keys.Y);
+        edit.DropDownItems.Add(undoItem);
+        edit.DropDownItems.Add(redoItem);
+        edit.DropDownItems.Add(new ToolStripSeparator());
+        edit.DropDownOpening += (_, _) =>
+        {
+            undoItem.Enabled = history.CanUndo || grid.IsCurrentCellInEditMode;
+            redoItem.Enabled = history.CanRedo;
+        };
         edit.DropDownItems.Add(new ToolStripMenuItem("&Inserir linha abaixo", null, (_, _) => InsertRung(), Keys.Control | Keys.Enter));
         edit.DropDownItems.Add(new ToolStripMenuItem("&Excluir linha", null, (_, _) => DeleteRung(), Keys.Control | Keys.Delete));
 
@@ -251,13 +266,16 @@ public sealed class MainForm : Form
             if (e.ColumnIndex == CommentColumn)
             {
                 string comment = LadderProjectService.NormalizeComment(Convert.ToString(gridCell.Value));
-                project.Rungs[RungOf(e.RowIndex)].Comment = comment;
+                LadderRungModel rung = project.Rungs[RungOf(e.RowIndex)];
+                if (rung.Comment != comment) history.Record(project);
+                rung.Comment = comment;
                 gridCell.Value = comment;
             }
             else if (e.ColumnIndex >= 1)
             {
                 LadderCell parsed = LadderCellText.Parse(Convert.ToString(gridCell.Value));
                 LadderCell target = CellAt(e.RowIndex, e.ColumnIndex);
+                if (LadderCellText.Format(parsed) != LadderCellText.Format(target)) history.Record(project);
                 target.Kind = parsed.Kind;
                 target.Address = parsed.Address;
                 target.Parameter = parsed.Parameter;
@@ -284,6 +302,7 @@ public sealed class MainForm : Form
     private void InsertRung()
     {
         int rung = grid.CurrentCell is null ? project.Rungs.Count - 1 : RungOf(grid.CurrentCell.RowIndex);
+        history.Record(project);
         project.Rungs.Insert(rung + 1, new LadderRungModel());
         LoadIntoGrid();
         SelectRung(rung + 1);
@@ -294,11 +313,45 @@ public sealed class MainForm : Form
     {
         if (grid.CurrentCell is null) return;
         int rung = RungOf(grid.CurrentCell.RowIndex);
+        history.Record(project);
         project.Rungs.RemoveAt(rung);
         if (project.Rungs.Count == 0) project.Rungs.Add(new LadderRungModel());
         LoadIntoGrid();
         SelectRung(Math.Min(rung, project.Rungs.Count - 1));
         MarkDirty();
+    }
+
+    private void UndoEdit()
+    {
+        // Com a célula em edição, Ctrl+Z descarta o que foi digitado nela, como numa caixa de texto.
+        if (grid.IsCurrentCellInEditMode)
+        {
+            grid.CancelEdit();
+            grid.EndEdit();
+            status.Text = "Edição da célula descartada.";
+            return;
+        }
+        if (!history.CanUndo) { status.Text = "Nada para desfazer."; return; }
+        RestoreFromHistory(history.Undo(project), "Última alteração desfeita.");
+    }
+
+    private void RedoEdit()
+    {
+        if (grid.IsCurrentCellInEditMode && !grid.EndEdit()) return;
+        if (!history.CanRedo) { status.Text = "Nada para refazer."; return; }
+        RestoreFromHistory(history.Redo(project), "Alteração refeita.");
+    }
+
+    private void RestoreFromHistory(LadderProjectModel restored, string message)
+    {
+        int row = grid.CurrentCell?.RowIndex ?? 0;
+        int column = grid.CurrentCell?.ColumnIndex ?? 1;
+        project = restored;
+        LoadIntoGrid();
+        row = Math.Min(row, grid.Rows.Count - 1);
+        if (row >= 0) grid.CurrentCell = grid.Rows[row].Cells[Math.Max(column, 1)];
+        MarkDirty();
+        status.Text = message;
     }
 
     private void SelectRung(int rung)
@@ -313,6 +366,8 @@ public sealed class MainForm : Form
         project = projects.CreateNew();
         currentPath = null;
         dirty = false;
+        history.Clear();
+        savedState = projects.Serialize(project);
         LoadIntoGrid();
         status.Text = "Projeto novo.";
     }
@@ -337,6 +392,8 @@ public sealed class MainForm : Form
         }
         currentPath = dialog.FileName;
         dirty = false;
+        history.Clear();
+        savedState = projects.Serialize(project);
         LoadIntoGrid();
         status.Text = "Aberto: " + currentPath;
     }
@@ -370,6 +427,7 @@ public sealed class MainForm : Form
         }
         currentPath = path;
         dirty = false;
+        savedState = projects.Serialize(project);
         UpdateTitle();
         status.Text = "Salvo: " + currentPath;
         return true;
@@ -394,8 +452,7 @@ public sealed class MainForm : Form
             verificationStale = true;
             status.Text = "Programa alterado desde a última verificação. F7 verifica de novo.";
         }
-        if (dirty) return;
-        dirty = true;
+        dirty = projects.Serialize(project) != savedState;
         UpdateTitle();
     }
 

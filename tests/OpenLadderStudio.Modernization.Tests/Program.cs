@@ -113,6 +113,49 @@ Require(!rejected.Success, "Linha sem saída na coluna 8 deve ser recusada.");
 Require(rejected.Errors.Any(error => error.StartsWith("Rung 2")), "Erro deve apontar a linha 2: " + string.Join(" | ", rejected.Errors));
 Require(rejected.Report.Contains("ERROS"), "Relatório deve listar os erros.");
 
+// --- Desfazer/refazer pela camada Application (estados em texto .pladder, como no legado) ---
+var history = new LadderEditHistory(projects);
+var edited = projects.CreateNew();
+string original = projects.Serialize(edited);
+Require(!history.CanUndo && !history.CanRedo, "Histórico novo deve estar vazio.");
+
+history.Record(edited);
+edited.Rungs[0].Series[0] = LadderCellText.Parse("NO X0001");
+string afterFirst = projects.Serialize(edited);
+history.Record(edited);
+edited.Rungs[0].Comment = "Partida";
+string afterSecond = projects.Serialize(edited);
+
+edited = history.Undo(edited);
+Require(projects.Serialize(edited) == afterFirst, "Desfazer deve voltar ao estado anterior.");
+edited = history.Undo(edited);
+Require(projects.Serialize(edited) == original, "Desfazer duas vezes deve voltar ao projeto novo.");
+Require(!history.CanUndo && history.CanRedo, "Após desfazer tudo, só refazer fica disponível.");
+edited = history.Redo(edited);
+edited = history.Redo(edited);
+Require(projects.Serialize(edited) == afterSecond, "Refazer deve reaplicar as duas alterações.");
+
+history.Undo(edited);
+history.Record(edited);
+Require(!history.CanRedo, "Alteração nova deve descartar o refazer.");
+
+history.Clear();
+history.Record(edited);
+history.Record(edited);
+Require(history.UndoCount == 1, "Estado repetido não deve ocupar o histórico.");
+
+var bounded = new LadderEditHistory(projects);
+var sequence = projects.CreateNew();
+for (int i = 0; i < LadderEditHistory.DefaultCapacity + 10; i++)
+{
+    bounded.Record(sequence);
+    sequence.Rungs[0].Comment = "Estado " + i;
+}
+Require(bounded.UndoCount == LadderEditHistory.DefaultCapacity, "Histórico deve guardar no máximo 30 estados, como o legado.");
+while (bounded.CanUndo) sequence = bounded.Undo(sequence);
+Require(sequence.Rungs[0].Comment == "Estado 9", "Estado mais antigo mantido deve ser o 11º: " + sequence.Rungs[0].Comment);
+RequireThrows<InvalidOperationException>(() => bounded.Undo(sequence), "Desfazer sem histórico deve ser recusado.");
+
 Console.WriteLine("ModernizationSelfTest: OK");
 
 static void RequireThrows<T>(Action action, string message) where T : Exception
