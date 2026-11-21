@@ -47,6 +47,7 @@ public sealed partial class MainForm : Form
         KeyPreview = true;
 
         BuildGrid();
+        BuildDiagram();
         BuildReport();
         BuildSimulationPanel();
         var menu = BuildMenu();
@@ -55,12 +56,14 @@ public sealed partial class MainForm : Form
 
         // Ordem de encaixe: barra de status, menu, relatório e divisor embaixo; a grade ocupa o resto.
         Controls.Add(grid);
+        Controls.Add(diagram);
         Controls.Add(simulationSplitter);
         Controls.Add(simulationPanel);
         Controls.Add(synopticSplitter);
         Controls.Add(synoptic);
         Controls.Add(reportSplitter);
         Controls.Add(report);
+        Controls.Add(toolbox);
         Controls.Add(menu);
         Controls.Add(statusStrip);
         MainMenuStrip = menu;
@@ -69,6 +72,7 @@ public sealed partial class MainForm : Form
         FormClosing += (_, e) => { if (!ConfirmDiscard()) e.Cancel = true; else StopSimulation(); };
         WindowFit.Attach(this);
         // Paleta única (tokens do núcleo, os mesmos do editor legado) e o tema salvo pelo usuário.
+        grid.Visible = false;
         ModernPalette.Apply(this);
         ModernPalette.Changed += OnThemeChanged;
         Disposed += (_, _) => ModernPalette.Changed -= OnThemeChanged;
@@ -81,6 +85,7 @@ public sealed partial class MainForm : Form
         ModernPalette.Apply(this);
         RepaintPoweredRungs();
         synoptic.RefreshScene();
+        diagram.Repaint();
         status.Text = ModernPalette.IsDark ? "Tema escuro." : "Tema claro.";
     }
 
@@ -128,6 +133,7 @@ public sealed partial class MainForm : Form
         var darkItem = new ToolStripMenuItem("Tema &escuro") { CheckOnClick = false };
         darkItem.Click += (_, _) => ModernPalette.Use(!ModernPalette.IsDark);
         view.DropDownOpening += (_, _) => darkItem.Checked = ModernPalette.IsDark;
+        AddDiagramMenuItems(view);
         view.DropDownItems.Add(darkItem);
 
         var help = new ToolStripMenuItem("A&juda");
@@ -273,6 +279,7 @@ public sealed partial class MainForm : Form
         {
             loading = false;
         }
+        RefreshDiagram();
         UpdateTitle();
     }
 
@@ -498,6 +505,7 @@ public sealed partial class MainForm : Form
             status.Text = "Programa alterado desde a última verificação. F7 verifica de novo.";
         }
         dirty = projects.Serialize(project) != savedState;
+        RefreshDiagram();
         UpdateTitle();
     }
 
@@ -516,7 +524,9 @@ public sealed partial class MainForm : Form
             "EUP / EDN  bordas\nFUN F-13w D0001,10,D0002  função\nEND  fim do programa\n\n" +
             "Endereços no formato do TP02, com quatro dígitos (X0001, não X0).\n" +
             "Célula vazia ou Delete apaga o elemento. F7 verifica o programa para o TP02.\n" +
-            "F5 simula no PLC virtual: duplo clique numa entrada X a aciona.",
+            "F5 simula no PLC virtual: duplo clique numa entrada X a aciona.\n\n" +
+            "No diagrama: escolha a ferramenta na barra e clique na célula; duplo clique edita,\n" +
+            "Delete apaga, arrastar move, Enter comenta a linha. Ctrl+1 diagrama, Ctrl+2 grade.",
             "Elementos Ladder", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
