@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [1.75] - 2026-11-21
+
+### Interface
+- elementos Ladder redesenhados (editor distribuído e trilha moderna): contato e bobina com fundo arredondado e traço mais firme; endereço em etiqueta; blocos TMR, CNT, FUN e END com cantos arredondados e cor por tipo no cabeçalho, tirada da paleta;
+- guia "Como montar uma linha" no espaço livre abaixo de "Nova linha"; some quando o programa ocupa o espaço e, na trilha moderna, durante a simulação;
+- o fundo do diagrama vai até o fim da área visível (sem degrau abaixo do programa).
+
+### Trilha moderna (não distribuída)
+- caixa de ferramentas com ícones desenhados como os próprios símbolos, refeitos ao trocar tema ou DPI;
+- estado da lista de endereços em pílula (ligado, forçado, desligado) e linhas mais altas;
+- barra de status em segmentos: modo, posição, linhas, zoom e alvo.
+
+### Limitações conhecidas
+- barra de rolagem horizontal na largura mínima (1280x800) mesmo quando o diagrama caberia;
+- o painel PROPRIEDADES encurta a lista INSTRUÇÕES; na janela mínima, Bobina/SET/RESET exigem rolagem;
+- a leitura do PLC real continua sem validação no equipamento físico.
+
 ## [1.74] - 2026-10-25
 
 ### Correção

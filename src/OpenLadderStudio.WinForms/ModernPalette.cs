@@ -128,6 +128,12 @@ public static class ModernPalette
                     // linha e seleção também são desenhadas com a paleta.
                     list.DrawItem += (_, e) => e.DrawDefault = false;
                     list.DrawSubItem += DrawListSubItem;
+                    // Linhas mais altas: a altura vem da lista de imagens pequenas.
+                    if (list.SmallImageList == null)
+                    {
+                        int row = (int)Math.Round(26 * list.DeviceDpi / 96.0);
+                        list.SmallImageList = new ImageList { ImageSize = new Size(1, Math.Min(256, row)) };
+                    }
                 }
                 list.Invalidate();
                 break;
@@ -200,10 +206,37 @@ public static class ModernPalette
         bool selected = e.Item != null && e.Item.Selected;
         using (var back = new SolidBrush(selected ? SelectionFill : list.BackColor)) e.Graphics.FillRectangle(back, e.Bounds);
         Rectangle text = Rectangle.Inflate(e.Bounds, -6, 0);
+        if (e.SubItem?.Tag is ModernStatus status && status != ModernStatus.None)
+        {
+            DrawStatusPill(e.Graphics, e.SubItem.Text, list.Font, text, status);
+            return;
+        }
         TextRenderer.DrawText(e.Graphics, e.SubItem?.Text, list.Font, text, Fore,
             TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
         if (selected && e.ColumnIndex == 0 && list.Focused)
             ControlPaint.DrawFocusRectangle(e.Graphics, e.Item.Bounds, Fore, SelectionFill);
+    }
+
+    internal static Color StatusTone(ModernStatus status) => status switch
+    {
+        ModernStatus.On => Energized,
+        ModernStatus.Forced => Warning,
+        _ => Muted
+    };
+
+    /// <summary>Estado em pílula: cor do estado sobre a mesma cor transparente, sem cor nova.</summary>
+    private static void DrawStatusPill(Graphics g, string text, Font font, Rectangle area, ModernStatus status)
+    {
+        Color tone = StatusTone(status);
+        Size measured = TextRenderer.MeasureText(g, text, font, area.Size, TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+        int height = Math.Min(area.Height - 4, measured.Height + 4);
+        var pill = new Rectangle(area.Left, area.Top + (area.Height - height) / 2, Math.Min(area.Width, measured.Width + 16), height);
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        using (var path = ModernPC12.OpenLadderMetrics.RoundedRect(pill, height / 2))
+        using (var fill = new SolidBrush(Color.FromArgb(status == ModernStatus.Off ? 28 : 56, tone)))
+            g.FillPath(fill, path);
+        TextRenderer.DrawText(g, text, font, pill, tone,
+            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
     }
 
     // Barras de rolagem e bordas de sistema no tema da paleta (Windows 10 1809 ou mais novo),
@@ -286,6 +319,15 @@ public static class ModernPalette
     }
 }
 
+/// <summary>Estado mostrado em pílula numa célula de lista (Tag do subitem).</summary>
+public enum ModernStatus
+{
+    None,
+    Off,
+    On,
+    Forced
+}
+
 /// <summary>Menus e barras desenhados com a paleta, nos dois temas.</summary>
 internal sealed class ModernToolStripRenderer : ToolStripProfessionalRenderer
 {
@@ -296,8 +338,39 @@ internal sealed class ModernToolStripRenderer : ToolStripProfessionalRenderer
 
     protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
     {
-        e.TextColor = e.Item.Enabled ? ModernPalette.Fore : ModernPalette.Disabled;
+        e.TextColor = !e.Item.Enabled ? ModernPalette.Disabled
+            : e.Item is ToolStripStatusLabel { Tag: ModernStatus status } ? ModernPalette.StatusTone(status)
+            : e.Item is ToolStripStatusLabel { Spring: false } ? ModernPalette.Muted
+            : ModernPalette.Fore;
         base.OnRenderItemText(e);
+    }
+
+    /// <summary>
+    /// Segmentos da barra de status: com estado, pílula na cor do estado (como nas listas);
+    /// sem estado, só a divisória fina da paleta (a borda 3D do sistema sai branca no escuro).
+    /// </summary>
+    protected override void OnRenderToolStripStatusLabelBackground(ToolStripItemRenderEventArgs e)
+    {
+        if (e.Item is not ToolStripStatusLabel label)
+        {
+            base.OnRenderToolStripStatusLabelBackground(e);
+            return;
+        }
+        if (label.Tag is ModernStatus status && status != ModernStatus.None)
+        {
+            Rectangle bounds = new(Point.Empty, e.Item.Size);
+            bounds.Inflate(-1, -1);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            Color tone = ModernPalette.StatusTone(status);
+            using var path = ModernPC12.OpenLadderMetrics.RoundedRect(bounds, bounds.Height / 2);
+            using var fill = new SolidBrush(Color.FromArgb(status == ModernStatus.Off ? 28 : 56, tone));
+            e.Graphics.FillPath(fill, path);
+        }
+        if ((label.BorderSides & ToolStripStatusLabelBorderSides.Left) != 0)
+        {
+            using var line = new Pen(ModernPalette.Border);
+            e.Graphics.DrawLine(line, 0, 4, 0, e.Item.Height - 5);
+        }
     }
 
     protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)

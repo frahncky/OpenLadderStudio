@@ -245,6 +245,7 @@ public sealed partial class MainForm
         simulationClock.Restart();
         simulationTimer.Start();
         RefreshSimulation();
+        RefreshStatusSegments(null, EventArgs.Empty);
     }
 
     private void StopSimulation()
@@ -254,6 +255,7 @@ public sealed partial class MainForm
         simulationClock.Reset();
         simulating = false;
         simulateItem.Checked = false;
+        RefreshStatusSegments(null, EventArgs.Empty);
         grid.ReadOnly = false;
         diagram.ReadOnly = false;
         grid.Columns[CommentColumn].Visible = true;
@@ -296,7 +298,13 @@ public sealed partial class MainForm
             string state = simulation.GetBit(point.Address) ? "LIGADO" : "desligado";
             if (point.Area == LadderSimulationArea.TimerCounter) state += " · " + simulation.GetValue(point.Address);
             if (simulation.IsForced(point.Address)) state += " · forçado";
-            if (item.SubItems[2].Text != state) item.SubItems[2].Text = state;
+            ModernStatus tone = simulation.IsForced(point.Address) ? ModernStatus.Forced
+                : simulation.GetBit(point.Address) ? ModernStatus.On : ModernStatus.Off;
+            if (item.SubItems[2].Text != state || !Equals(item.SubItems[2].Tag, tone))
+            {
+                item.SubItems[2].Tag = tone;
+                item.SubItems[2].Text = state;
+            }
         }
 
         bool powerChanged = false;
