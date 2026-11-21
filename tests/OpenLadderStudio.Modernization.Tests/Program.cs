@@ -363,6 +363,52 @@ Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(0, 3, 0), 5, 
 LadderEditCommands.Clear(editModel, new LadderCellPosition(0, 3, 0));
 Require(editModel.Rungs[0].Series[3].IsEmpty, "Apagar deve esvaziar a célula.");
 
+// --- Leitura do programa do TP02 pelo protocolo PG, contra um PLC falso ---
+var readSource = projects.CreateNew();
+for (int r = 0; r < 30; r++)
+{
+    if (r > 0) readSource.Rungs.Add(new LadderRungModel());
+    readSource.Rungs[r].Series[0] = LadderCellText.Parse("NO X" + (r % 8 + 1).ToString("0000"));
+    readSource.Rungs[r].Series[1] = LadderCellText.Parse("NC X" + ((r + 3) % 8 + 1).ToString("0000"));
+    readSource.Rungs[r].Series[7] = LadderCellText.Parse("COIL Y" + (r % 8 + 1).ToString("0000"));
+}
+var endRung = new LadderRungModel();
+endRung.Series[7] = LadderCellText.Parse("END");
+readSource.Rungs.Add(endRung);
+string sourceHex = offline.ExportHex(readSource);
+byte[][] plcWords = sourceHex.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Select(Convert.FromHexString).ToArray();
+Require(plcWords.Length > 80, "O programa de teste precisa cruzar a página de 80 passos.");
+
+var fakePlc = new FakeTp02Plc(plcWords, helloRun: false);
+var readLog = new List<string>();
+var reader = new Tp02PgProgramReader(() => fakePlc.Open(), readLog.Add, _ => { });
+Tp02PgReadResult read = reader.Read();
+Require(read.PlcState == "STOP", "HELLO 80 01 09 75 deve ser lido como STOP.");
+Require(read.Pages == 2 && read.Steps.Count == plcWords.Length, "Leitura deve percorrer duas páginas até o END.");
+Require(read.EndStep == plcWords.Length - 1 && read.BrawMismatches == 0 && read.UnknownSteps == 0, "END, BRAW e UNKNOWN divergentes.");
+Require(fakePlc.Sent.All(Tp02PgProgramReader.IsReadOnlyFrame), "Só quadros de leitura podem sair para o PLC.");
+Require(fakePlc.Sent.Any(f => f[0] == 0x34 && f[3] == 80), "Segunda página deve ser pedida em START=0080.");
+Tp02IlImport fromPlc = offline.ImportIl(read.ToIl(), "PLC");
+Require(fromPlc.Success && fromPlc.Project is not null, "IL lida do PLC deve converter: " + string.Join(" ", fromPlc.Errors));
+Require(offline.ExportHex(fromPlc.Project!) == sourceHex, "Programa lido deve recompilar nas mesmas palavras gravadas no PLC.");
+
+var corrupt = new FakeTp02Plc(plcWords, helloRun: false) { CorruptBrawAt = 85 };
+Tp02PgReadResult corruptRead = new Tp02PgProgramReader(() => corrupt.Open(), null, _ => { }).Read();
+Require(corruptRead.BrawMismatches == 1 && !corruptRead.Steps[85].BrawMatches, "BRAW corrompido na segunda página deve ser apontado.");
+
+Require(new Tp02PgProgramReader(() => new FakeTp02Plc(plcWords, helloRun: true).Open(), null, _ => { }).Read().PlcState == "RUN",
+    "HELLO C0 01 09 35 deve ser lido como RUN.");
+
+var silent = new FakeTp02Plc(plcWords, helloRun: false) { Silent = true };
+RequireThrows<IOException>(() => new Tp02PgProgramReader(() => silent.Open(), null, _ => { }).Read(), "PLC mudo deve falhar após três sessões.");
+Require(silent.Opens == 4, "Aquecimento mais três sessões devem abrir a porta quatro vezes.");
+
+Require(!Tp02PgProgramReader.IsReadOnlyFrame(new byte[] { 0x02, 0x00, 0xFD }), "RUN (02) não é quadro de leitura.");
+Require(!Tp02PgProgramReader.IsReadOnlyFrame(new byte[] { 0x01, 0x00, 0xFE }), "Modo programa (01) não é quadro de leitura.");
+Require(!Tp02PgProgramReader.IsReadOnlyFrame(new byte[] { 0x34, 0x03, 0x00, 0x05, 0xA0, 0x23 }), "Página 34 fora do múltiplo de 80 deve ser recusada.");
+Require(!Tp02PgProgramReader.IsReadOnlyFrame(new byte[] { 0x34, 0x03, 0x00, 0x00, 0xA0, 0x00 }), "Página 34 com soma errada deve ser recusada.");
+
 Console.WriteLine("ModernizationSelfTest: OK");
 
 static void RequireThrows<T>(Action action, string message) where T : Exception
@@ -377,5 +423,81 @@ static void Require(bool condition, string message)
     if (!condition)
     {
         throw new InvalidOperationException(message);
+    }
+}
+
+/// <summary>
+/// TP02 falso para a leitura PG: responde HELLO, F0, 38 e páginas 34 montadas com as palavras
+/// compiladas (plano A com HIGH/LOW, plano B com BRAW), e registra tudo o que recebe.
+/// </summary>
+sealed class FakeTp02Plc
+{
+    private readonly byte[][] words;
+    private readonly bool helloRun;
+    public readonly List<byte[]> Sent = new();
+    public bool Silent;
+    public int CorruptBrawAt = -1;
+    public int Opens;
+
+    public FakeTp02Plc(byte[][] words, bool helloRun)
+    {
+        this.words = words;
+        this.helloRun = helloRun;
+    }
+
+    public ITp02PgLink Open() => new Link(this);
+
+    private byte[] Answer(byte[] request)
+    {
+        if (Silent) return Array.Empty<byte>();
+        if (request[0] == 0x43) return helloRun ? new byte[] { 0xC0, 0x01, 0x09, 0x35 } : new byte[] { 0x80, 0x01, 0x09, 0x75 };
+        if (request[0] == 0xF0) return new byte[] { 0x00, 0x02, 0x10, 0x22, 0xCB };
+        if (request[0] == 0x38) return Sealed(new byte[] { 0x00, 0x02, 0x00, (byte)Math.Min(words.Length - 1, 79), 0x00 });
+        if (request[0] == 0x34)
+        {
+            int start = (request[2] << 8) | request[3];
+            var frame = new byte[0xF3];
+            frame[1] = 0xF0;
+            for (int i = 0; i < 80 && start + i < words.Length; i++)
+            {
+                frame[2 + 2 * i] = words[start + i][0];
+                frame[3 + 2 * i] = words[start + i][1];
+                // Plano B: BRAW físico, soma dos quatro nibbles de HIGH/LOW (não é o byte externo do WBP).
+                int nibbles = (frame[2 + 2 * i] >> 4) + (frame[2 + 2 * i] & 0xF) + (frame[3 + 2 * i] >> 4) + (frame[3 + 2 * i] & 0xF);
+                frame[2 + 0xA0 + i] = (byte)(nibbles & 0xF);
+                if (start + i == CorruptBrawAt) frame[2 + 0xA0 + i] ^= 0x01;
+            }
+            return Sealed(frame);
+        }
+        return Array.Empty<byte>();
+    }
+
+    private static byte[] Sealed(byte[] frame)
+    {
+        int sum = 0;
+        for (int i = 0; i < frame.Length - 1; i++) sum = (sum + frame[i]) & 0xFF;
+        frame[^1] = (byte)(0xFF - sum);
+        return frame;
+    }
+
+    private sealed class Link : ITp02PgLink
+    {
+        private readonly FakeTp02Plc plc;
+        private byte[] pending = Array.Empty<byte>();
+        public Link(FakeTp02Plc plc) { this.plc = plc; }
+        public void Open() => plc.Opens++;
+        public void DiscardInput() => pending = Array.Empty<byte>();
+        public void Write(byte[] frame)
+        {
+            plc.Sent.Add(frame.ToArray());
+            pending = plc.Answer(frame);
+        }
+        public byte[] ReadBurst(int timeoutMs, int quietMs)
+        {
+            byte[] answer = pending;
+            pending = Array.Empty<byte>();
+            return answer;
+        }
+        public void Dispose() { }
     }
 }

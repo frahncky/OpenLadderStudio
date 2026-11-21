@@ -6,4 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="..\OpenLadderStudio.Core\OpenLadderStudio.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+  </ItemGroup>
 </Project>
