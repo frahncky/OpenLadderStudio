@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using OpenLadderStudio.Application;
+using OpenLadderStudio.WinForms;
 
 namespace OpenLadderStudio.UI;
 
@@ -56,6 +57,8 @@ public sealed partial class MainForm : Form
         Controls.Add(grid);
         Controls.Add(simulationSplitter);
         Controls.Add(simulationPanel);
+        Controls.Add(synopticSplitter);
+        Controls.Add(synoptic);
         Controls.Add(reportSplitter);
         Controls.Add(report);
         Controls.Add(menu);
@@ -65,8 +68,20 @@ public sealed partial class MainForm : Form
         LoadIntoGrid();
         FormClosing += (_, e) => { if (!ConfirmDiscard()) e.Cancel = true; else StopSimulation(); };
         WindowFit.Attach(this);
+        // Paleta única (tokens do núcleo, os mesmos do editor legado) e o tema salvo pelo usuário.
+        ModernPalette.Apply(this);
+        ModernPalette.Changed += OnThemeChanged;
+        Disposed += (_, _) => ModernPalette.Changed -= OnThemeChanged;
         ResumeLayout(false);
         PerformLayout();
+    }
+
+    private void OnThemeChanged(object? sender, EventArgs e)
+    {
+        ModernPalette.Apply(this);
+        RepaintPoweredRungs();
+        synoptic.RefreshScene();
+        status.Text = ModernPalette.IsDark ? "Tema escuro." : "Tema claro.";
     }
 
     private MenuStrip BuildMenu()
@@ -109,11 +124,17 @@ public sealed partial class MainForm : Form
         program.DropDownItems.Add(faultsMenu);
         program.DropDownItems.Add(sampleItem);
 
+        var view = new ToolStripMenuItem("E&xibir");
+        var darkItem = new ToolStripMenuItem("Tema &escuro") { CheckOnClick = false };
+        darkItem.Click += (_, _) => ModernPalette.Use(!ModernPalette.IsDark);
+        view.DropDownOpening += (_, _) => darkItem.Checked = ModernPalette.IsDark;
+        view.DropDownItems.Add(darkItem);
+
         var help = new ToolStripMenuItem("A&juda");
         help.DropDownItems.Add(new ToolStripMenuItem("&Elementos...", null, (_, _) => ShowElementHelp()));
         help.DropDownItems.Add(new ToolStripMenuItem("&Drivers disponíveis...", null, (_, _) => ShowDrivers()));
 
-        menu.Items.AddRange(new ToolStripItem[] { file, edit, program, help });
+        menu.Items.AddRange(new ToolStripItem[] { file, edit, view, program, help });
         return menu;
     }
 

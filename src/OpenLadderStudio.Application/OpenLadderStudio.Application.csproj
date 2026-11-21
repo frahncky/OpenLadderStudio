@@ -6,4 +6,8 @@
   <ItemGroup>
     <ProjectReference Include="..\OpenLadderStudio.Core\OpenLadderStudio.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- O sinóptico recebe a planta e a imagem de processo da sessão de simulação. -->
+    <InternalsVisibleTo Include="OpenLadderStudio.WinForms" />
+  </ItemGroup>
 </Project>

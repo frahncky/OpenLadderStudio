@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using OpenLadderStudio.Application;
+using OpenLadderStudio.WinForms;
 
 namespace OpenLadderStudio.UI;
 
@@ -17,6 +18,8 @@ public sealed partial class MainForm
     private readonly Stopwatch simulationClock = new();
     private readonly ListView simulationList = new();
     private readonly Panel simulationPanel = new();
+    private readonly PlantSynoptic synoptic = new() { Dock = DockStyle.Bottom, Height = 240, Visible = false };
+    private readonly Splitter synopticSplitter = new() { Dock = DockStyle.Bottom, Visible = false };
     private readonly TextBox plantState = new();
     private readonly ToolStripMenuItem plantMenu = new("&Planta simulada");
     private readonly ToolStripMenuItem faultsMenu = new("&Falhas da planta");
@@ -25,6 +28,8 @@ public sealed partial class MainForm
     private readonly Splitter simulationSplitter = new() { Dock = DockStyle.Right, Visible = false };
     private readonly ToolStripMenuItem simulateItem = new("&Simular", null, null, Keys.F5);
     private bool simulating;
+    // Relatório oculto para dar lugar ao sinóptico; volta ao encerrar a simulação.
+    private bool reportHiddenBySynoptic;
     private bool[] poweredRungs = Array.Empty<bool>();
 
     private void BuildSimulationPanel()
@@ -137,6 +142,7 @@ public sealed partial class MainForm
         simulation.AttachPlant(plantId);
         simulation.Reset();
         RebuildPointList();
+        BindSynoptic();
         RefreshSimulation();
     }
 
@@ -165,6 +171,28 @@ public sealed partial class MainForm
         report.Text = description.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
         ShowReport(true);
         status.Text = "Exemplo de " + LadderSimulationSession.AvailablePlants.First(p => p.Id == plantId).Name + " aberto. F5 simula com a planta.";
+    }
+
+    // A cena tem proporção 1000x320: a altura acompanha a largura disponível, sem passar de 40% da janela.
+    private void BindSynoptic()
+    {
+        synoptic.Bind(simulation);
+        synoptic.Visible = synoptic.HasPlant;
+        synopticSplitter.Visible = synoptic.HasPlant;
+        if (synoptic.HasPlant)
+        {
+            synoptic.Height = Math.Min(ClientSize.Width * 320 / 1000, ClientSize.Height * 2 / 5);
+            if (report.Visible)
+            {
+                reportHiddenBySynoptic = true;
+                ShowReport(false);
+            }
+        }
+    }
+
+    private void RepaintPoweredRungs()
+    {
+        for (int rung = 0; rung < poweredRungs.Length; rung++) PaintRung(rung, poweredRungs[rung]);
     }
 
     private void RebuildPointList()
@@ -211,6 +239,7 @@ public sealed partial class MainForm
         RebuildPointList();
         simulationPanel.Visible = true;
         simulationSplitter.Visible = true;
+        BindSynoptic();
 
         simulationClock.Restart();
         simulationTimer.Start();
@@ -228,6 +257,10 @@ public sealed partial class MainForm
         grid.Columns[CommentColumn].Visible = true;
         simulationPanel.Visible = false;
         simulationSplitter.Visible = false;
+        synoptic.Visible = false;
+        synopticSplitter.Visible = false;
+        if (reportHiddenBySynoptic) ShowReport(true);
+        reportHiddenBySynoptic = false;
         for (int rung = 0; rung < poweredRungs.Length; rung++) PaintRung(rung, false);
         poweredRungs = Array.Empty<bool>();
         status.Text = "Simulação encerrada.";
@@ -271,6 +304,7 @@ public sealed partial class MainForm
             PaintRung(rung, powered);
         }
 
+        if (synoptic.Visible) synoptic.RefreshScene();
         if (plantState.Visible)
         {
             // Falhas ativas logo abaixo do nome: o resumo da planta é longo e rola para fora da caixa.
@@ -293,8 +327,8 @@ public sealed partial class MainForm
         for (int row = rung * 2; row <= rung * 2 + 1 && row < grid.Rows.Count; row++)
         {
             DataGridViewCellStyle style = grid.Rows[row].DefaultCellStyle;
-            style.BackColor = powered ? SystemColors.Info : Color.Empty;
-            style.ForeColor = powered ? SystemColors.InfoText : Color.Empty;
+            style.BackColor = powered ? ModernPalette.EnergizedBg : Color.Empty;
+            style.ForeColor = powered ? ModernPalette.Fore : Color.Empty;
         }
         if (rung < project.Rungs.Count && rung * 2 < grid.Rows.Count)
             grid.Rows[rung * 2].Cells[0].Value = (rung + 1).ToString("000") + (powered ? " ▶" : string.Empty);

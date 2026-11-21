@@ -11,5 +11,7 @@
     <!-- O codec .pladder continua internal porque o mesmo fonte é compilado pelo csc legado.
          A camada Application o expõe por modelos públicos próprios. -->
     <InternalsVisibleTo Include="OpenLadderStudio.Application" />
+    <!-- Renderizador do sinóptico e paleta da trilha moderna (tokens e cena). -->
+    <InternalsVisibleTo Include="OpenLadderStudio.WinForms" />
   </ItemGroup>
 </Project>

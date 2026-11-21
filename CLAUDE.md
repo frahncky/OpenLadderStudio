@@ -37,7 +37,7 @@ grep -n "trecho exato" src/OpenLadderStudio.Desktop/Prepare*.ps1
 
 **2. BOM em `.ps1` com acento.** O build usa Windows PowerShell 5.1, que lê arquivo sem BOM como Windows-1252. Sem BOM, o texto injetado chega corrompido à tela — silenciosamente, porque compila e passa nos testes.
 
-**3. Nenhuma tela declara cor própria.** A fonte única é `OpenLadderPalette`, em `AppBranding.cs`. Um `Color.FromArgb(...)` novo em código de tela é defeito.
+**3. Nenhuma tela declara cor própria.** Os valores ficam em `OpenLadderPaletteTokens` (`src/OpenLadderStudio.Core`), lidos pela `OpenLadderPalette` do legado (`AppBranding.cs`) e pela `ModernPalette` da trilha moderna (`src/OpenLadderStudio.WinForms`). Um `Color.FromArgb(...)` novo em código de tela é defeito.
 
 **4. Push para `main` publica uma release pública.** Trabalhe em branch, abra PR, espere o job `build` ficar verde. Correção sem bump de `version.txt` não chega a nenhum usuário.
 

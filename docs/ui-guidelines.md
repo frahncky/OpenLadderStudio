@@ -6,13 +6,19 @@ A interface deve parecer uma ferramenta de engenharia profissional: compacta, pr
 
 ## Paleta central
 
-Existe **uma única fonte de cor** no produto: `OpenLadderPalette`, em
-`src/OpenLadderStudio.Desktop/AppBranding.cs`. Esse arquivo entra em todos os
-executáveis, então shell, editor, simulador, monitor Modbus, gerenciador de
-controladores, atualizador e ferramentas TP02 leem exatamente as mesmas cores.
+Existe **uma única fonte de cor** no produto: os tokens de `OpenLadderPaletteTokens`, em
+`src/OpenLadderStudio.Core/OpenLadderPaletteTokens.cs` (o par escuro/claro de cada papel e as
+cores de cena do sinóptico). Duas classes leem esses tokens e nenhuma tem valor próprio:
+`ModernPalette` (`src/OpenLadderStudio.WinForms`), na trilha moderna, e `OpenLadderPalette`, em
+`src/OpenLadderStudio.Desktop/AppBranding.cs`, no legado. A cor nova entra no arquivo de tokens
+com os dois valores. A preferência de tema (`tema.txt`) é a mesma para as duas trilhas.
+O `AppBranding.cs` entra em todos os executáveis legados, então shell, editor, simulador,
+monitor Modbus, gerenciador de controladores, atualizador e ferramentas TP02 leem
+exatamente as mesmas cores, e as mesmas da trilha moderna.
 
-Nenhuma tela deve declarar cor própria. Cor fixa em `Color.FromArgb(...)` só é
-aceitável para elementos de cena do sinóptico, que não seguem o tema.
+Nenhuma tela deve declarar cor própria. Nem as cores de cena do sinóptico, que não seguem o
+tema, ficam no código de tela: elas também são tokens (`Scene*`), lidos pelo renderizador
+compartilhado `src/OpenLadderStudio.WinForms/ProcessSynoptic.cs`, que as duas trilhas compilam.
 
 ## Temas
 

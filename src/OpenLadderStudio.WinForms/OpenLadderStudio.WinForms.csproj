@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>OpenLadderStudio.WinForms</RootNamespace>
+    <!-- ProcessSynoptic.cs é compartilhado com o build legado (csc do .NET Framework, C# 5),
+         que não aceita anotações de nulabilidade. -->
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OpenLadderStudio.Application\OpenLadderStudio.Application.csproj" />
+  </ItemGroup>
+</Project>

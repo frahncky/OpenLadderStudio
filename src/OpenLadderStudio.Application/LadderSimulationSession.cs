@@ -67,6 +67,10 @@ public sealed class LadderSimulationSession
         return FromUniversal(process.BuildSampleProgram());
     }
 
+    // Para o sinóptico (OpenLadderStudio.WinForms): a cena é descrita pela planta a partir da imagem.
+    internal ISimulatedProcess? Plant => plant;
+    internal PlcProcessImage Image => engine.Image;
+
     public string? PlantId => plant?.Id;
     public string PlantName => plant?.DisplayName ?? string.Empty;
     public string PlantState => plant?.StateSummary() ?? string.Empty;
