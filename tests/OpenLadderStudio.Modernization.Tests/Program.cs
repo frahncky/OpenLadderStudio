@@ -226,6 +226,76 @@ RequireThrows<ArgumentException>(() => sim.SetInput("X0", true), "Endereço inv�
 RequireThrows<InvalidOperationException>(() => new LadderSimulationSession().Step(), "Simular sem programa deve ser recusado.");
 Require(sim.Advance(5) == 0 && sim.Advance(5) == 1, "Sobra de tempo deve acumular até completar um passo de 10 ms.");
 
+// --- Plantas simuladas pela camada Application (mesmas plantas do simulador legado) ---
+var plants = LadderSimulationSession.AvailablePlants;
+Require(plants.Count == 6, "Devem existir as seis plantas do legado: " + plants.Count);
+Require(plants.Any(plant => plant.Id == LadderSimulationSession.DefaultPlantId), "Planta padrão deve estar no catálogo.");
+
+void Press(LadderSimulationSession session, string address, double seconds)
+{
+    session.SetInput(address, true);
+    session.Advance(seconds * 1000);
+    session.SetInput(address, false);
+}
+
+void Run(LadderSimulationSession session, double seconds)
+{
+    for (double left = seconds * 1000; left > 0; left -= LadderSimulationSession.MaxAdvanceMs)
+        session.Advance(Math.Min(left, LadderSimulationSession.MaxAdvanceMs));
+}
+
+// Esteira: mesmo roteiro de TestConveyor em SimulationSelfTest.cs (legado), mas com o
+// programa de exemplo passando pelo modelo do editor e pelo arquivo .pladder.
+var conveyorSample = projects.Deserialize(projects.Serialize(
+    LadderSimulationSession.CreateSampleProject("conveyor.diverter", out string conveyorText)));
+Require(conveyorText.Length > 0, "Exemplo da esteira deve vir com explicação.");
+var plantSim = new LadderSimulationSession();
+plantSim.AttachPlant("conveyor.diverter");
+Require(plantSim.Load(conveyorSample), "Exemplo da esteira deve carregar: " + string.Join(" | ", plantSim.Diagnostics));
+Require(plantSim.PlantName.Length > 0 && plantSim.PlantState.Length > 0, "Planta ligada deve ter nome e estado.");
+var entry = plantSim.Points.Single(point => point.Address == "X0001");
+var start = plantSim.Points.Single(point => point.Address == "X0004");
+Require(entry.DrivenByPlant && entry.Name.Length > 0, "Sensor de entrada deve vir da planta, com nome.");
+Require(!start.DrivenByPlant && start.Name.Length > 0, "Botoeira de marcha é do operador, com nome.");
+RequireThrows<ArgumentException>(() => plantSim.SetInput("X0001", true), "Sensor da planta só pode ser forçado.");
+
+Run(plantSim, 0.2);
+Require(!plantSim.GetBit("C0001"), "Esteira parada antes de qualquer comando.");
+Press(plantSim, "X0004", 0.3);
+Run(plantSim, 0.2);
+Require(plantSim.GetBit("C0001") && plantSim.GetBit("Y0001"), "Marcha deve selar C0001 e ligar o motor.");
+Press(plantSim, "X0005", 0.2);
+Run(plantSim, 2.2);
+Require(!plantSim.GetBit("C0001"), "Botoeira de parada deve derrubar o selo.");
+
+plantSim.Reset();
+Press(plantSim, "X0004", 0.2);
+Run(plantSim, 18.0);
+Require(plantSim.GetValue("V0002") >= 2, "Caixas devem ser desviadas e contadas em V0002: " + plantSim.GetValue("V0002"));
+
+Require(plantSim.Faults.Count > 0, "Esteira oferece falhas injetáveis.");
+string faultId = plantSim.Faults[0].Id;
+plantSim.SetFault(faultId, true);
+Require(plantSim.Faults[0].Active, "Falha deve ficar ativa.");
+plantSim.Reset();
+Require(!plantSim.Faults[0].Active, "Reiniciar deve limpar as falhas, como no legado.");
+RequireThrows<ArgumentException>(() => plantSim.SetFault("nao-existe", true), "Falha desconhecida deve ser recusada.");
+RequireThrows<ArgumentException>(() => plantSim.AttachPlant("nao-existe"), "Planta desconhecida deve ser recusada.");
+
+// Todas as plantas: exemplo convertido, gravado e relido roda sem erro por 5 s.
+foreach (var info in plants)
+{
+    var sample = projects.Deserialize(projects.Serialize(LadderSimulationSession.CreateSampleProject(info.Id, out _)));
+    var session = new LadderSimulationSession();
+    session.AttachPlant(info.Id);
+    Require(session.Load(sample), "Exemplo de " + info.Name + " não carregou: " + string.Join(" | ", session.Diagnostics));
+    Run(session, 5.0);
+    Require(session.ScanCount == 500, "Planta " + info.Name + " deve varrer 500 vezes em 5 s: " + session.ScanCount);
+}
+
+plantSim.AttachPlant(null);
+Require(plantSim.PlantId is null && plantSim.Faults.Count == 0 && !plantSim.Points.Any(point => point.DrivenByPlant), "Desligar a planta deve remover sensores e falhas.");
+
 Console.WriteLine("ModernizationSelfTest: OK");
 
 static void RequireThrows<T>(Action action, string message) where T : Exception
