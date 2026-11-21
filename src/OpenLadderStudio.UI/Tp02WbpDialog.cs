@@ -1,4 +1,5 @@
 using OpenLadderStudio.Application;
+using OpenLadderStudio.WinForms;
 
 namespace OpenLadderStudio.UI;
 
@@ -55,6 +56,7 @@ public sealed class Tp02WbpDialog : Form
         foreach (NumericUpDown number in new[] { station, start, responseCode })
             number.ValueChanged += (_, _) => Recompile();
         WindowFit.Attach(this);
+        ModernPalette.Apply(this);
         ResumeLayout(false);
         PerformLayout();
         Recompile();

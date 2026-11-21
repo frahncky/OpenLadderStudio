@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenLadderStudio.Application\OpenLadderStudio.Application.csproj" />
+    <ProjectReference Include="..\OpenLadderStudio.WinForms\OpenLadderStudio.WinForms.csproj" />
     <ProjectReference Include="..\OpenLadderStudio.Drivers.Modbus\OpenLadderStudio.Drivers.Modbus.csproj" />
     <ProjectReference Include="..\OpenLadderStudio.Drivers.TP02\OpenLadderStudio.Drivers.TP02.csproj" />
   </ItemGroup>

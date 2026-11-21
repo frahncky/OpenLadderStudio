@@ -163,76 +163,76 @@ namespace ModernPC12
         // No tema escuro o Canvas fica entre a janela e o painel, como area de trabalho
         // rebaixada; no claro e a superficie mais clara. Nenhum tema usa preto ou
         // branco puro em superficie grande: sao as extremidades que mais cansam a vista.
-        public static Color Shell { get { return Pick(15, 20, 29, 232, 237, 244); } }
-        public static Color Workspace { get { return Pick(19, 25, 36, 238, 242, 249); } }
-        public static Color Chrome { get { return Pick(25, 32, 45, 246, 248, 252); } }
-        public static Color ChromeLight { get { return Pick(33, 42, 58, 252, 253, 255); } }
+        public static Color Shell { get { return Pick(OpenLadderPaletteTokens.Shell); } }
+        public static Color Workspace { get { return Pick(OpenLadderPaletteTokens.Workspace); } }
+        public static Color Chrome { get { return Pick(OpenLadderPaletteTokens.Chrome); } }
+        public static Color ChromeLight { get { return Pick(OpenLadderPaletteTokens.ChromeLight); } }
 
         /// <summary>Superficie elevada: menu suspenso, dica, cartao, popup. Sempre acima de ChromeLight.</summary>
-        public static Color Raised { get { return Pick(41, 52, 72, 254, 254, 255); } }
+        public static Color Raised { get { return Pick(OpenLadderPaletteTokens.Raised); } }
 
         // Bordas: Border separa regioes irmas; BorderStrong delimita um controle (campo,
         // cartao); HeaderLine e a aresta inferior da barra superior.
-        public static Color Border { get { return Pick(48, 61, 82, 208, 217, 229); } }
-        public static Color BorderStrong { get { return Pick(76, 94, 120, 163, 178, 199); } }
+        public static Color Border { get { return Pick(OpenLadderPaletteTokens.Border); } }
+        public static Color BorderStrong { get { return Pick(OpenLadderPaletteTokens.BorderStrong); } }
 
         /// <summary>
         /// Aresta inferior da barra superior. A borda comum e uma linha de divisao
         /// entre pares; o topo separa o comando do documento e precisa ler como
         /// aresta da moldura, nao como mais um traco igual aos outros.
         /// </summary>
-        public static Color HeaderLine { get { return Pick(88, 112, 142, 166, 185, 210); } }
+        public static Color HeaderLine { get { return Pick(OpenLadderPaletteTokens.HeaderLine); } }
 
-        public static Color NavBg { get { return Pick(17, 23, 33, 240, 244, 249); } }
-        public static Color NavHover { get { return Pick(33, 43, 60, 228, 235, 245); } }
-        public static Color NavActive { get { return Pick(34, 64, 106, 214, 228, 248); } }
+        public static Color NavBg { get { return Pick(OpenLadderPaletteTokens.NavBg); } }
+        public static Color NavHover { get { return Pick(OpenLadderPaletteTokens.NavHover); } }
+        public static Color NavActive { get { return Pick(OpenLadderPaletteTokens.NavActive); } }
 
         // Texto, do mais forte ao mais discreto. Fore, Muted e Faint passam de 4,5:1
         // sobre Shell, Chrome e ChromeLight nos dois temas; Disabled e proposital-
         // mente mais fraco (controle indisponivel esta isento do criterio).
-        public static Color Fore { get { return Pick(233, 239, 247, 30, 44, 62); } }
-        public static Color Muted { get { return Pick(177, 190, 208, 77, 96, 119); } }
-        public static Color Faint { get { return Pick(157, 173, 193, 82, 100, 122); } }
-        public static Color Disabled { get { return Pick(112, 129, 150, 139, 153, 171); } }
+        public static Color Fore { get { return Pick(OpenLadderPaletteTokens.Fore); } }
+        public static Color Muted { get { return Pick(OpenLadderPaletteTokens.Muted); } }
+        public static Color Faint { get { return Pick(OpenLadderPaletteTokens.Faint); } }
+        public static Color Disabled { get { return Pick(OpenLadderPaletteTokens.Disabled); } }
 
         // Marca e estados legiveis sobre Chrome e ChromeLight. O azul luminoso
         // do tema escuro pede texto escuro nos botoes preenchidos.
-        public static Color Accent { get { return Pick(99, 177, 255, 29, 84, 200); } }
-        public static Color AccentDark { get { return Pick(61, 139, 230, 22, 62, 160); } }
-        public static Color OnAccent { get { return Pick(16, 30, 48, 255, 255, 255); } }
+        public static Color Accent { get { return Pick(OpenLadderPaletteTokens.Accent); } }
+        public static Color AccentDark { get { return Pick(OpenLadderPaletteTokens.AccentDark); } }
+        public static Color OnAccent { get { return Pick(OpenLadderPaletteTokens.OnAccent); } }
 
         /// <summary>Anel de foco de teclado. Distinto de Accent para nao se confundir com selecao.</summary>
-        public static Color Focus { get { return Pick(147, 205, 255, 15, 70, 190); } }
+        public static Color Focus { get { return Pick(OpenLadderPaletteTokens.Focus); } }
 
         // Estados. Cada cor de texto tem o par "Bg", uma superficie tingida para
         // faixa, selo e linha de tabela; a cor de estado le com 4,5:1 sobre o proprio Bg.
-        public static Color Ok { get { return Pick(96, 205, 153, 32, 113, 75); } }
-        public static Color Warning { get { return Pick(242, 193, 94, 137, 91, 12); } }
-        public static Color Danger { get { return Pick(247, 133, 139, 183, 48, 66); } }
-        public static Color Info { get { return Pick(116, 188, 246, 29, 103, 170); } }
-        public static Color OkBg { get { return Pick(22, 52, 40, 221, 243, 231); } }
-        public static Color WarningBg { get { return Pick(60, 48, 22, 252, 240, 208); } }
-        public static Color DangerBg { get { return Pick(64, 31, 37, 252, 225, 227); } }
-        public static Color InfoBg { get { return Pick(27, 50, 80, 221, 236, 252); } }
+        public static Color Ok { get { return Pick(OpenLadderPaletteTokens.Ok); } }
+        public static Color Warning { get { return Pick(OpenLadderPaletteTokens.Warning); } }
+        public static Color Danger { get { return Pick(OpenLadderPaletteTokens.Danger); } }
+        public static Color Info { get { return Pick(OpenLadderPaletteTokens.Info); } }
+        public static Color OkBg { get { return Pick(OpenLadderPaletteTokens.OkBg); } }
+        public static Color WarningBg { get { return Pick(OpenLadderPaletteTokens.WarningBg); } }
+        public static Color DangerBg { get { return Pick(OpenLadderPaletteTokens.DangerBg); } }
+        public static Color InfoBg { get { return Pick(OpenLadderPaletteTokens.InfoBg); } }
 
         // Area de desenho do Ladder e do sinoptico. A superficie e uniforme: o que
         // distingue a linha selecionada e um degrau sutil (CanvasRow), nunca uma
         // celula clara no meio de celulas cinzas.
-        public static Color Canvas { get { return Pick(20, 27, 39, 250, 251, 254); } }
-        public static Color CanvasRow { get { return Pick(26, 36, 52, 238, 243, 251); } }
-        public static Color CanvasHover { get { return Pick(31, 42, 61, 231, 238, 249); } }
-        public static Color Rail { get { return Pick(156, 181, 214, 74, 90, 107); } }
-        public static Color Wire { get { return Pick(144, 169, 202, 95, 110, 128); } }
-        public static Color GridLine { get { return Pick(37, 49, 68, 222, 229, 239); } }
-        public static Color SelectionFill { get { return Pick(30, 60, 102, 211, 227, 250); } }
+        public static Color Canvas { get { return Pick(OpenLadderPaletteTokens.Canvas); } }
+        public static Color CanvasRow { get { return Pick(OpenLadderPaletteTokens.CanvasRow); } }
+        public static Color CanvasHover { get { return Pick(OpenLadderPaletteTokens.CanvasHover); } }
+        public static Color Rail { get { return Pick(OpenLadderPaletteTokens.Rail); } }
+        public static Color Wire { get { return Pick(OpenLadderPaletteTokens.Wire); } }
+        public static Color GridLine { get { return Pick(OpenLadderPaletteTokens.GridLine); } }
+        public static Color SelectionFill { get { return Pick(OpenLadderPaletteTokens.SelectionFill); } }
         public static Color SelectionEdge { get { return Accent; } }
 
         /// <summary>
         /// Condutor energizado no diagrama. Verde saturado, mais vivo que Ok (que e
         /// estado de interface): precisa saltar sobre Wire e Rail, que sao cinza-azulados.
         /// </summary>
-        public static Color Energized { get { return Pick(57, 224, 128, 0, 100, 45); } }
-        public static Color EnergizedBg { get { return Pick(22, 66, 46, 220, 243, 229); } }
+        public static Color Energized { get { return Pick(OpenLadderPaletteTokens.Energized); } }
+        public static Color EnergizedBg { get { return Pick(OpenLadderPaletteTokens.EnergizedBg); } }
 
         /// <summary>
         /// Par de cores calibradas para cada tema. Usado pela paleta semantica dos
@@ -248,6 +248,13 @@ namespace ModernPC12
         public static Color Tint(Color baseColor, int alpha)
         {
             return Color.FromArgb(alpha, baseColor);
+        }
+
+        // Os valores de cada token ficam em OpenLadderPaletteTokens (src/OpenLadderStudio.Core),
+        // fonte única compartilhada com a trilha moderna.
+        private static Color Pick(PaletteToken token)
+        {
+            return Color.FromArgb(token.Argb(IsDark));
         }
 
         private static Color Pick(int dr, int dg, int db, int lr, int lg, int lb)

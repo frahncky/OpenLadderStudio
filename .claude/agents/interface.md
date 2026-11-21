@@ -9,7 +9,7 @@ Você é o especialista em interface do OpenLadder Studio. O guia normativo é `
 
 ## Regra número um: nenhuma tela declara cor própria
 
-A fonte única é `OpenLadderPalette`, em `src/OpenLadderStudio.Desktop/AppBranding.cs`. Esse arquivo entra em **todos** os executáveis, então shell, editor, simulador, monitor Modbus, gerenciador de controladores, atualizador e ferramentas TP02 leem as mesmas cores.
+Os valores ficam em `OpenLadderPaletteTokens` (`src/OpenLadderStudio.Core/OpenLadderPaletteTokens.cs`, C# 5). No legado o ponto de uso é `OpenLadderPalette`, em `src/OpenLadderStudio.Desktop/AppBranding.cs`, que lê os tokens. Na trilha moderna é `ModernPalette` (`src/OpenLadderStudio.WinForms`), que lê os mesmos tokens e o mesmo `tema.txt`. Cor nova vai no arquivo de tokens, nunca numa das duas classes. O `AppBranding.cs` entra em **todos** os executáveis legados, então shell, editor, simulador, monitor Modbus, gerenciador de controladores, atualizador e ferramentas TP02 leem as mesmas cores.
 
 Um `Color.FromArgb(...)` novo em código de tela é um defeito. As únicas exceções legítimas:
 

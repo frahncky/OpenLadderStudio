@@ -26,7 +26,7 @@ if not "%~1"=="" set "OUTDIR=%~1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PrepareTp02EmulatorRules.ps1" -Output "TP02PgEmulator.ensaio.build.cs"
 if errorlevel 1 goto :erro
 
-"%CSC%" /nologo /target:exe /optimize+ /main:ModernPC12.TP02BancadaEnsaioProgram /out:"OpenLadderTP02BancadaEnsaio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "StudioDiagnostics.cs" "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" "TP02PhysicalValidator.cs" "TP02PgEmulator.ensaio.build.cs" "TP02PgReadback.cs" "TP02PgV156Scenario.cs" "TP02PgReadbackSelfTest.cs" "TP02PgComprehensiveSelfTest.cs" "TP02BancadaEnsaio.cs"
+"%CSC%" /nologo /target:exe /optimize+ /main:ModernPC12.TP02BancadaEnsaioProgram /out:"OpenLadderTP02BancadaEnsaio.exe" /reference:System.dll /reference:System.Windows.Forms.dll /reference:System.Drawing.dll "AppBranding.cs" "..\..\src\OpenLadderStudio.Core\OpenLadderPaletteTokens.cs" "StudioDiagnostics.cs" "..\OpenLadderStudio.Core\Tp02PgProtocol.cs" "..\OpenLadderStudio.Core\Tp02PgMemoryProtocol.cs" "..\OpenLadderStudio.Core\Tp02Pg34Pager.cs" "TP02PhysicalValidator.cs" "TP02PgEmulator.ensaio.build.cs" "TP02PgReadback.cs" "TP02PgV156Scenario.cs" "TP02PgReadbackSelfTest.cs" "TP02PgComprehensiveSelfTest.cs" "TP02BancadaEnsaio.cs"
 if errorlevel 1 goto :erro
 del /q "TP02PgEmulator.ensaio.build.cs" >nul 2>&1
 
