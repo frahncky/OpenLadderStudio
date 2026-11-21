@@ -96,7 +96,7 @@ namespace ModernPC12
         private TP02AutoDecoderForm decoderForm;
         private TP02CalibrationCampaignForm calibrationForm;
         private TP02IlToLadderForm ilForm;
-        private PC12UpdaterForm updaterForm;
+        private PC12UpdaterForm updaterForm = null;
         private ModbusMonitorForm modbusForm;
         private LadderSimulatorForm simulatorForm;
 

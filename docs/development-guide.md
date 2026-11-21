@@ -1,5 +1,37 @@
 # Guia de desenvolvimento
 
+## Solução moderna em migração
+
+A trilha moderna é compilada pela solução `OpenLadderStudio.sln` e mantém as
+responsabilidades separadas em projetos SDK:
+
+```text
+src/OpenLadderStudio.Core/
+src/OpenLadderStudio.Application/
+src/OpenLadderStudio.Drivers.Modbus/
+src/OpenLadderStudio.Drivers.TP02/
+src/OpenLadderStudio.UI/
+```
+
+No ambiente atual ela usa .NET 8, fixado em `global.json`, porque esse é o SDK
+instalado e validado. A migração para .NET 10 consiste em atualizar o SDK e os
+`TargetFramework`; não deve misturar responsabilidades novamente.
+
+Para compilar e testar:
+
+```powershell
+dotnet build OpenLadderStudio.sln
+dotnet run --project tests/OpenLadderStudio.Modernization.Tests/OpenLadderStudio.Modernization.Tests.csproj
+```
+
+Warnings são tratados como erros no código moderno. A nulabilidade permanece
+temporariamente desabilitada apenas no projeto Core existente, que ainda é
+compilado também pelo `csc.exe` do .NET Framework; código novo mantém
+nulabilidade habilitada.
+
+O `Build.bat` legado continua sendo o build oficial do produto distribuído até
+que editor, simulador, drivers e instalador tenham sido migrados e validados.
+
 ## Limites atuais
 
 O produto ainda é compilado diretamente pelo `csc.exe` do .NET Framework a partir de `src/OpenLadderStudio.Desktop/Build.bat`. Esse script lista cada arquivo de fonte de forma explícita e produz vários executáveis Windows Forms.

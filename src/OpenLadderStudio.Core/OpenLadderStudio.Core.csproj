@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OpenLadderStudio.Core</RootNamespace>
+    <AssemblyName>OpenLadderStudio.Core</AssemblyName>
+    <!-- O núcleo existente ainda é compilado pelo csc do .NET Framework.
+         A nulabilidade será ativada arquivo a arquivo durante a extração. -->
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- O codec .pladder continua internal porque o mesmo fonte é compilado pelo csc legado.
+         A camada Application o expõe por modelos públicos próprios. -->
+    <InternalsVisibleTo Include="OpenLadderStudio.Application" />
+  </ItemGroup>
+</Project>

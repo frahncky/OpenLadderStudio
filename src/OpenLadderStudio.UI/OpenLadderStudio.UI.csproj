@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>OpenLadderStudio.UI</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OpenLadderStudio.Application\OpenLadderStudio.Application.csproj" />
+    <ProjectReference Include="..\OpenLadderStudio.Drivers.Modbus\OpenLadderStudio.Drivers.Modbus.csproj" />
+    <ProjectReference Include="..\OpenLadderStudio.Drivers.TP02\OpenLadderStudio.Drivers.TP02.csproj" />
+  </ItemGroup>
+</Project>

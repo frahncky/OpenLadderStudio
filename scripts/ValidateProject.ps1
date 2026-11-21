@@ -19,6 +19,8 @@ $ladderProjectTest = Join-Path $repoRoot 'tests\OpenLadderStudio.Core.Tests\Ladd
 
 $architectureValidation = Join-Path $PSScriptRoot 'ValidateArchitecture.ps1'
 if (-not (Test-Path $architectureValidation)) { throw "Validador arquitetural ausente: $architectureValidation" }
+$usingNormalizer = Join-Path $PSScriptRoot 'NormalizeCSharpUsings.ps1'
+if (-not (Test-Path $usingNormalizer)) { throw "Normalizador de imports C# ausente: $usingNormalizer" }
 & $architectureValidation
 & (Join-Path $PSScriptRoot 'SyncCompatibilityMetadata.ps1') -Check
 
@@ -86,6 +88,9 @@ if (-not $buildText.Contains('src\OpenLadderStudio.Core\LadderProject.cs')) {
 }
 if (-not $buildText.Contains('OpenLadderCoreTest.exe')) {
     throw 'O build principal deve compilar e executar o autoteste do formato .pladder.'
+}
+if (-not $buildText.Contains('NormalizeCSharpUsings.ps1')) {
+    throw 'O build principal deve normalizar imports dos fontes gerados antes de compilar.'
 }
 $produced = @()
 foreach ($hit in [Regex]::Matches($buildText, '/out:"([A-Za-z0-9_]+\.exe)"')) {
