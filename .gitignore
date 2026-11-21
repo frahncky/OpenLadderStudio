@@ -49,3 +49,13 @@ __pycache__/
 # SDK-style .NET build outputs.
 **/bin/
 **/obj/
+
+# Executaveis gerados pelo Build.bat (inclui autotestes novos) e capturas do emulador.
+src/OpenLadderStudio.Desktop/*.exe
+src/OpenLadderStudio.Desktop/tp02-emulator-captures/
+
+# Software do fabricante para engenharia reversa local: proprietario, nunca versionado.
+PC12_v2.1_Windows7_v3_portatil/
+
+# Estado de janela gravado em execucao.
+placement.conf
