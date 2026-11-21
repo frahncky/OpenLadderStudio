@@ -55,7 +55,7 @@ public sealed partial class MainForm : Form
         // Ordem de encaixe: barra de status, menu, relatório e divisor embaixo; a grade ocupa o resto.
         Controls.Add(grid);
         Controls.Add(simulationSplitter);
-        Controls.Add(simulationList);
+        Controls.Add(simulationPanel);
         Controls.Add(reportSplitter);
         Controls.Add(report);
         Controls.Add(menu);
@@ -112,6 +112,9 @@ public sealed partial class MainForm : Form
         program.DropDownItems.Add(new ToolStripSeparator());
         program.DropDownItems.Add(simulateItem);
         program.DropDownItems.Add(new ToolStripMenuItem("&Reiniciar simulação", null, (_, _) => ResetSimulation(), Keys.Control | Keys.F5));
+        program.DropDownItems.Add(plantMenu);
+        program.DropDownItems.Add(faultsMenu);
+        program.DropDownItems.Add(sampleItem);
 
         var help = new ToolStripMenuItem("A&juda");
         help.DropDownItems.Add(new ToolStripMenuItem("&Elementos...", null, (_, _) => ShowElementHelp()));
@@ -201,9 +204,15 @@ public sealed partial class MainForm : Form
         grid.EditMode = DataGridViewEditMode.EditOnKeystrokeOrF2;
 
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Linha", ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells, SortMode = DataGridViewColumnSortMode.NotSortable });
+        // C8 é a coluna de saída: recebe TMR, CNT e FUN com parâmetros, os textos mais longos.
         for (int column = 1; column <= LadderRungModel.ColumnCount; column++)
-            grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "C" + column, FillWeight = 80, SortMode = DataGridViewColumnSortMode.NotSortable });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Comentário", FillWeight = 160, SortMode = DataGridViewColumnSortMode.NotSortable });
+            grid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                HeaderText = "C" + column,
+                FillWeight = column == LadderRungModel.ColumnCount ? 130 : 80,
+                SortMode = DataGridViewColumnSortMode.NotSortable
+            });
+        grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Comentário", FillWeight = 140, SortMode = DataGridViewColumnSortMode.NotSortable });
 
         grid.CellValidating += OnCellValidating;
         grid.CellEndEdit += (_, e) => grid.Rows[e.RowIndex].ErrorText = string.Empty;
