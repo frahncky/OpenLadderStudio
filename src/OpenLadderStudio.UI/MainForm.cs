@@ -51,8 +51,7 @@ public sealed partial class MainForm : Form
         BuildReport();
         BuildSimulationPanel();
         var menu = BuildMenu();
-        var statusStrip = new StatusStrip();
-        statusStrip.Items.Add(status);
+        var statusStrip = BuildStatusBar();
 
         // Ordem de encaixe: barra de status, menu, relatório e divisor embaixo; a grade ocupa o resto.
         Controls.Add(grid);

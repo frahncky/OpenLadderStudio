@@ -165,6 +165,8 @@ public sealed class LadderDiagram : UserControl
                 ActiveTool = LadderDiagramTool.Select;
             }
             canvas.DragEnabled = !readOnly && tool == LadderDiagramTool.Select;
+            canvas.ShowGuide = !readOnly;
+            canvas.Invalidate();
         }
     }
 

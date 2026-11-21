@@ -24,16 +24,16 @@ public sealed partial class MainForm
         (LadderDiagramTool.Select, "Selecionar", "Selecionar e arrastar elementos (Esc)", ""),
         (LadderDiagramTool.ContactNO, "NA", "Contato normalmente aberto", "NO "),
         (LadderDiagramTool.ContactNC, "NF", "Contato normalmente fechado", "NC "),
-        (LadderDiagramTool.ParallelNO, "∥ NA", "Contato NA no ramo paralelo", "NO "),
-        (LadderDiagramTool.ParallelNC, "∥ NF", "Contato NF no ramo paralelo", "NC "),
-        (LadderDiagramTool.Coil, "( )", "Bobina (saída na coluna 8)", "COIL "),
-        (LadderDiagramTool.Timer, "TMR", "Temporizador: endereço V e preset", "TMR "),
-        (LadderDiagramTool.Counter, "CNT", "Contador: endereço V e preset", "CNT "),
+        (LadderDiagramTool.ParallelNO, "NA ∥", "Contato NA no ramo paralelo", "NO "),
+        (LadderDiagramTool.ParallelNC, "NF ∥", "Contato NF no ramo paralelo", "NC "),
+        (LadderDiagramTool.Coil, "Bobina", "Bobina (saída na coluna 8)", "COIL "),
+        (LadderDiagramTool.Timer, "Temp.", "Temporizador: endereço V e preset", "TMR "),
+        (LadderDiagramTool.Counter, "Cont.", "Contador: endereço V e preset", "CNT "),
         (LadderDiagramTool.Set, "SET", "SET (F-23)", "SET "),
         (LadderDiagramTool.Reset, "RST", "RESET (F-24)", "RST "),
-        (LadderDiagramTool.RisingEdge, "↑", "Borda de subida (F-05)", "EUP"),
-        (LadderDiagramTool.FallingEdge, "↓", "Borda de descida (F-06)", "EDN"),
-        (LadderDiagramTool.Function, "FUN", "Função especial: código e parâmetro", "FUN "),
+        (LadderDiagramTool.RisingEdge, "Subida", "Borda de subida (F-05)", "EUP"),
+        (LadderDiagramTool.FallingEdge, "Descida", "Borda de descida (F-06)", "EDN"),
+        (LadderDiagramTool.Function, "Função", "Função especial: código e parâmetro", "FUN "),
         (LadderDiagramTool.End, "END", "Fim do programa (F-00)", "END"),
         (LadderDiagramTool.Erase, "Apagar", "Apagar o elemento clicado", ""),
     };
@@ -44,12 +44,27 @@ public sealed partial class MainForm
 
         foreach (var entry in Tools)
         {
-            var button = new ToolStripButton(entry.Text) { ToolTipText = entry.Tip, Tag = entry.Tool, CheckOnClick = false };
+            var button = new ToolStripButton(entry.Text)
+            {
+                ToolTipText = entry.Tip,
+                Tag = entry.Tool,
+                CheckOnClick = false,
+                DisplayStyle = ToolStripItemDisplayStyle.ImageAndText,
+                TextImageRelation = TextImageRelation.ImageAboveText,
+                ImageScaling = ToolStripItemImageScaling.None,
+                Padding = new Padding(4, 2, 4, 1),
+                Margin = new Padding(1, 2, 1, 2)
+            };
             button.Click += (_, _) => diagram.ActiveTool = diagram.ActiveTool == entry.Tool ? LadderDiagramTool.Select : entry.Tool;
             toolbox.Items.Add(button);
             if (entry.Tool is LadderDiagramTool.Select or LadderDiagramTool.ParallelNC or LadderDiagramTool.FallingEdge or LadderDiagramTool.End)
                 toolbox.Items.Add(new ToolStripSeparator());
         }
+        toolbox.Padding = new Padding(6, 2, 6, 2);
+        toolbox.Font = new Font("Segoe UI", 8.25F);
+        RefreshToolIcons();
+        ModernPalette.Changed += (_, _) => RefreshToolIcons();
+        DpiChanged += (_, _) => BeginInvoke(RefreshToolIcons);
         diagram.ToolChanged += (_, _) => SyncToolbox();
         SyncToolbox();
 
@@ -110,6 +125,19 @@ public sealed partial class MainForm
     {
         diagram.ShowProject(project);
         diagram.SetRungPower(simulating ? poweredRungs : null);
+    }
+
+    /// <summary>Ícones no tamanho do monitor atual e nas cores do tema.</summary>
+    private void RefreshToolIcons()
+    {
+        int size = (int)Math.Round(22 * DeviceDpi / 96.0);
+        foreach (ToolStripButton button in toolbox.Items.OfType<ToolStripButton>())
+        {
+            var icon = Enum.Parse<LadderToolIcon>(((LadderDiagramTool)button.Tag!).ToString());
+            Image? old = button.Image;
+            button.Image = LadderToolIcons.Create(icon, size);
+            old?.Dispose();
+        }
     }
 
     private void SyncToolbox()
