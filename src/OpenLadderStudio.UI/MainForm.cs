@@ -25,9 +25,14 @@ public sealed class MainForm : Form
         this.catalog = catalog;
         project = projects.CreateNew();
 
-        StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(960, 640);
+        // Medidas abaixo estão em pixels a 96 DPI; AutoScaleDimensions faz o WinForms
+        // escalá-las para o DPI real (125%, 175%...) quando o layout é retomado.
+        SuspendLayout();
+        AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
+        StartPosition = FormStartPosition.CenterScreen;
+        ClientSize = new Size(1100, 680);
+        MinimumSize = new Size(720, 480);
         KeyPreview = true;
 
         BuildGrid();
@@ -42,6 +47,20 @@ public sealed class MainForm : Form
 
         LoadIntoGrid();
         FormClosing += (_, e) => { if (!ConfirmDiscard()) e.Cancel = true; };
+        Load += (_, _) => FitToWorkingArea();
+        DpiChanged += (_, _) => BeginInvoke(FitToWorkingArea);
+        ResumeLayout(false);
+        PerformLayout();
+    }
+
+    // A 175% numa tela 1080p a área útil tem cerca de 1097x590 pixels lógicos: o tamanho
+    // escalado não pode passar dela, senão a janela abre cortada.
+    private void FitToWorkingArea()
+    {
+        Rectangle area = Screen.FromControl(this).WorkingArea;
+        MinimumSize = new Size(Math.Min(MinimumSize.Width, area.Width), Math.Min(MinimumSize.Height, area.Height));
+        Size = new Size(Math.Min(Width, area.Width), Math.Min(Height, area.Height));
+        Location = new Point(area.Left + (area.Width - Width) / 2, area.Top + (area.Height - Height) / 2);
     }
 
     private MenuStrip BuildMenu()
@@ -79,6 +98,9 @@ public sealed class MainForm : Form
         grid.MultiSelect = false;
         grid.RowHeadersVisible = false;
         grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        // Altura da linha acompanha a fonte, inclusive quando o DPI muda com a janela aberta.
+        grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
+        grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         grid.EditMode = DataGridViewEditMode.EditOnKeystrokeOrF2;
 
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Linha", ReadOnly = true, FillWeight = 60, SortMode = DataGridViewColumnSortMode.NotSortable });
