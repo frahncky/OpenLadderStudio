@@ -64,20 +64,9 @@ public sealed partial class MainForm : Form
 
         LoadIntoGrid();
         FormClosing += (_, e) => { if (!ConfirmDiscard()) e.Cancel = true; else StopSimulation(); };
-        Load += (_, _) => FitToWorkingArea();
-        DpiChanged += (_, _) => BeginInvoke(FitToWorkingArea);
+        WindowFit.Attach(this);
         ResumeLayout(false);
         PerformLayout();
-    }
-
-    // A 175% numa tela 1080p a área útil tem cerca de 1097x590 pixels lógicos: o tamanho
-    // escalado não pode passar dela, senão a janela abre cortada.
-    private void FitToWorkingArea()
-    {
-        Rectangle area = Screen.FromControl(this).WorkingArea;
-        MinimumSize = new Size(Math.Min(MinimumSize.Width, area.Width), Math.Min(MinimumSize.Height, area.Height));
-        Size = new Size(Math.Min(Width, area.Width), Math.Min(Height, area.Height));
-        Location = new Point(area.Left + (area.Width - Width) / 2, area.Top + (area.Height - Height) / 2);
     }
 
     private MenuStrip BuildMenu()
@@ -89,6 +78,8 @@ public sealed partial class MainForm : Form
         file.DropDownItems.Add(new ToolStripMenuItem("&Abrir...", null, (_, _) => OpenProject(), Keys.Control | Keys.O));
         file.DropDownItems.Add(new ToolStripMenuItem("&Salvar", null, (_, _) => SaveProject(false), Keys.Control | Keys.S));
         file.DropDownItems.Add(new ToolStripMenuItem("Salvar &como...", null, (_, _) => SaveProject(true), Keys.Control | Keys.Shift | Keys.S));
+        file.DropDownItems.Add(new ToolStripSeparator());
+        file.DropDownItems.Add(new ToolStripMenuItem("&Importar IL do TP02...", null, (_, _) => ImportIl()));
         file.DropDownItems.Add(new ToolStripSeparator());
         file.DropDownItems.Add(new ToolStripMenuItem("Sai&r", null, (_, _) => Close()));
 
@@ -109,6 +100,8 @@ public sealed partial class MainForm : Form
         var program = new ToolStripMenuItem("&Programa");
         program.DropDownItems.Add(new ToolStripMenuItem("&Verificar para TP02", null, (_, _) => VerifyProgram(), Keys.F7));
         program.DropDownItems.Add(new ToolStripMenuItem("&Ocultar resultado", null, (_, _) => ShowReport(false), Keys.Shift | Keys.F7));
+        program.DropDownItems.Add(new ToolStripMenuItem("&Quadros WBP do TP02 (dry-run)...", null, (_, _) => ShowWbpPreview()));
+        program.DropDownItems.Add(new ToolStripMenuItem("Exportar &HEX do TP02...", null, (_, _) => ExportHex()));
         program.DropDownItems.Add(new ToolStripSeparator());
         program.DropDownItems.Add(simulateItem);
         program.DropDownItems.Add(new ToolStripMenuItem("&Reiniciar simulação", null, (_, _) => ResetSimulation(), Keys.Control | Keys.F5));

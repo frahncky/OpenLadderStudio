@@ -66,7 +66,7 @@ public sealed class LadderProjectService
         return document;
     }
 
-    private static LadderProjectModel FromDocument(LadderProjectDocument document)
+    internal static LadderProjectModel FromDocument(LadderProjectDocument document)
     {
         var model = new LadderProjectModel();
         foreach (LadderProjectRung rung in document.Rungs)
