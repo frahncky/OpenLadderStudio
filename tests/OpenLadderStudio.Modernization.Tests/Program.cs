@@ -156,6 +156,76 @@ while (bounded.CanUndo) sequence = bounded.Undo(sequence);
 Require(sequence.Rungs[0].Comment == "Estado 9", "Estado mais antigo mantido deve ser o 11º: " + sequence.Rungs[0].Comment);
 RequireThrows<InvalidOperationException>(() => bounded.Undo(sequence), "Desfazer sem histórico deve ser recusado.");
 
+// --- Simulação pela camada Application (mesmo LadderScanEngine do simulador legado) ---
+static LadderProjectModel Program(params (string[] Series, string[] Parallel)[] rungs)
+{
+    var built = new LadderProjectModel();
+    foreach (var (series, parallel) in rungs)
+    {
+        var rung = new LadderRungModel();
+        for (int column = 0; column < 8; column++)
+        {
+            rung.Series[column] = LadderCellText.Parse(column < series.Length ? series[column] : "");
+            rung.Parallel[column] = LadderCellText.Parse(column < parallel.Length ? parallel[column] : "");
+        }
+        built.Rungs.Add(rung);
+    }
+    return built;
+}
+
+// Partida e parada com selo: X0001 liga, Y0001 sela, X0002 (NF) desliga.
+var seal = Program(
+    (new[] { "NO X0001", "NC X0002", "", "", "", "", "", "COIL Y0001" }, new[] { "NO Y0001" }),
+    (new[] { "NO X0003", "", "", "", "", "", "", "TMR V0001 10" }, Array.Empty<string>()),
+    (new[] { "NO V0001", "", "", "", "", "", "", "COIL Y0002" }, Array.Empty<string>()),
+    (new[] { "", "", "", "", "", "", "", "END" }, Array.Empty<string>()));
+var sim = new LadderSimulationSession();
+Require(sim.Load(seal), "Programa deve carregar no simulador: " + string.Join(" | ", sim.Diagnostics));
+Require(string.Join(",", sim.Points.Select(point => point.Address)) == "X0001,X0002,X0003,Y0001,Y0002,V0001",
+    "Endereços do programa divergentes: " + string.Join(",", sim.Points.Select(point => point.Address)));
+
+sim.Step();
+Require(!sim.GetBit("Y0001") && !sim.IsRungPowered(0), "Saída deve começar desligada.");
+sim.SetInput("X0001", true);
+sim.Step();
+Require(sim.GetBit("Y0001") && sim.IsRungPowered(0), "Partida deve ligar Y0001.");
+sim.SetInput("X0001", false);
+sim.Advance(100);
+Require(sim.GetBit("Y0001"), "Selo deve manter Y0001 ligada após soltar a partida.");
+sim.SetInput("X0002", true);
+sim.Step();
+Require(!sim.GetBit("Y0001"), "Parada (NF) deve desligar Y0001.");
+sim.SetInput("X0002", false);
+sim.Step();
+Require(!sim.GetBit("Y0001"), "Sem partida, Y0001 continua desligada após soltar a parada.");
+
+// Temporizador: preset 10 = 1 s (base de 100 ms do motor).
+sim.SetInput("X0003", true);
+sim.Advance(900);
+Require(!sim.GetBit("Y0002"), "Temporizador não pode terminar antes de 1 s.");
+sim.Advance(200);
+Require(sim.GetBit("V0001") && sim.GetBit("Y0002"), "Temporizador deve terminar após 1 s e ligar Y0002.");
+Require(sim.GetValue("V0001") >= 10, "Valor do temporizador deve chegar ao preset: " + sim.GetValue("V0001"));
+
+// Forçamento sobrepõe o campo e, ao liberar, o campo volta a valer.
+sim.Force("X0001", true);
+sim.Step();
+Require(sim.IsForced("X0001") && sim.GetBit("Y0001") && sim.ForcedCount == 1, "Forçar X0001 deve ligar Y0001.");
+sim.Release("X0001");
+sim.SetInput("X0002", true);
+sim.Step();
+Require(!sim.IsForced("X0001") && !sim.GetBit("Y0001"), "Liberar o forçamento devolve o valor do campo.");
+
+sim.Reset();
+Require(sim.ScanCount == 0 && sim.ElapsedMs == 0 && !sim.GetInput("X0002") && sim.ForcedCount == 0, "Reiniciar deve zerar tempo, campo e forçamentos.");
+sim.Step();
+Require(!sim.GetBit("Y0001") && !sim.GetBit("Y0002"), "Após reiniciar as saídas começam desligadas.");
+
+RequireThrows<ArgumentException>(() => sim.SetInput("Y0001", true), "Saída não pode ser acionada como entrada de campo.");
+RequireThrows<ArgumentException>(() => sim.SetInput("X0", true), "Endereço inválido deve ser recusado.");
+RequireThrows<InvalidOperationException>(() => new LadderSimulationSession().Step(), "Simular sem programa deve ser recusado.");
+Require(sim.Advance(5) == 0 && sim.Advance(5) == 1, "Sobra de tempo deve acumular até completar um passo de 10 ms.");
+
 Console.WriteLine("ModernizationSelfTest: OK");
 
 static void RequireThrows<T>(Action action, string message) where T : Exception

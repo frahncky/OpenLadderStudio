@@ -23,6 +23,8 @@ Nenhuma saída física é acionada. O simulador é o único lugar do produto em 
 
 `LadderSimulation.cs`, `ProcessSimulation.cs` e `SimulatedPlants.cs` não referenciam WinForms. `scripts/ValidateProject.ps1` bloqueia o build se essa regra for violada.
 
+`LadderSimulation.cs` e o modelo Ladder universal que ele consome (`UniversalLadderModel.cs`) ficam em `src/OpenLadderStudio.Core`. Os demais arquivos ficam em `src/OpenLadderStudio.Desktop`. O build legado compila o motor a partir do Core, e a trilha moderna também o usa: o modo **Simular (F5)** do editor novo roda o programa nesse mesmo motor, por meio de `LadderSimulationSession` (`src/OpenLadderStudio.Application`). As plantas simuladas ainda não foram migradas.
+
 ## Ciclo de varredura
 
 Cada passo de simulação executa, nesta ordem:
