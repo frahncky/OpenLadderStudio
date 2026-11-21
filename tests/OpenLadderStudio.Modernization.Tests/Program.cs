@@ -66,6 +66,53 @@ var legacy = projects.Deserialize("PC12-LADDER|1\nRUNG|NO:X0|EMPTY|EMPTY|EMPTY|E
 Require(legacy.Rungs[0].Series[7].Kind == LadderElementKind.Coil, "Versão 1 deve continuar legível.");
 RequireThrows<InvalidDataException>(() => projects.Deserialize("LIXO"), "Cabeçalho desconhecido deve ser recusado.");
 
+// --- Verificação TP02 (pré-compilação DRY-RUN) pela camada Application ---
+// Vetores iguais aos de tests/OpenLadderStudio.Core.Tests/Tp02LadderTargetCompilerSelfTest.cs,
+// montados pelo texto de célula que o editor moderno aceita.
+var verifier = new Tp02ProgramVerifier();
+(string Name, string[] Series, string[] Parallel, string Hex)[] vectors =
+{
+    ("série STR/AND/OUT", new[] { "NO X0001", "NO X0002", "", "", "", "", "", "COIL Y0001" }, new string[8], "001000002100204000"),
+    ("contato NF", new[] { "NO X0001", "NC X0002", "", "", "", "", "", "COIL Y0001" }, new string[8], "001000002900204000"),
+    ("paralelo na primeira coluna", new[] { "NO X0001", "", "", "", "", "", "", "COIL Y0001" }, new[] { "NO X0002", "", "", "", "", "", "", "" }, "001000003100204000"),
+    ("paralelo após condição", new[] { "NO X0001", "NO X0002", "", "", "", "", "", "COIL Y0001" }, new[] { "", "NO X0003", "", "", "", "", "", "" }, "001000001100003200000100204000"),
+    ("TMR + preset", new[] { "NO X0001", "", "", "", "", "", "", "TMR V0001 1000" }, new string[8], "001000006000876800"),
+    ("CNT + preset", new[] { "NO X0001", "", "", "", "", "", "", "CNT V0001 10" }, new string[8], "001000006800800A00"),
+    ("SET F-23", new[] { "NO X0001", "", "", "", "", "", "", "SET Y0001" }, new string[8], "001000177100C88000"),
+    ("RESET F-24", new[] { "NO X0001", "", "", "", "", "", "", "RST C0001" }, new string[8], "001000187100D08000"),
+    ("F-13w ADD", new[] { "NO X0001", "", "", "", "", "", "", "FUN F-13w D0001,10,D0002" }, new string[8], "0010000D7700F00000800A00F00100"),
+    ("F-43 JMP", new[] { "NO X0001", "", "", "", "", "", "", "FUN F-43 LB001" }, new string[8], "0010002B7100800000"),
+    ("END", new[] { "", "", "", "", "", "", "", "END" }, new string[8], "007000"),
+};
+foreach (var vector in vectors)
+{
+    var program = new LadderProjectModel();
+    var rung = new LadderRungModel();
+    for (int column = 0; column < 8; column++)
+    {
+        rung.Series[column] = LadderCellText.Parse(vector.Series[column]);
+        rung.Parallel[column] = LadderCellText.Parse(vector.Parallel[column]);
+    }
+    program.Rungs.Add(rung);
+    var verified = verifier.Verify(program);
+    Require(verified.Success, "Verificação TP02 falhou em " + vector.Name + ": " + string.Join(" | ", verified.Errors));
+    Require(verified.MachineHex == vector.Hex, "Verificação TP02 divergente em " + vector.Name + ": " + verified.MachineHex);
+    Require(verified.Report.Contains("Nenhum byte foi transmitido"), "Relatório deve declarar que nada foi transmitido.");
+}
+
+// Programa salvo e reaberto verifica igual ao original.
+var saved = projects.Deserialize(projects.Serialize(model));
+Require(verifier.Verify(saved).MachineHex == verifier.Verify(model).MachineHex, "Verificação muda após salvar e reabrir.");
+
+var invalid = new LadderProjectModel();
+invalid.Rungs.Add(new LadderRungModel());
+invalid.Rungs.Add(new LadderRungModel());
+invalid.Rungs[1].Series[0] = LadderCellText.Parse("NO X0001");
+var rejected = verifier.Verify(invalid);
+Require(!rejected.Success, "Linha sem saída na coluna 8 deve ser recusada.");
+Require(rejected.Errors.Any(error => error.StartsWith("Rung 2")), "Erro deve apontar a linha 2: " + string.Join(" | ", rejected.Errors));
+Require(rejected.Report.Contains("ERROS"), "Relatório deve listar os erros.");
+
 Console.WriteLine("ModernizationSelfTest: OK");
 
 static void RequireThrows<T>(Action action, string message) where T : Exception

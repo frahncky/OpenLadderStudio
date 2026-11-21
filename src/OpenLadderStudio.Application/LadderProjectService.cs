@@ -50,7 +50,7 @@ public sealed class LadderProjectService
 
     public static string NormalizeComment(string? text) => LadderProjectCodec.NormalizeComment(text);
 
-    private static LadderProjectDocument ToDocument(LadderProjectModel model)
+    internal static LadderProjectDocument ToDocument(LadderProjectModel model)
     {
         var document = new LadderProjectDocument();
         foreach (LadderRungModel rung in model.Rungs)

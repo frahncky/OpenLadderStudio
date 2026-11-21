@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using OpenLadderStudio.Application;
 
 namespace OpenLadderStudio.UI;
@@ -12,13 +13,17 @@ public sealed class MainForm : Form
 
     private readonly PlcDriverCatalog catalog;
     private readonly LadderProjectService projects = new();
+    private readonly Tp02ProgramVerifier verifier = new();
     private readonly DataGridView grid = new();
+    private readonly TextBox report = new();
+    private readonly Splitter reportSplitter = new() { Dock = DockStyle.Bottom, Visible = false };
     private readonly ToolStripStatusLabel status = new() { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
 
     private LadderProjectModel project;
     private string? currentPath;
     private bool dirty;
     private bool loading;
+    private bool verificationStale;
 
     public MainForm(PlcDriverCatalog catalog)
     {
@@ -36,11 +41,15 @@ public sealed class MainForm : Form
         KeyPreview = true;
 
         BuildGrid();
+        BuildReport();
         var menu = BuildMenu();
         var statusStrip = new StatusStrip();
         statusStrip.Items.Add(status);
 
+        // Ordem de encaixe: barra de status, menu, relatório e divisor embaixo; a grade ocupa o resto.
         Controls.Add(grid);
+        Controls.Add(reportSplitter);
+        Controls.Add(report);
         Controls.Add(menu);
         Controls.Add(statusStrip);
         MainMenuStrip = menu;
@@ -79,12 +88,71 @@ public sealed class MainForm : Form
         edit.DropDownItems.Add(new ToolStripMenuItem("&Inserir linha abaixo", null, (_, _) => InsertRung(), Keys.Control | Keys.Enter));
         edit.DropDownItems.Add(new ToolStripMenuItem("&Excluir linha", null, (_, _) => DeleteRung(), Keys.Control | Keys.Delete));
 
+        var program = new ToolStripMenuItem("&Programa");
+        program.DropDownItems.Add(new ToolStripMenuItem("&Verificar para TP02", null, (_, _) => VerifyProgram(), Keys.F7));
+        program.DropDownItems.Add(new ToolStripMenuItem("&Ocultar resultado", null, (_, _) => ShowReport(false), Keys.Shift | Keys.F7));
+
         var help = new ToolStripMenuItem("A&juda");
         help.DropDownItems.Add(new ToolStripMenuItem("&Elementos...", null, (_, _) => ShowElementHelp()));
         help.DropDownItems.Add(new ToolStripMenuItem("&Drivers disponíveis...", null, (_, _) => ShowDrivers()));
 
-        menu.Items.AddRange(new ToolStripItem[] { file, edit, help });
+        menu.Items.AddRange(new ToolStripItem[] { file, edit, program, help });
         return menu;
+    }
+
+    private void BuildReport()
+    {
+        report.Dock = DockStyle.Bottom;
+        report.Height = 200;
+        report.Multiline = true;
+        report.ReadOnly = true;
+        report.WordWrap = false;
+        report.ScrollBars = ScrollBars.Both;
+        report.Font = new Font(FontFamily.GenericMonospace, 9F);
+        report.Visible = false;
+    }
+
+    private void ShowReport(bool visible)
+    {
+        report.Visible = visible;
+        reportSplitter.Visible = visible;
+    }
+
+    /// <summary>
+    /// Pré-compila o programa para o TP02 e mostra erros, avisos e passos gerados.
+    /// Nada é transmitido: o verificador da camada Application não conhece porta nem driver.
+    /// </summary>
+    private void VerifyProgram()
+    {
+        if (grid.IsCurrentCellInEditMode && !grid.EndEdit()) return;
+
+        LadderVerificationResult result = verifier.Verify(project);
+        report.Text = result.Report.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
+        report.SelectionStart = 0;
+        report.ScrollToCaret();
+        ShowReport(true);
+        verificationStale = false;
+
+        if (result.Success)
+        {
+            status.Text = "Verificação TP02: sem erros, " + result.Steps.Count + " passo(s)"
+                + (result.Warnings.Count > 0 ? ", " + result.Warnings.Count + " aviso(s)." : ".");
+            return;
+        }
+
+        status.Text = "Verificação TP02: " + result.Errors.Count + " erro(s). Nada foi transmitido.";
+        int? rung = FirstRungOf(result.Errors);
+        if (rung is int number && number >= 1 && number <= project.Rungs.Count) SelectRung(number - 1);
+    }
+
+    private static int? FirstRungOf(IEnumerable<string> messages)
+    {
+        foreach (string message in messages)
+        {
+            Match match = Regex.Match(message, @"^(?:Rung|Linha)\s+(\d+)", RegexOptions.IgnoreCase);
+            if (match.Success) return int.Parse(match.Groups[1].Value);
+        }
+        return null;
     }
 
     private void BuildGrid()
@@ -321,6 +389,11 @@ public sealed class MainForm : Form
 
     private void MarkDirty()
     {
+        if (report.Visible && !verificationStale)
+        {
+            verificationStale = true;
+            status.Text = "Programa alterado desde a última verificação. F7 verifica de novo.";
+        }
         if (dirty) return;
         dirty = true;
         UpdateTitle();
@@ -336,10 +409,11 @@ public sealed class MainForm : Form
     {
         MessageBox.Show(this,
             "Digite o elemento na célula: mnemônico e campos separados por espaço.\n\n" +
-            "NO X0  contato aberto\nNC X0  contato fechado\nCOIL Y0  bobina\n" +
-            "TMR T0 K10 [modo]  temporizador\nCNT C0 K5  contador\nSET Y0 / RST Y0\n" +
-            "EUP / EDN  bordas\nFUN nome [parâmetro]\nEND  fim do programa\n\n" +
-            "Célula vazia ou Delete apaga o elemento.",
+            "NO X0001  contato aberto\nNC X0002  contato fechado\nCOIL Y0001  bobina\n" +
+            "TMR V0001 1000 [modo]  temporizador\nCNT V0001 10  contador\nSET Y0001 / RST C0001\n" +
+            "EUP / EDN  bordas\nFUN F-13w D0001,10,D0002  função\nEND  fim do programa\n\n" +
+            "Endereços no formato do TP02, com quatro dígitos (X0001, não X0).\n" +
+            "Célula vazia ou Delete apaga o elemento. F7 verifica o programa para o TP02.",
             "Elementos Ladder", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 

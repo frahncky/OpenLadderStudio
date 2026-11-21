@@ -2,7 +2,7 @@ namespace OpenLadderStudio.Application;
 
 /// <summary>
 /// Forma textual de uma célula para edição em grade: mnemônico seguido dos campos separados
-/// por espaço, por exemplo "NO X0", "COIL Y0", "TMR T0 K10", "CNT C0 K5", "END".
+/// por espaço, por exemplo "NO X0001", "COIL Y0001", "TMR V0001 1000", "CNT V0001 10", "END".
 /// Vazio representa célula vazia. Não é o formato de arquivo (esse é do codec no núcleo).
 /// </summary>
 public static class LadderCellText
