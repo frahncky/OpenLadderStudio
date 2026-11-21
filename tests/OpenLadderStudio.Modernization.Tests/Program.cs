@@ -296,6 +296,48 @@ foreach (var info in plants)
 plantSim.AttachPlant(null);
 Require(plantSim.PlantId is null && plantSim.Faults.Count == 0 && !plantSim.Points.Any(point => point.DrivenByPlant), "Desligar a planta deve remover sensores e falhas.");
 
+// --- Ferramentas TP02 offline (WBP dry-run, HEX, IL -> Ladder) ---
+var offline = new Tp02OfflineTools();
+var series = new LadderProjectModel();
+var seriesRung = new LadderRungModel();
+seriesRung.Series[0] = LadderCellText.Parse("NO X0001");
+seriesRung.Series[1] = LadderCellText.Parse("NO X0002");
+seriesRung.Series[7] = LadderCellText.Parse("COIL Y0001");
+series.Rungs.Add(seriesRung);
+
+// Mesmo vetor de Tp02LadderTargetCompilerSelfTest.TestWbpChunks (estação 1, início 0, RI 5).
+var wbp = offline.PreviewWbp(series, 1, 0, 5);
+Require(wbp.Success && wbp.StepCount == 3, "Pré-visualização WBP deve compilar 3 passos.");
+Require(wbp.Frames.Count == 1 && wbp.Frames[0] == ":01?5WBP000003001000002100204000B5\r", "Quadro WBP divergente do vetor legado: " + string.Join("|", wbp.Frames));
+Require(wbp.Report.Contains("WBP[00] :01?5WBP000003001000002100204000B5<CR>") && wbp.Report.Contains("Nenhum byte foi transmitido"), "Relatório WBP divergente do legado.");
+RequireThrows<ArgumentOutOfRangeException>(() => offline.PreviewWbp(series, 100, 0, 5), "Estação acima de 99 deve ser recusada.");
+RequireThrows<ArgumentOutOfRangeException>(() => offline.PreviewWbp(series, 1, 4001, 5), "Início acima de 4000 deve ser recusado.");
+RequireThrows<ArgumentOutOfRangeException>(() => offline.PreviewWbp(series, 1, 0, 16), "RI acima de 15 deve ser recusado.");
+var wbpRejected = offline.PreviewWbp(invalid);
+Require(!wbpRejected.Success && wbpRejected.Frames.Count == 0 && wbpRejected.Report.Contains("ERROS"), "Programa com erro não gera WBP.");
+
+string hexText = offline.ExportHex(series);
+Require(string.Concat(hexText.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)) == "001000002100204000"
+    && hexText.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length == 3, "HEX deve ter uma palavra por linha: " + hexText);
+RequireThrows<InvalidOperationException>(() => offline.ExportHex(invalid), "HEX de programa com erro deve ser recusado.");
+
+var il = offline.ImportIl("; IL verificada\r\n0000: STR X0001\r\n0001: AND NOT X0002\r\n0002: OUT Y0001\r\n0003: END\r\n", "teste.verified.il.txt");
+Require(il.Success && il.InstructionCount == 4 && il.Project is not null, "IL simples deve converter: " + il.Report);
+Require(LadderCellText.Format(il.Project!.Rungs[0].Series[0]) == "NO X0001"
+    && LadderCellText.Format(il.Project.Rungs[0].Series[1]) == "NC X0002"
+    && LadderCellText.Format(il.Project.Rungs[0].Series[7]) == "COIL Y0001"
+    && il.Project.Rungs[1].Series[7].Kind == LadderElementKind.End, "Linhas reconstruídas da IL divergentes.");
+// Ida e volta: IL -> Ladder -> compilador reproduz as mesmas palavras (vetor NF + END).
+Require(offline.ExportHex(il.Project) .Replace(Environment.NewLine, "") == "001000002900204000007000", "IL reconstruída não compila para as mesmas palavras.");
+
+var blocked = offline.ImportIl("0000: STR X0001\n0001: OR X0002\n0002: OUT Y0001\n");
+Require(!blocked.Success && blocked.Project is null && blocked.Errors.Any(e => e.Contains("OR")), "OR ainda não é suportado e deve bloquear: " + blocked.Report);
+var unknown = offline.ImportIl("0000: STR RAW=12\n0001: OUT Y0001\n");
+Require(!unknown.Success && unknown.Report.Contains("CONVERSÃO BLOQUEADA"), "Operando RAW deve bloquear.");
+var unclosed = offline.ImportIl("0000: STR X0001\n0001: AND X0002\n");
+Require(!unclosed.Success && unclosed.Errors.Any(e => e.Contains("não foi fechada")), "Linha sem OUT deve bloquear.");
+Require(!offline.ImportIl("texto qualquer").Success, "Texto sem IL deve ser recusado.");
+
 Console.WriteLine("ModernizationSelfTest: OK");
 
 static void RequireThrows<T>(Action action, string message) where T : Exception
