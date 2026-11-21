@@ -22,22 +22,6 @@ namespace ModernPC12
         }
     }
 
-    internal enum LadderElementType
-    {
-        Empty,
-        ContactNO,
-        ContactNC,
-        Coil,
-        Timer,
-        Counter,
-        Set,
-        Reset,
-        EdgeUp,
-        EdgeDown,
-        Function,
-        End
-    }
-
     internal enum LadderTool
     {
         Select,
@@ -55,58 +39,6 @@ namespace ModernPC12
         Function,
         End,
         Erase
-    }
-
-    internal sealed class LadderElement
-    {
-        public LadderElementType Type;
-        public string Address;
-        public string Parameter;
-        public string Mode;
-
-        public LadderElement()
-        {
-            Type = LadderElementType.Empty;
-            Address = string.Empty;
-            Parameter = string.Empty;
-            Mode = string.Empty;
-        }
-
-        public void Clear()
-        {
-            Type = LadderElementType.Empty;
-            Address = string.Empty;
-            Parameter = string.Empty;
-            Mode = string.Empty;
-        }
-    }
-
-    internal sealed class LadderRung
-    {
-        public const int ColumnCount = 8;
-        public LadderElement[] Elements;
-        public LadderElement[] Parallel;
-        private string comment = string.Empty;
-
-        // Comentário da linha: documentação do projeto, nunca lógica. Viaja com o rung
-        // no arquivo e no desfazer/refazer, mas nenhum caminho até o PLC o lê.
-        public string Comment
-        {
-            get { return comment; }
-            set { comment = value ?? string.Empty; }
-        }
-
-        public LadderRung()
-        {
-            Elements = new LadderElement[ColumnCount];
-            Parallel = new LadderElement[ColumnCount];
-            int i;
-            for (i = 0; i < ColumnCount; i++)
-            {
-                Elements[i] = new LadderElement();
-                Parallel[i] = new LadderElement();
-            }
-        }
     }
 
     internal sealed class LadderEditorForm : Form

@@ -15,7 +15,7 @@ Arquivos atuais mais próximos desta camada:
 - `UniversalStudioShell.cs`;
 - `StudioUi.cs`;
 - `LadderEditor.cs`;
-- `LadderCanvasView.cs` e `LadderCanvasLayout.cs` (canvas do diagrama e sua geometria);
+- `LadderCanvasView.cs`, `LadderCanvasLayout.cs` e `LadderSymbols.cs` (canvas do diagrama, geometria e símbolos), em `src/OpenLadderStudio.WinForms`, compilados pelas duas trilhas; o modelo de tela que eles desenham (`LadderEditorModel.cs`) fica em `src/OpenLadderStudio.Core`;
 - `StudioShellParts.cs` (peças visuais do shell);
 - `PLCDeviceManagerV16.cs`;
 - `PLCMemoryMapManager.cs`;

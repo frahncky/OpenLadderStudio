@@ -236,7 +236,10 @@ Consequências para quem escreve interface:
 ### Editor Ladder (canvas)
 
 A geometria vive em `LadderCanvasLayout.cs` (sem controle, testável sem janela) e o desenho e o
-ponteiro em `LadderCanvasView.cs`. Cada linha é um **bloco**: a faixa de comentário em cima, o
+ponteiro em `LadderCanvasView.cs`, ambos em `src/OpenLadderStudio.WinForms`. O mesmo canvas é
+compilado pelo `Build.bat` e pela trilha moderna, onde o `LadderDiagram` o hospeda. Na trilha moderna,
+os nomes `OpenLadderPalette` e `OpenLadderMetrics` que ele usa são adaptadores, em
+`LegacyCanvasSupport.cs`, que leem a `ModernPalette`. Cada linha é um **bloco**: a faixa de comentário em cima, o
 diagrama embaixo (mais alto só quando há ramo paralelo). Depois da última linha vem a linha-fantasma
 **"+ Nova linha"**. Desenho, seleção, hover e edição usam os mesmos números do layout.
 

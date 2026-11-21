@@ -231,6 +231,7 @@ public sealed partial class MainForm
         simulating = true;
         simulateItem.Checked = true;
         grid.ReadOnly = true;
+        diagram.ReadOnly = true;
         // O painel lateral tira largura da grade; o comentário não é usado ao simular e
         // cede o espaço às colunas do programa (senão "TMR V0001 1000" sai cortado).
         grid.Columns[CommentColumn].Visible = false;
@@ -254,6 +255,7 @@ public sealed partial class MainForm
         simulating = false;
         simulateItem.Checked = false;
         grid.ReadOnly = false;
+        diagram.ReadOnly = false;
         grid.Columns[CommentColumn].Visible = true;
         simulationPanel.Visible = false;
         simulationSplitter.Visible = false;
@@ -263,6 +265,7 @@ public sealed partial class MainForm
         reportHiddenBySynoptic = false;
         for (int rung = 0; rung < poweredRungs.Length; rung++) PaintRung(rung, false);
         poweredRungs = Array.Empty<bool>();
+        diagram.SetRungPower(null);
         status.Text = "Simulação encerrada.";
     }
 
@@ -296,13 +299,16 @@ public sealed partial class MainForm
             if (item.SubItems[2].Text != state) item.SubItems[2].Text = state;
         }
 
+        bool powerChanged = false;
         for (int rung = 0; rung < poweredRungs.Length; rung++)
         {
             bool powered = simulation.IsRungPowered(rung);
             if (powered == poweredRungs[rung]) continue;
             poweredRungs[rung] = powered;
             PaintRung(rung, powered);
+            powerChanged = true;
         }
+        if (powerChanged) diagram.SetRungPower(poweredRungs);
 
         if (synoptic.Visible) synoptic.RefreshScene();
         if (plantState.Visible)

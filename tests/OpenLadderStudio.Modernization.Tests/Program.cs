@@ -338,6 +338,31 @@ var unclosed = offline.ImportIl("0000: STR X0001\n0001: AND X0002\n");
 Require(!unclosed.Success && unclosed.Errors.Any(e => e.Contains("não foi fechada")), "Linha sem OUT deve bloquear.");
 Require(!offline.ImportIl("texto qualquer").Success, "Texto sem IL deve ser recusado.");
 
+// --- Regras de edição do diagrama (LadderEditCommands) ---
+var clicked = new LadderCellPosition(0, 2, 0);
+Require(LadderEditCommands.Target(LadderElementKind.Coil, clicked, false, out _) == new LadderCellPosition(0, 7, 0), "Bobina vai para a coluna 8.");
+Require(LadderEditCommands.Target(LadderElementKind.End, clicked, false, out _) == new LadderCellPosition(0, 7, 0), "END vai para a coluna 8.");
+Require(LadderEditCommands.Target(LadderElementKind.ContactNormallyOpen, clicked, true, out _) == new LadderCellPosition(0, 2, 1), "Contato paralelo vai para a via paralela da coluna clicada.");
+Require(LadderEditCommands.Target(LadderElementKind.ContactNormallyOpen, new LadderCellPosition(0, 7, 0), false, out string colError) is null && colError.Contains("coluna 8"), "Condição na coluna 8 deve ser recusada.");
+Require(LadderEditCommands.Target(LadderElementKind.Coil, clicked, true, out string parError) is null && parError.Contains("paralelo"), "Saída no ramo paralelo deve ser recusada.");
+Require(LadderEditCommands.Target(LadderElementKind.Timer, clicked, true, out _) is null, "Temporizador no ramo paralelo deve ser recusado.");
+
+var editModel = projects.CreateNew();
+editModel.Rungs.Add(new LadderRungModel());
+LadderEditCommands.Put(editModel, new LadderCellPosition(0, 0, 0), LadderCellText.Parse("NO X0001"));
+LadderEditCommands.Put(editModel, new LadderCellPosition(0, 7, 0), LadderCellText.Parse("COIL Y0001"));
+LadderEditCommands.Put(editModel, new LadderCellPosition(0, 3, 0), LadderCellText.Parse("NC X0002"));
+Require(LadderEditCommands.Move(editModel, new LadderCellPosition(0, 0, 0), 1, 2, out _), "Contato deve mover para célula livre de outra linha.");
+Require(editModel.Rungs[0].Series[0].IsEmpty && LadderCellText.Format(editModel.Rungs[1].Series[2]) == "NO X0001", "Origem deve ficar vazia e destino com o contato.");
+Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(1, 2, 0), 0, 3, out string busy) && busy.Contains("já tem"), "Destino ocupado deve ser recusado.");
+Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(0, 7, 0), 0, 4, out string outMove) && outMove.Contains("coluna 8"), "Saída não sai da coluna 8.");
+Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(0, 3, 0), 1, 7, out _), "Condição não entra na coluna 8.");
+Require(LadderEditCommands.Move(editModel, new LadderCellPosition(0, 7, 0), 1, 7, out _), "Saída move entre linhas pela coluna 8.");
+Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(0, 0, 0), 1, 1, out string emptyMove) && emptyMove.Length > 0, "Célula vazia não move.");
+Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(0, 3, 0), 5, 1, out _), "Destino fora do diagrama deve ser recusado.");
+LadderEditCommands.Clear(editModel, new LadderCellPosition(0, 3, 0));
+Require(editModel.Rungs[0].Series[3].IsEmpty, "Apagar deve esvaziar a célula.");
+
 Console.WriteLine("ModernizationSelfTest: OK");
 
 static void RequireThrows<T>(Action action, string message) where T : Exception
