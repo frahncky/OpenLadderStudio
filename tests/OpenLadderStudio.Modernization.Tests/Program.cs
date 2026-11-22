@@ -409,6 +409,39 @@ Require(mapRefused && File.ReadAllLines(Path.Combine(mapRoot, "generic.modbus.rt
 Require(PlcMemoryMapStore.Overlaps(new[] { areasRead[0], new PlcMemoryArea("Outra", PlcMemoryAreaKind.Coil, 107, 2, "C", ""), new PlcMemoryArea("HR", PlcMemoryAreaKind.HoldingRegister, 100, 8, "HR", "") }).Count == 1, "Sobreposição só entre áreas do mesmo tipo.");
 Directory.Delete(mapRoot, true);
 
+// --- Atualização (sem rede: transporte falso) ---
+Require(UpdateService.CompareVersions("1.10", "1.9") > 0 && UpdateService.CompareVersions("v1.77", "1.77") == 0 && UpdateService.CompareVersions("1.76", "1.77.1") < 0, "Comparação de versões por partes numéricas.");
+Require(UpdateService.ExtractHash("ABCDEF0123456789abcdef0123456789ABCDEF0123456789abcdef0123456789  OpenLadder-Studio-Setup.exe") is { Length: 64 }
+    && UpdateService.ExtractHash("sem hash") is null, "Hash do .sha256 com ou sem nome de arquivo.");
+byte[] setupBytes = System.Text.Encoding.ASCII.GetBytes("instalador de teste");
+string setupHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(setupBytes));
+string ReleaseJson(string tag, bool withHash) =>
+    "{\"tag_name\":\"" + tag + "\",\"assets\":[{\"name\":\"OpenLadder-Studio-Setup.exe\",\"browser_download_url\":\"https://exemplo/setup\"}"
+    + (withHash ? ",{\"name\":\"OpenLadder-Studio-Setup.exe.sha256\",\"browser_download_url\":\"https://exemplo/hash\"}" : "") + "]}";
+var fakeNet = new FakeUpdateTransport();
+fakeNet.Files["https://exemplo/setup"] = setupBytes;
+fakeNet.Files["https://exemplo/hash"] = System.Text.Encoding.ASCII.GetBytes(setupHash.ToLowerInvariant() + "  OpenLadder-Studio-Setup.exe\n");
+fakeNet.Json = ReleaseJson("v1.77", true);
+Require((await new UpdateService(fakeNet, "1.77").CheckAsync()).State == UpdateState.UpToDate, "Mesma versão: atualizado.");
+fakeNet.Json = ReleaseJson("v1.78", false);
+Require((await new UpdateService(fakeNet, "1.77").CheckAsync()).State == UpdateState.Incomplete, "Release sem .sha256: incompleta.");
+fakeNet.Json = ReleaseJson("v1.78", true);
+var updateCheck = await new UpdateService(fakeNet, "1.77").CheckAsync();
+Require(updateCheck.State == UpdateState.Available && updateCheck.Release.Version == "1.78", "Versão nova completa: disponível.");
+string updateDir = Path.Combine(Path.GetTempPath(), "olsupd-" + Guid.NewGuid().ToString("N"));
+string downloaded = await new UpdateService(fakeNet, "1.77").DownloadVerifiedAsync(updateCheck.Release, updateDir);
+Require(File.ReadAllBytes(downloaded).SequenceEqual(setupBytes), "Instalador baixado e conferido.");
+fakeNet.Files["https://exemplo/setup"] = System.Text.Encoding.ASCII.GetBytes("instalador adulterado");
+bool updateBlocked;
+try { await new UpdateService(fakeNet, "1.77").DownloadVerifiedAsync(updateCheck.Release, updateDir); updateBlocked = false; }
+catch (InvalidDataException) { updateBlocked = true; }
+Require(updateBlocked && !File.Exists(Path.Combine(updateDir, UpdateService.SetupAssetName)), "SHA-256 diferente: bloqueia e apaga o instalador.");
+bool badReleaseJson;
+try { UpdateService.ParseRelease("<html>limite de requisições</html>"); badReleaseJson = false; }
+catch (InvalidDataException) { badReleaseJson = true; }
+Require(badReleaseJson, "Resposta que não é JSON vira InvalidDataException.");
+Directory.Delete(updateDir, true);
+
 // --- Referência cruzada (painel de projeto) ---
 var xrefModel = new LadderProjectService().CreateNew();
 LadderEditCommands.Put(xrefModel, new LadderCellPosition(0, 0, 0), LadderCellText.Parse("NO X0001"));
@@ -447,5 +480,21 @@ static void Require(bool condition, string message)
     if (!condition)
     {
         throw new InvalidOperationException(message);
+    }
+}
+
+/// <summary>Rede falsa da atualização: JSON da release e arquivos por URL.</summary>
+sealed class FakeUpdateTransport : IUpdateTransport
+{
+    public string Json { get; set; } = string.Empty;
+    public Dictionary<string, byte[]> Files { get; } = new();
+
+    public Task<string> GetStringAsync(string url, CancellationToken cancellation) => Task.FromResult(Json);
+
+    public Task DownloadAsync(string url, string path, IProgress<int>? progress, CancellationToken cancellation)
+    {
+        File.WriteAllBytes(path, Files[url]);
+        progress?.Report(100);
+        return Task.CompletedTask;
     }
 }
