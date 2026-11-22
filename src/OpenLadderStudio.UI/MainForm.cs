@@ -152,6 +152,7 @@ public sealed partial class MainForm : Form
         help.DropDownItems.Add(new ToolStripMenuItem("&Elementos...", null, (_, _) => ShowElementHelp()));
         help.DropDownItems.Add(new ToolStripMenuItem("&Drivers disponíveis...", null, (_, _) => ShowDrivers()));
         help.DropDownItems.Add(new ToolStripMenuItem("&Atalhos de teclado", null, (_, _) => ShowShortcuts(), Keys.F1));
+        help.DropDownItems.Add(new ToolStripMenuItem("&Verificar atualizações...", null, (_, _) => CheckForUpdates()));
         help.DropDownItems.Add(new ToolStripSeparator());
         help.DropDownItems.Add(new ToolStripMenuItem("&Sobre o OpenLadder Studio", null, (_, _) => ShowAbout()));
 
