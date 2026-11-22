@@ -2,6 +2,13 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [1.76] - 2026-11-21
+
+### Interface
+- removido o guia "Como montar uma linha" do diagrama, que destoava de uma ferramenta profissional.
+
+### Trilha moderna (não distribuída)
+- painel de propriedades à direita do diagrama: tipo e posição do elemento, endereço, preset, retentivo, parâmetros e comentário da linha; Enter grava, Esc descarta, sair do campo grava, com desfazer e a mesma validação da grade; salvar, novo e abrir gravam antes o que está pendente; some durante a simulação.
 ## [1.75] - 2026-11-21
 
 ### Interface

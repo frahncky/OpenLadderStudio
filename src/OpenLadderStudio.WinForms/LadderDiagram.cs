@@ -165,8 +165,6 @@ public sealed class LadderDiagram : UserControl
                 ActiveTool = LadderDiagramTool.Select;
             }
             canvas.DragEnabled = !readOnly && tool == LadderDiagramTool.Select;
-            canvas.ShowGuide = !readOnly;
-            canvas.Invalidate();
         }
     }
 
@@ -213,6 +211,8 @@ public sealed class LadderDiagram : UserControl
         canvas.SelectedLane = lane == 1 ? 1 : 0;
         canvas.ScrollToRung(canvas.SelectedRung);
         canvas.Invalidate();
+        // Seleção por código avisa como a seleção por clique (painel de propriedades).
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Destaque da última varredura (true = linha energizada); null limpa.</summary>

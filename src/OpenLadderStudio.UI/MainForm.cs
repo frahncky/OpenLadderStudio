@@ -50,12 +50,15 @@ public sealed partial class MainForm : Form
         BuildDiagram();
         BuildReport();
         BuildSimulationPanel();
+        BuildProperties();
         var menu = BuildMenu();
         var statusStrip = BuildStatusBar();
 
         // Ordem de encaixe: barra de status, menu, relatório e divisor embaixo; a grade ocupa o resto.
         Controls.Add(grid);
         Controls.Add(diagram);
+        Controls.Add(propertiesSplitter);
+        Controls.Add(properties);
         Controls.Add(simulationSplitter);
         Controls.Add(simulationPanel);
         Controls.Add(synopticSplitter);
@@ -451,8 +454,9 @@ public sealed partial class MainForm : Form
 
     private bool SaveProject(bool askPath)
     {
-        // Confirma a edição em andamento para não perder o que está na célula.
+        // Confirma a edição em andamento para não perder o que está na célula ou no painel.
         if (grid.IsCurrentCellInEditMode && !grid.EndEdit()) return false;
+        if (!properties.CommitPending()) return false;
 
         string? path = currentPath;
         if (askPath || string.IsNullOrEmpty(path))
@@ -487,6 +491,7 @@ public sealed partial class MainForm : Form
     private bool ConfirmDiscard()
     {
         if (grid.IsCurrentCellInEditMode && !grid.EndEdit()) return false;
+        if (!properties.CommitPending()) return false;
         if (!dirty) return true;
         DialogResult answer = MessageBox.Show(this,
             "O projeto tem alterações não salvas. Deseja salvar antes de continuar?",
