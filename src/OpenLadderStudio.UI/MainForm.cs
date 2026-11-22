@@ -52,6 +52,7 @@ public sealed partial class MainForm : Form
         BuildSimulationPanel();
         BuildProperties();
         BuildClipboard();
+        BuildProjectPanel();
         var menu = BuildMenu();
         var statusStrip = BuildStatusBar();
 
@@ -60,6 +61,8 @@ public sealed partial class MainForm : Form
         Controls.Add(diagram);
         Controls.Add(propertiesSplitter);
         Controls.Add(properties);
+        Controls.Add(projectSplitter);
+        Controls.Add(projectTree);
         Controls.Add(simulationSplitter);
         Controls.Add(simulationPanel);
         Controls.Add(synopticSplitter);
@@ -118,7 +121,10 @@ public sealed partial class MainForm : Form
             undoItem.Enabled = !simulating && (history.CanUndo || grid.IsCurrentCellInEditMode);
             redoItem.Enabled = !simulating && history.CanRedo;
         };
+        edit.DropDownItems.Add(new ToolStripMenuItem("&Apagar elemento", null, (_, _) => { if (diagramView) ClearCell(SelectedPosition()); }) { ShortcutKeyDisplayString = "Del" });
+        edit.DropDownItems.Add(new ToolStripSeparator());
         edit.DropDownItems.Add(new ToolStripMenuItem("&Inserir linha abaixo", null, (_, _) => InsertRung(), Keys.Control | Keys.Enter));
+        edit.DropDownItems.Add(new ToolStripMenuItem("Adicionar linha no &fim", null, (_, _) => { SelectRungInViews(project.Rungs.Count - 1); InsertRung(); }));
         edit.DropDownItems.Add(new ToolStripMenuItem("&Excluir linha", null, (_, _) => DeleteRung(), Keys.Control | Keys.Delete));
 
         var program = new ToolStripMenuItem("&Programa");
@@ -138,11 +144,15 @@ public sealed partial class MainForm : Form
         darkItem.Click += (_, _) => ModernPalette.Use(!ModernPalette.IsDark);
         view.DropDownOpening += (_, _) => darkItem.Checked = ModernPalette.IsDark;
         AddDiagramMenuItems(view);
+        AddPanelMenuItems(view);
         view.DropDownItems.Add(darkItem);
 
         var help = new ToolStripMenuItem("A&juda");
         help.DropDownItems.Add(new ToolStripMenuItem("&Elementos...", null, (_, _) => ShowElementHelp()));
         help.DropDownItems.Add(new ToolStripMenuItem("&Drivers disponíveis...", null, (_, _) => ShowDrivers()));
+        help.DropDownItems.Add(new ToolStripMenuItem("&Atalhos de teclado", null, (_, _) => ShowShortcuts(), Keys.F1));
+        help.DropDownItems.Add(new ToolStripSeparator());
+        help.DropDownItems.Add(new ToolStripMenuItem("&Sobre o OpenLadder Studio", null, (_, _) => ShowAbout()));
 
         menu.Items.AddRange(new ToolStripItem[] { file, edit, view, program, help });
         return menu;
@@ -534,6 +544,27 @@ public sealed partial class MainForm : Form
             "No diagrama: escolha a ferramenta na barra e clique na célula; duplo clique edita,\n" +
             "Delete apaga, arrastar move, Enter comenta a linha. Ctrl+1 diagrama, Ctrl+2 grade.",
             "Elementos Ladder", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void ShowShortcuts()
+    {
+        MessageBox.Show(this,
+            "Arquivo\n  Ctrl+N  Novo    Ctrl+O  Abrir    Ctrl+S  Salvar    Ctrl+Shift+S  Salvar como\n\n" +
+            "Edição\n  Ctrl+Z  Desfazer    Ctrl+Y  Refazer\n  Ctrl+X / Ctrl+C / Ctrl+V  Recortar, copiar e colar o elemento\n" +
+            "  Del  Apagar o elemento    Esc  Voltar à seleção\n  Ctrl+Enter  Inserir linha abaixo    Ctrl+Del  Excluir linha\n\n" +
+            "Exibição\n  Ctrl+1  Diagrama    Ctrl+2  Grade    F11  Modo foco\n  Ctrl++ / Ctrl+-  Zoom    Ctrl+0  Zoom 100%\n\n" +
+            "Programa\n  F7  Verificar para o TP02    Shift+F7  Ocultar resultado\n  F5  Simular    Ctrl+F5  Reiniciar simulação",
+            "Atalhos de teclado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void ShowAbout()
+    {
+        Version? version = typeof(MainForm).Assembly.GetName().Version;
+        MessageBox.Show(this,
+            "OpenLadder Studio" + (version is null ? string.Empty : " " + version.ToString(2)) + "\n\n" +
+            "Editor Ladder, simulação e comunicação com controladores compatíveis.\n" +
+            "Drivers: " + string.Join(", ", catalog.Drivers.Select(driver => driver.DisplayName)) + ".",
+            "Sobre o OpenLadder Studio", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void ShowDrivers()

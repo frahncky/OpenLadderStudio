@@ -117,7 +117,7 @@ public sealed partial class MainForm
         diagram.Visible = showDiagram;
         toolbox.Visible = showDiagram;
         grid.Visible = !showDiagram;
-        SyncPropertiesVisibility();
+        SyncPanels();
         (showDiagram ? (Control)diagram : grid).Focus();
         status.Text = showDiagram ? "Diagrama Ladder." : "Grade de texto.";
     }
@@ -126,6 +126,7 @@ public sealed partial class MainForm
     {
         diagram.ShowProject(project);
         RefreshProperties();
+        RefreshProjectTree();
         diagram.SetRungPower(simulating ? poweredRungs : null);
     }
 

@@ -39,7 +39,7 @@ public sealed partial class MainForm
     /// <summary>O painel aparece com o diagrama e fora da simulação.</summary>
     private void SyncPropertiesVisibility()
     {
-        bool show = diagramView && !simulating;
+        bool show = diagramView && !simulating && showPropertiesPanel && !focusMode;
         properties.Visible = show;
         propertiesSplitter.Visible = show;
     }

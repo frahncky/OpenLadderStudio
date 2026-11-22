@@ -137,6 +137,14 @@ public static class ModernPalette
                 }
                 list.Invalidate();
                 break;
+            case TreeView tree:
+                tree.BackColor = Chrome;
+                tree.ForeColor = Fore;
+                tree.LineColor = Muted;
+                // Linhas com folga, como as listas; ItemHeight par (ímpar recria a janela).
+                int item = (int)Math.Round(22 * tree.DeviceDpi / 96.0);
+                tree.ItemHeight = item + (item % 2);
+                break;
             case TextBoxBase box:
                 box.BackColor = box.ReadOnly ? Canvas : ChromeLight;
                 box.ForeColor = Fore;
