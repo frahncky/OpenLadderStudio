@@ -58,6 +58,14 @@ public sealed class LadderMoveRequestEventArgs : EventArgs
     public int ToColumn { get; }
 }
 
+/// <summary>Área de transferência do diagrama (Ctrl+C, Ctrl+X, Ctrl+V).</summary>
+public enum LadderClipboardAction
+{
+    Copy,
+    Cut,
+    Paste
+}
+
 public sealed class LadderCommentRequestEventArgs : EventArgs
 {
     public LadderCommentRequestEventArgs(int rung, string text)
@@ -118,6 +126,17 @@ public sealed class LadderDiagram : UserControl
                 ClearRequested?.Invoke(this, CurrentCell());
                 e.Handled = true;
             }
+            else if (e.Modifiers == Keys.Control && !readOnly && !canvas.IsEditingComment
+                && e.KeyCode is Keys.C or Keys.X or Keys.V)
+            {
+                ClipboardRequested?.Invoke(this, e.KeyCode == Keys.C ? LadderClipboardAction.Copy
+                    : e.KeyCode == Keys.X ? LadderClipboardAction.Cut : LadderClipboardAction.Paste);
+                e.Handled = true;
+            }
+        };
+        canvas.ElementContextMenu += (_, e) =>
+        {
+            if (!readOnly) ContextMenuRequested?.Invoke(this, e);
         };
     }
 
@@ -133,6 +152,12 @@ public sealed class LadderDiagram : UserControl
     public event EventHandler<LadderCellEventArgs> ClearRequested;
 
     public event EventHandler<LadderMoveRequestEventArgs> MoveRequested;
+
+    /// <summary>Ctrl+C, Ctrl+X ou Ctrl+V sobre a célula selecionada.</summary>
+    public event EventHandler<LadderClipboardAction> ClipboardRequested;
+
+    /// <summary>Botão direito numa célula, com a seleção já movida para ela (coordenadas do canvas).</summary>
+    public event MouseEventHandler ContextMenuRequested;
     public event EventHandler<LadderCommentRequestEventArgs> CommentRequested;
     public event EventHandler AddRungRequested;
     public event EventHandler ToolChanged;
@@ -224,6 +249,9 @@ public sealed class LadderDiagram : UserControl
     }
 
     public void Repaint() => canvas.Invalidate();
+
+    /// <summary>Abre um menu no ponto do canvas informado por <see cref="ContextMenuRequested"/>.</summary>
+    public void ShowMenu(ContextMenuStrip menu, Point location) => menu.Show(canvas, location);
 
     public new bool Focus() => canvas.Focus();
 
