@@ -363,6 +363,20 @@ Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(0, 3, 0), 5, 
 LadderEditCommands.Clear(editModel, new LadderCellPosition(0, 3, 0));
 Require(editModel.Rungs[0].Series[3].IsEmpty, "Apagar deve esvaziar a célula.");
 
+// --- Painel de propriedades (LadderCellProperties) ---
+var timer = LadderCellText.Parse("TMR V0001 600");
+var timerFields = LadderCellProperties.Describe(timer);
+Require(timerFields.AddressLabel is not null && timerFields.ParameterLabel is not null && timerFields.CanBeRetentive && !timerFields.Retentive, "Temporizador: endereço, preset e retentivo.");
+Require(LadderCellText.Format(LadderCellProperties.With(timer, "v0002", "900", true)) == "TMR V0002 900 RESET", "Temporizador retentivo deve sair com RESET.");
+Require(LadderCellProperties.Describe(LadderCellText.Parse("TMR V0001 600 RESET")).Retentive, "RESET deve aparecer como retentivo.");
+RequireThrows<FormatException>(() => LadderCellProperties.With(timer, "V0001", "", true), "Retentivo sem preset deve ser recusado.");
+RequireThrows<FormatException>(() => LadderCellProperties.With(LadderCellText.Parse("NO X0001"), "  ", "", false), "Endereço vazio deve ser recusado.");
+RequireThrows<FormatException>(() => LadderCellProperties.With(LadderCellText.Parse("NO X0001"), "X 1", "", false), "Endereço com espaço deve ser recusado.");
+Require(LadderCellText.Format(LadderCellProperties.With(LadderCellText.Parse("NC X0001"), "x0007", "ignorado", false)) == "NC X0007", "Contato não leva parâmetro.");
+Require(LadderCellText.Format(LadderCellProperties.With(LadderCellText.Parse("FUN F-13W D0001,10,D0002"), "F-13W", "D0003,5,D0004", false)) == "FUN F-13W D0003,5,D0004", "Função troca parâmetros.");
+Require(LadderCellProperties.Describe(LadderCellText.Parse("END")).AddressLabel is null && LadderCellProperties.With(LadderCellText.Parse("END"), "x", "y", false).Kind == LadderElementKind.End, "END não tem campos.");
+Require(LadderCellProperties.With(new LadderCell(), "X0001", "", false).IsEmpty, "Célula vazia continua vazia.");
+
 Console.WriteLine("ModernizationSelfTest: OK");
 
 static void RequireThrows<T>(Action action, string message) where T : Exception

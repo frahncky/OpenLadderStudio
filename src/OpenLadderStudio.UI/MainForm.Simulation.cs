@@ -240,6 +240,7 @@ public sealed partial class MainForm
         RebuildPointList();
         simulationPanel.Visible = true;
         simulationSplitter.Visible = true;
+        SyncPropertiesVisibility();
         BindSynoptic();
 
         simulationClock.Restart();
@@ -261,6 +262,7 @@ public sealed partial class MainForm
         grid.Columns[CommentColumn].Visible = true;
         simulationPanel.Visible = false;
         simulationSplitter.Visible = false;
+        SyncPropertiesVisibility();
         synoptic.Visible = false;
         synopticSplitter.Visible = false;
         if (reportHiddenBySynoptic) ShowReport(true);

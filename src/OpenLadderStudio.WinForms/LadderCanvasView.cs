@@ -91,9 +91,6 @@ namespace ModernPC12
         /// ferramenta armada o clique existe para inserir.</summary>
         public bool DragEnabled = true;
 
-        /// <summary>Mostra o guia de montagem no espaço livre abaixo do programa (desligado só em leitura).</summary>
-        public bool ShowGuide = true;
-
         private bool dragArmed;
         private bool dragActive;
         private Point dragOrigin;
@@ -351,7 +348,6 @@ namespace ModernPC12
             }
 
             DrawAddRow(g, layout);
-            if (ShowGuide) DrawGuide(g, layout, visibleBottom);
 
             if (dragActive && dropRung >= 0 && dropColumn >= 0)
             {
@@ -533,52 +529,6 @@ namespace ModernPC12
                 centered.Alignment = StringAlignment.Center;
                 centered.LineAlignment = StringAlignment.Center;
                 g.DrawString("+  Nova linha", font, ink, new RectangleF(ar.Left, ar.Top, ar.Width, ar.Height), centered);
-            }
-        }
-
-        /// <summary>
-        /// Guia curto de montagem no espaço livre abaixo de "Nova linha". Só aparece quando
-        /// sobra espaço, então some sozinho à medida que o programa cresce.
-        /// </summary>
-        private void DrawGuide(Graphics g, LadderCanvasLayout L, float visibleBottom)
-        {
-            Rectangle ar = L.AddRect();
-            float top = ar.Bottom + 36;
-            const float line = 30.0f;
-            string[] steps = new string[]
-            {
-                "Escolha um elemento: contato, bobina ou bloco.",
-                "Clique na célula da linha onde ele deve ficar. Bobinas ficam na coluna C8.",
-                "Arraste para mover. Clique duas vezes acima da linha para escrever um comentário."
-            };
-            if (visibleBottom - top < 34 + steps.Length * line) return;
-
-            float left = ar.Left + 8;
-            using (Font title = new Font("Segoe UI Semibold", 13.0f, FontStyle.Bold, GraphicsUnit.Pixel))
-            using (Font body = new Font("Segoe UI", 13.0f, FontStyle.Regular, GraphicsUnit.Pixel))
-            using (Font number = new Font("Segoe UI Semibold", 11.5f, FontStyle.Bold, GraphicsUnit.Pixel))
-            using (Brush muted = new SolidBrush(OpenLadderPalette.Muted))
-            using (Brush faint = new SolidBrush(OpenLadderPalette.Faint))
-            using (Brush accent = new SolidBrush(OpenLadderPalette.Accent))
-            using (Brush badge = new SolidBrush(OpenLadderPalette.Tint(OpenLadderPalette.Accent, 34)))
-            using (StringFormat middle = new StringFormat(StringFormat.GenericTypographic))
-            using (StringFormat centered = new StringFormat(StringFormat.GenericTypographic))
-            {
-                middle.LineAlignment = StringAlignment.Center;
-                middle.FormatFlags |= StringFormatFlags.NoWrap;
-                middle.Trimming = StringTrimming.EllipsisCharacter;
-                centered.Alignment = StringAlignment.Center;
-                centered.LineAlignment = StringAlignment.Center;
-
-                g.DrawString("COMO MONTAR UMA LINHA", title, faint, left, top + 10, middle);
-                for (int i = 0; i < steps.Length; i++)
-                {
-                    float y = top + 34 + i * line + line / 2;
-                    Rectangle dot = new Rectangle((int)left, (int)(y - 11), 22, 22);
-                    g.FillEllipse(badge, dot);
-                    g.DrawString((i + 1).ToString(), number, accent, new RectangleF(dot.X, dot.Y + 0.5f, dot.Width, dot.Height), centered);
-                    g.DrawString(steps[i], body, muted, new RectangleF(left + 34, y - line / 2, Math.Max(40, ar.Right - left - 34), line), middle);
-                }
             }
         }
 
