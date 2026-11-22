@@ -51,6 +51,7 @@ public sealed partial class MainForm : Form
         BuildReport();
         BuildSimulationPanel();
         BuildProperties();
+        BuildClipboard();
         var menu = BuildMenu();
         var statusStrip = BuildStatusBar();
 
@@ -111,6 +112,7 @@ public sealed partial class MainForm : Form
         edit.DropDownItems.Add(undoItem);
         edit.DropDownItems.Add(redoItem);
         edit.DropDownItems.Add(new ToolStripSeparator());
+        AddClipboardMenuItems(edit);
         edit.DropDownOpening += (_, _) =>
         {
             undoItem.Enabled = !simulating && (history.CanUndo || grid.IsCurrentCellInEditMode);
