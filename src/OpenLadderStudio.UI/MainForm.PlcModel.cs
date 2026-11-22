@@ -12,6 +12,7 @@ public sealed partial class MainForm
     /// <summary>Onde a escolha é guardada (substituível no teste da janela).</summary>
     private PlcProfileStore plcStore = new();
     private PlcDeviceProfile plcProfile = PlcProfileCatalog.Default;
+    private PlcMemoryMapStore memoryMaps = new();
 
     /// <summary>Abre o diálogo e devolve o modelo escolhido (substituível no teste da janela).</summary>
     private Func<PlcDeviceProfile, PlcDeviceProfile?> plcModelPrompt = null!;
@@ -32,6 +33,8 @@ public sealed partial class MainForm
     {
         var plc = new ToolStripMenuItem("P&LC");
         plc.DropDownItems.Add(new ToolStripMenuItem("&Modelo do PLC...", null, (_, _) => ChoosePlcModel()));
+        plc.DropDownItems.Add(new ToolStripSeparator());
+        plc.DropDownItems.Add(new ToolStripMenuItem("Mapa de &memória...", null, (_, _) => EditMemoryMap()));
         return plc;
     }
 
@@ -50,6 +53,12 @@ public sealed partial class MainForm
             status.Text = "Alvo: " + chosen.DisplayName + " (não foi possível lembrar a escolha: " + ex.Message + ")";
         }
         ShowPlcTarget();
+    }
+
+    private void EditMemoryMap()
+    {
+        using var dialog = new PlcMemoryMapDialog(memoryMaps, plcProfile);
+        if (dialog.ShowDialog(this) == DialogResult.OK) status.Text = "Mapa de memória de " + plcProfile.DisplayName + " salvo.";
     }
 
     private void ShowPlcTarget()

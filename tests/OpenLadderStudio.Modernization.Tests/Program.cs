@@ -379,6 +379,36 @@ File.WriteAllText(profileFile, "fabricante.inexistente\r\n");
 Require(profileStore.Load().Id == PlcProfileCatalog.VirtualId, "Identificador desconhecido deve voltar ao PLC virtual.");
 Directory.Delete(Path.GetDirectoryName(profileFile)!, true);
 
+// --- Mapa de memória (arquivo compartilhado com o legado) ---
+string mapRoot = Path.Combine(Path.GetTempPath(), "olsmap-" + Guid.NewGuid().ToString("N"));
+var maps = new PlcMemoryMapStore(mapRoot);
+var modbusRtu = PlcProfileCatalog.Find("generic.modbus.rtu")!;
+Require(maps.Load(modbusRtu).Count == 4 && maps.Load(PlcProfileCatalog.Find("teco.sg2.20v")!).Count == 4, "Modelo Modbus sem arquivo deve começar com as quatro áreas padrão.");
+Require(maps.Load(PlcProfileCatalog.Find("weg.tp02.60mr")!).Count == 0 && PlcMemoryMapStore.Defaults(PlcProfileCatalog.Find("schneider.m221")!).Count == 0, "TP02 e modelo planejado começam sem áreas.");
+// Linha como o legado grava (tipo pelo nome do enum, barra invertida dobrada, tab separando).
+Directory.CreateDirectory(mapRoot);
+File.WriteAllLines(Path.Combine(mapRoot, "generic.modbus.rtu.map"), new[]
+{
+    "# OpenLadder Studio - mapa de memória por controlador",
+    "Motores\\\\linha 1\tCoil\t100\t8\tM\tSaídas da esteira",
+    "lixo sem tabs",
+    "Tensão\tInputRegister\t65530\t50\tIR\tcortada no fim da faixa",
+});
+var areasRead = maps.Load(modbusRtu);
+Require(maps.Load(modbusRtu).Count == 2, "Releitura do mapa gravado.");
+Require(areasRead.Count == 2 && areasRead[0].Name == "Motores\\linha 1" && areasRead[0].Kind == PlcMemoryAreaKind.Coil && areasRead[0].EndAddress == 107, "Leitura de arquivo do legado: " + string.Join(" | ", areasRead));
+Require(areasRead[1].Length == 6, "Área que passa de 65535 deve ser cortada ao ler, como no legado.");
+maps.Save(modbusRtu, new[] { areasRead[0], new PlcMemoryArea("Registros", PlcMemoryAreaKind.HoldingRegister, 0, 10, "HR", "a\tb"), new PlcMemoryArea("Sem nota", PlcMemoryAreaKind.InputRegister, 0, 4, "IR", "") });
+Require(maps.Load(modbusRtu).Count == 3 && maps.Load(modbusRtu)[2].Notes == "", "Área com observação vazia deve sobreviver à releitura.");
+string[] mapLines = File.ReadAllLines(Path.Combine(mapRoot, "generic.modbus.rtu.map"));
+Require(mapLines.Length == 4 && mapLines[1] == "Motores\\\\linha 1\tCoil\t100\t8\tM\tSaídas da esteira" && mapLines[2].EndsWith("\tHR\ta b"), "Gravação no formato do legado: " + string.Join(" | ", mapLines));
+bool mapRefused;
+try { maps.Save(modbusRtu, new[] { new PlcMemoryArea("Grande", PlcMemoryAreaKind.Coil, 65000, 600, "C", "") }); mapRefused = false; }
+catch (FormatException) { mapRefused = true; }
+Require(mapRefused && File.ReadAllLines(Path.Combine(mapRoot, "generic.modbus.rtu.map")).Length == 4, "Área além de 65535 deve ser recusada sem tocar no arquivo.");
+Require(PlcMemoryMapStore.Overlaps(new[] { areasRead[0], new PlcMemoryArea("Outra", PlcMemoryAreaKind.Coil, 107, 2, "C", ""), new PlcMemoryArea("HR", PlcMemoryAreaKind.HoldingRegister, 100, 8, "HR", "") }).Count == 1, "Sobreposição só entre áreas do mesmo tipo.");
+Directory.Delete(mapRoot, true);
+
 // --- Referência cruzada (painel de projeto) ---
 var xrefModel = new LadderProjectService().CreateNew();
 LadderEditCommands.Put(xrefModel, new LadderCellPosition(0, 0, 0), LadderCellText.Parse("NO X0001"));
