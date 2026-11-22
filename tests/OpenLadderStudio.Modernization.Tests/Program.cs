@@ -363,6 +363,16 @@ Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(0, 3, 0), 5, 
 LadderEditCommands.Clear(editModel, new LadderCellPosition(0, 3, 0));
 Require(editModel.Rungs[0].Series[3].IsEmpty, "Apagar deve esvaziar a célula.");
 
+// --- Referência cruzada (painel de projeto) ---
+var xrefModel = new LadderProjectService().CreateNew();
+LadderEditCommands.Put(xrefModel, new LadderCellPosition(0, 0, 0), LadderCellText.Parse("NO X0001"));
+LadderEditCommands.Put(xrefModel, new LadderCellPosition(0, 0, 1), LadderCellText.Parse("NC Y0001"));
+LadderEditCommands.Put(xrefModel, new LadderCellPosition(0, 7, 0), LadderCellText.Parse("COIL Y0001"));
+LadderEditCommands.Put(xrefModel, new LadderCellPosition(0, 1, 0), LadderCellText.Parse("FUN F-13w D0001,10,D0002"));
+var xref = LadderCrossReference.Build(xrefModel);
+Require(string.Join(" ", xref.Select(u => u.Address)) == "D0001 D0002 X0001 Y0001 Y0001", "Referência cruzada: endereços ordenados, com os parâmetros da função e sem constantes: " + string.Join(" ", xref.Select(u => u.Address)));
+Require(xref[3].Where == "L1 C8 · Bobina" && xref[4].Where == "L1 C1 paralelo · Contato NF", "Referência cruzada: série antes do paralelo e descrição do lugar: " + xref[3].Where + " / " + xref[4].Where);
+
 // --- Painel de propriedades (LadderCellProperties) ---
 var timer = LadderCellText.Parse("TMR V0001 600");
 var timerFields = LadderCellProperties.Describe(timer);
