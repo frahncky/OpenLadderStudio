@@ -13,7 +13,7 @@ public sealed partial class MainForm
     private readonly ToolStripStatusLabel positionSegment = Segment(string.Empty, "Linha e coluna selecionadas");
     private readonly ToolStripStatusLabel sizeSegment = Segment(string.Empty, "Linhas do programa");
     private readonly ToolStripStatusLabel zoomSegment = Segment("Zoom 100%", "Zoom do diagrama (clique para voltar a 100%)");
-    private readonly ToolStripStatusLabel targetSegment = Segment("Alvo: WEG TP02", "Controlador para o qual o programa é verificado");
+    private readonly ToolStripStatusLabel targetSegment = Segment(string.Empty, "Controlador alvo");
 
     private readonly System.Windows.Forms.Timer statusRefresh = new() { Interval = 150 };
 

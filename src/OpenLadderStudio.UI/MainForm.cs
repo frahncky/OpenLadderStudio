@@ -55,6 +55,7 @@ public sealed partial class MainForm : Form
         BuildProjectPanel();
         var menu = BuildMenu();
         var statusStrip = BuildStatusBar();
+        BuildPlcModel();
 
         // Ordem de encaixe: barra de status, menu, relatório e divisor embaixo; a grade ocupa o resto.
         Controls.Add(grid);
@@ -154,7 +155,7 @@ public sealed partial class MainForm : Form
         help.DropDownItems.Add(new ToolStripSeparator());
         help.DropDownItems.Add(new ToolStripMenuItem("&Sobre o OpenLadder Studio", null, (_, _) => ShowAbout()));
 
-        menu.Items.AddRange(new ToolStripItem[] { file, edit, view, program, help });
+        menu.Items.AddRange(new ToolStripItem[] { file, edit, view, program, BuildPlcMenu(), help });
         return menu;
     }
 

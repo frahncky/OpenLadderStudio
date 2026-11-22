@@ -363,6 +363,22 @@ Require(!LadderEditCommands.Move(editModel, new LadderCellPosition(0, 3, 0), 5, 
 LadderEditCommands.Clear(editModel, new LadderCellPosition(0, 3, 0));
 Require(editModel.Rungs[0].Series[3].IsEmpty, "Apagar deve esvaziar a célula.");
 
+// --- Modelo do PLC (perfis compartilhados com o legado) ---
+Require(PlcProfileCatalog.Default.Id == PlcProfileCatalog.VirtualId, "O ponto de partida deve ser o PLC virtual.");
+Require(PlcProfileCatalog.Profiles.Select(p => p.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == PlcProfileCatalog.Profiles.Count, "Identificadores de perfil repetidos.");
+Require(PlcProfileCatalog.DriverFor(catalog, PlcProfileCatalog.Find("weg.tp02.60mr")!) == tp02, "TP02-60MR deve usar o driver TP02.");
+Require(PlcProfileCatalog.DriverFor(catalog, PlcProfileCatalog.Find("WEG.TPW03")!) == modbus, "TPW-03 deve usar o Modbus genérico (e a busca ignora maiúsculas).");
+Require(PlcProfileCatalog.DriverFor(catalog, PlcProfileCatalog.Find("siemens.s71200")!) is null, "Modelo planejado não pode herdar o driver Modbus pelo transporte.");
+Require(PlcProfileCatalog.DriverFor(catalog, PlcProfileCatalog.Default) is null, "PLC virtual não usa driver de comunicação.");
+string profileFile = Path.Combine(Path.GetTempPath(), "olstest-" + Guid.NewGuid().ToString("N"), "device.profile");
+var profileStore = new PlcProfileStore(profileFile);
+Require(profileStore.Load().Id == PlcProfileCatalog.VirtualId, "Sem arquivo, o modelo deve ser o PLC virtual.");
+profileStore.Save(PlcProfileCatalog.Find("weg.tp02.60mr")!);
+Require(File.ReadAllText(profileFile) == "weg.tp02.60mr" && profileStore.Load().Model == "TP02-60MR", "O arquivo deve guardar só o identificador, como o legado.");
+File.WriteAllText(profileFile, "fabricante.inexistente\r\n");
+Require(profileStore.Load().Id == PlcProfileCatalog.VirtualId, "Identificador desconhecido deve voltar ao PLC virtual.");
+Directory.Delete(Path.GetDirectoryName(profileFile)!, true);
+
 // --- Referência cruzada (painel de projeto) ---
 var xrefModel = new LadderProjectService().CreateNew();
 LadderEditCommands.Put(xrefModel, new LadderCellPosition(0, 0, 0), LadderCellText.Parse("NO X0001"));
