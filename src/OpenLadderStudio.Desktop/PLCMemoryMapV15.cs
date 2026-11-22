@@ -60,7 +60,8 @@ namespace ModernPC12
                     string line = lines[i].Trim();
                     if (line.Length == 0 || line.StartsWith("#")) continue;
                     string[] p = line.Split(new char[] { '\t' });
-                    if (p.Length < 6) continue;
+                    // Observação vazia: o Trim acima leva o último tab e a linha fica com 5 campos.
+                    if (p.Length < 5) continue;
                     PlcMemoryAreaKind kind;
                     int start;
                     int length;
@@ -75,7 +76,7 @@ namespace ModernPC12
                     int available = Math.Max(1, 65536 - a.StartAddress);
                     a.Length = Math.Max(1, Math.Min(available, length));
                     a.Prefix = Unescape(p[4]);
-                    a.Notes = Unescape(p[5]);
+                    a.Notes = p.Length > 5 ? Unescape(p[5]) : string.Empty;
                     result.Add(a);
                 }
                 return result.Count == 0 ? CreateDefaults(profile) : result;

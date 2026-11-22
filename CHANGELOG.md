@@ -2,6 +2,13 @@
 
 Todas as mudanças relevantes do OpenLadder Studio são registradas neste arquivo.
 
+## [1.77] - 2026-11-22
+
+### Correção
+- mapa de memória: uma área com a observação em branco sumia ao reabrir o mapa (a linha gravada terminava em tabulação e a leitura a descartava).
+
+### Trilha moderna (não distribuída)
+- mapa de memória do modelo alvo (PLC → Mapa de memória...), com validação a cada edição e o mesmo arquivo do editor distribuído.
 ## [1.76] - 2026-11-21
 
 ### Interface
